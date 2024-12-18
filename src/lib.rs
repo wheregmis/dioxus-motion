@@ -7,12 +7,12 @@ use uuid::Uuid;
 
 mod platform;
 
-use platform::{DesktopTime, TimeProvider};
+use platform::{DesktopTime, TimeProvider, WebTime};
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature = "wasm")]
 type Time = WebTime;
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(feature = "wasm"))]
 type Time = DesktopTime;
 
 /// Represents the current state of an animation
