@@ -134,7 +134,7 @@ dioxus-motion = {
 
 ## 📄 License
 
-[Specify Your License - e.g., MIT, Apache]
+MIT License
 
 ## 🐞 Reporting Issues
 
