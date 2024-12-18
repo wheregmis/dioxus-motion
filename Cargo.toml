@@ -1,0 +1,43 @@
+[package]
+name = "dioxus-motion"
+description = "Animations library for Dioxus."
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["Sabin Regmi <get2sabin@gmail.com>"]
+readme = "./README.md"
+homepage = ""
+repository = ""
+keywords = ["dioxus", "animations"]
+categories = ["Graphics", "Animation"]
+
+[dependencies]
+easer = "0.3.0"
+dioxus-core = "0.6.0"
+dioxus-hooks = "0.6.0"
+futures-util = "0.3.31"
+uuid = { version = "1.11.0", features = ["v4"] }
+futures-timer = "3.0.3"
+dioxus-signals = "0.6.0"
+getrandom = { version = "0.2.15", features = ["js"] }
+instant = { version = "0.1.13", features = ["wasm-bindgen"] }
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3.76", features = ["Window"] }
+futures-channel = "0.3"
+
+# For desktop platforms
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio = { version = "1", features = ["time"] }
+
+
+[profile]
+
+[profile.wasm-dev]
+inherits = "dev"
+opt-level = 1
+
+[profile.server-dev]
+inherits = "dev"
+
+[profile.android-dev]
+inherits = "dev"
