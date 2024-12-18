@@ -4,7 +4,7 @@ A lightweight, cross-platform animation library for Dioxus, designed to bring sm
 
 ## ✨ Features
 
-- **Cross-Platform Support**: Works on web (WASM), desktop, and mobile
+- **Cross-Platform Support**: Works on web (WASM), desktop, and mobile (I Guess ?)
 - **Flexible Animation Configuration**
 - **Custom Easing Functions**
 - **Modular Feature Setup**
