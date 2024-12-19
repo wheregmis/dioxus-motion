@@ -23,6 +23,35 @@ pub enum AnimationState {
     Completed,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct Spring {
+    pub stiffness: f32,
+    pub damping: f32,
+    pub mass: f32,
+    pub velocity: f32,
+}
+
+impl Default for Spring {
+    fn default() -> Self {
+        Self {
+            stiffness: 100.0,
+            damping: 10.0,
+            mass: 1.0,
+            velocity: 0.0,
+        }
+    }
+}
+
+/// Animation mode
+#[derive(Debug, Clone, Copy)]
+pub enum AnimationMode {
+    Tween {
+        duration: Duration,
+        easing: fn(f32, f32, f32, f32) -> f32,
+    },
+    Spring(Spring),
+}
+
 /// Configuration for a motion animation
 #[derive(Debug, Clone, Copy)]
 pub struct Motion {
@@ -31,7 +60,7 @@ pub struct Motion {
     target: f32,
     duration: Duration,
     delay: Duration,
-    easing: fn(f32, f32, f32, f32) -> f32,
+    mode: AnimationMode,
     on_complete: Option<fn()>,
 }
 
@@ -44,7 +73,10 @@ impl Motion {
             target: initial,
             duration: Duration::from_millis(300),
             delay: Duration::from_millis(0),
-            easing: Linear::ease_in_out,
+            mode: AnimationMode::Tween {
+                duration: Duration::from_millis(300),
+                easing: Linear::ease_in_out,
+            },
             on_complete: None,
         }
     }
@@ -63,12 +95,40 @@ impl Motion {
     /// Set the duration of the animation
     pub fn duration(mut self, duration: Duration) -> Self {
         self.duration = duration;
+        self.mode = AnimationMode::Tween {
+            duration,
+            easing: Linear::ease_in_out,
+        };
         self
+    }
+
+    pub fn spring(mut self, config: Spring) -> Self {
+        self.mode = AnimationMode::Spring(config);
+        self
+    }
+
+    // Helper method to update spring physics
+    fn update_spring(
+        current: f32,
+        target: f32,
+        velocity: &mut f32,
+        spring: &Spring,
+        dt: f32,
+    ) -> f32 {
+        let force = spring.stiffness * (target - current);
+        let damping = spring.damping * *velocity;
+        let acceleration = (force - damping) / spring.mass;
+
+        *velocity += acceleration * dt;
+        current + *velocity * dt
     }
 
     /// Set a custom easing function
     pub fn easing(mut self, easing: fn(f32, f32, f32, f32) -> f32) -> Self {
-        self.easing = easing;
+        self.mode = AnimationMode::Tween {
+            duration: self.duration,
+            easing,
+        };
         self
     }
 
@@ -92,6 +152,7 @@ pub struct UseMotion {
     value: Signal<f32>,
     running_state: Signal<bool>,
     completion_state: Signal<AnimationState>,
+    elapsed_time: Signal<Duration>,
     config: Motion,
     channel: Coroutine<()>,
 }
@@ -144,48 +205,103 @@ pub fn use_motion(config: Motion) -> UseMotion {
     let mut value = use_signal(|| config.initial);
     let mut running_state = use_signal(|| false);
     let mut completion_state = use_signal(|| AnimationState::Idle);
+    let mut elapsed_time = use_signal(|| Duration::from_secs(0));
 
     let channel = use_coroutine(move |mut rx| async move {
         while rx.next().await.is_some() {
             Time::delay(config.delay).await;
 
-            let start_time = Time::now();
-            let start_value = *value.peek();
-            let end_value = config.target;
+            match config.mode {
+                AnimationMode::Tween { duration, easing } => {
+                    let start_time = Time::now();
+                    let start_value = *value.peek();
+                    let end_value = config.target;
+                    let total_change = (end_value - start_value).abs();
+                    let total_frames = total_change.ceil() as u64;
+                    let initial_elapsed = *elapsed_time.read();
 
-            completion_state.set(AnimationState::Running);
-            running_state.set(true);
+                    completion_state.set(AnimationState::Running);
+                    running_state.set(true);
 
-            while *running_state.read() {
-                let elapsed = Time::now().duration_since(start_time);
+                    while *running_state.read() {
+                        let current_elapsed =
+                            Time::now().duration_since(start_time) + initial_elapsed;
+                        elapsed_time.set(current_elapsed);
 
-                // Animation completed
-                if elapsed >= config.duration {
-                    break;
+                        if current_elapsed >= duration {
+                            break;
+                        }
+
+                        // Calculate remaining duration
+                        let remaining_duration = duration - current_elapsed;
+
+                        let frame_progress = (current_elapsed.as_secs_f64()
+                            / duration.as_secs_f64())
+                            * total_frames as f64;
+                        let current_frame = frame_progress.floor() as u64;
+                        let progress = current_frame as f32 / total_frames as f32;
+                        let current = (easing)(progress, start_value, end_value - start_value, 1.0);
+
+                        value.set(current);
+
+                        // Calculate frame delay based on remaining duration
+                        let frame_delay = if remaining_duration >= Duration::from_secs(2) {
+                            Duration::from_secs_f64(
+                                remaining_duration.as_secs_f64()
+                                    / (total_frames - current_frame) as f64,
+                            )
+                        } else {
+                            Duration::from_millis(16)
+                        };
+
+                        Time::delay(frame_delay).await;
+                    }
+
+                    // Ensure final value is set
+                    if Time::now().duration_since(start_time) + initial_elapsed >= duration {
+                        value.set(end_value);
+                        elapsed_time.set(Duration::from_secs(0));
+                        running_state.set(false);
+                        completion_state.set(AnimationState::Completed);
+
+                        if let Some(f) = config.on_complete {
+                            f();
+                        }
+                    }
                 }
+                AnimationMode::Spring(spring) => {
+                    let mut velocity = spring.velocity;
+                    let mut current = *value.peek();
 
-                // Calculate progress and current value
-                let progress = elapsed.as_secs_f32() / config.duration.as_secs_f32();
-                let current = (config.easing)(progress, start_value, end_value - start_value, 1.0);
+                    completion_state.set(AnimationState::Running);
+                    running_state.set(true);
 
-                value.set(current);
+                    while *running_state.read() {
+                        let dt = 1.0 / 60.0; // 60 FPS
 
-                // Small delay to control animation frame rate
-                Time::delay(Duration::from_millis(16)).await;
-            }
+                        current = Motion::update_spring(
+                            current,
+                            config.target,
+                            &mut velocity,
+                            &spring,
+                            dt,
+                        );
 
-            // Ensure final value is set
-            // if elapsed >= config.duration {
-            //     value.set(end_value);
-            // }
+                        value.set(current);
 
-            // Update states
-            running_state.set(false);
-            completion_state.set(AnimationState::Completed);
+                        // Check if spring has settled
+                        if velocity.abs() < 0.01 && (current - config.target).abs() < 0.01 {
+                            break;
+                        }
 
-            // Call completion handler if provided
-            if let Some(f) = config.on_complete {
-                f();
+                        Time::delay(Duration::from_millis(5)).await;
+                    }
+
+                    // Ensure we reach exact target
+                    value.set(config.target);
+                    running_state.set(false);
+                    completion_state.set(AnimationState::Completed);
+                }
             }
         }
     });
@@ -195,6 +311,7 @@ pub fn use_motion(config: Motion) -> UseMotion {
         value,
         running_state,
         completion_state,
+        elapsed_time,
         config,
         channel,
     }

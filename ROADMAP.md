@@ -25,7 +25,7 @@
 - [x] Easing functions (implemented via `easing()`)
 - [x] Animation completion callbacks
 - [x] Delay
-- [ ] Spring animations
+- [x] Spring animations
 
 ## Phase 2: Animation State & Control
 ### State Management
@@ -63,9 +63,9 @@ Motion::new(0.0)
 // Target API
 let mut motion = use_motion(...);
 motion.start();
-motion.pause();
-motion.resume();
 motion.stop();
+motion.resume();
+motion.reset();
 ```
 
 3. Delay Support
