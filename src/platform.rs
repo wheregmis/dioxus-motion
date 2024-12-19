@@ -18,7 +18,7 @@ impl TimeProvider for WebTime {
         let (sender, receiver) = futures_channel::oneshot::channel::<()>();
 
         // Use web-sys for wasm-bindgen compatible setTimeout
-        #[cfg(feature = "wasm")]
+        #[cfg(feature = "web")]
         {
             use futures_util::FutureExt;
             use wasm_bindgen::prelude::*;
@@ -37,7 +37,7 @@ impl TimeProvider for WebTime {
         }
 
         // Fallback for non-wasm or in case of window lookup failure
-        #[cfg(not(feature = "wasm"))]
+        #[cfg(not(feature = "web"))]
         {
             use futures_util::future::ready;
             std::thread::sleep(duration);
@@ -55,14 +55,14 @@ impl TimeProvider for DesktopTime {
     }
 
     fn delay(duration: Duration) -> impl Future<Output = ()> {
-        #[cfg(not(feature = "wasm"))]
+        #[cfg(not(feature = "web"))]
         {
             async move {
                 tokio::time::sleep(duration).await;
             }
         }
 
-        #[cfg(feature = "wasm")]
+        #[cfg(feature = "web")]
         {
             WebTime::delay(duration)
         }

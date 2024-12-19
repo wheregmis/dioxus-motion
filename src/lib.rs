@@ -2,7 +2,7 @@ use dioxus_hooks::{use_coroutine, use_signal, Coroutine};
 use dioxus_signals::{Readable, Signal, Writable};
 use easer::functions::{Easing, Linear};
 use futures_util::StreamExt;
-use instant::Duration;
+pub use instant::Duration;
 use uuid::Uuid;
 
 mod platform;
@@ -10,10 +10,10 @@ mod platform;
 use platform::{DesktopTime, TimeProvider, WebTime};
 
 #[cfg(feature = "web")]
-type Time = WebTime;
+pub type Time = WebTime;
 
 #[cfg(not(feature = "web"))]
-type Time = DesktopTime;
+pub type Time = DesktopTime;
 
 /// Represents the current state of an animation
 #[derive(Debug, Clone, PartialEq, Eq)]
