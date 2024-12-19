@@ -9,10 +9,10 @@ mod platform;
 
 use platform::{DesktopTime, TimeProvider, WebTime};
 
-#[cfg(feature = "wasm")]
+#[cfg(feature = "web")]
 type Time = WebTime;
 
-#[cfg(not(feature = "wasm"))]
+#[cfg(not(feature = "web"))]
 type Time = DesktopTime;
 
 /// Represents the current state of an animation
@@ -30,6 +30,7 @@ pub struct Motion {
     initial: f32,
     target: f32,
     duration: Duration,
+    delay: Duration,
     easing: fn(f32, f32, f32, f32) -> f32,
     on_complete: Option<fn()>,
 }
@@ -42,6 +43,7 @@ impl Motion {
             initial,
             target: initial,
             duration: Duration::from_millis(300),
+            delay: Duration::from_millis(0),
             easing: Linear::ease_in_out,
             on_complete: None,
         }
@@ -73,6 +75,12 @@ impl Motion {
     /// Set a callback function to be called when animation completes
     pub fn on_complete(mut self, f: fn()) -> Self {
         self.on_complete = Some(f);
+        self
+    }
+
+    /// Set a delay before the animation starts
+    pub fn delay(mut self, delay: Duration) -> Self {
+        self.delay = delay;
         self
     }
 }
@@ -120,6 +128,8 @@ pub fn use_motion(config: Motion) -> UseMotion {
 
     let channel = use_coroutine(move |mut rx| async move {
         while rx.next().await.is_some() {
+            Time::delay(config.delay).await;
+
             let start_time = Time::now();
             let start_value = *value.peek();
             let end_value = config.target;

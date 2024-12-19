@@ -13,6 +13,7 @@
   ```
 - [x] Duration control
 - [x] Easing functions
+<-I think for the below option, we can have another crate as a layer which will abstract and build elements based on value, cause its just value that we put on these attributes->
 - [ ] Common animation properties
   - [ ] x, y (transform)
   - [ ] scale
@@ -23,7 +24,7 @@
 - [x] Duration (implemented via `duration()`)
 - [x] Easing functions (implemented via `easing()`)
 - [x] Animation completion callbacks
-- [ ] Delay
+- [x] Delay
 - [ ] Spring animations
 
 ## Phase 2: Animation State & Control
