@@ -15,7 +15,7 @@ easer = "0.3.0"
 default = ["web"]
 web = ["dioxus/web", "dioxus-motion/web"]
 desktop = ["dioxus/desktop", "dioxus-motion/desktop"]
-mobile = ["dioxus/mobile"]
+mobile = ["dioxus/mobile", "dioxus-motion/desktop"]
 
 [profile]
 

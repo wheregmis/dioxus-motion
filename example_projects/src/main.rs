@@ -9,8 +9,29 @@ fn main() {
 fn app() -> Element {
     rsx! {
         div { class: "container", style: "padding: 20px; font-family: Arial;",
-            TimerComponent {}
-            SpringBoxComponent {}
+            // Title
+            h1 { style: "text-align: center; color: #333; margin-bottom: 40px;",
+                "Dioxus Motion Examples"
+            }
+
+            // Tween Animation Section
+            div {
+                h2 { style: "text-align: center; color: #2196F3; margin-bottom: 20px;",
+                    "Tween Animation - Timer Example"
+                }
+                TimerComponent {}
+            }
+
+            // Spacing between sections
+            div { style: "margin: 40px 0;" }
+
+            // Spring Animation Section
+            div {
+                h2 { style: "text-align: center; color: #4CAF50; margin-bottom: 20px;",
+                    "Spring Animation - Interactive Box"
+                }
+                SpringBoxComponent {}
+            }
         }
     }
 }
