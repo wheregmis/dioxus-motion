@@ -104,12 +104,26 @@ impl UseMotion {
 
     /// Start the animation
     pub fn start(&mut self) {
+        *self.value.write() = self.config.initial;
+        *self.completion_state.write() = AnimationState::Idle;
         *self.running_state.write() = true;
         self.channel.send(());
     }
 
     /// Stop the animation
     pub fn stop(&mut self) {
+        *self.running_state.write() = false;
+        *self.completion_state.write() = AnimationState::Idle;
+    }
+
+    pub fn resume(&mut self) {
+        *self.running_state.write() = true;
+        self.channel.send(());
+    }
+
+    pub fn reset(&mut self) {
+        *self.value.write() = self.config.initial;
+        *self.completion_state.write() = AnimationState::Idle;
         *self.running_state.write() = false;
     }
 
@@ -161,7 +175,9 @@ pub fn use_motion(config: Motion) -> UseMotion {
             }
 
             // Ensure final value is set
-            value.set(end_value);
+            // if elapsed >= config.duration {
+            //     value.set(end_value);
+            // }
 
             // Update states
             running_state.set(false);

@@ -34,28 +34,10 @@
 - [x] Running state detection
 
 ### Controls
-- [x] Start animation
-- [ ] Stop/Reset
-- [ ] Pause/Resume
-- [ ] Cancel animation
-
-## Next Implementation Priorities
-
-1. Core Properties (Next Sprint)
-   - [ ] Add transform support (x, y)
-   - [ ] Add scale and rotate
-   - [ ] Add opacity handling
-   - [ ] Add delay support
-
-2. Animation Controls (Following Sprint)
-   - [ ] Implement stop/reset
-   - [ ] Add pause/resume functionality
-   - [ ] Add cancellation support
-
-3. Advanced Features (Future Sprint)
-   - [ ] Add spring animations
-   - [ ] Add gesture support
-   - [ ] Add variants system
+- [x] Start animation  -> Will always start from the initial value
+- [x] Stop   -> Will stop on the stopped value
+- [x] Resume  -> Will continue from the stopped value
+- [x] Reset animation  -> Will reset back to initial value
 
 ## Current Implementation Strengths
 - ✅ Solid foundation for value animations
@@ -94,7 +76,7 @@ Motion::new(0.0)
     .delay(Duration::from_millis(500))
 ```
 
-### Variants
+### Variants Taking the scope outside of core motion and provide maybe some overlay for it?
 - [ ] Named animation states
   ```rust
   let variants = AnimationVariants::new()
@@ -110,7 +92,7 @@ Motion::new(0.0)
   ```
 
 
-## Example API (Target)
+## Example API (Target)  Taking the scope outside of core motion and provide maybe some overlay for it?
 ```rust
 use dioxus_motion::prelude::*;
 
