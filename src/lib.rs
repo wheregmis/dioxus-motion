@@ -155,6 +155,7 @@ pub struct UseMotion {
     elapsed_time: Signal<Duration>,
     config: Motion,
     channel: Coroutine<()>,
+    reverse_state: Signal<bool>,
 }
 
 impl UseMotion {
@@ -168,6 +169,7 @@ impl UseMotion {
         *self.value.write() = self.config.initial;
         *self.completion_state.write() = AnimationState::Idle;
         *self.running_state.write() = true;
+        *self.reverse_state.write() = false;
         self.channel.send(());
     }
 
@@ -186,6 +188,21 @@ impl UseMotion {
         *self.value.write() = self.config.initial;
         *self.completion_state.write() = AnimationState::Idle;
         *self.running_state.write() = false;
+        *self.elapsed_time.write() = Duration::from_secs(0);
+        *self.reverse_state.write() = false;
+    }
+
+    pub fn reverse(&mut self) {
+        if *self.reverse_state.read() {
+            self.config.initial
+        } else {
+            self.config.target
+        };
+
+        self.reverse_state.toggle();
+        *self.completion_state.write() = AnimationState::Idle;
+        *self.running_state.write() = true;
+        self.channel.send(());
     }
 
     /// Get the current animation state
@@ -206,6 +223,7 @@ pub fn use_motion(config: Motion) -> UseMotion {
     let mut running_state = use_signal(|| false);
     let mut completion_state = use_signal(|| AnimationState::Idle);
     let mut elapsed_time = use_signal(|| Duration::from_secs(0));
+    let mut reverse_state = use_signal(|| false);
 
     let channel = use_coroutine(move |mut rx| async move {
         while rx.next().await.is_some() {
@@ -215,7 +233,11 @@ pub fn use_motion(config: Motion) -> UseMotion {
                 AnimationMode::Tween { duration, easing } => {
                     let start_time = Time::now();
                     let start_value = *value.peek();
-                    let end_value = config.target;
+                    let end_value = if *reverse_state.read() {
+                        config.initial
+                    } else {
+                        config.target
+                    };
                     let total_change = (end_value - start_value).abs();
                     let total_frames = total_change.ceil() as u64;
                     let initial_elapsed = *elapsed_time.read();
@@ -272,6 +294,11 @@ pub fn use_motion(config: Motion) -> UseMotion {
                 AnimationMode::Spring(spring) => {
                     let mut velocity = spring.velocity;
                     let mut current = *value.peek();
+                    let target = if *reverse_state.read() {
+                        config.initial
+                    } else {
+                        config.target
+                    };
 
                     completion_state.set(AnimationState::Running);
                     running_state.set(true);
@@ -279,18 +306,13 @@ pub fn use_motion(config: Motion) -> UseMotion {
                     while *running_state.read() {
                         let dt = 1.0 / 60.0; // 60 FPS
 
-                        current = Motion::update_spring(
-                            current,
-                            config.target,
-                            &mut velocity,
-                            &spring,
-                            dt,
-                        );
+                        current =
+                            Motion::update_spring(current, target, &mut velocity, &spring, dt);
 
                         value.set(current);
 
                         // Check if spring has settled
-                        if velocity.abs() < 0.01 && (current - config.target).abs() < 0.01 {
+                        if velocity.abs() < 0.01 && (current - target).abs() < 0.01 {
                             break;
                         }
 
@@ -298,7 +320,7 @@ pub fn use_motion(config: Motion) -> UseMotion {
                     }
 
                     // Ensure we reach exact target
-                    value.set(config.target);
+                    value.set(target);
                     running_state.set(false);
                     completion_state.set(AnimationState::Completed);
                 }
@@ -314,5 +336,6 @@ pub fn use_motion(config: Motion) -> UseMotion {
         elapsed_time,
         config,
         channel,
+        reverse_state,
     }
 }

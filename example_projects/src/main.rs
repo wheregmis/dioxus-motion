@@ -87,6 +87,13 @@ fn TimerComponent() -> Element {
                     style: "{button_style} background: #9C27B0;",
                     "Reset"
                 }
+
+                button {
+                    onclick: move |_| timer.reverse(),
+                    style: "{button_style} background: #FF9800;",
+                    "Reverse"
+                }
+
             }
         }
     }
@@ -138,6 +145,14 @@ fn SpringBoxComponent() -> Element {
                     },
                     style: "padding: 10px 20px; background: #9C27B0; color: white; border: none; border-radius: 4px;",
                     "Reset Box"
+                }
+                button {
+                    onclick: move |_| {
+                        spring_x.reverse();
+                        spring_scale.reverse();
+                    },
+                    style: "padding: 10px 20px; background: #9C27B0; color: white; border: none; border-radius: 4px;",
+                    "Reverse Box"
                 }
             }
         }
