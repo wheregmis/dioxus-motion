@@ -30,7 +30,7 @@ impl TimeProvider for WebTime {
                 });
 
                 // Use requestAnimationFrame for smoother animations
-                if duration.as_millis() < 10 {
+                if duration.as_millis() < 20 {
                     window
                         .request_animation_frame(cb.as_ref().unchecked_ref())
                         .unwrap();
