@@ -25,12 +25,26 @@ impl TimeProvider for WebTime {
             use web_sys::window;
 
             if let Some(window) = window() {
-                let ms = duration.as_millis() as i32;
-                let closure = Closure::once_into_js(move || {
+                let cb = Closure::once(move || {
                     let _ = sender.send(());
                 });
-                let function = closure.as_ref().unchecked_ref();
-                let _ = window.set_timeout_with_callback_and_timeout_and_arguments_0(function, ms);
+
+                // Use requestAnimationFrame for smoother animations
+                if duration.as_millis() < 10 {
+                    window
+                        .request_animation_frame(cb.as_ref().unchecked_ref())
+                        .unwrap();
+                    cb.forget();
+                } else {
+                    // Use setTimeout for longer delays
+                    window
+                        .set_timeout_with_callback_and_timeout_and_arguments_0(
+                            cb.as_ref().unchecked_ref(),
+                            duration.as_millis() as i32,
+                        )
+                        .unwrap();
+                    cb.forget();
+                }
             }
 
             receiver.map(|_| ())
