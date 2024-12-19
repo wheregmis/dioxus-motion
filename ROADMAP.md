@@ -64,22 +64,6 @@
   }
   ```
 
-## Implementation Priorities
-
-1. Week 1-2: Basic Animations
-   - Implement `Motion` struct
-   - Basic value interpolation
-   - Duration and easing
-
-2. Week 3-4: Transform Support
-   - x, y transforms
-   - scale and rotate
-   - opacity handling
-
-3. Week 5-6: Gesture Integration
-   - Hover detection
-   - Click/tap handling
-   - Basic state management
 
 ## Example API (Target)
 ```rust
