@@ -1,17 +1,18 @@
 # Dioxus Motion - Simple Animation Roadmap If i dont get bored?
 
+# Dioxus Motion - Implementation Progress
+
 ## Phase 1: Core Animation Primitives
 ### Animate Component
-- [ ] Basic `animate` prop support
+- [x] Basic value transitions
   ```rust
-  rsx! {
-      div {
-          animate: Motion::new()
-              .to(100.0)
-              .duration(300),
-      }
-  }
+  // Already implemented via:
+  Motion::new(0.0)
+      .to(100.0)
+      .duration(Duration::from_millis(300))
   ```
+- [x] Duration control
+- [x] Easing functions
 - [ ] Common animation properties
   - [ ] x, y (transform)
   - [ ] scale
@@ -19,35 +20,78 @@
   - [ ] opacity
 
 ### Basic Transitions
-- [ ] Duration
-- [ ] Easing functions
+- [x] Duration (implemented via `duration()`)
+- [x] Easing functions (implemented via `easing()`)
+- [x] Animation completion callbacks
 - [ ] Delay
-- [ ] Basic spring animations
+- [ ] Spring animations
 
-## Phase 2: Gesture Animations
-### Hover Animations
-- [ ] hover state detection
-- [ ] whileHover animations
-  ```rust
-  rsx! {
-      div {
-          on_hover: move |_| Motion::new()
-              .scale(1.1)
-              .duration(200),
-      }
-  }
-  ```
+## Phase 2: Animation State & Control
+### State Management
+- [x] Animation state tracking (Idle, Running, Completed)
+- [x] Progress tracking
+- [x] Running state detection
 
-### Tap/Click Animations
-- [ ] tap/click state
-- [ ] whileTap animations
-- [ ] Basic gesture feedback
+### Controls
+- [x] Start animation
+- [ ] Stop/Reset
+- [ ] Pause/Resume
+- [ ] Cancel animation
 
-## Phase 3: Animation Controls
-### Basic Controls
-- [ ] start/stop
-- [ ] pause/resume
-- [ ] reset
+## Next Implementation Priorities
+
+1. Core Properties (Next Sprint)
+   - [ ] Add transform support (x, y)
+   - [ ] Add scale and rotate
+   - [ ] Add opacity handling
+   - [ ] Add delay support
+
+2. Animation Controls (Following Sprint)
+   - [ ] Implement stop/reset
+   - [ ] Add pause/resume functionality
+   - [ ] Add cancellation support
+
+3. Advanced Features (Future Sprint)
+   - [ ] Add spring animations
+   - [ ] Add gesture support
+   - [ ] Add variants system
+
+## Current Implementation Strengths
+- ✅ Solid foundation for value animations
+- ✅ Cross-platform support (Web/Desktop)
+- ✅ Clean API design
+- ✅ Good state management
+- ✅ Performance consideration (frame rate control)
+
+## Next Immediate Tasks
+1. Transform Properties
+```rust
+// Target API
+Motion::new(0.0)
+    .x(100)
+    .y(50)
+    .scale(1.2)
+    .rotate(45.0)
+    .opacity(0.8)
+```
+
+2. Animation Controls
+```rust
+// Target API
+let mut motion = use_motion(...);
+motion.start();
+motion.pause();
+motion.resume();
+motion.stop();
+```
+
+3. Delay Support
+```rust
+// Target API
+Motion::new(0.0)
+    .to(100.0)
+    .delay(Duration::from_millis(500))
+```
 
 ### Variants
 - [ ] Named animation states

@@ -28,7 +28,7 @@ futures-channel = { version = "0.3", default-features = false }
 tokio = { version = "1", optional = true, features = ["time"] }
 [features]
 default = ["desktop"]
-wasm = ["wasm-bindgen", "web-sys", "instant/wasm-bindgen"]
+web = ["wasm-bindgen", "web-sys", "instant/wasm-bindgen"]
 desktop = ["tokio", "instant"]
 
 
