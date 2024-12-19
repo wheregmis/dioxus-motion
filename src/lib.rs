@@ -108,6 +108,11 @@ impl UseMotion {
         self.channel.send(());
     }
 
+    /// Stop the animation
+    pub fn stop(&mut self) {
+        *self.running_state.write() = false;
+    }
+
     /// Get the current animation state
     pub fn state(&self) -> AnimationState {
         self.completion_state.read().clone()
