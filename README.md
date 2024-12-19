@@ -1,3 +1,6 @@
+> [!CAUTION]
+> This library is under heavy development! It is not ready to use. Proceed at your own risk.
+
 # Dioxus Motion 🚀
 
 A lightweight, cross-platform animation library for Dioxus, designed to bring smooth, flexible animations to your Rust web, desktop, and mobile applications.
