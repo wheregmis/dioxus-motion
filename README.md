@@ -46,11 +46,11 @@ Choose the right feature for your platform:
 
 ```rust
 use dioxus::prelude::*;
-use dioxus_motion::{Motion, use_motion};
+use dioxus_motion::{Motion, use_value_animation};
 use instant::Duration;
 
 fn AnimatedComponent() -> Element {
-    let mut motion = use_motion(
+    let mut motion = use_value_animation(
         Motion::new(0.0)
             .to(100.0)
             .duration(Duration::from_secs(2))
@@ -104,11 +104,11 @@ fn AnimatedComponent() -> Element {
 
 ```rust
 use dioxus::prelude::*;
-use dioxus_motion::{Motion, use_motion};
+use dioxus_motion::{Motion, use_value_animation};
 use instant::Duration;
 
 fn LoopingAnimation() -> Element {
-    let mut motion = use_motion(
+    let mut motion = use_value_animation(
         Motion::new(0.0)
             .to(100.0)
             .duration(Duration::from_secs(1))
@@ -137,7 +137,7 @@ fn LoopingAnimation() -> Element {
 ```rust
 use easer::functions::Bounce;
 
-   let mut width_motion = use_motion(
+   let mut width_motion = use_value_animation(
         Motion::new(0.0)
             .to(100.0)
             .duration(Duration::from_millis(1500))

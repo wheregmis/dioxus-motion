@@ -3,7 +3,8 @@ use dioxus_motion::prelude::*;
 
 #[component]
 pub fn TimerComponent() -> Element {
-    let mut timer = use_motion(Motion::new(10.0).to(0.0).duration(Duration::from_secs(10)));
+    let mut timer =
+        use_value_animation(Motion::new(10.0).to(0.0).duration(Duration::from_secs(10)));
     let button_style =
         "padding: 10px 20px; color: white; border: none; border-radius: 4px; margin: 0 5px;";
 

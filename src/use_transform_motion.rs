@@ -1,4 +1,4 @@
-use crate::{motion::Motion, prelude::AnimationMode, use_motion, UseMotion};
+use crate::{motion::Motion, prelude::AnimationMode, use_value_animation, UseMotion};
 
 #[derive(Clone, Copy, PartialEq)]
 pub struct Transform {
@@ -32,11 +32,13 @@ pub struct TransformMotion {
 impl TransformMotion {
     fn new(initial: Transform, target: Transform, config: AnimationMode) -> Self {
         TransformMotion {
-            x: use_motion(Motion::new(initial.x).to(target.x).mode(config)),
-            y: use_motion(Motion::new(initial.y).to(target.y).mode(config)),
-            scale: use_motion(Motion::new(initial.scale).to(target.scale).mode(config)),
-            rotate: use_motion(Motion::new(initial.rotate).to(target.rotate).mode(config)),
-            opacity: use_motion(Motion::new(initial.opacity).to(target.opacity).mode(config)),
+            x: use_value_animation(Motion::new(initial.x).to(target.x).mode(config)),
+            y: use_value_animation(Motion::new(initial.y).to(target.y).mode(config)),
+            scale: use_value_animation(Motion::new(initial.scale).to(target.scale).mode(config)),
+            rotate: use_value_animation(Motion::new(initial.rotate).to(target.rotate).mode(config)),
+            opacity: use_value_animation(
+                Motion::new(initial.opacity).to(target.opacity).mode(config),
+            ),
         }
     }
 

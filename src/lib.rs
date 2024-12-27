@@ -17,7 +17,7 @@ pub mod prelude {
     pub use crate::animation::{AnimationMode, AnimationState};
     pub use crate::motion::Motion;
     pub use crate::spring::Spring;
-    pub use crate::use_motion;
+    pub use crate::use_value_animation;
     pub use crate::Duration;
     pub use crate::UseMotion;
 }
@@ -110,7 +110,7 @@ impl UseMotion {
 }
 
 // Rename existing to be more specific
-pub fn use_motion(config: Motion) -> UseMotion {
+pub fn use_value_animation(config: Motion) -> UseMotion {
     let mut value = use_signal(|| config.initial);
     let mut running_state = use_signal(|| false);
     let mut completion_state = use_signal(|| AnimationState::Idle);

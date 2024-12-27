@@ -3,14 +3,14 @@ use dioxus_motion::prelude::*;
 
 #[component]
 pub fn SpringBoxComponent() -> Element {
-    let mut spring_x = use_motion(Motion::new(0.0).to(300.0).spring(Spring {
+    let mut spring_x = use_value_animation(Motion::new(0.0).to(300.0).spring(Spring {
         stiffness: 80.0,
         damping: 10.0,
         mass: 1.0,
         velocity: 0.0,
     }));
 
-    let mut spring_scale = use_motion(Motion::new(1.0).to(1.5).spring(Spring {
+    let mut spring_scale = use_value_animation(Motion::new(1.0).to(1.5).spring(Spring {
         stiffness: 120.0,
         damping: 8.0,
         mass: 0.8,
