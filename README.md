@@ -7,7 +7,7 @@ A lightweight, cross-platform animation library for Dioxus, designed to bring sm
 
 ## ✨ Features
 
-- **Cross-Platform Support**: Works on web (WASM), desktop, and mobile (I Guess ?)
+- **Cross-Platform Support**: Works on web (WASM), desktop, and mobile
 - **Flexible Animation Configuration**
 - **Custom Easing Functions**
 - **Modular Feature Setup**
@@ -29,7 +29,7 @@ dioxus-motion = {
 default = ["web"]
 web = ["dioxus/web", "dioxus-motion/wasm"]
 desktop = ["dioxus/desktop", "dioxus-motion/desktop"]
-mobile = ["dioxus/mobile"]
+mobile = ["dioxus/mobile", "dioxus-motion/desktop"]
 ```
 
 ## 🌐 Platform Support
@@ -37,13 +37,12 @@ mobile = ["dioxus/mobile"]
 Choose the right feature for your platform:
 
 - `web`: For web applications using WASM
-- `desktop`: For desktop applications
-- `mobile`: For mobile applications
+- `desktop`: For desktop and mobile applications
 - `default`: Web support (if no feature specified)
 
 ## 🚀 Quick Start
 
-### Basic Web Animation
+### Basic Animation
 
 ```rust
 use dioxus::prelude::*;
@@ -131,10 +130,6 @@ fn LoopingAnimation() -> Element {
 }
 ```
 
-### Desktop and Mobile Usage
-
-The same code works across platforms - just enable the appropriate feature.
-
 ## 🎨 Advanced Usage
 
 ### Custom Easing and Completion Callback
@@ -179,7 +174,7 @@ dioxus-motion = {
 }
 ```
 
-### Desktop Project
+### Desktop and Mobile Project
 ```toml
 [dependencies]
 dioxus = "0.4"

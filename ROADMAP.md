@@ -13,12 +13,11 @@
   ```
 - [x] Duration control
 - [x] Easing functions
-<-I think for the below option, we can have another crate as a layer which will abstract and build elements based on value, cause its just value that we put on these attributes->
-- [ ] Common animation properties
-  - [ ] x, y (transform)
-  - [ ] scale
-  - [ ] rotate
-  - [ ] opacity
+- [x] Common animation properties
+  - [x] x, y (transform)
+  - [x] scale
+  - [x] rotate
+  - [x] opacity
 
 
 
@@ -47,85 +46,6 @@
 - ✅ Clean API design
 - ✅ Good state management
 - ✅ Performance consideration (frame rate control)
-
-## Next Immediate Tasks
-1. Transform Properties
-```rust
-// Target API
-Motion::new(0.0)
-    .x(100)
-    .y(50)
-    .scale(1.2)
-    .rotate(45.0)
-    .opacity(0.8)
-```
-
-2. Animation Controls
-```rust
-// Target API
-let mut motion = use_motion(...);
-motion.start();
-motion.stop();
-motion.resume();
-motion.reset();
-```
-
-3. Delay Support
-```rust
-// Target API
-Motion::new(0.0)
-    .to(100.0)
-    .delay(Duration::from_millis(500))
-```
-
-### Variants Taking the scope outside of core motion and provide maybe some overlay for it?
-- [ ] Named animation states
-  ```rust
-  let variants = AnimationVariants::new()
-      .add("open", Motion::new().scale(1).opacity(1))
-      .add("closed", Motion::new().scale(0).opacity(0));
-  
-  rsx! {
-      div {
-          variants: variants,
-          animate: "open",
-      }
-  }
-  ```
-
-
-## Example API (Target)  Taking the scope outside of core motion and provide maybe some overlay for it?
-```rust
-use dioxus_motion::prelude::*;
-
-fn AnimatedComponent() -> Element {
-    rsx! {
-        // Simple animation
-        div {
-            animate: Motion::new()
-                .x(100)
-                .opacity(0.5)
-                .duration(300),
-            "Animated div"
-        }
-
-        // Hover animation
-        button {
-            whileHover: Motion::new()
-                .scale(1.1)
-                .duration(200),
-            "Hover me"
-        }
-
-        // Variants
-        div {
-            variants: variants,
-            animate: is_open.then(|| "open").unwrap_or("closed"),
-            "Toggle me"
-        }
-    }
-}
-```
 
 ## Success Goals
 - Simple, intuitive API
