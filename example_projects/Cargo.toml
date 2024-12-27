@@ -10,6 +10,7 @@ edition = "2021"
 dioxus = { version = "0.6.1", features = [] }
 dioxus-motion = { path = "../", optional = true }
 easer = "0.3.0"
+dioxus-use-mounted = "0.3.0-alpha.4"
 
 [features]
 default = ["web"]
@@ -22,9 +23,13 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop"]
 [profile.wasm-dev]
 inherits = "dev"
 opt-level = 1
+[profile.wasm-dev.package."*"]
+opt-level = 3
 
 [profile.server-dev]
 inherits = "dev"
+[profile.server-dev.package."*"]
+opt-level = 3
 
 [profile.android-dev]
 inherits = "dev"

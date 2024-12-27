@@ -13,6 +13,22 @@ A lightweight, cross-platform animation library for Dioxus, designed to bring sm
 - **Modular Feature Setup**
 - **Simple, Intuitive API**
 
+File Structure
+src/
+  ├── lib.rs         (main exports)
+  ├── motion.rs      (Motion struct and impl)
+  ├── spring.rs      (Spring physics)
+  ├── animation.rs   (AnimationState and AnimationMode)
+  ├── platform/      
+  │   ├── mod.rs     (platform exports)
+  │   ├── web.rs     (web implementation)
+  │   └── desktop.rs (desktop implementation)
+  └── tests/
+      ├── mod.rs     (test exports)
+      ├── helpers.rs (test utilities)
+      └── motion.rs  (motion tests)
+
+
 ## 🛠 Installation
 
 Add to your `Cargo.toml`:
