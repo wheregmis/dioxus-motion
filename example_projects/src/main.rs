@@ -1,9 +1,62 @@
 use dioxus::prelude::*;
-use dioxus_motion::{use_motion, AnimationState, Duration, Motion, Spring};
+use dioxus_motion::{
+    animation::Tween,
+    prelude::*,
+    use_transform_motion::{use_transform_animation, Transform},
+};
 use easer::functions::{Bounce, Easing};
+use example_projects::components::{
+    motion_div::DragConstraints, MotionDiv, SpringBoxComponent, TimerComponent,
+};
 
 fn main() {
     launch(app);
+}
+
+#[component]
+fn BasicTransformExample() -> Element {
+    let mut transform = use_transform_animation(
+        Transform::default(),
+        Transform {
+            x: 0.0,
+            y: 0.0,
+            scale: 2.2,
+            rotate: 360.0,
+            opacity: 1.0,
+        },
+        AnimationMode::Tween(Tween {
+            duration: dioxus_motion::Duration::from_secs(3),
+            easing: easer::functions::Linear::ease_in,
+        }),
+    );
+
+    rsx! {
+        div { style: "width: 100%;
+                   height: 100vh; 
+                   display: flex; 
+                   justify-content: center; 
+                   align-items: center; 
+                   background: #f0f0f0;",
+
+            div {
+                style: "width: 200px;
+                       height: 200px;
+                       background: #2196F3;
+                       border-radius: 8px;
+                       display: flex;
+                       justify-content: center;
+                       align-items: center;
+                       color: white;
+                       font-size: 20px;
+                       transform: translate({transform.x()}px, {transform.y()}px)
+                                scale({transform.scale()})
+                                rotate({transform.rotate()}deg);
+                       opacity: {transform.opacity()};",
+                onmounted: move |_| transform.start(),
+                "Basic Animation"
+            }
+        }
+    }
 }
 
 fn app() -> Element {
@@ -32,128 +85,16 @@ fn app() -> Element {
                 }
                 SpringBoxComponent {}
             }
-        }
-    }
-}
 
-#[component]
-fn TimerComponent() -> Element {
-    let mut timer = use_motion(Motion::new(10.0).to(0.0).duration(Duration::from_secs(10)));
-    let button_style =
-        "padding: 10px 20px; color: white; border: none; border-radius: 4px; margin: 0 5px;";
+            // Spacing between sections
+            div { style: "margin: 40px 0;" }
 
-    // Get state color based on animation state
-    let state_color = match timer.state() {
-        AnimationState::Idle => "#9E9E9E",
-        AnimationState::Running => "#4CAF50",
-        AnimationState::Completed => "#2196F3",
-    };
-
-    rsx! {
-        div {
-            // Timer Display
-            div { style: "text-align: center; font-size: 48px; margin-bottom: 20px;",
-                "Timer: {timer.value().ceil() as i32}"
-            }
-
-            // Animation State Display
-            div { style: "text-align: center; margin-bottom: 20px; font-size: 18px; color: {state_color}; font-weight: bold;",
-                match timer.state() {
-                    AnimationState::Idle => "Idle",
-                    AnimationState::Running => "Running",
-                    AnimationState::Completed => "Completed",
+            // Transform Animation Section
+            div {
+                h2 { style: "text-align: center; color: #9C27B0; margin-bottom: 20px;",
+                    "Transform Animation - Basic Example"
                 }
-            }
-
-            // Timer Controls
-            div { style: "display: flex; gap: 10px; justify-content: center; margin-bottom: 40px;",
-                button {
-                    onclick: move |_| timer.start(),
-                    style: "{button_style} background: #4CAF50;",
-                    "Start"
-                }
-                button {
-                    onclick: move |_| timer.stop(),
-                    style: "{button_style} background: #f44336;",
-                    "Stop"
-                }
-                button {
-                    onclick: move |_| timer.resume(),
-                    style: "{button_style} background: #2196F3;",
-                    "Resume"
-                }
-                button {
-                    onclick: move |_| timer.reset(),
-                    style: "{button_style} background: #9C27B0;",
-                    "Reset"
-                }
-
-                button {
-                    onclick: move |_| timer.reverse(),
-                    style: "{button_style} background: #FF9800;",
-                    "Reverse"
-                }
-
-            }
-        }
-    }
-}
-
-#[component]
-fn SpringBoxComponent() -> Element {
-    let mut spring_x = use_motion(Motion::new(0.0).to(300.0).spring(Spring {
-        stiffness: 80.0,
-        damping: 10.0,
-        mass: 1.0,
-        velocity: 0.0,
-    }));
-
-    let mut spring_scale = use_motion(Motion::new(1.0).to(1.5).spring(Spring {
-        stiffness: 120.0,
-        damping: 8.0,
-        mass: 0.8,
-        velocity: 0.0,
-    }));
-
-    rsx! {
-        div {
-            // Animated Box
-            div { style: "position: relative; height: 200px; background: #f0f0f0; border-radius: 8px; overflow: hidden;",
-                div { style: "position: absolute;
-                           width: 100px; 
-                           height: 100px; 
-                           background: linear-gradient(45deg, #2196F3, #00BCD4); 
-                           border-radius: 8px; 
-                           top: 50%; 
-                           transform: translateY(-50%) translateX({spring_x.value()}px) scale({spring_scale.value()})" }
-            }
-
-            // Spring Animation Controls
-            div { style: "display: flex; gap: 10px; justify-content: center; margin-top: 20px;",
-                button {
-                    onclick: move |_| {
-                        spring_x.start();
-                        spring_scale.start();
-                    },
-                    style: "padding: 10px 20px; background: #2196F3; color: white; border: none; border-radius: 4px;",
-                    "Animate Box"
-                }
-                button {
-                    onclick: move |_| {
-                        spring_x.reset();
-                        spring_scale.reset();
-                    },
-                    style: "padding: 10px 20px; background: #9C27B0; color: white; border: none; border-radius: 4px;",
-                    "Reset Box"
-                }
-                button {
-                    onclick: move |_| {
-                        spring_x.reverse();
-                        spring_scale.reverse();
-                    },
-                    style: "padding: 10px 20px; background: #9C27B0; color: white; border: none; border-radius: 4px;",
-                    "Reverse Box"
-                }
+                BasicTransformExample {}
             }
         }
     }

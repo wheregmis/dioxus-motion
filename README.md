@@ -13,6 +13,22 @@ A lightweight, cross-platform animation library for Dioxus, designed to bring sm
 - **Modular Feature Setup**
 - **Simple, Intuitive API**
 
+File Structure
+src/
+  ├── lib.rs         (main exports)
+  ├── motion.rs      (Motion struct and impl)
+  ├── spring.rs      (Spring physics)
+  ├── animation.rs   (AnimationState and AnimationMode)
+  ├── platform/      
+  │   ├── mod.rs     (platform exports)
+  │   ├── web.rs     (web implementation)
+  │   └── desktop.rs (desktop implementation)
+  └── tests/
+      ├── mod.rs     (test exports)
+      ├── helpers.rs (test utilities)
+      └── motion.rs  (motion tests)
+
+
 ## 🛠 Installation
 
 Add to your `Cargo.toml`:
@@ -63,6 +79,68 @@ fn AnimatedComponent() -> Element {
             button { 
                 onclick: move |_| motion.start(), 
                 "Animate" 
+            }
+        }
+    }
+}
+```
+
+### Basic Transform Animation
+
+```rust
+use dioxus::prelude::*;
+use dioxus_motion::{Transform, use_transform_animation};
+
+fn AnimatedComponent() -> Element {
+    let mut transform = use_transform_animation(
+        Transform::default(),
+        Transform {
+            x: 100.0,
+            y: 50.0,
+            scale: 1.5,
+            rotate: 360.0,
+            opacity: 0.8,
+        },
+        AnimationMode::Tween(Tween {
+            duration: Duration::from_secs(2),
+            easing: easer::functions::Bounce::ease_out,
+        }),
+    );
+
+    rsx! {
+        div {
+            style: "{transform.style()}",
+            onmounted: move |_| transform.start(),
+            "Animated Content"
+        }
+    }
+}
+```
+
+### Looping Animation
+
+```rust
+use dioxus::prelude::*;
+use dioxus_motion::{Motion, use_motion};
+use instant::Duration;
+
+fn LoopingAnimation() -> Element {
+    let mut motion = use_motion(
+        Motion::new(0.0)
+            .to(100.0)
+            .duration(Duration::from_secs(1))
+    );
+
+    use_effect(move || {
+        motion.loop_animation();
+    });
+
+    rsx! {
+        div {
+            "Value: {motion.value()}",
+            button { 
+                onclick: move |_| motion.stop_loop(), 
+                "Stop Animation" 
             }
         }
     }

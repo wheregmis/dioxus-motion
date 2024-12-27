@@ -12,6 +12,7 @@ keywords = ["dioxus", "animations"]
 categories = ["Graphics", "Animation"]
 
 [dependencies]
+dioxus-lib = "*"
 easer = "0.3.0"
 dioxus-hooks = "0.6.1"
 futures-util = { version = "0.3.31", default-features = false }
@@ -49,3 +50,6 @@ inherits = "dev"
 
 [profile.android-dev]
 inherits = "dev"
+
+[workspace]
+members = [".", "example_projects"]
