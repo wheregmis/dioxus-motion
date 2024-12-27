@@ -43,11 +43,6 @@ pub fn TimerComponent() -> Element {
                     "Stop"
                 }
                 button {
-                    onclick: move |_| timer.resume(),
-                    style: "{button_style} background: #2196F3;",
-                    "Resume"
-                }
-                button {
                     onclick: move |_| timer.reset(),
                     style: "{button_style} background: #9C27B0;",
                     "Reset"
@@ -57,6 +52,12 @@ pub fn TimerComponent() -> Element {
                     onclick: move |_| timer.reverse(),
                     style: "{button_style} background: #FF9800;",
                     "Reverse"
+                }
+
+                button {
+                    onclick: move |_| timer.loop_animation(),
+                    style: "{button_style} background: #2196F3;",
+                    "Loop"
                 }
 
             }

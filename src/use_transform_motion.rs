@@ -1,6 +1,6 @@
 use crate::{motion::Motion, prelude::AnimationMode, use_motion, UseMotion};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct Transform {
     pub x: f32,
     pub y: f32,
@@ -83,14 +83,6 @@ impl TransformMotion {
         self.opacity.stop();
     }
 
-    pub fn resume(&mut self) {
-        self.x.resume();
-        self.y.resume();
-        self.scale.resume();
-        self.rotate.resume();
-        self.opacity.resume();
-    }
-
     pub fn reset(&mut self) {
         self.x.reset();
         self.y.reset();
@@ -105,6 +97,20 @@ impl TransformMotion {
         self.scale.reverse();
         self.rotate.reverse();
         self.opacity.reverse();
+    }
+
+    pub fn animate_to(&mut self, target: Transform) {
+        // Update the target transform
+        self.x.config.target = target.x;
+        self.y.config.target = target.y;
+        self.scale.config.target = target.scale;
+        self.rotate.config.target = target.rotate;
+        self.opacity.config.target = target.opacity;
+
+        // Reset animation progress
+
+        // Start the animation
+        self.start();
     }
 }
 

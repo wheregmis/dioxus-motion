@@ -45,9 +45,19 @@ impl Motion {
     }
 
     /// Set the duration of the animation
+    fn validate_duration(duration: Duration) -> Duration {
+        let millis = duration.as_millis();
+        if millis == 0 || millis > u64::MAX as u128 {
+            Duration::from_millis(300) // Default fallback
+        } else {
+            duration
+        }
+    }
+
     pub fn duration(mut self, duration: Duration) -> Self {
-        self.duration = duration;
-        self.mode = AnimationMode::Tween(Tween::new(duration));
+        let safe_duration = Self::validate_duration(duration);
+        self.duration = safe_duration;
+        self.mode = AnimationMode::Tween(Tween::new(safe_duration));
         self
     }
 

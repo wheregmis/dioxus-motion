@@ -29,7 +29,6 @@ pub type Time = WebTime;
 
 #[cfg(not(feature = "web"))]
 use platform::DesktopTime;
-use use_transform_motion::TransformMotion;
 
 #[cfg(not(feature = "web"))]
 pub type Time = DesktopTime;
@@ -44,6 +43,7 @@ pub struct UseMotion {
     config: Motion,
     channel: Coroutine<()>,
     reverse_state: Signal<bool>,
+    loop_state: Signal<bool>, // Add loop state
 }
 
 impl UseMotion {
@@ -67,17 +67,13 @@ impl UseMotion {
         *self.completion_state.write() = AnimationState::Idle;
     }
 
-    pub fn resume(&mut self) {
-        *self.running_state.write() = true;
-        self.channel.send(());
-    }
-
     pub fn reset(&mut self) {
         *self.value.write() = self.config.initial;
         *self.completion_state.write() = AnimationState::Idle;
         *self.running_state.write() = false;
         *self.elapsed_time.write() = Duration::from_secs(0);
         *self.reverse_state.write() = false;
+        *self.loop_state.write() = false;
     }
 
     pub fn reverse(&mut self) {
@@ -102,6 +98,15 @@ impl UseMotion {
     pub fn is_running(&self) -> bool {
         *self.running_state.read()
     }
+
+    pub fn loop_animation(&mut self) {
+        *self.loop_state.write() = true;
+        self.start();
+    }
+
+    pub fn stop_loop(&mut self) {
+        *self.loop_state.write() = false;
+    }
 }
 
 // Rename existing to be more specific
@@ -111,64 +116,61 @@ pub fn use_motion(config: Motion) -> UseMotion {
     let mut completion_state = use_signal(|| AnimationState::Idle);
     let mut elapsed_time = use_signal(|| Duration::from_secs(0));
     let reverse_state = use_signal(|| false);
+    let loop_state = use_signal(|| false);
 
     let channel = use_coroutine(move |mut rx| async move {
         while rx.next().await.is_some() {
-            Time::delay(config.delay).await;
+            loop {
+                match config.mode {
+                    AnimationMode::Tween(tween) => {
+                        Time::delay(config.delay).await;
+                        let start_time = Time::now();
+                        let start_value = *value.peek();
+                        let end_value = if *reverse_state.read() {
+                            config.initial
+                        } else {
+                            config.target
+                        };
+                        let initial_elapsed = *elapsed_time.read();
+                        completion_state.set(AnimationState::Running);
+                        running_state.set(true);
 
-            match config.mode {
-                AnimationMode::Tween(tween) => {
-                    let start_time = Time::now();
-                    let start_value = *value.peek();
-                    let end_value = if *reverse_state.read() {
-                        config.initial
-                    } else {
-                        config.target
-                    };
-                    let total_change = (end_value - start_value).abs();
-                    let total_frames = total_change.ceil() as u64;
-                    let initial_elapsed = *elapsed_time.read();
+                        while *running_state.read() {
+                            let current_elapsed = Time::now()
+                                .duration_since(start_time)
+                                .saturating_add(initial_elapsed);
+                            elapsed_time.set(current_elapsed);
 
-                    completion_state.set(AnimationState::Running);
-                    running_state.set(true);
+                            if current_elapsed >= tween.duration {
+                                break;
+                            }
 
-                    while *running_state.read() {
-                        let current_elapsed =
-                            Time::now().duration_since(start_time) + initial_elapsed;
-                        elapsed_time.set(current_elapsed);
+                            // Calculate progress as a ratio between 0 and 1
+                            let progress = (current_elapsed.as_secs_f64()
+                                / tween.duration.as_secs_f64())
+                            .clamp(0.0, 1.0);
 
-                        if current_elapsed >= tween.duration {
-                            break;
+                            // Apply easing function directly with progress
+                            let current = (tween.easing)(
+                                progress as f32,
+                                start_value,
+                                end_value - start_value,
+                                1.0,
+                            );
+                            value.set(current);
+
+                            // Simplified frame delay calculation
+                            let frame_delay =
+                                if current_elapsed + Duration::from_millis(16) >= tween.duration {
+                                    tween.duration.saturating_sub(current_elapsed)
+                                } else {
+                                    Duration::from_millis(16) // Target ~60 FPS
+                                };
+
+                            Time::delay(frame_delay.max(Duration::from_millis(1))).await;
                         }
 
-                        // Calculate remaining duration
-                        let remaining_duration = tween.duration - current_elapsed;
-
-                        let frame_progress = (current_elapsed.as_secs_f64()
-                            / tween.duration.as_secs_f64())
-                            * total_frames as f64;
-                        let current_frame = frame_progress.floor() as u64;
-                        let progress = current_frame as f32 / total_frames as f32;
-                        let current =
-                            (tween.easing)(progress, start_value, end_value - start_value, 1.0);
-
-                        value.set(current);
-
-                        // Calculate frame delay based on remaining duration
-                        let frame_delay = if remaining_duration >= Duration::from_secs(2) {
-                            Duration::from_secs_f64(
-                                remaining_duration.as_secs_f64()
-                                    / (total_frames - current_frame) as f64,
-                            )
-                        } else {
-                            Duration::from_millis(16)
-                        };
-
-                        Time::delay(frame_delay).await;
-                    }
-
-                    // Ensure final value is set
-                    if Time::now().duration_since(start_time) + initial_elapsed >= tween.duration {
+                        // Ensure final value is set
                         value.set(end_value);
                         elapsed_time.set(Duration::from_secs(0));
                         running_state.set(false);
@@ -178,40 +180,48 @@ pub fn use_motion(config: Motion) -> UseMotion {
                             f();
                         }
                     }
-                }
-                AnimationMode::Spring(spring) => {
-                    let mut velocity = spring.velocity;
-                    let mut current = *value.peek();
-                    let target = if *reverse_state.read() {
-                        config.initial
-                    } else {
-                        config.target
-                    };
+                    AnimationMode::Spring(spring) => {
+                        let mut velocity = spring.velocity;
+                        let mut current = *value.peek();
+                        let target = if *reverse_state.read() {
+                            config.initial
+                        } else {
+                            config.target
+                        };
 
-                    completion_state.set(AnimationState::Running);
-                    running_state.set(true);
+                        completion_state.set(AnimationState::Running);
+                        running_state.set(true);
 
-                    while *running_state.read() {
-                        let dt = 1.0 / 60.0; // 60 FPS
+                        while *running_state.read() {
+                            let dt = 1.0 / 60.0; // 60 FPS
 
-                        current =
-                            Motion::update_spring(current, target, &mut velocity, &spring, dt);
+                            current =
+                                Motion::update_spring(current, target, &mut velocity, &spring, dt);
 
-                        value.set(current);
+                            value.set(current);
 
-                        // Check if spring has settled
-                        if velocity.abs() < 0.01 && (current - target).abs() < 0.01 {
-                            break;
+                            // Check if spring has settled
+                            if velocity.abs() < 0.01 && (current - target).abs() < 0.01 {
+                                break;
+                            }
+
+                            Time::delay(Duration::from_millis(5)).await;
                         }
 
-                        Time::delay(Duration::from_millis(5)).await;
+                        // Ensure we reach exact target
+                        value.set(target);
+                        running_state.set(false);
+                        completion_state.set(AnimationState::Completed);
                     }
-
-                    // Ensure we reach exact target
-                    value.set(target);
-                    running_state.set(false);
-                    completion_state.set(AnimationState::Completed);
                 }
+
+                if *loop_state.read() {
+                    // Reset for next loop iteration
+                    *value.write() = config.initial;
+                    *elapsed_time.write() = Duration::from_secs(0);
+                    continue;
+                }
+                break;
             }
         }
     });
@@ -224,5 +234,6 @@ pub fn use_motion(config: Motion) -> UseMotion {
         config,
         channel,
         reverse_state,
+        loop_state,
     }
 }
