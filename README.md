@@ -49,7 +49,7 @@ use dioxus::prelude::*;
 use dioxus_motion::{Motion, use_value_animation};
 use instant::Duration;
 
-fn AnimatedComponent() -> Element {
+fn ValueAnimation() -> Element {
     let mut motion = use_value_animation(
         Motion::new(0.0)
             .to(100.0)
@@ -59,22 +59,19 @@ fn AnimatedComponent() -> Element {
     rsx! {
         div {
             "Value: {motion.value()}",
-            button { 
-                onclick: move |_| motion.start(), 
-                "Animate" 
-            }
+            button { onclick: move |_| motion.start(), "Animate" }
         }
     }
 }
 ```
 
-### Basic Transform Animation
+### Transform Animation with Spring
 
 ```rust
 use dioxus::prelude::*;
 use dioxus_motion::{Transform, use_transform_animation};
 
-fn AnimatedComponent() -> Element {
+fn TransformAnimation() -> Element {
     let mut transform = use_transform_animation(
         Transform::default(),
         Transform {
@@ -83,6 +80,73 @@ fn AnimatedComponent() -> Element {
             scale: 1.5,
             rotate: 360.0,
             opacity: 0.8,
+        },
+        AnimationMode::Spring(Spring {
+            stiffness: 100.0,
+            damping: 10.0,
+            mass: 1.0,
+            velocity: 0.0,
+        }),
+    );
+
+    rsx! {
+        div {
+            style: "{transform.style()}",
+            onmounted: move |_| transform.loop_animation(),
+            "Animated Content"
+        }
+    }
+}
+```
+
+### Advanced Value Animation
+
+```rust
+use dioxus::prelude::*;
+use dioxus_motion::prelude::*;
+
+fn AdvancedValueAnimation() -> Element {
+    let mut motion = use_value_animation(
+        Motion::new(0.0)
+            .to(100.0)
+            .duration(Duration::from_secs(1))
+            .spring(Spring {
+                stiffness: 100.0,
+                damping: 10.0,
+                mass: 1.0,
+                velocity: 0.0,
+            })
+            .on_complete(|| println!("Animation complete!"))
+    );
+
+    use_effect(move || {
+        motion.loop_animation();
+    });
+
+    rsx! {
+        div {
+            "Value: {motion.value()}",
+            button { onclick: move |_| motion.stop_loop(), "Stop" }
+        }
+    }
+}
+```
+
+### Advanced Transform Animation
+
+```rust
+use dioxus::prelude::*;
+use dioxus_motion::{Transform, use_transform_animation};
+
+fn AdvancedTransformAnimation() -> Element {
+    let mut transform = use_transform_animation(
+        Transform::default(),
+        Transform {
+            x: 200.0,
+            y: 100.0,
+            scale: 2.0,
+            rotate: 720.0,
+            opacity: 0.5,
         },
         AnimationMode::Tween(Tween {
             duration: Duration::from_secs(2),
@@ -94,64 +158,47 @@ fn AnimatedComponent() -> Element {
         div {
             style: "{transform.style()}",
             onmounted: move |_| transform.start(),
-            "Animated Content"
+            onmouseenter: move |_| transform.reverse(),
+            onmouseleave: move |_| transform.start(),
+            "Interactive Animation"
         }
     }
 }
-```
-
-### Looping Animation
-
-```rust
-use dioxus::prelude::*;
-use dioxus_motion::{Motion, use_value_animation};
-use instant::Duration;
-
-fn LoopingAnimation() -> Element {
-    let mut motion = use_value_animation(
-        Motion::new(0.0)
-            .to(100.0)
-            .duration(Duration::from_secs(1))
-    );
-
-    use_effect(move || {
-        motion.loop_animation();
-    });
-
-    rsx! {
-        div {
-            "Value: {motion.value()}",
-            button { 
-                onclick: move |_| motion.stop_loop(), 
-                "Stop Animation" 
-            }
-        }
-    }
-}
-```
-
-## 🎨 Advanced Usage
-
-### Custom Easing and Completion Callback
-
-```rust
-use easer::functions::Bounce;
-
-   let mut width_motion = use_value_animation(
-        Motion::new(0.0)
-            .to(100.0)
-            .duration(Duration::from_millis(1500))
-            .easing(Bounce::ease_in_out)
-            .on_complete(|| println!("Complex animation complete!")),
-    );
 ```
 
 ## 🛠 Configuration Options
 
-- `.to(value)`: Set target animation value
-- `.duration(Duration)`: Set animation duration
-- `.easing(function)`: Specify custom easing function
-- `.on_complete(callback)`: Add completion callback
+### 🎮 Value Animation Methods
+#### Core Methods
+- 🎯 `.to(value: f32)` - Set target animation value
+- ⏱️ `.duration(Duration)` - Set animation duration
+- 🌊 `.spring(Spring)` - Configure spring physics
+- ✨ `.on_complete(fn)` - Add completion callback
+
+#### Control Methods
+- ▶️ `.start()` - Start the animation
+- ⏸️ `.stop()` - Pause the animation
+- 🔄 `.reset()` - Reset to initial state
+- 🔁 `.loop_animation()` - Start continuous loop
+- ⏹️ `.stop_loop()` - Stop loop animation
+
+### 🎨 Transform Animation Methods
+
+#### Properties
+- 📍 `.x()` - Get horizontal position
+- 📐 `.y()` - Get vertical position
+- 🔍 `.scale()` - Get scale factor
+- 🔄 `.rotate()` - Get rotation angle
+- 👻 `.opacity()` - Get opacity value
+
+#### Control Methods
+- ▶️ `.start()` - Start transform animation
+- ⏸️ `.stop()` - Stop transform animation
+- 🔄 `.reset()` - Reset to initial transform
+- ⏮️ `.reverse()` - Reverse animation direction
+- 🔁 `.loop_animation()` - Start continuous loop
+- ⏹️ `.stop_loop()` - Stop loop animation
+- 🎨 `.style()` - Get current CSS transform string
 
 ## 🌈 Supported Easing Functions
 
@@ -177,7 +224,7 @@ dioxus-motion = {
 ### Desktop and Mobile Project
 ```toml
 [dependencies]
-dioxus = "0.4"
+dioxus = "0.6.1"
 dioxus-motion = { 
     git = "https://github.com/wheregmis/dioxus-motion.git", 
     features = ["desktop"] 
