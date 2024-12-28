@@ -12,7 +12,7 @@ keywords = ["dioxus", "animations"]
 categories = ["Graphics", "Animation"]
 
 [dependencies]
-dioxus-lib = "*"
+dioxus-lib = "0.6.1"
 easer = "0.3.0"
 dioxus-hooks = "0.6.1"
 futures-util = { version = "0.3.31", default-features = false }
@@ -34,7 +34,7 @@ web = ["wasm-bindgen", "web-sys", "instant/wasm-bindgen"]
 desktop = ["tokio", "instant"]
 
 [dev-dependencies]
-dioxus = { version = "*" }
+dioxus = { version = "0.6.1" }
 futures = { version = "0.3.31" }
 tokio = { version = "1", features = ["full"] }
 
