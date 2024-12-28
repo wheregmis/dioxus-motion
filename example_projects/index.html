@@ -6,8 +6,9 @@
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="UTF-8" />
-    <link rel="preload" href="/./wasm/example_projects_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
-    <link rel="preload" href="/./wasm/example_projects_bg.js" as="script">
+    <link rel="preload" href="/./example_projects/wasm/example_projects_bg.wasm" as="fetch" type="application/wasm"
+        crossorigin="">
+    <link rel="preload" href="/./example_projects/wasm/example_projects_bg.js" as="script">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -15,9 +16,9 @@
     <div id="main"></div>
     <script>
         // We can't use a module script here because we need to start the script immediately when streaming
-        import("/./wasm/example_projects.js").then(
+        import("/./example_projects/wasm/example_projects.js").then(
             ({ default: init }) => {
-                init("/./wasm/example_projects_bg.wasm").then((wasm) => {
+                init("/./example_projects/wasm/example_projects_bg.wasm").then((wasm) => {
                     if (wasm.__wbindgen_start == undefined) {
                         wasm.main();
                     }
