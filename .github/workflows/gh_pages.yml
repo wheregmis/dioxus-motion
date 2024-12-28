@@ -1,0 +1,32 @@
+name: github pages
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          target: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v1
+      - uses: ilammy/setup-nasm@v1
+      - uses: taiki-e/install-action@cargo-binstall
+      - name: Install dioxus-cli
+        run: cargo binstall -y dioxus-cli@0.6.1 --locked
+      - uses: actions/checkout@v2
+      - name: Build
+        run:  cd example_projects && dx build --release --platform web
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@v4.2.3
+        with:
+          branch: gh-pages # The branch the action should deploy to.
+          folder: example_projects/target/dx/example_projects/release/web/public # The folder the action should deploy.
+          target-folder: docs
+          # clean: false # don't scrub docs

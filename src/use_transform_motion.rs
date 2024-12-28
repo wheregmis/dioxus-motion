@@ -101,6 +101,22 @@ impl TransformMotion {
         self.opacity.reverse();
     }
 
+    pub fn loop_animation(&mut self) {
+        self.x.loop_animation();
+        self.y.loop_animation();
+        self.scale.loop_animation();
+        self.rotate.loop_animation();
+        self.opacity.loop_animation();
+    }
+
+    pub fn stop_loop(&mut self) {
+        self.x.stop_loop();
+        self.y.stop_loop();
+        self.scale.stop_loop();
+        self.rotate.stop_loop();
+        self.opacity.stop_loop();
+    }
+
     pub fn animate_to(&mut self, target: Transform) {
         // Update the target transform
         self.x.config.target = target.x;

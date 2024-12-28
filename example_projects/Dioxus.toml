@@ -6,7 +6,7 @@ name = "example_projects"
 [web.app]
 
 # HTML title tag content
-title = "example_projects"
+title = "Dioxus Motion 🚀"
 
 # include `assets` in web platform
 [web.resource]
