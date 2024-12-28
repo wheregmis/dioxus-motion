@@ -1099,11 +1099,10 @@ dependencies = [
 
 [[package]]
 name = "dioxus-motion"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "dioxus",
  "dioxus-hooks",
- "dioxus-lib",
  "dioxus-signals",
  "easer",
  "futures",
@@ -1144,15 +1143,6 @@ dependencies = [
  "rustc-hash",
  "tracing",
  "warnings",
-]
-
-[[package]]
-name = "dioxus-use-mounted"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e9e2d11831ef5ce71cb3a86314863aeaf59e6949206363ef54f6754cee7c0d2"
-dependencies = [
- "dioxus",
 ]
 
 [[package]]
@@ -1397,7 +1387,6 @@ version = "0.1.0"
 dependencies = [
  "dioxus",
  "dioxus-motion",
- "dioxus-use-mounted",
  "easer",
 ]
 

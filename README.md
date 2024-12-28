@@ -16,7 +16,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-motion = { version = "0.1.1", optional = true }
+dioxus-motion = { version = "0.1.2", optional = true, default-features = false }
 
 [features]
 default = ["web"]
