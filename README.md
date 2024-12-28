@@ -4,7 +4,7 @@ A lightweight, cross-platform animation library for Dioxus, designed to bring sm
 
 ## ✨ Features
 
-- **Cross-Platform Support**: Works on web (WASM), desktop, and mobile
+- **Cross-Platform Support**: Works on web, desktop, and mobile
 - **Flexible Animation Configuration**
 - **Custom Easing Functions**
 - **Modular Feature Setup**
@@ -20,7 +20,7 @@ dioxus-motion = { version = "0.1.2", optional = true, default-features = false }
 
 [features]
 default = ["web"]
-web = ["dioxus/web", "dioxus-motion/wasm"]
+web = ["dioxus/web", "dioxus-motion/web"]
 desktop = ["dioxus/desktop", "dioxus-motion/desktop"]
 mobile = ["dioxus/mobile", "dioxus-motion/desktop"]
 ```
