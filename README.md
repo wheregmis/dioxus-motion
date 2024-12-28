@@ -1,6 +1,3 @@
-> [!CAUTION]
-> This library is under heavy development! It is not ready to use. Proceed at your own risk.
-
 # Dioxus Motion 🚀
 
 A lightweight, cross-platform animation library for Dioxus, designed to bring smooth, flexible animations to your Rust web, desktop, and mobile applications.
@@ -19,11 +16,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-motion = { 
-    git = "https://github.com/wheregmis/dioxus-motion.git", 
-    branch = "main", 
-    optional = true 
-}
+dioxus-motion = { version = "0.1.1", optional = true }
 
 [features]
 default = ["web"]

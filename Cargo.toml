@@ -1,7 +1,7 @@
 [package]
 name = "dioxus-motion"
 description = "Animations library for Dioxus."
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "MIT"
 authors = ["Sabin Regmi <get2sabin@gmail.com>"]
@@ -29,7 +29,7 @@ getrandom = { version = "0.2.15", features = ["js"] }
 # For desktop platforms
 tokio = { version = "1", optional = true, features = ["time"] }
 [features]
-default = ["desktop"]
+default = ["web"]
 web = ["wasm-bindgen", "web-sys", "instant/wasm-bindgen"]
 desktop = ["tokio", "instant"]
 
