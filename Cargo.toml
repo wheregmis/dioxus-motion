@@ -1,7 +1,7 @@
 [package]
 name = "dioxus-motion"
 description = "Animations library for Dioxus."
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 license = "MIT"
 authors = ["Sabin Regmi <get2sabin@gmail.com>"]
@@ -12,7 +12,6 @@ keywords = ["dioxus", "animations"]
 categories = ["graphics", "gui"]
 
 [dependencies]
-dioxus-lib = "0.6.1"
 easer = "0.3.0"
 dioxus-hooks = "0.6.1"
 futures-util = { version = "0.3.31", default-features = false }
@@ -25,9 +24,10 @@ web-sys = { version = "0.3.76", optional = true, default-features = false, featu
 ] }
 futures-channel = { version = "0.3", default-features = false }
 getrandom = { version = "0.2.15", features = ["js"] }
-
 # For desktop platforms
 tokio = { version = "1", optional = true, features = ["time"] }
+
+
 [features]
 default = ["web"]
 web = ["wasm-bindgen", "web-sys", "instant/wasm-bindgen"]

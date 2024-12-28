@@ -22,13 +22,16 @@ pub mod prelude {
     pub use crate::UseMotion;
 }
 
-use platform::{TimeProvider, WebTime};
+#[cfg(not(feature = "web"))]
+use platform::DesktopTime;
+
+#[cfg(feature = "web")]
+use platform::WebTime;
+
+use platform::TimeProvider;
 
 #[cfg(feature = "web")]
 pub type Time = WebTime;
-
-#[cfg(not(feature = "web"))]
-use platform::DesktopTime;
 
 #[cfg(not(feature = "web"))]
 pub type Time = DesktopTime;
@@ -106,6 +109,7 @@ impl UseMotion {
 
     pub fn stop_loop(&mut self) {
         *self.loop_state.write() = false;
+        self.stop(); // Ensure the animation stops when loop is stopped
     }
 }
 
@@ -219,6 +223,7 @@ pub fn use_value_animation(config: Motion) -> UseMotion {
                     // Reset for next loop iteration
                     *value.write() = config.initial;
                     *elapsed_time.write() = Duration::from_secs(0);
+                    Time::delay(Duration::from_millis(5)).await;
                     continue;
                 }
                 break;

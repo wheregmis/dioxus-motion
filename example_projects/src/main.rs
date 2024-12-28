@@ -1,16 +1,11 @@
 use dioxus::prelude::*;
 
-use dioxus_motion::{
-    animation::Tween,
-    motion::Motion,
-    platform::TimeProvider,
-    prelude::*,
-    spring::Spring,
-    use_transform_motion::{use_transform_animation, Transform},
-    use_value_animation, Time,
+use example_projects::components::{
+    BouncingText, Card3DFlip, MorphingShape, Navbar, ParticleSystem, PathAnimation, ProgressBar,
+    PulseEffect, TransformAnimationShowcase, TypewriterEffect, ValueAnimationShowcase,
 };
-use easer::functions::Easing;
-use example_projects::components::{Navbar, TransformAnimationShowcase, ValueAnimationShowcase};
+
+const MAIN_CSS: Asset = asset!("/assets/main.css");
 
 fn main() {
     launch(app);
@@ -18,40 +13,143 @@ fn main() {
 
 fn app() -> Element {
     rsx! {
+        document::Link { rel: "stylesheet", href: MAIN_CSS }
         ShowcaseGallery {}
     }
 }
+
 #[component]
 pub fn ShowcaseGallery() -> Element {
     rsx! {
-        div { class: "flex flex-col min-h-screen",
+        div { class: "flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-gray-100",
             Navbar {}
 
-            // Main content with padding-top to account for fixed navbar
-            div { class: "min-h-screen bg-gray-100 pt-20 p-8",
-                h1 { class: "text-4xl font-bold text-center text-gray-800 mb-12", "Animation Gallery" }
-
-                div { class: "grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto",
-                    ValueAnimationShowcase {}
-                    TransformAnimationShowcase {}
-                    div { class: "group perspective-1000",
-                        ProgressBar { title: "Okay Loading ..." }
+            // Showcase Grid
+            div { class: "container mx-auto px-8 py-12 pt-20",
+                div { class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8",
+                    // Value Animation Card
+                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-blue-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "Value Animation"
+                        }
+                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                            ValueAnimationShowcase {}
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/value_animation.rs" }
                     }
-                    div { class: "flex items-center justify-center",
-                        MorphingShape { shapes: vec!["square", "triangle"], duration: 3.0 }
+
+                    // Transform Animation Card
+                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-purple-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "Transform Animation"
+                        }
+                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                            TransformAnimationShowcase {}
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/transform_animation.rs" }
                     }
 
-                // div { class: "flex items-center justify-center",
-                //     BouncingText { text: "Dioxus", delay: 0.1 }
-                // }
+                    // Progress Bar Card
+                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "Progress Animation"
+                        }
+                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                            ProgressBar { title: "Loading..." }
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/progress_bar.rs" }
+                    }
+
+                    // Morphing Shape Card
+                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "Morphing Shape"
+                        }
+                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                            MorphingShape {
+                                shapes: vec!["square", "triangle"],
+                                duration: 3.0,
+                            }
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/morphing_shape.rs" }
+                    }
+
+                    // Bouncing Text Card
+                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "Bouncing Text"
+                        }
+                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                            BouncingText { text: "Dioxus Motion", delay: 0.1 }
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/bouncing_text.rs" }
+                    }
+
+                    // Path Animation Card
+                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "Path Animation"
+                        }
+                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                            PathAnimation {
+                                path: "M10 80 C 40 10, 65 10, 95 80 S 150 150, 180 80",
+                                duration: 2.0,
+                            }
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/path_animation.rs" }
+                    }
+
+                    // Pulse Effect Card
+                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "Pulse Effect"
+                        }
+                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                            PulseEffect { color: "bg-blue-500", size: "w-16 h-16" }
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/pulse_effect.rs" }
+                    }
+
+                    // Card 3D Flip Card
+                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "3D Card Flip"
+                        }
+                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                            Card3DFlip {}
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/card_3d_flip.rs" }
+                    }
+
+                    // Typewriter Effect Card
+                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "Typewriter Effect"
+                        }
+                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                            TypewriterEffect { text: "Hello, World! Welcome to Dioxus Motion" }
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/typewritter_effect.rs" }
+                    }
+
+                    // Particle System Card
+                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "Particle System"
+                        }
+                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                            ParticleSystem {}
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/particle_system.rs" }
+                    }
                 }
             }
 
-            // Footer
-            footer { class: "bg-gray-800 text-white py-8 mt-auto",
+            // Footer with gradient border
+            footer { class: "bg-white border-t border-gradient-to-r from-blue-500/20 to-purple-500/20 py-8 mt-auto",
                 div { class: "max-w-6xl mx-auto px-4 text-center",
-                    p { class: "text-sm opacity-75", "© 2024 Sabin Regmi. No Rights Reserved." }
-                    p { class: "text-xs mt-2 opacity-50", "Built with ❤️ using Dioxus" }
+                    p { class: "text-sm text-gray-600", "© 2024 Sabin Regmi. No Rights Reserved." }
+                    p { class: "text-xs text-gray-500 mt-2", "Built with ❤️ using Dioxus" }
                 }
             }
         }
@@ -59,124 +157,14 @@ pub fn ShowcaseGallery() -> Element {
 }
 
 #[component]
-fn ProgressBar(title: &'static str) -> Element {
-    let mut progress =
-        use_value_animation(Motion::new(0.0).to(100.0).duration(Duration::from_secs(10)));
-
-    use_effect(move || {
-        progress.loop_animation();
-    });
-
+fn ViewCodeButton(url: &'static str) -> Element {
     rsx! {
-        div { class: "w-full p-6 bg-white rounded-xl shadow-lg",
-            // Title and percentage
-            div { class: "flex justify-between items-center mb-4",
-                span { class: "text-lg font-semibold text-gray-700", "{title}" }
-                span { class: "text-sm font-medium text-blue-600", "{progress.value() as i32}%" }
-            }
-
-            // Progress bar
-            div { class: "w-full h-4 bg-gray-200 rounded-full overflow-hidden",
-                div {
-                    class: "h-full w-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-300",
-                    style: "width: {progress.value() as i32}%",
-                }
-            }
-        }
-    }
-}
-
-// // #[component]
-// // fn BouncingLetter(letter: char, delay: f32) -> Element {
-// //     let mut y_pos = use_value_animation(Motion::new(0.0).to(-20.0).spring(Spring {
-// //         stiffness: 400.0,
-// //         damping: 10.0,
-// //         mass: 1.0,
-// //         velocity: 0.0,
-// //     }));
-
-// //     let mut scale = use_value_animation(Motion::new(1.0).to(1.2).spring(Spring {
-// //         stiffness: 400.0,
-// //         damping: 10.0,
-// //         mass: 1.0,
-// //         velocity: 0.0,
-// //     }));
-
-// //     rsx! {
-// //         span {
-// //             class: "text-4xl font-bold text-indigo-600",
-// //             style: "transform: translateY({y_pos.value()}px) scale({scale.value()});
-// //                    animation-delay: {delay}s;",
-// //             onmounted: move |_| {
-// //                 y_pos.start();
-// //                 scale.start();
-// //             },
-// //             "{letter}"
-// //         }
-// //     }
-// // }
-
-// #[component]
-// fn BouncingText(text: &'static str, delay: f32) -> Element {
-//     rsx! {
-//         div { class: "flex space-x-1",
-//             {
-//                 text.chars()
-//                     .enumerate()
-//                     .map(|(i, char)| {
-//                         rsx! {
-//                             BouncingLetter { letter: char, delay: i as f32 * delay }
-//                         }
-//                     })
-//             }
-//         }
-//     }
-// }
-
-#[component]
-fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
-    let mut current_shape = use_signal(|| 0);
-    let shape_paths = [
-        "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)",
-        "polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)",
-    ];
-
-    let mut transform = use_transform_animation(
-        Transform::default(),
-        Transform {
-            rotate: 360.0,
-            scale: 1.2,
-            ..Default::default()
-        },
-        AnimationMode::Spring(Spring {
-            stiffness: 100.0,
-            damping: 10.0,
-            mass: 1.0,
-            velocity: 0.0,
-        }),
-    );
-
-    use_effect(move || {
-        let interval = Duration::from_secs_f32(duration);
-        spawn(async move {
-            loop {
-                Time::delay(interval).await;
-                let next = if *current_shape.read() + 1 >= shape_paths.len() {
-                    0
-                } else {
-                    *current_shape.read() + 1
-                };
-                current_shape.set(next);
-                transform.start();
-            }
-        });
-    });
-
-    rsx! {
-        div {
-            class: "w-32 h-32 bg-gradient-to-r from-pink-500 to-orange-500 transition-all duration-500",
-            style: "clip-path: {shape_paths[*current_shape.read()]}; {transform.style()}",
-            onmounted: move |_| transform.start(),
+        a {
+            class: "inline-flex items-center px-4 py-2 mt-4 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors",
+            href: "{url}",
+            target: "_blank",
+            span { class: "mr-2", "Example Code" }
+            span { class: "text-xs", "→" }
         }
     }
 }
