@@ -15,8 +15,6 @@ impl TimeProvider for WebTime {
     }
 
     fn delay(duration: Duration) -> impl Future<Output = ()> {
-        let (sender, receiver) = futures_channel::oneshot::channel::<()>();
-
         // Use web-sys for wasm-bindgen compatible setTimeout
         #[cfg(feature = "web")]
         {
@@ -24,32 +22,29 @@ impl TimeProvider for WebTime {
             use wasm_bindgen::prelude::*;
             use web_sys::window;
 
+            let (sender, receiver) = futures_channel::oneshot::channel::<()>();
+
             if let Some(window) = window() {
                 let cb = Closure::once(move || {
                     let _ = sender.send(());
                 });
 
-                window
-                    .request_animation_frame(cb.as_ref().unchecked_ref())
-                    .unwrap();
-                cb.forget();
-
                 // Use requestAnimationFrame for smoother animations
-                // if duration.as_millis() < 17 {
-                //     window
-                //         .request_animation_frame(cb.as_ref().unchecked_ref())
-                //         .unwrap();
-                //     cb.forget();
-                // } else {
-                //     // Use setTimeout for longer delays
-                //     window
-                //         .set_timeout_with_callback_and_timeout_and_arguments_0(
-                //             cb.as_ref().unchecked_ref(),
-                //             duration.as_millis() as i32,
-                //         )
-                //         .unwrap();
-                //     cb.forget();
-                // }
+                if duration.as_millis() < 16 {
+                    window
+                        .request_animation_frame(cb.as_ref().unchecked_ref())
+                        .unwrap();
+                    cb.forget();
+                } else {
+                    // Use setTimeout for longer delays
+                    window
+                        .set_timeout_with_callback_and_timeout_and_arguments_0(
+                            cb.as_ref().unchecked_ref(),
+                            duration.as_millis() as i32,
+                        )
+                        .unwrap();
+                    cb.forget();
+                }
             }
 
             receiver.map(|_| ())
