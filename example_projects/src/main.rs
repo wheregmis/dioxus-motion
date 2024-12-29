@@ -134,16 +134,16 @@ pub fn ShowcaseGallery() -> Element {
                         ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/typewriter_effect.rs" }
                     }
 
-                    // Particle System Card
-                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
-                            "Particle System"
-                        }
-                        div { class: "flex-grow w-full flex items-center justify-center my-4",
-                            ParticleSystem {}
-                        }
-                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/particle_system.rs" }
-                    }
+                // // Particle System Card
+                // div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                //     h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                //         "Particle System"
+                //     }
+                //     div { class: "flex-grow w-full flex items-center justify-center my-4",
+                //         ParticleSystem {}
+                //     }
+                //     ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/particle_system.rs" }
+                // }
                 }
             }
 
