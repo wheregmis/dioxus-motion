@@ -26,6 +26,10 @@ pub fn Navbar() -> Element {
         }),
     );
 
+    use_drop(move || {
+        transform.stop();
+    });
+
     rsx! {
         nav { class: "fixed top-0 w-full bg-white shadow-lg z-50",
             div { class: "max-w-6xl mx-auto px-4",

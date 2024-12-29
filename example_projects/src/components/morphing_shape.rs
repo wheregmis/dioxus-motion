@@ -45,6 +45,10 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
         });
     });
 
+    use_drop(move || {
+        transform.stop();
+    });
+
     rsx! {
         div {
             class: "w-32 h-32 bg-gradient-to-r from-pink-500 to-orange-500 transition-all duration-500",

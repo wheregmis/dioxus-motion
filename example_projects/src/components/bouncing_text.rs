@@ -25,6 +25,11 @@ fn BouncingLetter(letter: char, delay: f32) -> Element {
         scale.loop_animation();
     });
 
+    use_drop(move || {
+        y_pos.stop_loop();
+        scale.stop_loop();
+    });
+
     rsx! {
         span {
             class: "text-4xl font-bold text-indigo-600 inline-block",

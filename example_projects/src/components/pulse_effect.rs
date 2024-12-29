@@ -16,6 +16,10 @@ pub fn PulseEffect(color: &'static str, size: &'static str) -> Element {
         scale.loop_animation();
     });
 
+    use_drop(move || {
+        scale.stop_loop();
+    });
+
     rsx! {
         div { class: "relative flex items-center justify-center",
             div {
