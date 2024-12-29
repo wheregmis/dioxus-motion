@@ -20,40 +20,31 @@ impl TimeProvider for WebTime {
         {
             use futures_util::FutureExt;
             use wasm_bindgen::prelude::*;
-            use web_sys::{window, Window};
+            use web_sys::window;
 
             let (sender, receiver) = futures_channel::oneshot::channel::<()>();
 
-            // Calculate total frames needed for the duration
-            // Using 16.67ms as frame time (60 FPS)
-            // TODO: Make this frame rate configured as per the device FPS
-            // We'll use a standard 60fps frame time for now
-            let frame_time = 1000.0 / 60.0; // ~16.67ms per frame
-            let total_frames = (duration.as_millis() as f64 / frame_time).ceil() as i32;
-
-            fn request_next_frame(
-                window: &Window,
-                frames_left: i32,
-                sender: futures_channel::oneshot::Sender<()>,
-            ) {
-                if frames_left <= 0 {
-                    let _ = sender.send(());
-                    return;
-                }
-
-                let window_clone = window.clone();
+            if let Some(window) = window() {
                 let cb = Closure::once(move || {
-                    request_next_frame(&window_clone, frames_left - 1, sender);
+                    let _ = sender.send(());
                 });
 
-                window
-                    .request_animation_frame(cb.as_ref().unchecked_ref())
-                    .unwrap();
-                cb.forget();
-            }
-
-            if let Some(window) = window() {
-                request_next_frame(&window, total_frames, sender);
+                // Use requestAnimationFrame for smoother animations
+                if duration.as_millis() < 16 {
+                    window
+                        .request_animation_frame(cb.as_ref().unchecked_ref())
+                        .unwrap();
+                    cb.forget();
+                } else {
+                    // Use setTimeout for longer delays
+                    window
+                        .set_timeout_with_callback_and_timeout_and_arguments_0(
+                            cb.as_ref().unchecked_ref(),
+                            duration.as_millis() as i32,
+                        )
+                        .unwrap();
+                    cb.forget();
+                }
             }
 
             receiver.map(|_| ())
