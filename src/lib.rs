@@ -164,12 +164,13 @@ pub fn use_value_animation(config: Motion) -> UseMotion {
                             value.set(current);
 
                             // Simplified frame delay calculation
-                            let frame_delay =
-                                if current_elapsed + Duration::from_millis(16) >= tween.duration {
-                                    tween.duration.saturating_sub(current_elapsed)
-                                } else {
-                                    Duration::from_millis(16) // Target ~60 FPS
-                                };
+                            let frame_delay = if current_elapsed + Duration::from_micros(11_111)
+                                >= tween.duration
+                            {
+                                tween.duration.saturating_sub(current_elapsed)
+                            } else {
+                                Duration::from_micros(11_111) // Target ~90 FPS (1000ms/90 ≈ 11.11ms)
+                            };
 
                             Time::delay(frame_delay.max(Duration::from_millis(1))).await;
                         }
@@ -197,7 +198,7 @@ pub fn use_value_animation(config: Motion) -> UseMotion {
                         running_state.set(true);
 
                         while *running_state.read() {
-                            let dt = 1.0 / 60.0; // 60 FPS
+                            let dt = 1.0 / 90.0; // 90 FPS
 
                             current =
                                 Motion::update_spring(current, target, &mut velocity, &spring, dt);
