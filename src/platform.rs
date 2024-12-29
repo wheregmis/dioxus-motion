@@ -27,7 +27,9 @@ impl TimeProvider for WebTime {
             // Calculate total frames needed for the duration
             // Using 16.67ms as frame time (60 FPS)
             // TODO: Make this frame rate configured as per the device FPS
-            let total_frames = (duration.as_millis() as f64 / 16.67).ceil() as i32;
+            // We'll use a standard 60fps frame time for now
+            let frame_time = 1000.0 / 60.0; // ~16.67ms per frame
+            let total_frames = (duration.as_millis() as f64 / frame_time).ceil() as i32;
 
             fn request_next_frame(
                 window: &Window,

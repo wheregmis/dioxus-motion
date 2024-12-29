@@ -20,6 +20,7 @@ instant = { version = "0.1.13", optional = true }
 wasm-bindgen = { version = "0.2.99", optional = true, default-features = false }
 web-sys = { version = "0.3.76", optional = true, default-features = false, features = [
     "Window",
+    "Screen",
 ] }
 futures-channel = { version = "0.3.31", default-features = false }
 # For desktop platforms
