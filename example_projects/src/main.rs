@@ -1,3 +1,5 @@
+use std::vec;
+
 use dioxus::prelude::*;
 
 use example_projects::components::{
@@ -157,7 +159,7 @@ pub fn ShowcaseGallery() -> Element {
 }
 
 #[component]
-fn ViewCodeButton(url: &'static str) -> Element {
+fn ViewCodeButton(url: String) -> Element {
     rsx! {
         a {
             class: "inline-flex items-center px-4 py-2 mt-4 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors",
