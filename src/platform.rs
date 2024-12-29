@@ -15,8 +15,6 @@ impl TimeProvider for WebTime {
     }
 
     fn delay(duration: Duration) -> impl Future<Output = ()> {
-        let (sender, receiver) = futures_channel::oneshot::channel::<()>();
-
         // Use web-sys for wasm-bindgen compatible setTimeout
         #[cfg(feature = "web")]
         {
@@ -24,13 +22,15 @@ impl TimeProvider for WebTime {
             use wasm_bindgen::prelude::*;
             use web_sys::window;
 
+            let (sender, receiver) = futures_channel::oneshot::channel::<()>();
+
             if let Some(window) = window() {
                 let cb = Closure::once(move || {
                     let _ = sender.send(());
                 });
 
                 // Use requestAnimationFrame for smoother animations
-                if duration.as_millis() < 17 {
+                if duration.as_millis() < 16 {
                     window
                         .request_animation_frame(cb.as_ref().unchecked_ref())
                         .unwrap();

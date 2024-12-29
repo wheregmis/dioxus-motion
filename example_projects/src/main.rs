@@ -1,8 +1,10 @@
+use std::vec;
+
 use dioxus::prelude::*;
 
 use example_projects::components::{
-    BouncingText, Card3DFlip, MorphingShape, Navbar, ParticleSystem, PathAnimation, ProgressBar,
-    PulseEffect, TransformAnimationShowcase, TypewriterEffect, ValueAnimationShowcase,
+    BouncingText, Card3DFlip, MorphingShape, Navbar, PathAnimation, ProgressBar, PulseEffect,
+    TransformAnimationShowcase, TypewriterEffect, ValueAnimationShowcase,
 };
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -132,16 +134,16 @@ pub fn ShowcaseGallery() -> Element {
                         ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/typewriter_effect.rs" }
                     }
 
-                    // Particle System Card
-                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
-                            "Particle System"
-                        }
-                        div { class: "flex-grow w-full flex items-center justify-center my-4",
-                            ParticleSystem {}
-                        }
-                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/particle_system.rs" }
-                    }
+                // // Particle System Card
+                // div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                //     h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                //         "Particle System"
+                //     }
+                //     div { class: "flex-grow w-full flex items-center justify-center my-4",
+                //         ParticleSystem {}
+                //     }
+                //     ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/particle_system.rs" }
+                // }
                 }
             }
 
@@ -157,7 +159,7 @@ pub fn ShowcaseGallery() -> Element {
 }
 
 #[component]
-fn ViewCodeButton(url: &'static str) -> Element {
+fn ViewCodeButton(url: String) -> Element {
     rsx! {
         a {
             class: "inline-flex items-center px-4 py-2 mt-4 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors",

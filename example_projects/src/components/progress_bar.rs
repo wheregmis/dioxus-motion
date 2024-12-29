@@ -13,6 +13,10 @@ pub fn ProgressBar(title: &'static str) -> Element {
         progress.loop_animation();
     });
 
+    use_drop(move || {
+        progress.stop_loop();
+    });
+
     rsx! {
         div { class: "w-full p-6 bg-white rounded-xl shadow-lg",
             // Title and percentage

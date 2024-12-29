@@ -15,6 +15,10 @@ pub fn PathAnimation(path: &'static str, duration: f32) -> Element {
         offset.loop_animation();
     });
 
+    use_drop(move || {
+        offset.stop_loop();
+    });
+
     rsx! {
         div { class: "w-full h-48 flex items-center justify-center bg-white rounded-xl",
             svg { class: "w-full h-full", view_box: "0 0 200 200",

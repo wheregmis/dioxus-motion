@@ -6,6 +6,10 @@ pub fn ValueAnimationShowcase() -> Element {
     let mut counter =
         use_value_animation(Motion::new(0.0).to(100.0).duration(Duration::from_secs(2)));
 
+    use_drop(move || {
+        counter.stop();
+    });
+
     rsx! {
         div { class: "flex flex-col items-center justify-center p-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg",
             // Animated counter

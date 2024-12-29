@@ -9,6 +9,10 @@ pub fn TypewriterEffect(text: &'static str) -> Element {
     let mut width =
         use_value_animation(Motion::new(0.0).to(100.0).duration(Duration::from_secs(2)));
 
+    use_drop(move || {
+        width.stop_loop();
+    });
+
     rsx! {
         div {
             class: "font-mono text-2xl text-blue-500",

@@ -16,6 +16,10 @@ pub fn Card3DFlip() -> Element {
         AnimationMode::Spring(Spring::default()),
     );
 
+    use_drop(move || {
+        transform.stop();
+    });
+
     rsx! {
         div { class: "group perspective-1000",
             div {
