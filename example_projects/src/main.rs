@@ -129,7 +129,7 @@ pub fn ShowcaseGallery() -> Element {
                         div { class: "flex-grow w-full flex items-center justify-center my-4",
                             TypewriterEffect { text: "Hello, World! Welcome to Dioxus Motion" }
                         }
-                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/typewritter_effect.rs" }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/typewriter_effect.rs" }
                     }
 
                     // Particle System Card
