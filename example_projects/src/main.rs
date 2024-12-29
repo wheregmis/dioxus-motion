@@ -3,8 +3,8 @@ use std::vec;
 use dioxus::prelude::*;
 
 use example_projects::components::{
-    BouncingText, Card3DFlip, MorphingShape, Navbar, ParticleSystem, PathAnimation, ProgressBar,
-    PulseEffect, TransformAnimationShowcase, TypewriterEffect, ValueAnimationShowcase,
+    BouncingText, Card3DFlip, MorphingShape, Navbar, PathAnimation, ProgressBar, PulseEffect,
+    TransformAnimationShowcase, TypewriterEffect, ValueAnimationShowcase,
 };
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
