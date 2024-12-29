@@ -1,7 +1,5 @@
 pub use instant::Duration;
 
-use uuid::Uuid;
-
 use crate::{
     animation::{AnimationMode, Tween},
     spring::Spring,
@@ -10,7 +8,6 @@ use crate::{
 /// Configuration for a motion animation
 #[derive(Debug, Clone, Copy)]
 pub struct Motion {
-    pub id: Uuid,
     pub initial: f32,
     pub target: f32,
     pub duration: Duration,
@@ -23,7 +20,6 @@ impl Motion {
     /// Create a new Motion with default parameters
     pub fn new(initial: f32) -> Self {
         Self {
-            id: Uuid::new_v4(),
             initial,
             target: initial,
             duration: Duration::from_millis(300),
