@@ -1,6 +1,6 @@
 # Dioxus Motion 🚀
 
-[![License](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](https://github.com/wheregmis/dioxus-motion/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/wheregmis/dioxus-motion/blob/main/LICENSE)
 [![Crates.io](https://img.shields.io/crates/v/dioxus-motion.svg)](https://crates.io/crates/dioxus-motion)
 [![Docs](https://docs.rs/dioxus-motion/badge.svg)](https://docs.rs/dioxus-motion/0.1.4/dioxus_motion/)
 
@@ -20,7 +20,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-motion = { version = "0.1.2", optional = true, default-features = false }
+dioxus-motion = { version = "0.1.4", optional = true, default-features = false }
 
 [features]
 default = ["web"]
