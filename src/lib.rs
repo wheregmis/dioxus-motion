@@ -1,222 +1,272 @@
-use animation::AnimationMode;
-use dioxus_hooks::{use_coroutine, use_signal, Coroutine};
+use dioxus_hooks::{use_future, use_signal};
 use dioxus_signals::{Readable, Signal, Writable};
 
-use futures_util::StreamExt;
 pub use instant::Duration;
-use motion::Motion;
-pub use platform::{MotionTime, TimeProvider};
-use prelude::AnimationState;
 
-pub mod animation;
-pub mod motion;
+pub use platform::{MotionTime, TimeProvider};
+use prelude::Tween;
+use spring::Spring;
+
+pub mod tween;
+
+pub mod animations;
 pub mod platform;
 pub mod spring;
-pub mod use_transform_motion;
 
 pub mod prelude {
-    pub use crate::animation::AnimationMode;
-    pub use crate::animation::{AnimationState, Tween};
-    pub use crate::motion::Motion;
+
+    pub use crate::animations::{Color, Transform};
     pub use crate::spring::Spring;
-    pub use crate::use_transform_motion::use_transform_animation;
-    pub use crate::use_transform_motion::Transform;
-    pub use crate::use_transform_motion::TransformMotion;
-    pub use crate::use_value_animation;
+    pub use crate::tween::Tween;
+    pub use crate::use_animation;
+    pub use crate::AnimationManager;
+    pub use crate::AnimationMode;
     pub use crate::Duration;
     pub use crate::Time;
     pub use crate::TimeProvider;
-    pub use crate::UseMotion;
 }
 
 pub type Time = MotionTime;
 
-/// Represents an active motion animation
-#[derive(Clone, Copy)]
-pub struct UseMotion {
-    value: Signal<f32>,
-    running_state: Signal<bool>,
-    completion_state: Signal<AnimationState>,
-    elapsed_time: Signal<Duration>,
-    config: Motion,
-    channel: Coroutine<()>,
-    reverse_state: Signal<bool>,
-    loop_state: Signal<bool>, // Add loop state
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum AnimationMode {
+    Tween(Tween),
+    Spring(Spring),
 }
 
-impl UseMotion {
-    /// Get the current animated value
-    pub fn value(&self) -> f32 {
-        *self.value.read()
-    }
-
-    /// Start the animation
-    pub fn start(&mut self) {
-        *self.value.write() = self.config.initial;
-        *self.completion_state.write() = AnimationState::Idle;
-        *self.running_state.write() = true;
-        *self.reverse_state.write() = false;
-        self.channel.send(());
-    }
-
-    /// Stop the animation
-    pub fn stop(&mut self) {
-        *self.running_state.write() = false;
-        *self.completion_state.write() = AnimationState::Idle;
-    }
-
-    pub fn reset(&mut self) {
-        *self.value.write() = self.config.initial;
-        *self.completion_state.write() = AnimationState::Idle;
-        *self.running_state.write() = false;
-        *self.elapsed_time.write() = Duration::from_secs(0);
-        *self.reverse_state.write() = false;
-        *self.loop_state.write() = false;
-    }
-
-    pub fn reverse(&mut self) {
-        if *self.reverse_state.read() {
-            self.config.initial
-        } else {
-            self.config.target
-        };
-
-        self.reverse_state.toggle();
-        *self.completion_state.write() = AnimationState::Idle;
-        *self.running_state.write() = true;
-        self.channel.send(());
-    }
-
-    /// Get the current animation state
-    pub fn state(&self) -> AnimationState {
-        self.completion_state.read().clone()
-    }
-
-    /// Check if the animation is currently running
-    pub fn is_running(&self) -> bool {
-        *self.running_state.read()
-    }
-
-    pub fn loop_animation(&mut self) {
-        *self.loop_state.write() = true;
-        self.start();
-    }
-
-    pub fn stop_loop(&mut self) {
-        *self.loop_state.write() = false;
-        self.stop(); // Ensure the animation stops when loop is stopped
+impl Default for AnimationMode {
+    fn default() -> Self {
+        Self::Tween(Tween::default())
     }
 }
 
-// Rename existing to be more specific
-pub fn use_value_animation(config: Motion) -> UseMotion {
-    let mut value = use_signal(|| config.initial);
-    let mut running_state = use_signal(|| false);
-    let mut completion_state = use_signal(|| AnimationState::Idle);
-    let mut elapsed_time = use_signal(|| Duration::from_secs(0));
-    let reverse_state = use_signal(|| false);
-    let loop_state = use_signal(|| false);
+pub trait AnimationManager<T: Copy + 'static>: Clone + Copy {
+    fn new(initial: T) -> Self;
+    fn animate_to(&mut self, target: T, mode: AnimationMode);
+    fn update(&mut self, dt: f32) -> bool;
+    fn get_value(&self) -> T;
+    fn is_running(&self) -> bool;
+    fn reset(&mut self);
+    fn loop_animation(&mut self);
+    fn loop_times(&mut self, count: u32);
+    fn stop_loop(&mut self);
+    fn is_looping(&self) -> bool;
+}
 
-    let channel = use_coroutine(move |mut rx| async move {
-        while rx.next().await.is_some() {
-            loop {
-                match config.mode {
-                    AnimationMode::Tween(tween) => {
-                        Time::delay(config.delay).await;
-                        let start_time = Time::now();
-                        let start_value = *value.peek();
-                        let end_value = if *reverse_state.read() {
-                            config.initial
-                        } else {
-                            config.target
-                        };
+#[derive(Debug, Clone, Copy)]
+pub struct AnimationState<T: Copy + 'static> {
+    current: T,
+    target: T,
+    initial: T,
+    velocity: f32,
+    mode: AnimationMode,
+    running: bool,
+    elapsed: Duration,
+    loop_count: Option<u32>,
+    current_loop: u32,
+    is_looping: bool,
+}
 
-                        completion_state.set(AnimationState::Running);
-                        running_state.set(true);
+impl<T: Copy + Into<f32> + From<f32>> AnimationManager<T> for AnimationState<T> {
+    fn new(initial: T) -> Self {
+        Self {
+            current: initial,
+            target: initial,
+            velocity: 0.0,
+            mode: AnimationMode::Spring(Spring::default()),
+            running: false,
+            elapsed: Duration::default(),
+            initial,
+            loop_count: None,
+            current_loop: 0,
+            is_looping: false,
+        }
+    }
 
-                        while *running_state.read() {
-                            let elapsed = Time::now().duration_since(start_time);
-                            let progress = (elapsed.as_secs_f64() / tween.duration.as_secs_f64())
-                                .clamp(0.0, 1.0);
+    fn animate_to(&mut self, target: T, mode: AnimationMode) {
+        self.target = target;
+        self.mode = mode;
+        self.running = true;
+        self.elapsed = Duration::default();
+    }
 
-                            let current = (tween.easing)(
-                                progress as f32,
-                                start_value,
-                                end_value - start_value,
-                                1.0,
-                            );
-                            value.set(current);
+    fn loop_animation(&mut self) {
+        self.is_looping = true;
+        self.loop_count = None;
+        self.animate_to(self.target, self.mode);
+    }
 
-                            if progress >= 1.0 {
-                                break;
-                            }
+    fn loop_times(&mut self, count: u32) {
+        self.is_looping = true;
+        self.loop_count = Some(count);
+        self.current_loop = 0;
+        self.animate_to(self.target, self.mode);
+    }
 
-                            Time::delay(Duration::from_nanos(1)).await;
-                        }
+    fn stop_loop(&mut self) {
+        self.is_looping = false;
+        self.loop_count = None;
+        self.current_loop = 0;
+    }
 
-                        // Ensure final value is set
-                        value.set(end_value);
-                        elapsed_time.set(Duration::from_secs(0));
-                        running_state.set(false);
-                        completion_state.set(AnimationState::Completed);
+    fn is_looping(&self) -> bool {
+        self.is_looping
+    }
 
-                        if let Some(f) = config.on_complete {
-                            f();
-                        }
+    fn update(&mut self, dt: f32) -> bool {
+        if !self.running {
+            if self.is_looping {
+                if let Some(count) = self.loop_count {
+                    if self.current_loop >= count {
+                        self.stop_loop();
+                        return false;
                     }
-                    AnimationMode::Spring(spring) => {
-                        let mut velocity = spring.velocity;
-                        let mut current = *value.peek();
-                        let target = if *reverse_state.read() {
-                            config.initial
-                        } else {
-                            config.target
-                        };
-
-                        completion_state.set(AnimationState::Running);
-                        running_state.set(true);
-
-                        while *running_state.read() {
-                            let start = Time::now();
-                            Time::delay(Duration::from_nanos(1)).await;
-                            let dt = start.elapsed().as_secs_f32();
-
-                            current =
-                                Motion::update_spring(current, target, &mut velocity, &spring, dt);
-                            value.set(current);
-
-                            if velocity.abs() < 0.01 && (current - target).abs() < 0.01 {
-                                break;
-                            }
-                        }
-
-                        // Ensure we reach exact target
-                        value.set(target);
-                        running_state.set(false);
-                        completion_state.set(AnimationState::Completed);
-                    }
+                    self.current_loop += 1;
                 }
+                self.animate_to(self.target, self.mode);
+                return true;
+            }
+            return false;
+        }
 
-                if *loop_state.read() {
-                    // Reset for next loop iteration
-                    *value.write() = config.initial;
-                    *elapsed_time.write() = Duration::from_secs(0);
-                    Time::delay(Duration::from_millis(5)).await;
+        match self.mode {
+            AnimationMode::Spring(spring) => {
+                let current: f32 = self.current.into();
+                let target: f32 = self.target.into();
+
+                let next = update_spring(
+                    current,
+                    target,
+                    &mut self.velocity,
+                    &spring,
+                    dt.min(0.064), // Cap dt to prevent large jumps
+                );
+
+                self.current = T::from(next);
+
+                if self.velocity.abs() < 0.01 && (next - target).abs() < 0.01 {
+                    self.running = false;
+                    self.current = self.target;
+                    return false;
+                }
+            }
+            AnimationMode::Tween(tween) => {
+                self.elapsed += Duration::from_secs_f32(dt);
+                let progress =
+                    (self.elapsed.as_secs_f32() / tween.duration.as_secs_f32()).clamp(0.0, 1.0);
+
+                let current: f32 = self.current.into();
+                let target: f32 = self.target.into();
+
+                let next = (tween.easing)(progress, current, target - current, 1.0);
+                self.current = T::from(next);
+
+                if progress >= 1.0 {
+                    self.running = false;
+                    self.current = self.target;
+                    return false;
+                }
+            }
+        }
+        true
+    }
+
+    fn get_value(&self) -> T {
+        self.current
+    }
+
+    fn is_running(&self) -> bool {
+        self.running
+    }
+
+    fn reset(&mut self) {
+        self.running = false;
+        self.velocity = 0.0;
+        self.elapsed = Duration::default();
+    }
+}
+
+fn update_spring(current: f32, target: f32, velocity: &mut f32, spring: &Spring, dt: f32) -> f32 {
+    let force = spring.stiffness * (target - current);
+    let damping = spring.damping * *velocity;
+    let acceleration = (force - damping) / spring.mass;
+
+    *velocity += acceleration * dt;
+    current + *velocity * dt
+}
+
+#[derive(Clone, Copy)]
+struct AnimationSignal<T: Copy + 'static>(Signal<AnimationState<T>>);
+
+impl<T: Copy + Into<f32> + From<f32>> AnimationManager<T> for AnimationSignal<T> {
+    fn new(initial: T) -> Self {
+        Self(Signal::new(AnimationState::new(initial)))
+    }
+
+    fn animate_to(&mut self, target: T, mode: AnimationMode) {
+        self.0.write().animate_to(target, mode);
+    }
+
+    fn update(&mut self, dt: f32) -> bool {
+        self.0.write().update(dt)
+    }
+
+    fn get_value(&self) -> T {
+        self.0.read().get_value()
+    }
+
+    fn is_running(&self) -> bool {
+        self.0.read().is_running()
+    }
+
+    fn reset(&mut self) {
+        self.0.write().reset()
+    }
+
+    fn loop_animation(&mut self) {
+        todo!()
+    }
+
+    fn loop_times(&mut self, count: u32) {
+        todo!()
+    }
+
+    fn stop_loop(&mut self) {
+        todo!()
+    }
+
+    fn is_looping(&self) -> bool {
+        todo!()
+    }
+}
+
+pub fn use_animation<T: Copy + Into<f32> + From<f32> + 'static>(
+    initial: T,
+) -> impl AnimationManager<T> {
+    let state = AnimationSignal(use_signal(|| AnimationState::new(initial)));
+    let state_clone = state.clone();
+    let mut running = use_signal(|| false);
+
+    use_future(move || {
+        let mut value = state_clone.clone();
+        async move {
+            loop {
+                if !value.is_running() {
+                    Time::delay(Duration::from_millis(16)).await;
                     continue;
                 }
-                break;
+
+                let start = Time::now();
+                Time::delay(Duration::from_millis(16)).await; // ~60fps
+                let dt = start.elapsed().as_secs_f32();
+
+                if value.0.write().update(dt) {
+                    // Force a rerender when animation updates
+                    running.toggle();
+                }
             }
         }
     });
 
-    UseMotion {
-        value,
-        running_state,
-        completion_state,
-        elapsed_time,
-        config,
-        channel,
-        reverse_state,
-        loop_state,
-    }
+    state
 }

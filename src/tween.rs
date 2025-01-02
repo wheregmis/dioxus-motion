@@ -1,7 +1,5 @@
 pub use instant::Duration;
 
-use crate::spring::Spring;
-
 use easer::functions::{Easing, Linear};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -31,24 +29,4 @@ impl Tween {
         self.easing = easing;
         self
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum AnimationMode {
-    Tween(Tween),
-    Spring(Spring),
-}
-
-impl Default for AnimationMode {
-    fn default() -> Self {
-        Self::Tween(Tween::default())
-    }
-}
-
-/// Represents the current state of an animation
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AnimationState {
-    Idle,
-    Running,
-    Completed,
 }
