@@ -7,15 +7,14 @@ pub trait TimeProvider {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct WebTime;
+pub struct MotionTime;
 
-impl TimeProvider for WebTime {
+impl TimeProvider for MotionTime {
     fn now() -> Instant {
         Instant::now()
     }
 
-    fn delay(duration: Duration) -> impl Future<Output = ()> {
-        // Use web-sys for wasm-bindgen compatible setTimeout
+    fn delay(_duration: Duration) -> impl Future<Output = ()> {
         #[cfg(feature = "web")]
         {
             use futures_util::FutureExt;
@@ -29,56 +28,22 @@ impl TimeProvider for WebTime {
                     let _ = sender.send(());
                 });
 
-                // Use requestAnimationFrame for smoother animations
-                if duration.as_millis() < 16 {
-                    window
-                        .request_animation_frame(cb.as_ref().unchecked_ref())
-                        .unwrap();
-                    cb.forget();
-                } else {
-                    // Use setTimeout for longer delays
-                    window
-                        .set_timeout_with_callback_and_timeout_and_arguments_0(
-                            cb.as_ref().unchecked_ref(),
-                            duration.as_millis() as i32,
-                        )
-                        .unwrap();
-                    cb.forget();
-                }
+                window
+                    .request_animation_frame(cb.as_ref().unchecked_ref())
+                    .unwrap();
+                cb.forget();
             }
 
             receiver.map(|_| ())
         }
 
-        // Fallback for non-wasm or in case of window lookup failure
         #[cfg(not(feature = "web"))]
         {
             use futures_util::future::ready;
-            std::thread::sleep(duration);
+            tokio::time::sleep(_duration);
             ready(())
         }
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct DesktopTime;
-
-impl TimeProvider for DesktopTime {
-    fn now() -> Instant {
-        Instant::now()
-    }
-
-    fn delay(duration: Duration) -> impl Future<Output = ()> {
-        #[cfg(not(feature = "web"))]
-        {
-            async move {
-                tokio::time::sleep(duration).await;
-            }
-        }
-
-        #[cfg(feature = "web")]
-        {
-            WebTime::delay(duration)
-        }
-    }
-}
+pub type Time = MotionTime;

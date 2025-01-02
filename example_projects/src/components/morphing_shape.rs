@@ -1,10 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_motion::platform::TimeProvider;
-use dioxus_motion::Time;
-use dioxus_motion::{
-    prelude::*,
-    use_transform_motion::{use_transform_animation, Transform},
-};
+use dioxus_motion::prelude::*;
 
 #[component]
 pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {

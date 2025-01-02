@@ -5,6 +5,7 @@ use dioxus_signals::{Readable, Signal, Writable};
 use futures_util::StreamExt;
 pub use instant::Duration;
 use motion::Motion;
+pub use platform::{MotionTime, TimeProvider};
 use prelude::AnimationState;
 
 pub mod animation;
@@ -14,27 +15,21 @@ pub mod spring;
 pub mod use_transform_motion;
 
 pub mod prelude {
-    pub use crate::animation::{AnimationMode, AnimationState};
+    pub use crate::animation::AnimationMode;
+    pub use crate::animation::{AnimationState, Tween};
     pub use crate::motion::Motion;
     pub use crate::spring::Spring;
+    pub use crate::use_transform_motion::use_transform_animation;
+    pub use crate::use_transform_motion::Transform;
+    pub use crate::use_transform_motion::TransformMotion;
     pub use crate::use_value_animation;
     pub use crate::Duration;
+    pub use crate::Time;
+    pub use crate::TimeProvider;
     pub use crate::UseMotion;
 }
 
-#[cfg(not(feature = "web"))]
-use platform::DesktopTime;
-
-#[cfg(feature = "web")]
-use platform::WebTime;
-
-use platform::TimeProvider;
-
-#[cfg(feature = "web")]
-pub type Time = WebTime;
-
-#[cfg(not(feature = "web"))]
-pub type Time = DesktopTime;
+pub type Time = MotionTime;
 
 /// Represents an active motion animation
 #[derive(Clone, Copy)]
@@ -135,26 +130,15 @@ pub fn use_value_animation(config: Motion) -> UseMotion {
                         } else {
                             config.target
                         };
-                        let initial_elapsed = *elapsed_time.read();
+
                         completion_state.set(AnimationState::Running);
                         running_state.set(true);
 
                         while *running_state.read() {
-                            let current_elapsed = Time::now()
-                                .duration_since(start_time)
-                                .saturating_add(initial_elapsed);
-                            elapsed_time.set(current_elapsed);
+                            let elapsed = Time::now().duration_since(start_time);
+                            let progress = (elapsed.as_secs_f64() / tween.duration.as_secs_f64())
+                                .clamp(0.0, 1.0);
 
-                            if current_elapsed >= tween.duration {
-                                break;
-                            }
-
-                            // Calculate progress as a ratio between 0 and 1
-                            let progress = (current_elapsed.as_secs_f64()
-                                / tween.duration.as_secs_f64())
-                            .clamp(0.0, 1.0);
-
-                            // Apply easing function directly with progress
                             let current = (tween.easing)(
                                 progress as f32,
                                 start_value,
@@ -163,16 +147,11 @@ pub fn use_value_animation(config: Motion) -> UseMotion {
                             );
                             value.set(current);
 
-                            // Simplified frame delay calculation
-                            let frame_delay = if current_elapsed + Duration::from_micros(11_111)
-                                >= tween.duration
-                            {
-                                tween.duration.saturating_sub(current_elapsed)
-                            } else {
-                                Duration::from_micros(11_111) // Target ~90 FPS (1000ms/90 ≈ 11.11ms)
-                            };
+                            if progress >= 1.0 {
+                                break;
+                            }
 
-                            Time::delay(frame_delay.max(Duration::from_millis(1))).await;
+                            Time::delay(Duration::from_nanos(1)).await;
                         }
 
                         // Ensure final value is set
@@ -198,19 +177,17 @@ pub fn use_value_animation(config: Motion) -> UseMotion {
                         running_state.set(true);
 
                         while *running_state.read() {
-                            let dt = 1.0 / 90.0; // 90 FPS
+                            let start = Time::now();
+                            Time::delay(Duration::from_nanos(1)).await;
+                            let dt = start.elapsed().as_secs_f32();
 
                             current =
                                 Motion::update_spring(current, target, &mut velocity, &spring, dt);
-
                             value.set(current);
 
-                            // Check if spring has settled
                             if velocity.abs() < 0.01 && (current - target).abs() < 0.01 {
                                 break;
                             }
-
-                            Time::delay(Duration::from_millis(5)).await;
                         }
 
                         // Ensure we reach exact target
