@@ -14,8 +14,8 @@ pub fn ValueAnimationShowcase() -> Element {
                 100.0,
                 AnimationConfig {
                     mode: AnimationMode::Tween(Tween {
-                        duration: Duration::from_secs(10),
-                        easing: easer::functions::Sine::ease_out,
+                        duration: Duration::from_secs(5),
+                        easing: easer::functions::Sine::ease_in_out,
                     }),
                     loop_mode: Some(LoopMode::None),
                 },
@@ -50,21 +50,7 @@ pub fn ValueAnimationShowcase() -> Element {
             }
 
             // Controls
-            div {
-                class: "flex gap-4 mt-6",
-                onmounted: move |_| {
-                    value
-                        .animate_to(
-                            100.0,
-                            AnimationConfig {
-                                mode: AnimationMode::Tween(Tween {
-                                    duration: Duration::from_secs(10),
-                                    easing: easer::functions::Sine::ease_out,
-                                }),
-                                loop_mode: Some(LoopMode::None),
-                            },
-                        );
-                },
+            div { class: "flex gap-4 mt-6",
                 button {
                     class: "px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-opacity-90 transition-all",
                     onclick: move |_| start_animation(),

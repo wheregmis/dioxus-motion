@@ -270,14 +270,25 @@ pub fn use_animation<T: Copy + Into<f32> + From<f32> + 'static>(
                     continue;
                 }
 
-                let start = Time::now();
                 Time::delay(Duration::from_millis(16)).await; // ~60fps
-                let dt = start.elapsed().as_secs_f32();
 
-                if state.0.write().update(dt) {
+                let frame_delay = match state.0.read().config.mode {
+                    AnimationMode::Tween(tween) => {
+                        let remaining = tween.duration.saturating_sub(state.0.read().elapsed);
+                        if remaining.is_zero() {
+                            Duration::from_millis(16)
+                        } else {
+                            remaining.min(Duration::from_millis(16))
+                        }
+                    }
+                    _ => Duration::from_millis(16),
+                };
+
+                if state.0.write().update(frame_delay.as_secs_f32()) {
                     // Force a rerender when animation updates
                     running.toggle();
                 }
+                Time::delay(frame_delay).await;
             }
         }
     });
