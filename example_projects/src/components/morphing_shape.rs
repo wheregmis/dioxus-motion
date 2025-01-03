@@ -49,12 +49,15 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
                         scale: shape_configs[next].scale,
                         ..Default::default()
                     },
-                    AnimationMode::Spring(Spring {
-                        stiffness: 100.0,
-                        damping: 10.0,
-                        mass: 1.0,
+                    AnimationConfig {
+                        mode: AnimationMode::Spring(Spring {
+                            stiffness: 100.0,
+                            damping: 10.0,
+                            mass: 1.0,
+                            ..Default::default()
+                        }),
                         ..Default::default()
-                    }),
+                    },
                 );
             }
         });

@@ -14,19 +14,30 @@ pub fn TransformAnimationShowcase() -> Element {
                 opacity: 0.5,
                 ..Default::default()
             },
-            AnimationMode::Spring(Spring {
-                stiffness: 300.0,
-                damping: 15.0,
-                mass: 0.8,
+            AnimationConfig {
+                mode: AnimationMode::Spring(Spring {
+                    stiffness: 300.0,
+                    damping: 15.0,
+                    mass: 0.8,
+                    ..Default::default()
+                }),
                 ..Default::default()
-            }),
+            },
         );
     };
 
     let mut animate_reset = move || {
         transform.animate_to(
             Transform::default(),
-            AnimationMode::Spring(Spring::default()),
+            AnimationConfig {
+                mode: AnimationMode::Spring(Spring {
+                    stiffness: 300.0,
+                    damping: 15.0,
+                    mass: 0.8,
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
         );
     };
 

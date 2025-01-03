@@ -16,12 +16,15 @@ pub fn Navbar() -> Element {
                 opacity: 1.0,
                 ..Default::default()
             },
-            AnimationMode::Spring(Spring {
-                stiffness: 100.0,
-                damping: 20.0,
-                mass: 1.0,
+            AnimationConfig {
+                mode: AnimationMode::Spring(Spring {
+                    stiffness: 100.0,
+                    damping: 20.0,
+                    mass: 1.0,
+                    ..Default::default()
+                }),
                 ..Default::default()
-            }),
+            },
         );
     });
 

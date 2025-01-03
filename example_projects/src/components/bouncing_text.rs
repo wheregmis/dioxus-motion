@@ -12,18 +12,20 @@ fn BouncingLetter(letter: char, delay: f32) -> Element {
                 scale: 1.2,
                 ..Default::default()
             },
-            AnimationMode::Spring(Spring {
-                stiffness: 200.0,
-                damping: 8.0,
-                mass: 0.8,
+            AnimationConfig {
+                mode: AnimationMode::Spring(Spring {
+                    stiffness: 200.0,
+                    damping: 8.0,
+                    mass: 0.8,
+                    ..Default::default()
+                }),
                 ..Default::default()
-            }),
+            },
         );
-        transform.loop_animation();
     });
 
     use_drop(move || {
-        transform.stop_loop();
+        transform.stop();
     });
 
     rsx! {

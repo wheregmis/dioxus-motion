@@ -19,6 +19,7 @@ pub mod prelude {
     pub use crate::spring::Spring;
     pub use crate::tween::Tween;
     pub use crate::use_animation;
+    pub use crate::AnimationConfig;
     pub use crate::AnimationManager;
     pub use crate::AnimationMode;
     pub use crate::Duration;
@@ -40,17 +41,50 @@ impl Default for AnimationMode {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum LoopMode {
+    None,
+    Infinite,
+    Times(u32),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct AnimationConfig {
+    pub mode: AnimationMode,
+    pub loop_mode: Option<LoopMode>,
+}
+
+impl AnimationConfig {
+    pub fn new(mode: AnimationMode) -> Self {
+        Self {
+            mode,
+            loop_mode: None,
+        }
+    }
+
+    pub fn with_loop(mut self, loop_mode: LoopMode) -> Self {
+        self.loop_mode = Some(loop_mode);
+        self
+    }
+}
+
+impl Default for AnimationConfig {
+    fn default() -> Self {
+        Self {
+            mode: AnimationMode::default(),
+            loop_mode: None,
+        }
+    }
+}
+
 pub trait AnimationManager<T: Copy + 'static>: Clone + Copy {
     fn new(initial: T) -> Self;
-    fn animate_to(&mut self, target: T, mode: AnimationMode);
+    fn animate_to(&mut self, target: T, config: AnimationConfig);
     fn update(&mut self, dt: f32) -> bool;
     fn get_value(&self) -> T;
     fn is_running(&self) -> bool;
     fn reset(&mut self);
-    fn loop_animation(&mut self);
-    fn loop_times(&mut self, count: u32);
-    fn stop_loop(&mut self);
-    fn is_looping(&self) -> bool;
+    fn stop(&mut self);
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -59,12 +93,10 @@ pub struct AnimationState<T: Copy + 'static> {
     target: T,
     initial: T,
     velocity: f32,
-    mode: AnimationMode,
+    config: AnimationConfig,
     running: bool,
     elapsed: Duration,
-    loop_count: Option<u32>,
     current_loop: u32,
-    is_looping: bool,
 }
 
 impl<T: Copy + Into<f32> + From<f32>> AnimationManager<T> for AnimationState<T> {
@@ -73,63 +105,34 @@ impl<T: Copy + Into<f32> + From<f32>> AnimationManager<T> for AnimationState<T> 
             current: initial,
             target: initial,
             velocity: 0.0,
-            mode: AnimationMode::Spring(Spring::default()),
+            config: AnimationConfig::default(),
             running: false,
             elapsed: Duration::default(),
             initial,
-            loop_count: None,
             current_loop: 0,
-            is_looping: false,
         }
     }
 
-    fn animate_to(&mut self, target: T, mode: AnimationMode) {
+    fn animate_to(&mut self, target: T, config: AnimationConfig) {
         self.target = target;
-        self.mode = mode;
+        self.config = config;
         self.running = true;
         self.elapsed = Duration::default();
-    }
-
-    fn loop_animation(&mut self) {
-        self.is_looping = true;
-        self.loop_count = None;
-        self.animate_to(self.target, self.mode);
-    }
-
-    fn loop_times(&mut self, count: u32) {
-        self.is_looping = true;
-        self.loop_count = Some(count);
-        self.current_loop = 0;
-        self.animate_to(self.target, self.mode);
-    }
-
-    fn stop_loop(&mut self) {
-        self.is_looping = false;
-        self.loop_count = None;
+        self.velocity = 0.0;
         self.current_loop = 0;
     }
 
-    fn is_looping(&self) -> bool {
-        self.is_looping
+    fn stop(&mut self) {
+        self.running = false;
+        self.current_loop = 0;
     }
 
     fn update(&mut self, dt: f32) -> bool {
         if !self.running {
-            if self.is_looping {
-                if let Some(count) = self.loop_count {
-                    if self.current_loop >= count {
-                        self.stop_loop();
-                        return false;
-                    }
-                    self.current_loop += 1;
-                }
-                self.animate_to(self.target, self.mode);
-                return true;
-            }
             return false;
         }
 
-        match self.mode {
+        let completed = match self.config.mode {
             AnimationMode::Spring(spring) => {
                 let current: f32 = self.current.into();
                 let target: f32 = self.target.into();
@@ -144,31 +147,55 @@ impl<T: Copy + Into<f32> + From<f32>> AnimationManager<T> for AnimationState<T> 
 
                 self.current = T::from(next);
 
-                if self.velocity.abs() < 0.01 && (next - target).abs() < 0.01 {
-                    self.running = false;
-                    self.current = self.target;
-                    return false;
-                }
+                self.velocity.abs() < 0.01 && (next - target).abs() < 0.01
             }
             AnimationMode::Tween(tween) => {
                 self.elapsed += Duration::from_secs_f32(dt);
-                let progress =
-                    (self.elapsed.as_secs_f32() / tween.duration.as_secs_f32()).clamp(0.0, 1.0);
+
+                // Calculate progress based on actual duration
+                let progress = (self.elapsed.as_micros() as f32
+                    / tween.duration.as_micros() as f32)
+                    .clamp(0.0, 1.0);
 
                 let current: f32 = self.current.into();
                 let target: f32 = self.target.into();
 
+                // Apply easing function
                 let next = (tween.easing)(progress, current, target - current, 1.0);
+
                 self.current = T::from(next);
 
-                if progress >= 1.0 {
+                // Check if we've reached the end of the duration
+                progress >= 1.0
+            }
+        };
+
+        if completed {
+            match self.config.loop_mode.unwrap_or(LoopMode::None) {
+                LoopMode::None => {
                     self.running = false;
-                    self.current = self.target;
-                    return false;
+                    false
+                }
+                LoopMode::Infinite => {
+                    self.current = self.initial;
+                    self.elapsed = Duration::default();
+                    true
+                }
+                LoopMode::Times(count) => {
+                    self.current_loop += 1;
+                    if self.current_loop >= count {
+                        self.stop();
+                        false
+                    } else {
+                        self.current = self.initial;
+                        self.elapsed = Duration::default();
+                        true
+                    }
                 }
             }
+        } else {
+            true
         }
-        true
     }
 
     fn get_value(&self) -> T {
@@ -203,8 +230,8 @@ impl<T: Copy + Into<f32> + From<f32>> AnimationManager<T> for AnimationSignal<T>
         Self(Signal::new(AnimationState::new(initial)))
     }
 
-    fn animate_to(&mut self, target: T, mode: AnimationMode) {
-        self.0.write().animate_to(target, mode);
+    fn animate_to(&mut self, target: T, config: AnimationConfig) {
+        self.0.write().animate_to(target, config);
     }
 
     fn update(&mut self, dt: f32) -> bool {
@@ -223,35 +250,22 @@ impl<T: Copy + Into<f32> + From<f32>> AnimationManager<T> for AnimationSignal<T>
         self.0.write().reset()
     }
 
-    fn loop_animation(&mut self) {
-        todo!()
-    }
-
-    fn loop_times(&mut self, count: u32) {
-        todo!()
-    }
-
-    fn stop_loop(&mut self) {
-        todo!()
-    }
-
-    fn is_looping(&self) -> bool {
-        todo!()
+    fn stop(&mut self) {
+        self.0.write().stop()
     }
 }
 
 pub fn use_animation<T: Copy + Into<f32> + From<f32> + 'static>(
     initial: T,
 ) -> impl AnimationManager<T> {
-    let state = AnimationSignal(use_signal(|| AnimationState::new(initial)));
-    let state_clone = state.clone();
+    let mut state = AnimationSignal(use_signal(|| AnimationState::new(initial)));
+
     let mut running = use_signal(|| false);
 
     use_future(move || {
-        let mut value = state_clone.clone();
         async move {
             loop {
-                if !value.is_running() {
+                if !state.is_running() {
                     Time::delay(Duration::from_millis(16)).await;
                     continue;
                 }
@@ -260,7 +274,7 @@ pub fn use_animation<T: Copy + Into<f32> + From<f32> + 'static>(
                 Time::delay(Duration::from_millis(16)).await; // ~60fps
                 let dt = start.elapsed().as_secs_f32();
 
-                if value.0.write().update(dt) {
+                if state.0.write().update(dt) {
                     // Force a rerender when animation updates
                     running.toggle();
                 }

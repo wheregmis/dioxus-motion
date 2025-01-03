@@ -39,9 +39,10 @@ impl TimeProvider for MotionTime {
 
         #[cfg(not(feature = "web"))]
         {
-            use futures_util::future::ready;
-            tokio::time::sleep(_duration);
-            ready(())
+            use futures_util::future::BoxFuture;
+            Box::pin(async move {
+                tokio::time::sleep(_duration).await;
+            })
         }
     }
 }

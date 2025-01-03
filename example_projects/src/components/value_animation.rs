@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_motion::prelude::*;
+use dioxus_motion::{prelude::*, AnimationConfig, LoopMode};
 use easer::functions::Easing;
 
 #[component]
@@ -12,10 +12,13 @@ pub fn ValueAnimationShowcase() -> Element {
             playing.set(true);
             value.animate_to(
                 100.0,
-                AnimationMode::Tween(Tween {
-                    duration: Duration::from_secs(2),
-                    easing: easer::functions::Sine::ease_out,
-                }),
+                AnimationConfig {
+                    mode: AnimationMode::Tween(Tween {
+                        duration: Duration::from_secs(10),
+                        easing: easer::functions::Sine::ease_out,
+                    }),
+                    loop_mode: Some(LoopMode::None),
+                },
             );
         }
     };
@@ -24,10 +27,13 @@ pub fn ValueAnimationShowcase() -> Element {
         playing.set(false);
         value.animate_to(
             0.0,
-            AnimationMode::Tween(Tween {
-                duration: Duration::from_secs(2),
-                easing: easer::functions::Sine::ease_out,
-            }),
+            AnimationConfig {
+                mode: AnimationMode::Tween(Tween {
+                    duration: Duration::from_secs(10),
+                    easing: easer::functions::Sine::ease_out,
+                }),
+                loop_mode: Some(LoopMode::None),
+            },
         );
     };
 
@@ -44,7 +50,21 @@ pub fn ValueAnimationShowcase() -> Element {
             }
 
             // Controls
-            div { class: "flex gap-4 mt-6",
+            div {
+                class: "flex gap-4 mt-6",
+                onmounted: move |_| {
+                    value
+                        .animate_to(
+                            100.0,
+                            AnimationConfig {
+                                mode: AnimationMode::Tween(Tween {
+                                    duration: Duration::from_secs(10),
+                                    easing: easer::functions::Sine::ease_out,
+                                }),
+                                loop_mode: Some(LoopMode::None),
+                            },
+                        );
+                },
                 button {
                     class: "px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-opacity-90 transition-all",
                     onclick: move |_| start_animation(),
