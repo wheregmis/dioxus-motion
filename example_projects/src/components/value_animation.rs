@@ -10,7 +10,7 @@ pub fn ValueAnimationShowcase() -> Element {
         value.animate_to(
             100.0,
             AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_secs(5),
+                duration: Duration::from_secs(3),
                 easing: easer::functions::Sine::ease_in_out,
             })),
         );
@@ -20,7 +20,7 @@ pub fn ValueAnimationShowcase() -> Element {
         value.animate_to(
             0.0,
             AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_secs(10),
+                duration: Duration::from_secs(3),
                 easing: easer::functions::Sine::ease_out,
             })),
         );
