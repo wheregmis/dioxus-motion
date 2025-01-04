@@ -14,7 +14,7 @@ pub fn Card3DFlip() -> Element {
                     stiffness: 150.0,
                     damping: 15.0,
                     mass: 1.0,
-                    ..Default::default()
+                    velocity: 10.0,
                 })),
             );
         } else {
@@ -29,7 +29,7 @@ pub fn Card3DFlip() -> Element {
                     stiffness: 150.0,
                     damping: 15.0,
                     mass: 1.0,
-                    ..Default::default()
+                    velocity: 10.0,
                 })),
             );
         }
