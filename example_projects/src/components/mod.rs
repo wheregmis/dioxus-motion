@@ -27,3 +27,6 @@ pub use path_animation::PathAnimation;
 
 pub mod progress_bar;
 pub use progress_bar::ProgressBar;
+
+pub mod color_animation;
+pub use color_animation::ColorAnimation;

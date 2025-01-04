@@ -11,7 +11,7 @@ struct ShapeConfig {
 #[component]
 pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
     let mut current_shape = use_signal(|| 0);
-    let mut transform = use_animation(Transform::identity());
+    let mut transform = use_motion(Transform::identity());
 
     let shape_configs = [
         ShapeConfig {
@@ -44,7 +44,6 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
                 damping: 8.0,    // Less damping for more organic motion
                 mass: 0.8,       // Lighter mass for faster response
                 velocity: 0.5,   // Initial velocity for continuous motion
-                ..Default::default()
             }))
             .with_loop(LoopMode::Infinite), // Make animation continuous
         );

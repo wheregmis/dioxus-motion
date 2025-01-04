@@ -1362,7 +1362,6 @@ dependencies = [
  "dioxus",
  "dioxus-motion",
  "easer",
- "tracing",
 ]
 
 [[package]]

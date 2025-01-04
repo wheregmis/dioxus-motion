@@ -19,7 +19,7 @@ impl Color {
     }
 
     pub fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
-        Self::new(
+        Color::new(
             r as f32 / 255.0,
             g as f32 / 255.0,
             b as f32 / 255.0,
@@ -138,11 +138,13 @@ impl Animatable for Color {
     }
 
     fn interpolate(&self, target: &Self, t: f32) -> Self {
+        let lerp = |start: f32, end: f32, t: f32| -> f32 { start + (end - start) * t };
+
         Color::new(
-            self.r + (target.r - self.r) * t,
-            self.g + (target.g - self.g) * t,
-            self.b + (target.b - self.b) * t,
-            self.a + (target.a - self.a) * t,
+            lerp(self.r, target.r, t),
+            lerp(self.g, target.g, t),
+            lerp(self.b, target.b, t),
+            lerp(self.a, target.a, t),
         )
     }
 }

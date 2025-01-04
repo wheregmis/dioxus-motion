@@ -3,8 +3,8 @@ use dioxus_motion::prelude::*;
 
 #[component]
 pub fn PulseEffect(color: &'static str, size: &'static str) -> Element {
-    let mut scale = use_animation(1.0f32);
-    let mut opacity = use_animation(0.8f32);
+    let mut scale = use_motion(1.0f32);
+    let mut opacity = use_motion(0.8f32);
 
     use_effect(move || {
         // Main pulse animation

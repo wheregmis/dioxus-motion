@@ -3,7 +3,7 @@ use dioxus_motion::prelude::*;
 
 #[component]
 pub fn TransformAnimationShowcase() -> Element {
-    let mut transform = use_animation(Transform::identity());
+    let mut transform = use_motion(Transform::identity());
 
     let animate_hover = move |_| {
         transform.animate_to(

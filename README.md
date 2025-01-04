@@ -24,7 +24,7 @@ use dioxus_motion::prelude::*;
 
 #[component]
 fn PulseEffect() -> Element {
-    let scale = use_animation(1.0f32);
+    let scale = use_motion(1.0f32);
     
     use_effect(move || {
         scale.animate_to(
@@ -84,7 +84,7 @@ Choose the right feature for your platform:
 ## 🔄 Migration Guide (v0.2.0)
 
 ### Breaking Changes
-- Replaced `use_value_animation` with `use_animation`
+- Combined `use_value_animation` and `use_transform_animation`  into `use_motion`
 - New animation configuration API
 - Updated spring physics parameters
 - Changed transform property names
@@ -97,7 +97,7 @@ use dioxus_motion::prelude::*;
 let mut motion = use_value_animation(Motion::new(0.0).to(100.0));
 
 // After (v0.2.x)
-let mut value = use_animation(0.0f32);
+let mut value = use_motion(0.0f32);
 value.animate_to(
     100.0,
     AnimationConfig::new(AnimationMode::Tween(Tween {
@@ -110,7 +110,7 @@ value.animate_to(
 let mut transform = use_transform_animation(Transform::default());
 
 // After (v0.2.x)
-let mut transform = use_animation(Transform::default());
+let mut transform = use_motion(Transform::default());
 transform.animate_to(
     Transform::new(100.0, 0.0, 1.2, 45.0),
     AnimationConfig::new(AnimationMode::Spring(Spring {
@@ -133,6 +133,103 @@ transform.animate_to(
 .with_delay(Duration::from_secs(1))
 ```
 
+## 🎓 Advanced Guide: Extending Animations
+
+### Implementing the Animatable Trait
+
+The `Animatable` trait allows you to animate any custom type.
+
+Defination of Animatable Trait
+```rust
+pub trait Animatable: Copy + 'static {
+    fn zero() -> Self;
+    fn epsilon() -> f32;
+    fn magnitude(&self) -> f32;
+    fn scale(&self, factor: f32) -> Self;
+    fn add(&self, other: &Self) -> Self;
+    fn sub(&self, other: &Self) -> Self;
+    fn interpolate(&self, target: &Self, t: f32) -> Self;
+}
+
+```
+Here's how to implement it:
+### Custom Position Type
+```rust
+#[derive(Debug, Copy, Clone)]
+struct Position {
+    x: f32,
+    y: f32,
+}
+
+impl Animatable for Position {
+    fn zero() -> Self {
+        Position { x: 0.0, y: 0.0 }
+    }
+
+    fn epsilon() -> f32 {
+        0.001
+    }
+
+    fn magnitude(&self) -> f32 {
+        (self.x * self.x + self.y * self.y).sqrt()
+    }
+
+    fn scale(&self, factor: f32) -> Self {
+        Position {
+            x: self.x * factor,
+            y: self.y * factor,
+        }
+    }
+
+    fn add(&self, other: &Self) -> Self {
+        Position {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+
+    fn sub(&self, other: &Self) -> Self {
+        Position {
+            x: self.x - other.x,
+            y: self.y - other.y,
+        }
+    }
+
+    fn interpolate(&self, target: &Self, t: f32) -> Self {
+        Position {
+            x: self.x + (target.x - self.x) * t,
+            y: self.y + (target.y - self.y) * t,
+        }
+    }
+}
+```
+### Best Practices
+Zero State: Implement zero() as your type's neutral state
+Epsilon: Choose a small value (~0.001) for animation completion checks
+Magnitude: Return the square root of sum of squares for vector types
+Scale: Multiply all components by the factor
+Add/Sub: Implement component-wise addition/subtraction
+Interpolate: Use linear interpolation for smooth transitions
+
+### Common Patterns
+#### Circular Values (e.g., angles)
+```rust
+fn interpolate(&self, target: &Self, t: f32) -> Self {
+    let mut diff = target.angle - self.angle;
+    // Ensure shortest path
+    if diff > PI { diff -= 2.0 * PI; }
+    if diff < -PI { diff += 2.0 * PI; }
+    Self { angle: self.angle + diff * t }
+}
+```
+#### Normalized Values (e.g., colors)
+```rust
+fn scale(&self, factor: f32) -> Self {
+    Self {
+        value: (self.value * factor).clamp(0.0, 1.0)
+    }
+}
+```
 
 ## 🌈 Supported Easing Functions
 

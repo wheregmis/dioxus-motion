@@ -3,7 +3,7 @@ use dioxus_motion::prelude::*;
 
 #[component]
 pub fn Card3DFlip() -> Element {
-    let mut transform = use_animation(Transform::identity());
+    let mut transform = use_motion(Transform::identity());
     let mut is_flipped = use_signal(|| false);
 
     let animate_flip = move |_| {

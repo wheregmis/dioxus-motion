@@ -4,7 +4,7 @@ use easer::functions::Easing;
 
 #[component]
 pub fn ProgressBar(title: &'static str) -> Element {
-    let mut progress = use_animation(0.0f32);
+    let mut progress = use_motion(0.0f32);
 
     use_effect(move || {
         progress.animate_to(

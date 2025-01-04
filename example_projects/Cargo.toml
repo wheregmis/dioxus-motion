@@ -10,7 +10,7 @@ edition = "2021"
 dioxus = { version = "0.6.1", features = ["asset", "devtools", "document", "hooks", "html", "launch", "macro", "mounted", "signals"], default-features = false }
 dioxus-motion = { path = "../", optional = true, default-features = false }
 easer = { version = "0.3.0", default-features = false }
-tracing = "0.1.41"
+
 
 [features]
 default = ["web"]

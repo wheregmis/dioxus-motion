@@ -4,8 +4,8 @@ use easer::functions::Easing;
 
 #[component]
 pub fn TypewriterEffect(text: &'static str) -> Element {
-    let mut char_count = use_animation(0.0f32);
-    let mut cursor_opacity = use_animation(1.0f32);
+    let mut char_count = use_motion(0.0f32);
+    let mut cursor_opacity = use_motion(1.0f32);
     let text_len = text.len() as f32;
 
     use_effect(move || {

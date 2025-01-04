@@ -16,7 +16,7 @@ pub mod prelude {
     pub use crate::animations::{Color, Transform};
     pub use crate::spring::Spring;
     pub use crate::tween::Tween;
-    pub use crate::use_animation;
+    pub use crate::use_motion;
     pub use crate::AnimationConfig;
     pub use crate::AnimationManager;
     pub use crate::AnimationMode;
@@ -47,7 +47,7 @@ pub enum LoopMode {
     Times(u32),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct AnimationConfig {
     pub mode: AnimationMode,
     pub loop_mode: Option<LoopMode>,
@@ -71,16 +71,6 @@ impl AnimationConfig {
     pub fn with_delay(mut self, delay: Duration) -> Self {
         self.delay = delay;
         self
-    }
-}
-
-impl Default for AnimationConfig {
-    fn default() -> Self {
-        Self {
-            mode: AnimationMode::default(),
-            loop_mode: None,
-            delay: Duration::default(),
-        }
     }
 }
 
@@ -280,7 +270,7 @@ impl<T: Animatable> AnimationManager<T> for AnimationSignal<T> {
     }
 }
 
-pub fn use_animation<T: Animatable>(initial: T) -> impl AnimationManager<T> {
+pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
     let mut state = AnimationSignal(use_signal(|| AnimationState::new(initial)));
     let mut running = use_signal(|| false);
 

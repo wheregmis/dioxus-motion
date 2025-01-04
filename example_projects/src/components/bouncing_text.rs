@@ -4,7 +4,7 @@ use easer::functions::Easing;
 
 #[component]
 fn BouncingLetter(letter: char, delay: f32) -> Element {
-    let mut transform = use_animation(Transform::identity());
+    let mut transform = use_motion(Transform::identity());
 
     use_effect(move || {
         let delay = Duration::from_secs_f32(delay);

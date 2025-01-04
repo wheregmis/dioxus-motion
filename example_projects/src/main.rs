@@ -1,13 +1,10 @@
 use std::vec;
 
 use dioxus::prelude::*;
-use dioxus_motion::Duration;
-use dioxus_motion::{
-    tween::Tween, use_animation, AnimationConfig, AnimationManager, AnimationMode,
-};
+
 use example_projects::components::{
-    BouncingText, Card3DFlip, MorphingShape, Navbar, PathAnimation, ProgressBar, PulseEffect,
-    TransformAnimationShowcase, TypewriterEffect, ValueAnimationShowcase,
+    BouncingText, Card3DFlip, ColorAnimation, MorphingShape, Navbar, PathAnimation, ProgressBar,
+    PulseEffect, TransformAnimationShowcase, TypewriterEffect, ValueAnimationShowcase,
 };
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -20,53 +17,6 @@ fn app() -> Element {
     rsx! {
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         ShowcaseGallery {}
-    }
-}
-
-#[component]
-pub fn TimerDemo() -> Element {
-    let mut value = use_animation(0.0f32);
-
-    // Start animation button
-    let on_start = move |_| {
-        value.animate_to(
-            100.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_secs(3),
-                ..Default::default()
-            })),
-        );
-    };
-
-    // Reset button
-    let on_reset = move |_| {
-        value.animate_to(
-            0.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(500),
-                ..Default::default()
-            })),
-        );
-    };
-
-    rsx! {
-        div { class: "flex flex-col items-center justify-center gap-4 p-8",
-            // Display value
-            div { class: "text-6xl font-bold", "{value.get_value():.1}" }
-            // Controls
-            div { class: "flex gap-4",
-                button {
-                    class: "px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600",
-                    onclick: on_start,
-                    "Start"
-                }
-                button {
-                    class: "px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600",
-                    onclick: on_reset,
-                    "Reset"
-                }
-            }
-        }
     }
 }
 
@@ -182,6 +132,17 @@ pub fn ShowcaseGallery() -> Element {
                             TypewriterEffect { text: "Hello, Dioxus Motion" }
                         }
                         ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/typewriter_effect.rs" }
+                    }
+
+                    // Color Animation
+                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "Color Animation"
+                        }
+                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                            ColorAnimation {}
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/color_animation.rs" }
                     }
                 }
             }

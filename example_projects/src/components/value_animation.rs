@@ -4,7 +4,7 @@ use easer::functions::Easing;
 
 #[component]
 pub fn ValueAnimationShowcase() -> Element {
-    let mut value = use_animation(0.0f32);
+    let mut value = use_motion(0.0f32);
 
     let start_animation = move |_| {
         value.animate_to(
