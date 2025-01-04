@@ -44,7 +44,6 @@ pub trait AnimationManager<T: Animatable>: Clone + Copy {
     fn delay(&mut self, duration: Duration); // Add delay function
 }
 
-#[derive(Debug, Clone, Copy)]
 pub struct AnimationState<T: Animatable> {
     current: T,
     target: T,
@@ -150,7 +149,7 @@ impl<T: Animatable> AnimationState<T> {
     }
 
     fn handle_completion(&mut self) -> bool {
-        match self.config.loop_mode.unwrap_or(LoopMode::None) {
+        let should_continue = match self.config.loop_mode.unwrap_or(LoopMode::None) {
             LoopMode::None => {
                 self.running = false;
                 false
@@ -173,7 +172,15 @@ impl<T: Animatable> AnimationState<T> {
                     true
                 }
             }
+        };
+
+        if !should_continue {
+            if let Some(ref f) = self.config.on_complete {
+                f();
+            }
         }
+
+        should_continue
     }
 
     fn get_value(&self) -> T {

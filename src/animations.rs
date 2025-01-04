@@ -30,11 +30,14 @@ pub enum LoopMode {
     Times(u32),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub type OnComplete = Box<dyn Fn() + 'static>;
+
+#[derive(Default)]
 pub struct AnimationConfig {
     pub mode: AnimationMode,
     pub loop_mode: Option<LoopMode>,
-    pub delay: Duration, // Add delay field
+    pub delay: Duration,                 // Add delay field
+    pub on_complete: Option<OnComplete>, // Add on_complete field
 }
 
 impl AnimationConfig {
@@ -43,6 +46,7 @@ impl AnimationConfig {
             mode,
             loop_mode: None,
             delay: Duration::default(),
+            on_complete: None,
         }
     }
 
@@ -53,6 +57,14 @@ impl AnimationConfig {
 
     pub fn with_delay(mut self, delay: Duration) -> Self {
         self.delay = delay;
+        self
+    }
+
+    pub fn with_on_complete<F>(mut self, f: F) -> Self
+    where
+        F: Fn() + 'static,
+    {
+        self.on_complete = Some(Box::new(f));
         self
     }
 }

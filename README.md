@@ -133,6 +133,11 @@ transform.animate_to(
 .with_delay(Duration::from_secs(1))
 ```
 
+### On Complete
+```rust
+.with_on_complete(|| println!("Animation complete!"))
+```
+
 ## 🎓 Advanced Guide: Extending Animations
 
 ### Implementing the Animatable Trait
