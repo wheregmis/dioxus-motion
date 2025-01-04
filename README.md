@@ -164,7 +164,7 @@ transform.animate_to(
 ## 🎓 Advanced Guide: Extending Animations
 
 ### Implementing the Animatable Trait 
-[Flower and Cube Component Example](https://wheregmis.github.io/dioxus-motion/) 
+[Cube Component Example](https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/cube_animation.rs) 
 
 The `Animatable` trait allows you to animate any custom type.
 
