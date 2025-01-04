@@ -235,33 +235,27 @@ impl<T: Animatable> AnimationManager<T> for AnimationSignal<T> {
         self.0.write().config.delay = duration;
     }
 }
-
 pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
     let mut state = AnimationSignal(use_signal(|| AnimationState::new(initial)));
 
     use_future(move || async move {
+        let mut last_frame = Time::now();
+
         loop {
             let frame_start = Time::now();
+            let dt = frame_start.duration_since(last_frame).as_secs_f32();
+            last_frame = frame_start;
 
             if !state.is_running() {
-                // Use longer delay when idle
-                // ! I found this to be more efficient than using requestAnimationFrame and less CPU intensive
                 Time::delay(Duration::from_millis(50)).await;
                 continue;
             }
 
-            // Use animation frame timing when active
-            let frame_duration = Duration::from_secs_f32(1.0 / 60.0);
-            state.update(frame_duration.as_secs_f32());
+            state.update(dt);
 
-            let elapsed = frame_start.elapsed();
-            if elapsed < frame_duration {
-                Time::delay(frame_duration - elapsed).await;
-            }
+            Time::delay(Duration::from_secs_f32(dt)).await;
         }
     });
 
     state
 }
-
-// Required trait extension
