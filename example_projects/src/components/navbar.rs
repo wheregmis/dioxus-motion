@@ -3,35 +3,25 @@ use dioxus_motion::prelude::*;
 
 #[component]
 pub fn Navbar() -> Element {
-    let mut transform = use_animation(Transform {
-        y: -100.0,
-        opacity: 0.0,
-        ..Default::default()
-    });
+    let mut transform = use_animation(Transform::new(0.0, -100.0, 1.0, 0.0));
 
     use_effect(move || {
+        // Animate transform with spring physics
         transform.animate_to(
-            Transform {
-                y: 0.0,
-                opacity: 1.0,
-                ..Default::default()
-            },
-            AnimationConfig {
-                mode: AnimationMode::Spring(Spring {
-                    stiffness: 100.0,
-                    damping: 20.0,
-                    mass: 1.0,
-                    ..Default::default()
-                }),
-                ..Default::default()
-            },
+            Transform::new(0.0, 0.0, 1.0, 0.0),
+            AnimationConfig::new(AnimationMode::Spring(Spring {
+                stiffness: 100.0,
+                damping: 20.0,
+                mass: 1.0,
+                velocity: 10.0,
+            })),
         );
     });
 
     rsx! {
         nav {
             class: "fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm transition-shadow duration-300 z-50",
-            style: "transform: translateY({transform.get_value().y}px); opacity: {transform.get_value().opacity}",
+            style: "transform: translateY({transform.get_value().y}px);",
             div { class: "max-w-6xl mx-auto px-4",
                 div { class: "flex justify-between items-center h-16",
                     // Logo
@@ -41,21 +31,13 @@ pub fn Navbar() -> Element {
                         }
                     }
 
-                    // Navigation Links
-                    div { class: "flex items-center space-x-6",
+                    // Social Links
+                    div { class: "flex items-center space-x-4",
                         a {
-                            class: "text-gray-600 hover:text-blue-500 transition-colors duration-200",
+                            class: "text-gray-600 hover:text-blue-500 transition-colors",
                             href: "https://github.com/wheregmis/dioxus-motion",
                             target: "_blank",
-                            rel: "noopener noreferrer",
                             "GitHub"
-                        }
-                        a {
-                            class: "px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200",
-                            href: "https://docs.rs/dioxus-motion",
-                            target: "_blank",
-                            rel: "noopener noreferrer",
-                            "Documentation"
                         }
                     }
                 }

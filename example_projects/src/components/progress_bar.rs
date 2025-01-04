@@ -9,15 +9,15 @@ pub fn ProgressBar(title: &'static str) -> Element {
     use_effect(move || {
         progress.animate_to(
             100.0,
-            AnimationMode::Tween(Tween {
-                duration: Duration::from_secs(2),
-                easing: easer::functions::Sine::ease_out,
-            }),
+            AnimationConfig::new(AnimationMode::Tween(Tween {
+                duration: Duration::from_secs(5),
+                easing: easer::functions::Sine::ease_in_out,
+            }))
+            .with_loop(LoopMode::Infinite),
         );
-        progress.loop_animation();
     });
 
-    use_drop(move || progress.stop_loop());
+    use_drop(move || progress.stop());
 
     rsx! {
         div { class: "w-full p-6 bg-white rounded-xl shadow-lg",
