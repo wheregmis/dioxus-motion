@@ -34,6 +34,29 @@ pub fn TransformAnimationShowcase() -> Element {
         );
     };
 
+    let transform_style = use_memo(move || {
+        format!(
+            "transform: translate({}px, {}px) scale({}) rotate({}deg);",
+            transform.get_value().x,
+            transform.get_value().y,
+            transform.get_value().scale,
+            transform.get_value().rotation * 180.0 / std::f32::consts::PI
+        )
+    });
+
+    let glow_style = use_memo(move || {
+        format!(
+            "transform: translate({}px, {}px) scale(1.2); opacity: {};",
+            transform.get_value().x,
+            transform.get_value().y,
+            if transform.get_value().y < 0.0 {
+                0.6
+            } else {
+                0.0
+            }
+        )
+    });
+
     use_drop(move || {
         transform.stop();
     });
@@ -48,9 +71,7 @@ pub fn TransformAnimationShowcase() -> Element {
                 // Main card
                 div {
                     class: "w-64 h-64 bg-gradient-to-tr from-emerald-400 to-cyan-400 rounded-2xl shadow-xl",
-                    style: "transform: translate({transform.get_value().x}px, {transform.get_value().y}px)
-                                scale({transform.get_value().scale}) 
-                                rotate({transform.get_value().rotation * 180.0 / std::f32::consts::PI}deg);",
+                    style: "{transform_style.read()}",
 
                     div { class: "h-full w-full flex flex-col items-center justify-center text-white",
                         span { class: "text-2xl font-bold mb-2", "Hover Me!" }
@@ -62,9 +83,7 @@ pub fn TransformAnimationShowcase() -> Element {
                 div {
                     class: "absolute inset-0 bg-gradient-to-tr from-emerald-400/30 to-cyan-400/30
                             rounded-3xl blur-xl -z-10",
-                    style: "transform: translate({transform.get_value().x}px, {transform.get_value().y}px)
-                            scale(1.2);
-                            opacity: {{if transform.get_value().y < 0.0 { 0.6 } else { 0.0 }}};",
+                    style: "{glow_style.read()}",
                 }
             }
         }

@@ -11,7 +11,7 @@ A lightweight, cross-platform animation library for Dioxus, designed to bring sm
 Visit our [Example Website](https://wheregmis.github.io/dioxus-motion/) to see these animations in action:
 
 - 🎲 3D Card Flip
-- ✨ Particle System
+- ✨ Flower Animation
 - 📝 Typewriter Effect
 - 🔄 Morphing Shapes
 - 💫 Spring Animations
@@ -62,7 +62,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-motion = { version = "0.1.4", optional = true, default-features = false }
+dioxus-motion = { version = "0.2.0", optional = true, default-features = false }
 
 [features]
 default = ["web"]
@@ -121,6 +121,29 @@ transform.animate_to(
     }))
 );
 ```
+### If you were using transform.get_style(), that function is removed to make the library more generic so i recommend building something like
+```
+    let transform = use_motion(Transform::default());
+    
+    let transform_style = use_memo(move || {
+        format!(
+            "transform: translate({}px, {}px) scale({}) rotate({}deg);",
+            transform.get_value().x,
+            transform.get_value().y,
+            transform.get_value().scale,
+            transform.get_value().rotation * 180.0 / std::f32::consts::PI
+        )
+    });
+
+    // and using the memo in the component
+      rsx! {
+        div {
+            class: "...",
+            style: "{transform_style.read()}",
+            // ...rest of component...
+        }
+    }
+```
 
 ## 🆕 New Features
 ### Loop Modes
@@ -140,7 +163,8 @@ transform.animate_to(
 
 ## 🎓 Advanced Guide: Extending Animations
 
-### Implementing the Animatable Trait
+### Implementing the Animatable Trait 
+[Flower and Cube Component Example](https://wheregmis.github.io/dioxus-motion/) 
 
 The `Animatable` trait allows you to animate any custom type.
 
@@ -209,12 +233,12 @@ impl Animatable for Position {
 }
 ```
 ### Best Practices
-Zero State: Implement zero() as your type's neutral state
-Epsilon: Choose a small value (~0.001) for animation completion checks
-Magnitude: Return the square root of sum of squares for vector types
-Scale: Multiply all components by the factor
-Add/Sub: Implement component-wise addition/subtraction
-Interpolate: Use linear interpolation for smooth transitions
+- Zero State: Implement zero() as your type's neutral state 
+- Epsilon: Choose a small value (~0.001) for animation completion checks
+- Magnitude: Return the square root of sum of squares for vector types
+- Scale: Multiply all components by the factor
+- Add/Sub: Implement component-wise addition/subtraction
+- Interpolate: Use linear interpolation for smooth transitions
 
 ### Common Patterns
 #### Circular Values (e.g., angles)
@@ -244,28 +268,6 @@ Leverages the `easer` crate, supporting:
 - Cubic
 - Quartic
 - And more!
-
-## 💻 Example Project Configurations
-
-### Web Project
-```toml
-[dependencies]
-dioxus = "0.6.1"
-dioxus-motion = { 
-    git = "https://github.com/wheregmis/dioxus-motion.git", 
-    features = ["web"] 
-}
-```
-
-### Desktop and Mobile Project
-```toml
-[dependencies]
-dioxus = "0.6.1"
-dioxus-motion = { 
-    git = "https://github.com/wheregmis/dioxus-motion.git", 
-    features = ["desktop"] 
-}
-```
 
 ## 🤝 Contributing
 

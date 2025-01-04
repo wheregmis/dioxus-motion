@@ -30,3 +30,9 @@ pub use progress_bar::ProgressBar;
 
 pub mod color_animation;
 pub use color_animation::ColorAnimation;
+
+pub mod cube_animation;
+pub use cube_animation::SwingingCube;
+
+pub mod animated_flower;
+pub use animated_flower::AnimatedFlower;
