@@ -272,20 +272,24 @@ impl<T: Animatable> AnimationManager<T> for AnimationSignal<T> {
 
 pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
     let mut state = AnimationSignal(use_signal(|| AnimationState::new(initial)));
-    let mut running = use_signal(|| false);
 
     use_future(move || async move {
         loop {
-            let frame_delay = Duration::from_secs_f32(1.0 / 90.0);
+            let frame_start = Time::now();
+
             if !state.is_running() {
-                Time::delay(frame_delay).await;
+                // Use longer delay when idle
+                Time::delay(Duration::from_millis(50)).await;
                 continue;
             }
 
-            Time::delay(frame_delay).await;
+            // Use animation frame timing when active
+            let frame_duration = Duration::from_secs_f32(1.0 / 60.0);
+            state.update(frame_duration.as_secs_f32());
 
-            if state.update(frame_delay.as_secs_f32()) {
-                running.toggle();
+            let elapsed = frame_start.elapsed();
+            if elapsed < frame_duration {
+                Time::delay(frame_duration - elapsed).await;
             }
         }
     });
