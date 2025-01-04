@@ -1,24 +1,55 @@
 use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
+use easer::functions::Easing;
 
 #[component]
 pub fn TypewriterEffect(text: &'static str) -> Element {
-    let mut width =
-        use_value_animation(Motion::new(0.0).to(100.0).duration(Duration::from_secs(2)));
+    let mut char_count = use_animation(0.0f32);
+    let mut cursor_opacity = use_animation(1.0f32);
+    let text_len = text.len() as f32;
 
-    use_drop(move || {
-        width.stop_loop();
+    use_effect(move || {
+        // Start typing animation
+        char_count.animate_to(
+            text_len,
+            AnimationConfig::new(AnimationMode::Tween(Tween {
+                duration: Duration::from_secs_f32(text_len * 0.1), // 0.1s per character
+                easing: easer::functions::Linear::ease_in_out,
+            }))
+            .with_loop(LoopMode::Infinite),
+        );
+
+        // Start cursor blink
+        cursor_opacity.animate_to(
+            0.0,
+            AnimationConfig::new(AnimationMode::Tween(Tween {
+                duration: Duration::from_secs(1),
+                easing: easer::functions::Linear::ease_in_out,
+            }))
+            .with_loop(LoopMode::Infinite),
+        );
     });
 
+    use_drop(move || {
+        char_count.stop();
+        cursor_opacity.stop();
+    });
+
+    let visible_text = text
+        .chars()
+        .take(char_count.get_value() as usize)
+        .collect::<String>();
+
     rsx! {
-        div {
-            class: "font-mono text-2xl text-blue-500",
-            style: "width: {width.value()}%;
-                   white-space: nowrap;
-                   overflow: hidden;
-                   border-right: 2px solid currentColor;",
-            onmounted: move |_| width.loop_animation(),
-            "{text}"
+        div { class: "relative font-mono text-2xl text-blue-500",
+            // Text container
+            span { "{visible_text}" }
+            // Cursor
+            span {
+                class: "absolute right-0 top-0",
+                style: "opacity: {cursor_opacity.get_value()};",
+                "|"
+            }
         }
     }
 }

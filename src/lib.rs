@@ -51,6 +51,7 @@ pub enum LoopMode {
 pub struct AnimationConfig {
     pub mode: AnimationMode,
     pub loop_mode: Option<LoopMode>,
+    pub delay: Duration, // Add delay field
 }
 
 impl AnimationConfig {
@@ -58,11 +59,17 @@ impl AnimationConfig {
         Self {
             mode,
             loop_mode: None,
+            delay: Duration::default(),
         }
     }
 
     pub fn with_loop(mut self, loop_mode: LoopMode) -> Self {
         self.loop_mode = Some(loop_mode);
+        self
+    }
+
+    pub fn with_delay(mut self, delay: Duration) -> Self {
+        self.delay = delay;
         self
     }
 }
@@ -72,6 +79,7 @@ impl Default for AnimationConfig {
         Self {
             mode: AnimationMode::default(),
             loop_mode: None,
+            delay: Duration::default(),
         }
     }
 }
@@ -84,6 +92,7 @@ pub trait AnimationManager<T: Animatable>: Clone + Copy {
     fn is_running(&self) -> bool;
     fn reset(&mut self);
     fn stop(&mut self);
+    fn delay(&mut self, duration: Duration); // Add delay function
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -95,6 +104,7 @@ pub struct AnimationState<T: Animatable> {
     config: AnimationConfig,
     running: bool,
     elapsed: Duration,
+    delay_elapsed: Duration, // Add delay tracking
     current_loop: u32,
 }
 
@@ -107,6 +117,7 @@ impl<T: Animatable> AnimationState<T> {
             config: AnimationConfig::default(),
             running: false,
             elapsed: Duration::default(),
+            delay_elapsed: Duration::default(), // Initialize delay tracking
             initial,
             current_loop: 0,
         }
@@ -118,6 +129,7 @@ impl<T: Animatable> AnimationState<T> {
         self.config = config;
         self.running = true;
         self.elapsed = Duration::default();
+        self.delay_elapsed = Duration::default(); // Reset delay tracking
         self.velocity = T::zero();
         self.current_loop = 0;
     }
@@ -131,6 +143,12 @@ impl<T: Animatable> AnimationState<T> {
     fn update(&mut self, dt: f32) -> bool {
         if !self.running {
             return false;
+        }
+
+        // Handle initial delay
+        if self.delay_elapsed < self.config.delay {
+            self.delay_elapsed += Duration::from_secs_f32(dt);
+            return true;
         }
 
         let completed = match self.config.mode {
@@ -255,6 +273,10 @@ impl<T: Animatable> AnimationManager<T> for AnimationSignal<T> {
 
     fn stop(&mut self) {
         self.0.write().stop()
+    }
+
+    fn delay(&mut self, duration: Duration) {
+        self.0.write().config.delay = duration;
     }
 }
 

@@ -11,7 +11,7 @@ struct ShapeConfig {
 #[component]
 pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
     let mut current_shape = use_signal(|| 0);
-    let mut transform = use_animation(Transform::default());
+    let mut transform = use_animation(Transform::identity());
 
     let shape_configs = [
         ShapeConfig {
@@ -32,42 +32,43 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
     ];
 
     use_effect(move || {
+        transform.animate_to(
+            Transform {
+                rotation: 360.0,
+                scale: 1.2,
+                x: 0.0,
+                y: 0.0,
+            },
+            AnimationConfig::new(AnimationMode::Spring(Spring {
+                stiffness: 50.0, // Reduced for smoother motion
+                damping: 8.0,    // Less damping for more organic motion
+                mass: 0.8,       // Lighter mass for faster response
+                velocity: 0.5,   // Initial velocity for continuous motion
+                ..Default::default()
+            }))
+            .with_loop(LoopMode::Infinite), // Make animation continuous
+        );
+
+        // Start shape transition loop
         spawn(async move {
             loop {
                 Time::delay(Duration::from_secs_f32(duration)).await;
-
-                let next = if *current_shape.read() + 1 >= shape_configs.len() {
-                    0
-                } else {
-                    *current_shape.read() + 1
-                };
-
+                let next = (*current_shape.read() + 1) % shape_configs.len();
                 current_shape.set(next);
-                transform.animate_to(
-                    Transform {
-                        rotate: shape_configs[next].rotation,
-                        scale: shape_configs[next].scale,
-                        ..Default::default()
-                    },
-                    AnimationConfig {
-                        mode: AnimationMode::Spring(Spring {
-                            stiffness: 100.0,
-                            damping: 10.0,
-                            mass: 1.0,
-                            ..Default::default()
-                        }),
-                        ..Default::default()
-                    },
-                );
             }
         });
     });
 
     rsx! {
-        div {
-            class: "w-32 h-32 bg-gradient-to-r from-pink-500 to-orange-500 transition-[clip-path] duration-500 ease-in-out hover:from-purple-500 hover:to-blue-500",
-            style: "clip-path: {shape_configs[*current_shape.read()].path};
-                   transform: rotate({transform.get_value().rotate}deg) scale({transform.get_value().scale})",
+        div { class: "w-32 h-32 relative transition-all duration-300",
+            div {
+                class: "absolute inset-0 bg-gradient-to-r from-pink-500 to-orange-500
+                       hover:from-purple-500 hover:to-blue-500 rounded-lg",
+                style: "clip-path: {shape_configs[*current_shape.read()].path};
+                       transform: rotate({transform.get_value().rotation}deg) 
+                                scale({transform.get_value().scale});
+                       transition: clip-path 0.5s ease-in-out;",
+            }
         }
     }
 }

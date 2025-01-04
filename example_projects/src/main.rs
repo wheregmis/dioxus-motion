@@ -6,7 +6,8 @@ use dioxus_motion::{
     tween::Tween, use_animation, AnimationConfig, AnimationManager, AnimationMode,
 };
 use example_projects::components::{
-    BouncingText, Navbar, ProgressBar, TransformAnimationShowcase, ValueAnimationShowcase,
+    BouncingText, Card3DFlip, MorphingShape, Navbar, PathAnimation, ProgressBar, PulseEffect,
+    TransformAnimationShowcase, TypewriterEffect, ValueAnimationShowcase,
 };
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -112,18 +113,18 @@ pub fn ShowcaseGallery() -> Element {
                     }
 
                     // Morphing Shape Card
-                    // div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                    //     h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
-                    //         "Morphing Shape"
-                    //     }
-                    //     div { class: "flex-grow w-full flex items-center justify-center my-4",
-                    //         MorphingShape {
-                    //             shapes: vec!["square", "triangle"],
-                    //             duration: 3.0,
-                    //         }
-                    //     }
-                    //     ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/morphing_shape.rs" }
-                    // }
+                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "Morphing Shape"
+                        }
+                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                            MorphingShape {
+                                shapes: vec!["square", "triangle"],
+                                duration: 3.0,
+                            }
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/morphing_shape.rs" }
+                    }
 
                     // Bouncing Text Card
                     div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
@@ -136,63 +137,52 @@ pub fn ShowcaseGallery() -> Element {
                         ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/bouncing_text.rs" }
                     }
 
-                // // Path Animation Card
-                // div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                //     h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
-                //         "Path Animation"
-                //     }
-                //     div { class: "flex-grow w-full flex items-center justify-center my-4",
-                //         PathAnimation {
-                //             path: "M10 80 C 40 10, 65 10, 95 80 S 150 150, 180 80",
-                //             duration: 2.0,
-                //         }
-                //     }
-                //     ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/path_animation.rs" }
-                // }
+                    // Path Animation Card
+                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "Path Animation"
+                        }
+                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                            PathAnimation {
+                                path: "M10 80 C 40 10, 65 10, 95 80 S 150 150, 180 80",
+                                duration: 5.0,
+                            }
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/path_animation.rs" }
+                    }
 
-                // // Pulse Effect Card
-                // div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                //     h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
-                //         "Pulse Effect"
-                //     }
-                //     div { class: "flex-grow w-full flex items-center justify-center my-4",
-                //         PulseEffect { color: "bg-blue-500", size: "w-16 h-16" }
-                //     }
-                //     ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/pulse_effect.rs" }
-                // }
+                    // Pulse Effect Card
+                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "Pulse Effect"
+                        }
+                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                            PulseEffect { color: "bg-blue-500", size: "w-16 h-16" }
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/pulse_effect.rs" }
+                    }
 
-                // // Card 3D Flip Card
-                // div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                //     h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
-                //         "3D Card Flip"
-                //     }
-                //     div { class: "flex-grow w-full flex items-center justify-center my-4",
-                //         Card3DFlip {}
-                //     }
-                //     ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/card_3d_flip.rs" }
-                // }
+                    // Card 3D Flip Card
+                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "3D Card Flip"
+                        }
+                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                            Card3DFlip {}
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/card_3d_flip.rs" }
+                    }
 
-                // // Typewriter Effect Card
-                // div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                //     h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
-                //         "Typewriter Effect"
-                //     }
-                //     div { class: "flex-grow w-full flex items-center justify-center my-4",
-                //         TypewriterEffect { text: "Hello, World! Welcome to Dioxus Motion" }
-                //     }
-                //     ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/typewriter_effect.rs" }
-                // }
-
-                // // Particle System Card
-                // div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                //     h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
-                //         "Particle System"
-                //     }
-                //     div { class: "flex-grow w-full flex items-center justify-center my-4",
-                //         ParticleSystem {}
-                //     }
-                //     ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/particle_system.rs" }
-                // }
+                    // Typewriter Effect Card
+                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "Typewriter Effect"
+                        }
+                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                            TypewriterEffect { text: "Hello, Dioxus Motion" }
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/typewriter_effect.rs" }
+                    }
                 }
             }
 
