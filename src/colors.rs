@@ -1,4 +1,4 @@
-use crate::Animatable;
+use crate::animations::Animatable;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Color {

@@ -1,3 +1,4 @@
+use animations::{Animatable, AnimationMode};
 use dioxus_hooks::{use_future, use_signal};
 use dioxus_signals::{Readable, Signal, Writable};
 pub use instant::Duration;
@@ -10,72 +11,27 @@ pub mod transform;
 pub mod tween;
 
 pub use platform::{MotionTime, TimeProvider};
-use prelude::Tween;
+
+use prelude::{AnimationConfig, LoopMode};
 use spring::{Spring, SpringState};
 
 // Re-exports
 pub mod prelude {
+    pub use crate::animations::AnimationConfig;
+    pub use crate::animations::AnimationMode;
+    pub use crate::animations::LoopMode;
     pub use crate::colors::Color;
     pub use crate::spring::Spring;
     pub use crate::transform::Transform;
     pub use crate::tween::Tween;
     pub use crate::use_motion;
-    pub use crate::AnimationConfig;
     pub use crate::AnimationManager;
-    pub use crate::AnimationMode;
     pub use crate::Duration;
-    pub use crate::LoopMode;
     pub use crate::Time;
     pub use crate::TimeProvider;
 }
 
 pub type Time = MotionTime;
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum AnimationMode {
-    Tween(Tween),
-    Spring(Spring),
-}
-
-impl Default for AnimationMode {
-    fn default() -> Self {
-        Self::Tween(Tween::default())
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum LoopMode {
-    None,
-    Infinite,
-    Times(u32),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
-pub struct AnimationConfig {
-    pub mode: AnimationMode,
-    pub loop_mode: Option<LoopMode>,
-    pub delay: Duration, // Add delay field
-}
-
-impl AnimationConfig {
-    pub fn new(mode: AnimationMode) -> Self {
-        Self {
-            mode,
-            loop_mode: None,
-            delay: Duration::default(),
-        }
-    }
-
-    pub fn with_loop(mut self, loop_mode: LoopMode) -> Self {
-        self.loop_mode = Some(loop_mode);
-        self
-    }
-
-    pub fn with_delay(mut self, delay: Duration) -> Self {
-        self.delay = delay;
-        self
-    }
-}
 
 pub trait AnimationManager<T: Animatable>: Clone + Copy {
     fn new(initial: T) -> Self;
@@ -302,12 +258,3 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
 }
 
 // Required trait extension
-pub trait Animatable: Copy + 'static {
-    fn zero() -> Self;
-    fn epsilon() -> f32;
-    fn magnitude(&self) -> f32;
-    fn scale(&self, factor: f32) -> Self;
-    fn add(&self, other: &Self) -> Self;
-    fn sub(&self, other: &Self) -> Self;
-    fn interpolate(&self, target: &Self, t: f32) -> Self;
-}
