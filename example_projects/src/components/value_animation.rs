@@ -5,26 +5,21 @@ use easer::functions::Easing;
 #[component]
 pub fn ValueAnimationShowcase() -> Element {
     let mut value = use_animation(0.0f32);
-    let mut playing = use_signal(|| false);
 
     let mut start_animation = move || {
-        if !playing() {
-            playing.set(true);
-            value.animate_to(
-                100.0,
-                AnimationConfig {
-                    mode: AnimationMode::Tween(Tween {
-                        duration: Duration::from_secs(5),
-                        easing: easer::functions::Sine::ease_in_out,
-                    }),
-                    loop_mode: Some(LoopMode::None),
-                },
-            );
-        }
+        value.animate_to(
+            100.0,
+            AnimationConfig {
+                mode: AnimationMode::Tween(Tween {
+                    duration: Duration::from_secs(3),
+                    easing: easer::functions::Linear::ease_in_out,
+                }),
+                loop_mode: Some(LoopMode::Infinite),
+            },
+        );
     };
 
     let mut reset_animation = move || {
-        playing.set(false);
         value.animate_to(
             0.0,
             AnimationConfig {
