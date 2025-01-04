@@ -18,6 +18,10 @@ pub fn Navbar() -> Element {
         );
     });
 
+    use_drop(move || {
+        transform.stop();
+    });
+
     rsx! {
         nav {
             class: "fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm transition-shadow duration-300 z-50",

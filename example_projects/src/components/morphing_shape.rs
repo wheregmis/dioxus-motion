@@ -58,6 +58,10 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
         });
     });
 
+    use_drop(move || {
+        transform.stop();
+    });
+
     rsx! {
         div { class: "w-32 h-32 relative transition-all duration-300",
             div {

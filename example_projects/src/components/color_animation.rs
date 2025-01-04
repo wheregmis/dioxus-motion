@@ -30,6 +30,10 @@ pub fn ColorAnimation() -> Element {
         }
     };
 
+    use_drop(move || {
+        color.stop();
+    });
+
     rsx! {
         div { class: "flex flex-col items-center gap-6 p-8",
             div { class: "relative group cursor-pointer", onclick: animate_next,
