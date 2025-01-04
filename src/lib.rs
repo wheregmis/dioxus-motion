@@ -279,6 +279,7 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
 
             if !state.is_running() {
                 // Use longer delay when idle
+                // ! I found this to be more efficient than using requestAnimationFrame and less CPU intensive
                 Time::delay(Duration::from_millis(50)).await;
                 continue;
             }
