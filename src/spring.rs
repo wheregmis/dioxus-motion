@@ -16,3 +16,9 @@ impl Default for Spring {
         }
     }
 }
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum SpringState {
+    Active,
+    Completed,
+}

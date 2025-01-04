@@ -3,18 +3,21 @@ use dioxus_signals::{Readable, Signal, Writable};
 pub use instant::Duration;
 
 pub mod animations;
+pub mod colors;
 pub mod platform;
 pub mod spring;
+pub mod transform;
 pub mod tween;
 
 pub use platform::{MotionTime, TimeProvider};
 use prelude::Tween;
-use spring::Spring;
+use spring::{Spring, SpringState};
 
 // Re-exports
 pub mod prelude {
-    pub use crate::animations::{Color, Transform};
+    pub use crate::colors::Color;
     pub use crate::spring::Spring;
+    pub use crate::transform::Transform;
     pub use crate::tween::Tween;
     pub use crate::use_motion;
     pub use crate::AnimationConfig;
@@ -296,12 +299,6 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
     });
 
     state
-}
-
-#[derive(Debug, Copy, Clone, PartialEq)]
-enum SpringState {
-    Active,
-    Completed,
 }
 
 // Required trait extension
