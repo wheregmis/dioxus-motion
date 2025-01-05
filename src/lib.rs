@@ -238,6 +238,11 @@ impl<T: Animatable> AnimationManager<T> for AnimationSignal<T> {
 pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
     let mut state = AnimationSignal(use_signal(|| AnimationState::new(initial)));
 
+    const TARGET_FPS: f32 = 90.0; // Until we have dynamic frame rate support
+    let frame_time: Duration = Duration::from_secs_f32(1.0 / TARGET_FPS);
+
+    const IDLE_DELAY: Duration = Duration::from_millis(70);
+
     use_future(move || async move {
         let mut last_frame = Time::now();
 
@@ -247,13 +252,15 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
             last_frame = frame_start;
 
             if !state.is_running() {
-                Time::delay(Duration::from_millis(50)).await;
+                Time::delay(IDLE_DELAY).await;
                 continue;
             }
 
-            state.update(dt);
+            if state.update(dt) {
+                Time::delay(frame_time).await;
+            }
 
-            Time::delay(Duration::from_secs_f32(dt)).await;
+            Time::delay(IDLE_DELAY).await;
         }
     });
 

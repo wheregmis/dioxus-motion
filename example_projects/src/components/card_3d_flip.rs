@@ -15,7 +15,8 @@ pub fn Card3DFlip() -> Element {
                     damping: 15.0,
                     mass: 1.0,
                     velocity: 10.0,
-                })),
+                }))
+                .with_loop(LoopMode::Infinite),
             );
         } else {
             transform.animate_to(
