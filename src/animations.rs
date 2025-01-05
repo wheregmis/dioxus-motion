@@ -30,7 +30,7 @@ pub enum LoopMode {
     Times(u32),
 }
 
-pub type OnComplete = Box<dyn Fn() + 'static>;
+pub type OnComplete = Box<dyn FnMut() + 'static>;
 
 #[derive(Default)]
 pub struct AnimationConfig {
@@ -62,7 +62,7 @@ impl AnimationConfig {
 
     pub fn with_on_complete<F>(mut self, f: F) -> Self
     where
-        F: Fn() + 'static,
+        F: FnMut() + 'static,
     {
         self.on_complete = Some(Box::new(f));
         self

@@ -175,7 +175,7 @@ impl<T: Animatable> AnimationState<T> {
         };
 
         if !should_continue {
-            if let Some(ref f) = self.config.on_complete {
+            if let Some(ref mut f) = self.config.on_complete {
                 f();
             }
         }
