@@ -200,24 +200,36 @@ const FACES: [[usize; 4]; 6] = [
 #[component]
 pub fn SwingingCube() -> Element {
     let mut transform = use_motion(Transform3D::zero());
+    let mut glow_scale = use_motion(1.0f32);
 
     let animate = move |_| {
         transform.animate_to(
             Transform3D::new(
-                0.3,      // slight tilt on X
-                PI / 4.0, // swing on Y
-                0.1,      // slight rotation on Z
-                2.0,      // translate X
-                0.0,      // translate Y
-                1.0,      // scale
+                PI / 3.0, // X rotation
+                PI / 2.0, // Y rotation
+                PI / 4.0, // Z rotation
+                2.0,      // X translation
+                -1.0,     // Y translation
+                1.2,      // Scale
             ),
             AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 80.0, // reduced stiffness for slower swing
-                damping: 4.0,    // reduced damping for more oscillation
-                mass: 2.0,       // increased mass for more natural movement
-                velocity: 3.0,   // initial velocity
+                stiffness: 35.0,
+                damping: 5.0,
+                mass: 1.0,
+                velocity: 2.0,
             }))
-            .with_loop(LoopMode::Infinite), // swing back and forth
+            .with_loop(LoopMode::Infinite),
+        );
+
+        glow_scale.animate_to(
+            1.4,
+            AnimationConfig::new(AnimationMode::Spring(Spring {
+                stiffness: 40.0,
+                damping: 4.0,
+                mass: 0.5,
+                velocity: 1.0,
+            }))
+            .with_loop(LoopMode::Infinite),
         );
     };
 
@@ -236,22 +248,57 @@ pub fn SwingingCube() -> Element {
         .collect();
 
     rsx! {
-        div { class: "flex items-center justify-center",
+        div { class: "flex items-center justify-center p-8",
             svg {
-                width: "400",
-                height: "400",
-                view_box: "0 0 200 200",
+                width: "400.0",
+                height: "400.0",
+                view_box: "0.0 0.0 200.0 200.0",
                 onmounted: animate,
-
-                // Draw the rope
-                path {
-                    d: "M 100 0 L {projected_vertices[4].0} {projected_vertices[4].1}",
-                    stroke: "#666666",
-                    stroke_width: "0.5",
-                    stroke_dasharray: "2,2",
+                defs {
+                    // Gradient definitions
+                    linearGradient {
+                        id: "cube-gradient",
+                        x1: "0%",
+                        y1: "0%",
+                        x2: "100%",
+                        y2: "100%",
+                        stop { offset: "0%", style: "stop-color:#4299e1" }
+                        stop { offset: "50%", style: "stop-color:#9f7aea" }
+                        stop { offset: "100%", style: "stop-color:#ed64a6" }
+                    }
+                    // Glow filter
+                    filter { id: "glow",
+                        feGaussianBlur {
+                            "in": "SourceGraphic",
+                            std_deviation: "4.0",
+                            result: "blur",
+                        }
+                        feColorMatrix {
+                            "in": "blur",
+                            r#type: "matrix",
+                            values: "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7",
+                        }
+                    }
                 }
-
-                // Draw the cube faces
+                //Glowing background circle
+                circle {
+                    cx: "100.0",
+                    cy: "100.0",
+                    r: "{30.0 * glow_scale.get_value()}",
+                    fill: "url(#cube-gradient)",
+                    filter: "url(#glow)",
+                    opacity: "0.3",
+                }
+                // Enhanced rope with gradient
+                path {
+                    d: "M 100 20 Q {projected_vertices[4].0} {projected_vertices[4].1 - 20.0}
+                       {projected_vertices[4].0} {projected_vertices[4].1}",
+                    stroke: "url(#cube-gradient)",
+                    stroke_width: "1",
+                    fill: "none",
+                    stroke_dasharray: "4,4",
+                }
+                // Enhanced cube faces with gradients and animations
                 {
                     FACES
                         .iter()
@@ -269,19 +316,21 @@ pub fn SwingingCube() -> Element {
                                 projected_vertices[face[3]].1,
                             );
                             rsx! {
-                                path {
-                                    key: "{i}",
-                                    d: "{path}",
-                                    fill: match i {
-                                        0 => "#4299e1",
-                                        1 => "#48bb78",
-                                        2 => "#ed64a6",
-                                        3 => "#ecc94b",
-                                        4 => "#9f7aea",
-                                        _ => "#f56565",
-                                    },
-                                    stroke: "#1a202c",
-                                    stroke_width: "0.5",
+                                g { key: "{i}",
+                                    // Shadow effect
+                                    path {
+                                        d: "{path}",
+                                        fill: "rgba(0,0,0,0.2)",
+                                        transform: "translate(2.0 2.0)",
+                                    }
+                                    // Main face
+                                    path {
+                                        d: "{path}",
+                                        fill: "url(#cube-gradient)",
+                                        stroke: "#ffffff",
+                                        stroke_width: "0.5",
+                                        opacity: "{0.7 + (i as f32 * 0.05)}",
+                                    }
                                 }
                             }
                         })

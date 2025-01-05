@@ -8,13 +8,14 @@ A lightweight, cross-platform animation library for Dioxus, designed to bring sm
 
 ## 🎯 Live Examples
 
+<img src="example.gif" width="400" height="400" />
+
 Visit our [Example Website](https://wheregmis.github.io/dioxus-motion/) to see these animations in action:
 
-- 🎲 3D Card Flip
-- ✨ Flower Animation
-- 📝 Typewriter Effect
+- 🌸 Flower Animation
+- 📝 Cube Floating Animation
 - 🔄 Morphing Shapes
-- 💫 Spring Animations
+- 📝 Typewriter Effect
 - ⚡ Path Animations
 
 ### Quick Example

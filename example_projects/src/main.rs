@@ -27,48 +27,41 @@ pub fn ShowcaseGallery() -> Element {
         div { class: "flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-gray-100",
             Navbar {}
 
-            // Showcase Grid
             div { class: "container mx-auto px-8 py-12 pt-20",
                 div { class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8",
-                    // Value Animation Card
-                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-blue-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                    // Update each card with fixed height and overflow control
+                    div { class: "flex flex-col items-start justify-between h-[400px] bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
                         h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
-                            "Value Animation"
+                            "Cube Animation"
                         }
-                        div { class: "flex-grow w-full flex items-center justify-center my-4",
-                            ValueAnimationShowcase {}
+                        div {
+                            class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
+                            style: "max-height: 280px;",
+                            SwingingCube {}
                         }
-                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/value_animation.rs" }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/cube_animation.rs" }
                     }
 
-                    // Transform Animation Card
-                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-purple-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                    div { class: "flex flex-col items-start justify-between h-[400px] bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
                         h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
-                            "Transform Animation"
+                            "Flower Animation"
                         }
-                        div { class: "flex-grow w-full flex items-center justify-center my-4",
-                            TransformAnimationShowcase {}
+                        div {
+                            class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
+                            style: "max-height: 280px;",
+                            AnimatedFlower {}
                         }
-                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/transform_animation.rs" }
-                    }
-
-                    // Progress Bar Card
-                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
-                            "Progress Animation"
-                        }
-                        div { class: "flex-grow w-full flex items-center justify-center my-4",
-                            ProgressBar { title: "Loading..." }
-                        }
-                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/progress_bar.rs" }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/animated_flower.rs" }
                     }
 
                     // Morphing Shape Card
-                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                    div { class: "flex flex-col items-start justify-between h-[400px] bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
                         h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
                             "Morphing Shape"
                         }
-                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                        div {
+                            class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
+                            style: "max-height: 280px;",
                             MorphingShape {
                                 shapes: vec!["square", "triangle"],
                                 duration: 3.0,
@@ -77,23 +70,66 @@ pub fn ShowcaseGallery() -> Element {
                         ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/morphing_shape.rs" }
                     }
 
+                    // Value Animation Card
+                    div { class: "flex flex-col items-start justify-between h-[400px] bg-white rounded-2xl shadow-lg shadow-blue-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "Value Animation"
+                        }
+                        div {
+                            class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
+                            style: "max-height: 280px;",
+                            ValueAnimationShowcase {}
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/value_animation.rs" }
+                    }
+
+                    // Transform Animation Card
+                    div { class: "flex flex-col items-start justify-between h-[400px] bg-white rounded-2xl shadow-lg shadow-purple-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "Transform Animation"
+                        }
+                        div {
+                            class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
+                            style: "max-height: 280px;",
+                            TransformAnimationShowcase {}
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/transform_animation.rs" }
+                    }
+
+                    // Progress Bar Card
+                    div { class: "flex flex-col items-start justify-between h-[400px] bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "Progress Animation"
+                        }
+                        div {
+                            class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
+                            style: "max-height: 280px;",
+                            ProgressBar { title: "Loading..." }
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/progress_bar.rs" }
+                    }
+
                     // Bouncing Text Card
-                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                    div { class: "flex flex-col items-start justify-between h-[400px] bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
                         h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
                             "Bouncing Text"
                         }
-                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                        div {
+                            class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
+                            style: "max-height: 280px;",
                             BouncingText { text: "Dioxus Motion" }
                         }
                         ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/bouncing_text.rs" }
                     }
 
                     // Path Animation Card
-                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                    div { class: "flex flex-col items-start justify-between h-[400px] bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
                         h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
                             "Path Animation"
                         }
-                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                        div {
+                            class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
+                            style: "max-height: 280px;",
                             PathAnimation {
                                 path: "M10 80 C 40 10, 65 10, 95 80 S 150 150, 180 80",
                                 duration: 5.0,
@@ -103,68 +139,56 @@ pub fn ShowcaseGallery() -> Element {
                     }
 
                     // Pulse Effect Card
-                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                    div { class: "flex flex-col items-start justify-between h-[400px] bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
                         h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
                             "Pulse Effect"
                         }
-                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                        div {
+                            class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
+                            style: "max-height: 280px;",
                             PulseEffect { color: "bg-blue-500", size: "w-16 h-16" }
                         }
                         ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/pulse_effect.rs" }
                     }
 
                     // Card 3D Flip Card
-                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                    div { class: "flex flex-col items-start justify-between h-[400px] bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
                         h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
                             "3D Card Flip"
                         }
-                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                        div {
+                            class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
+                            style: "max-height: 280px;",
                             Card3DFlip {}
                         }
                         ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/card_3d_flip.rs" }
                     }
 
                     // Typewriter Effect Card
-                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                    div { class: "flex flex-col items-start justify-between h-[400px] bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
                         h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
                             "Typewriter Effect"
                         }
-                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                        div {
+                            class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
+                            style: "max-height: 280px;",
                             TypewriterEffect { text: "Hello, Dioxus Motion" }
                         }
                         ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/typewriter_effect.rs" }
                     }
 
                     // Color Animation
-                    div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                    div { class: "flex flex-col items-start justify-between h-[400px] bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
                         h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
                             "Color Animation"
                         }
-                        div { class: "flex-grow w-full flex items-center justify-center my-4",
+                        div {
+                            class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
+                            style: "max-height: 280px;",
                             ColorAnimation {}
                         }
                         ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/color_animation.rs" }
                     }
-
-                // div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                //     h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
-                //         "Cube Animation"
-                //     }
-                //     div { class: "flex-grow w-full flex items-center justify-center my-4",
-                //         SwingingCube {}
-                //     }
-                //     ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/cube_animation.rs" }
-                // }
-
-                // div { class: "flex flex-col items-start justify-between h-full bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                //     h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
-                //         "Flower Animation"
-                //     }
-                //     div { class: "flex-grow w-full flex items-center justify-center my-4",
-                //         AnimatedFlower {}
-                //     }
-                //     ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/animated_flower.rs" }
-                // }
                 }
             }
 

@@ -31,27 +31,33 @@ pub fn ValueAnimationShowcase() -> Element {
     });
 
     rsx! {
-        div { class: "flex flex-col items-center justify-center p-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg",
-            // Animated counter
-            div { class: "text-6xl font-bold text-white mb-4", "{value.get_value() as i32}%" }
+        div { class: "h-[400px] flex items-center justify-center",
+            div { class: "flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg",
+                // Counter with smaller font
+                div { class: "text-4xl font-bold text-white mb-3", "{value.get_value() as i32}%" }
 
-            // Progress circle
-            div {
-                class: "relative w-32 h-32",
-                style: "background: conic-gradient(from 0deg, #ffffff {value.get_value()}%, transparent 0)",
-                div { class: "absolute inset-2 bg-blue-600 rounded-full" }
-            }
+                // Smaller progress circle
+                div {
+                    class: "relative w-24 h-24",
+                    style: "background: conic-gradient(from 0deg, #ffffff {value.get_value()}%, transparent 0)",
+                    div { class: "absolute inset-2 bg-blue-600 rounded-full" }
+                }
 
-            button {
-                class: "mt-6 px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-opacity-90 transition-all",
-                onclick: start_animation,
-                "Animate"
-            }
-
-            button {
-                class: "mt-2 px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-opacity-90 transition-all",
-                onclick: reset_animation,
-                "Reset"
+                // Compact buttons
+                div { class: "flex gap-2 mt-4",
+                    button {
+                        class: "px-4 py-1.5 bg-white text-blue-600 rounded-full font-semibold
+                                hover:bg-opacity-90 transition-all text-sm flex items-center gap-2",
+                        onclick: start_animation,
+                        "Start"
+                    }
+                    button {
+                        class: "px-4 py-1.5 bg-white text-blue-600 rounded-full font-semibold
+                                hover:bg-opacity-90 transition-all text-sm flex items-center gap-2",
+                        onclick: reset_animation,
+                        "Reset"
+                    }
+                }
             }
         }
     }

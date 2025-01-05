@@ -77,72 +77,136 @@ impl Animatable for PetalTransform {
 
 #[component]
 pub fn AnimatedFlower() -> Element {
-    let mut transform = use_motion(PetalTransform::zero());
+    let mut petal_transform = use_motion(PetalTransform::zero());
+    let mut leaf_transform = use_motion(PetalTransform::zero());
+    let mut center_scale = use_motion(0.0f32);
+    let mut is_leaves_grown = use_signal(|| false);
 
-    let animate = move |_| {
-        transform.animate_to(
+    let mut stem_length = use_motion(100.0f32);
+
+    let stem_transform = use_motion(PetalTransform::zero());
+
+    let animate_leaves = move |_: Event<MountedData>| {
+        stem_length.animate_to(
+            0.0,
+            AnimationConfig::new(AnimationMode::Spring(Spring {
+                stiffness: 35.0,
+                damping: 5.0,
+                mass: 0.3,
+                velocity: 0.0,
+            })),
+        );
+
+        leaf_transform.animate_to(
             PetalTransform::new(
-                PI / 6.0, // Rotation
-                1.0,      // Scale
-                5.0,      // X translation
-                5.0,      // Y translation
+                PI / 6.0, // rotation
+                1.0,      // initial scale
+                0.0,      // x position
+                -20.0,    // move up from bottom
             ),
             AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 100.0,
-                damping: 10.0,
-                mass: 0.5,
-                ..Default::default()
+                stiffness: 40.0,
+                damping: 5.0,
+                mass: 0.3,
+                velocity: 2.0, // increased initial velocity for upward motion
             }))
-            .with_loop(LoopMode::Infinite),
+            .with_on_complete(move || {
+                is_leaves_grown.set(true);
+            }),
         );
     };
 
+    let mut animate_petals = move || {
+        if *is_leaves_grown.read() {
+            petal_transform.animate_to(
+                PetalTransform::new(PI / 4.0, 1.2, 3.0, 3.0),
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 60.0,
+                    damping: 8.0,
+                    mass: 0.5,
+                    velocity: 1.0,
+                }))
+                .with_loop(LoopMode::Infinite),
+            );
+
+            center_scale.animate_to(
+                1.2,
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 100.0,
+                    damping: 10.0,
+                    mass: 1.0,
+                    velocity: 0.0,
+                }))
+                .with_loop(LoopMode::Infinite),
+            );
+        }
+    };
+
+    use_effect(move || {
+        if *is_leaves_grown.read() {
+            animate_petals();
+        }
+    });
     rsx! {
-        div { class: "flex items-center justify-center",
+        div { class: "flex items-center justify-center p-8",
             svg {
-                width: "200",
-                height: "200",
-                view_box: "-25 -25 50 50",
-                onmounted: animate,
+                width: "300",
+                height: "300",
+                view_box: "-50 -50 100 100",
+                onmounted: animate_leaves,
 
-                // Stem
+                {
+                    (0..8)
+                        .map(|i| {
+                            rsx! {
+                                path {
+                                    key: "leaf_{i}",
+                                    d: "M 0 0 C 5 -3, 8 0, 5 5 C 8 0, 5 -3, 0 0",
+                                    fill: "#48BB78",
+                                    transform: "translate(0 {25.0 + leaf_transform.get_value().translate_y + (i as f32 * 5.0)})
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                              rotate({-20.0 + (i as f32 * 15.0)}) 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                              scale({leaf_transform.get_value().scale})",
+                                    opacity: "0.9",
+                                }
+                            }
+                        })
+                }
+
+
+                // Enhanced stem with curve
                 path {
-                    d: "M 0 25 C -2 15, 2 5, 0 0",
+                    d: "M 0 25 C -4 20, 4 15, -2 10 C 4 5, -4 0, 0 -2",
                     stroke: "#2F855A",
-                    stroke_width: "0.75",
+                    stroke_width: "1.2",
                     fill: "none",
+                    stroke_dasharray: "100",
+                    stroke_dashoffset: "{stem_length.get_value()}",
+                    transform: "translate(0 {stem_transform.get_value().translate_y})",
                 }
 
-                // Leaf
-                path {
-                    d: "M 0 15 C 5 12, 7 17, 2 20 C 7 17, 5 12, 0 15",
-                    fill: "#48BB78",
-                    transform: "rotate(-20)",
-                }
-
-                // Center of the flower
                 circle {
                     cx: "0",
                     cy: "0",
-                    r: "2.5",
-                    fill: "#F6E05E",
+                    r: "{2.5 * center_scale.get_value()}",
+                    fill: "url(#center_gradient)",
                 }
 
-                // 8 petals
+                // More petals with gradient
                 {
-                    (0..6)
+                    (0..8)
                         .map(|i| {
-                            let base_angle = (i as f32) * PI / 3.0;
-                            let transform_value = transform.get_value();
+                            let base_angle = (i as f32) * PI / 4.0;
+                            let transform_value = petal_transform.get_value();
+                            let hue = 340.0 + (i as f32 * 5.0);
                             rsx! {
                                 path {
-                                    key: "{i}",
-                                    d: "M 0 -1 C 2 -5, 5 -7, 0 -12 C -5 -7, -2 -5, 0 -1",
-                                    fill: "#F687B3",
+                                    key: "petal_{i}",
+                                    d: "M 0 -1 C 3 -6, 6 -8, 0 -14 C -6 -8, -3 -6, 0 -1",
+                                    fill: "hsl({hue}, 70%, 80%)",
                                     transform: "translate({transform_value.translate_x} {transform_value.translate_y})
-                                                                                                                                                                                                     rotate({(base_angle + transform_value.rotate) * 180.0 / PI}) 
-                                                                                                                                                                                                     scale({transform_value.scale})",
-                                    opacity: "0.9",
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         rotate({(base_angle + transform_value.rotate) * 180.0 / PI}) 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         scale({transform_value.scale})",
+                                    opacity: "0.85",
                                 }
                             }
                         })
