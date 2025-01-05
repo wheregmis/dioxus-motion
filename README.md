@@ -6,6 +6,49 @@
 
 A lightweight, cross-platform animation library for Dioxus, designed to bring smooth, flexible animations to your Rust web, desktop, and mobile applications.
 
+## 🎯 Live Examples
+
+<img src="example.gif" width="400" height="400" />
+
+Visit our [Example Website](https://wheregmis.github.io/dioxus-motion/) to see these animations in action:
+
+- 🌸 Flower Animation
+- 📝 Cube Floating Animation
+- 🔄 Morphing Shapes
+- 📝 Typewriter Effect
+- ⚡ Path Animations
+
+### Quick Example
+
+```rust
+use dioxus_motion::prelude::*;
+
+#[component]
+fn PulseEffect() -> Element {
+    let scale = use_motion(1.0f32);
+    
+    use_effect(move || {
+        scale.animate_to(
+            1.2,
+            AnimationConfig::new(AnimationMode::Spring(Spring {
+                stiffness: 100.0,
+                damping: 5.0,
+                mass: 0.5,
+                velocity: 1.0
+            }))
+            .with_loop(LoopMode::Infinite)
+        );
+    });
+
+    rsx! {
+        div {
+            class: "w-20 h-20 bg-blue-500 rounded-full",
+            style: "transform: scale({scale.get_value()})"
+        }
+    }
+}
+```
+
 ## ✨ Features
 
 - **Cross-Platform Support**: Works on web, desktop, and mobile
@@ -20,7 +63,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-motion = { version = "0.1.4", optional = true, default-features = false }
+dioxus-motion = { version = "0.2.0", optional = true, default-features = false }
 
 [features]
 default = ["web"]
@@ -39,163 +82,184 @@ Choose the right feature for your platform:
 
 ## 🚀 Quick Start
 
-### Basic Animation
+## 🔄 Migration Guide (v0.2.0)
 
+### Breaking Changes
+- Combined `use_value_animation` and `use_transform_animation`  into `use_motion`
+- New animation configuration API
+- Updated spring physics parameters
+- Changed transform property names
+
+### New Animation API
 ```rust
-use dioxus::prelude::*;
-use dioxus_motion::{Motion, use_value_animation};
-use instant::Duration;
-
-fn ValueAnimation() -> Element {
-    let mut motion = use_value_animation(
-        Motion::new(0.0)
-            .to(100.0)
-            .duration(Duration::from_secs(2))
-    );
-
-    rsx! {
-        div {
-            "Value: {motion.value()}",
-            button { onclick: move |_| motion.start(), "Animate" }
-        }
-    }
-}
-```
-
-### Transform Animation with Spring
-
-```rust
-use dioxus::prelude::*;
-use dioxus_motion::{Transform, use_transform_animation};
-
-fn TransformAnimation() -> Element {
-    let mut transform = use_transform_animation(
-        Transform::default(),
-        Transform {
-            x: 100.0,
-            y: 50.0,
-            scale: 1.5,
-            rotate: 360.0,
-            opacity: 0.8,
-        },
-        AnimationMode::Spring(Spring {
-            stiffness: 100.0,
-            damping: 10.0,
-            mass: 1.0,
-            velocity: 0.0,
-        }),
-    );
-
-    rsx! {
-        div {
-            style: "{transform.style()}",
-            onmounted: move |_| transform.loop_animation(),
-            "Animated Content"
-        }
-    }
-}
-```
-
-### Advanced Value Animation
-
-```rust
-use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
 
-fn AdvancedValueAnimation() -> Element {
-    let mut motion = use_value_animation(
-        Motion::new(0.0)
-            .to(100.0)
-            .duration(Duration::from_secs(1))
-            .spring(Spring {
-                stiffness: 100.0,
-                damping: 10.0,
-                mass: 1.0,
-                velocity: 0.0,
-            })
-            .on_complete(|| println!("Animation complete!"))
-    );
+// Before (v0.1.x)
+let mut motion = use_value_animation(Motion::new(0.0).to(100.0));
 
-    use_effect(move || {
-        motion.loop_animation();
+// After (v0.2.x)
+let mut value = use_motion(0.0f32);
+value.animate_to(
+    100.0,
+    AnimationConfig::new(AnimationMode::Tween(Tween {
+        duration: Duration::from_secs(2),
+        easing: easer::functions::Linear::ease_in_out,
+    }))
+);
+
+// Before (v0.1.x)
+let mut transform = use_transform_animation(Transform::default());
+
+// After (v0.2.x)
+let mut transform = use_motion(Transform::default());
+transform.animate_to(
+    Transform::new(100.0, 0.0, 1.2, 45.0),
+    AnimationConfig::new(AnimationMode::Spring(Spring {
+        stiffness: 100.0,
+        damping: 10.0,
+        mass: 1.0,
+        ..Default::default()
+    }))
+);
+```
+### If you were using transform.get_style(), that function is removed to make the library more generic so i recommend building something like
+```rust
+    let transform = use_motion(Transform::default());
+    
+    let transform_style = use_memo(move || {
+        format!(
+            "transform: translate({}px, {}px) scale({}) rotate({}deg);",
+            transform.get_value().x,
+            transform.get_value().y,
+            transform.get_value().scale,
+            transform.get_value().rotation * 180.0 / std::f32::consts::PI
+        )
     });
 
-    rsx! {
+    // and using the memo in the component
+      rsx! {
         div {
-            "Value: {motion.value()}",
-            button { onclick: move |_| motion.stop_loop(), "Stop" }
+            class: "...",
+            style: "{transform_style.read()}",
+            // ...rest of component...
         }
     }
-}
 ```
 
-### Advanced Transform Animation
-
+## 🆕 New Features
+### Loop Modes
 ```rust
-use dioxus::prelude::*;
-use dioxus_motion::{Transform, use_transform_animation};
+.with_loop(LoopMode::Infinite)
+.with_loop(LoopMode::Times(3))
+```
+### Animation Delays
+```rust
+.with_delay(Duration::from_secs(1))
+```
 
-fn AdvancedTransformAnimation() -> Element {
-    let mut transform = use_transform_animation(
-        Transform::default(),
-        Transform {
-            x: 200.0,
-            y: 100.0,
-            scale: 2.0,
-            rotate: 720.0,
-            opacity: 0.5,
-        },
-        AnimationMode::Tween(Tween {
-            duration: Duration::from_secs(2),
-            easing: easer::functions::Bounce::ease_out,
-        }),
-    );
+### On Complete
+```rust
+.with_on_complete(|| println!("Animation complete!"))
+```
 
-    rsx! {
-        div {
-            style: "{transform.style()}",
-            onmounted: move |_| transform.start(),
-            onmouseenter: move |_| transform.reverse(),
-            onmouseleave: move |_| transform.start(),
-            "Interactive Animation"
+## 🎓 Advanced Guide: Extending Animations
+
+### Implementing the Animatable Trait 
+[Cube Component Example](https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/cube_animation.rs) 
+
+The `Animatable` trait allows you to animate any custom type.
+
+Defination of Animatable Trait
+```rust
+pub trait Animatable: Copy + 'static {
+    fn zero() -> Self;
+    fn epsilon() -> f32;
+    fn magnitude(&self) -> f32;
+    fn scale(&self, factor: f32) -> Self;
+    fn add(&self, other: &Self) -> Self;
+    fn sub(&self, other: &Self) -> Self;
+    fn interpolate(&self, target: &Self, t: f32) -> Self;
+}
+
+```
+Here's how to implement it:
+### Custom Position Type
+```rust
+#[derive(Debug, Copy, Clone)]
+struct Position {
+    x: f32,
+    y: f32,
+}
+
+impl Animatable for Position {
+    fn zero() -> Self {
+        Position { x: 0.0, y: 0.0 }
+    }
+
+    fn epsilon() -> f32 {
+        0.001
+    }
+
+    fn magnitude(&self) -> f32 {
+        (self.x * self.x + self.y * self.y).sqrt()
+    }
+
+    fn scale(&self, factor: f32) -> Self {
+        Position {
+            x: self.x * factor,
+            y: self.y * factor,
+        }
+    }
+
+    fn add(&self, other: &Self) -> Self {
+        Position {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+
+    fn sub(&self, other: &Self) -> Self {
+        Position {
+            x: self.x - other.x,
+            y: self.y - other.y,
+        }
+    }
+
+    fn interpolate(&self, target: &Self, t: f32) -> Self {
+        Position {
+            x: self.x + (target.x - self.x) * t,
+            y: self.y + (target.y - self.y) * t,
         }
     }
 }
 ```
+### Best Practices
+- Zero State: Implement zero() as your type's neutral state 
+- Epsilon: Choose a small value (~0.001) for animation completion checks
+- Magnitude: Return the square root of sum of squares for vector types
+- Scale: Multiply all components by the factor
+- Add/Sub: Implement component-wise addition/subtraction
+- Interpolate: Use linear interpolation for smooth transitions
 
-## 🛠 Configuration Options
-
-### 🎮 Value Animation Methods
-#### Core Methods
-- 🎯 `.to(value: f32)` - Set target animation value
-- ⏱️ `.duration(Duration)` - Set animation duration
-- 🌊 `.spring(Spring)` - Configure spring physics
-- ✨ `.on_complete(fn)` - Add completion callback
-
-#### Control Methods
-- ▶️ `.start()` - Start the animation
-- ⏸️ `.stop()` - Pause the animation
-- 🔄 `.reset()` - Reset to initial state
-- 🔁 `.loop_animation()` - Start continuous loop
-- ⏹️ `.stop_loop()` - Stop loop animation
-
-### 🎨 Transform Animation Methods
-
-#### Properties
-- 📍 `.x()` - Get horizontal position
-- 📐 `.y()` - Get vertical position
-- 🔍 `.scale()` - Get scale factor
-- 🔄 `.rotate()` - Get rotation angle
-- 👻 `.opacity()` - Get opacity value
-
-#### Control Methods
-- ▶️ `.start()` - Start transform animation
-- ⏸️ `.stop()` - Stop transform animation
-- 🔄 `.reset()` - Reset to initial transform
-- ⏮️ `.reverse()` - Reverse animation direction
-- 🔁 `.loop_animation()` - Start continuous loop
-- ⏹️ `.stop_loop()` - Stop loop animation
-- 🎨 `.style()` - Get current CSS transform string
+### Common Patterns
+#### Circular Values (e.g., angles)
+```rust
+fn interpolate(&self, target: &Self, t: f32) -> Self {
+    let mut diff = target.angle - self.angle;
+    // Ensure shortest path
+    if diff > PI { diff -= 2.0 * PI; }
+    if diff < -PI { diff += 2.0 * PI; }
+    Self { angle: self.angle + diff * t }
+}
+```
+#### Normalized Values (e.g., colors)
+```rust
+fn scale(&self, factor: f32) -> Self {
+    Self {
+        value: (self.value * factor).clamp(0.0, 1.0)
+    }
+}
+```
 
 ## 🌈 Supported Easing Functions
 
@@ -205,28 +269,6 @@ Leverages the `easer` crate, supporting:
 - Cubic
 - Quartic
 - And more!
-
-## 💻 Example Project Configurations
-
-### Web Project
-```toml
-[dependencies]
-dioxus = "0.4"
-dioxus-motion = { 
-    git = "https://github.com/wheregmis/dioxus-motion.git", 
-    features = ["web"] 
-}
-```
-
-### Desktop and Mobile Project
-```toml
-[dependencies]
-dioxus = "0.6.1"
-dioxus-motion = { 
-    git = "https://github.com/wheregmis/dioxus-motion.git", 
-    features = ["desktop"] 
-}
-```
 
 ## 🤝 Contributing
 

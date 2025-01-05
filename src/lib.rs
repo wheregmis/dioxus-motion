@@ -1,245 +1,318 @@
-use animation::AnimationMode;
-use dioxus_hooks::{use_coroutine, use_signal, Coroutine};
+//! Dioxus Motion - Animation library for Dioxus
+//!
+//! Provides smooth animations for web and native applications built with Dioxus.
+//! Supports both spring physics and tween-based animations with configurable parameters.
+//!
+//! # Features
+//! - Spring physics animations
+//! - Tween animations with custom easing
+//! - Color interpolation
+//! - Transform animations
+//! - Configurable animation loops
+//!
+//! # Example
+//! ```rust
+//! use dioxus_motion::prelude::*;
+//!
+//! let mut value = use_motion(0.0f32);
+//! value.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
+//! ```
+
+use animations::{Animatable, AnimationMode};
+use dioxus_hooks::{use_future, use_signal};
 use dioxus_signals::{Readable, Signal, Writable};
-
-use futures_util::StreamExt;
 pub use instant::Duration;
-use motion::Motion;
-use prelude::AnimationState;
 
-pub mod animation;
-pub mod motion;
+pub mod animations;
+pub mod colors;
 pub mod platform;
 pub mod spring;
-pub mod use_transform_motion;
+pub mod transform;
+pub mod tween;
 
+pub use platform::{MotionTime, TimeProvider};
+
+use prelude::{AnimationConfig, LoopMode};
+use spring::{Spring, SpringState};
+
+// Re-exports
 pub mod prelude {
-    pub use crate::animation::{AnimationMode, AnimationState};
-    pub use crate::motion::Motion;
+    pub use crate::animations::AnimationConfig;
+    pub use crate::animations::AnimationMode;
+    pub use crate::animations::LoopMode;
+    pub use crate::colors::Color;
     pub use crate::spring::Spring;
-    pub use crate::use_value_animation;
+    pub use crate::transform::Transform;
+    pub use crate::tween::Tween;
+    pub use crate::use_motion;
+    pub use crate::AnimationManager;
     pub use crate::Duration;
-    pub use crate::UseMotion;
+    pub use crate::Time;
+    pub use crate::TimeProvider;
 }
 
-#[cfg(not(feature = "web"))]
-use platform::DesktopTime;
+pub type Time = MotionTime;
 
-#[cfg(feature = "web")]
-use platform::WebTime;
-
-use platform::TimeProvider;
-
-#[cfg(feature = "web")]
-pub type Time = WebTime;
-
-#[cfg(not(feature = "web"))]
-pub type Time = DesktopTime;
-
-/// Represents an active motion animation
-#[derive(Clone, Copy)]
-pub struct UseMotion {
-    value: Signal<f32>,
-    running_state: Signal<bool>,
-    completion_state: Signal<AnimationState>,
-    elapsed_time: Signal<Duration>,
-    config: Motion,
-    channel: Coroutine<()>,
-    reverse_state: Signal<bool>,
-    loop_state: Signal<bool>, // Add loop state
+/// Trait for managing animations of a value
+///
+/// Provides methods to start, stop, and control animations
+pub trait AnimationManager<T: Animatable>: Clone + Copy {
+    fn new(initial: T) -> Self;
+    fn animate_to(&mut self, target: T, config: AnimationConfig);
+    fn update(&mut self, dt: f32) -> bool;
+    fn get_value(&self) -> T;
+    fn is_running(&self) -> bool;
+    fn reset(&mut self);
+    fn stop(&mut self);
+    fn delay(&mut self, duration: Duration); // Add delay function
 }
 
-impl UseMotion {
-    /// Get the current animated value
-    pub fn value(&self) -> f32 {
-        *self.value.read()
+/// Internal state for an animation
+///
+/// Tracks current value, target, velocity and other animation parameters
+pub struct AnimationState<T: Animatable> {
+    current: T,
+    target: T,
+    initial: T,
+    velocity: T, // Changed to generic type for better precision
+    config: AnimationConfig,
+    running: bool,
+    elapsed: Duration,
+    delay_elapsed: Duration, // Add delay tracking
+    current_loop: u32,
+}
+
+impl<T: Animatable> AnimationState<T> {
+    /// Creates a new animation state with initial value
+    fn new(initial: T) -> Self {
+        Self {
+            current: initial,
+            target: initial,
+            velocity: T::zero(), // New method required in Animatable trait
+            config: AnimationConfig::default(),
+            running: false,
+            elapsed: Duration::default(),
+            delay_elapsed: Duration::default(), // Initialize delay tracking
+            initial,
+            current_loop: 0,
+        }
     }
 
-    /// Start the animation
-    pub fn start(&mut self) {
-        *self.value.write() = self.config.initial;
-        *self.completion_state.write() = AnimationState::Idle;
-        *self.running_state.write() = true;
-        *self.reverse_state.write() = false;
-        self.channel.send(());
+    fn animate_to(&mut self, target: T, config: AnimationConfig) {
+        self.initial = self.current;
+        self.target = target;
+        self.config = config;
+        self.running = true;
+        self.elapsed = Duration::default();
+        self.delay_elapsed = Duration::default(); // Reset delay tracking
+        self.velocity = T::zero();
+        self.current_loop = 0;
     }
 
-    /// Stop the animation
-    pub fn stop(&mut self) {
-        *self.running_state.write() = false;
-        *self.completion_state.write() = AnimationState::Idle;
+    fn stop(&mut self) {
+        self.running = false;
+        self.current_loop = 0;
+        self.velocity = T::zero();
     }
 
-    pub fn reset(&mut self) {
-        *self.value.write() = self.config.initial;
-        *self.completion_state.write() = AnimationState::Idle;
-        *self.running_state.write() = false;
-        *self.elapsed_time.write() = Duration::from_secs(0);
-        *self.reverse_state.write() = false;
-        *self.loop_state.write() = false;
-    }
+    /// Updates animation state based on elapsed time
+    ///
+    /// Returns true if animation should continue, false if completed
+    fn update(&mut self, dt: f32) -> bool {
+        if !self.running {
+            return false;
+        }
 
-    pub fn reverse(&mut self) {
-        if *self.reverse_state.read() {
-            self.config.initial
-        } else {
-            self.config.target
+        // Handle initial delay
+        if self.delay_elapsed < self.config.delay {
+            self.delay_elapsed += Duration::from_secs_f32(dt);
+            return true;
+        }
+
+        let completed = match self.config.mode {
+            AnimationMode::Spring(spring) => {
+                let spring_result = self.update_spring(spring, dt);
+                match spring_result {
+                    SpringState::Active => false,
+                    SpringState::Completed => true,
+                }
+            }
+            AnimationMode::Tween(tween) => {
+                self.elapsed += Duration::from_secs_f32(dt);
+                let progress =
+                    (self.elapsed.as_secs_f32() / tween.duration.as_secs_f32()).clamp(0.0, 1.0);
+
+                let eased_progress = (tween.easing)(progress, 0.0, 1.0, 1.0);
+                self.current = self.initial.interpolate(&self.target, eased_progress);
+
+                progress >= 1.0
+            }
         };
 
-        self.reverse_state.toggle();
-        *self.completion_state.write() = AnimationState::Idle;
-        *self.running_state.write() = true;
-        self.channel.send(());
+        if completed {
+            self.handle_completion()
+        } else {
+            true
+        }
     }
 
-    /// Get the current animation state
-    pub fn state(&self) -> AnimationState {
-        self.completion_state.read().clone()
+    /// Updates spring physics simulation
+    ///
+    /// Returns spring state (Active/Completed)
+    fn update_spring(&mut self, spring: Spring, dt: f32) -> SpringState {
+        // Limit dt to prevent instability
+        let dt = dt.min(0.064);
+
+        let force = self.target.sub(&self.current).scale(spring.stiffness);
+        let damping = self.velocity.scale(spring.damping);
+        let acceleration = force.sub(&damping).scale(1.0 / spring.mass);
+
+        self.velocity = self.velocity.add(&acceleration.scale(dt));
+        self.current = self.current.add(&self.velocity.scale(dt));
+
+        // Check for completion
+        if self.velocity.magnitude() < T::epsilon()
+            && self.current.sub(&self.target).magnitude() < T::epsilon()
+        {
+            self.current = self.target;
+            SpringState::Completed
+        } else {
+            SpringState::Active
+        }
     }
 
-    /// Check if the animation is currently running
-    pub fn is_running(&self) -> bool {
-        *self.running_state.read()
+    fn handle_completion(&mut self) -> bool {
+        let should_continue = match self.config.loop_mode.unwrap_or(LoopMode::None) {
+            LoopMode::None => {
+                self.running = false;
+                false
+            }
+            LoopMode::Infinite => {
+                self.current = self.initial;
+                self.elapsed = Duration::default();
+                self.velocity = T::zero();
+                true
+            }
+            LoopMode::Times(count) => {
+                self.current_loop += 1;
+                if self.current_loop >= count {
+                    self.stop();
+                    false
+                } else {
+                    self.current = self.initial;
+                    self.elapsed = Duration::default();
+                    self.velocity = T::zero();
+                    true
+                }
+            }
+        };
+
+        if !should_continue {
+            if let Some(ref mut f) = self.config.on_complete {
+                f();
+            }
+        }
+
+        should_continue
     }
 
-    pub fn loop_animation(&mut self) {
-        *self.loop_state.write() = true;
-        self.start();
+    fn get_value(&self) -> T {
+        self.current
     }
 
-    pub fn stop_loop(&mut self) {
-        *self.loop_state.write() = false;
-        self.stop(); // Ensure the animation stops when loop is stopped
+    fn is_running(&self) -> bool {
+        self.running
+    }
+
+    fn reset(&mut self) {
+        self.running = false;
+        self.velocity = T::zero();
+        self.elapsed = Duration::default();
+        self.current = self.initial;
     }
 }
 
-// Rename existing to be more specific
-pub fn use_value_animation(config: Motion) -> UseMotion {
-    let mut value = use_signal(|| config.initial);
-    let mut running_state = use_signal(|| false);
-    let mut completion_state = use_signal(|| AnimationState::Idle);
-    let mut elapsed_time = use_signal(|| Duration::from_secs(0));
-    let reverse_state = use_signal(|| false);
-    let loop_state = use_signal(|| false);
+/// Signal wrapper for animation state
+///
+/// Provides reactive updates for animation values
+#[derive(Clone, Copy)]
+struct AnimationSignal<T: Animatable>(Signal<AnimationState<T>>);
 
-    let channel = use_coroutine(move |mut rx| async move {
-        while rx.next().await.is_some() {
-            loop {
-                match config.mode {
-                    AnimationMode::Tween(tween) => {
-                        Time::delay(config.delay).await;
-                        let start_time = Time::now();
-                        let start_value = *value.peek();
-                        let end_value = if *reverse_state.read() {
-                            config.initial
-                        } else {
-                            config.target
-                        };
-                        let initial_elapsed = *elapsed_time.read();
-                        completion_state.set(AnimationState::Running);
-                        running_state.set(true);
+impl<T: Animatable> AnimationManager<T> for AnimationSignal<T> {
+    fn new(initial: T) -> Self {
+        Self(Signal::new(AnimationState::new(initial)))
+    }
 
-                        while *running_state.read() {
-                            let current_elapsed = Time::now()
-                                .duration_since(start_time)
-                                .saturating_add(initial_elapsed);
-                            elapsed_time.set(current_elapsed);
+    fn animate_to(&mut self, target: T, config: AnimationConfig) {
+        self.0.write().animate_to(target, config);
+    }
 
-                            if current_elapsed >= tween.duration {
-                                break;
-                            }
+    fn update(&mut self, dt: f32) -> bool {
+        self.0.write().update(dt)
+    }
 
-                            // Calculate progress as a ratio between 0 and 1
-                            let progress = (current_elapsed.as_secs_f64()
-                                / tween.duration.as_secs_f64())
-                            .clamp(0.0, 1.0);
+    fn get_value(&self) -> T {
+        self.0.read().get_value()
+    }
 
-                            // Apply easing function directly with progress
-                            let current = (tween.easing)(
-                                progress as f32,
-                                start_value,
-                                end_value - start_value,
-                                1.0,
-                            );
-                            value.set(current);
+    fn is_running(&self) -> bool {
+        self.0.read().is_running()
+    }
 
-                            // Simplified frame delay calculation
-                            let frame_delay = if current_elapsed + Duration::from_micros(11_111)
-                                >= tween.duration
-                            {
-                                tween.duration.saturating_sub(current_elapsed)
-                            } else {
-                                Duration::from_micros(11_111) // Target ~90 FPS (1000ms/90 ≈ 11.11ms)
-                            };
+    fn reset(&mut self) {
+        self.0.write().reset()
+    }
 
-                            Time::delay(frame_delay.max(Duration::from_millis(1))).await;
-                        }
+    fn stop(&mut self) {
+        self.0.write().stop()
+    }
 
-                        // Ensure final value is set
-                        value.set(end_value);
-                        elapsed_time.set(Duration::from_secs(0));
-                        running_state.set(false);
-                        completion_state.set(AnimationState::Completed);
+    fn delay(&mut self, duration: Duration) {
+        self.0.write().config.delay = duration;
+    }
+}
 
-                        if let Some(f) = config.on_complete {
-                            f();
-                        }
-                    }
-                    AnimationMode::Spring(spring) => {
-                        let mut velocity = spring.velocity;
-                        let mut current = *value.peek();
-                        let target = if *reverse_state.read() {
-                            config.initial
-                        } else {
-                            config.target
-                        };
+/// Creates a new motion animation hook
+///
+/// # Arguments
+/// * `initial` - Initial value for the animation
+///
+/// # Returns
+/// An animation manager implementing AnimationManager trait
+///
+/// # Example
+/// ```rust
+/// let position = use_motion(0.0f32);
+/// position.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
+/// ```
+pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
+    let mut state = AnimationSignal(use_signal(|| AnimationState::new(initial)));
 
-                        completion_state.set(AnimationState::Running);
-                        running_state.set(true);
+    const TARGET_FPS: f32 = 90.0; // Until we have dynamic frame rate support
+    let frame_time: Duration = Duration::from_secs_f32(1.0 / TARGET_FPS);
 
-                        while *running_state.read() {
-                            let dt = 1.0 / 90.0; // 90 FPS
+    const IDLE_DELAY: Duration = Duration::from_millis(70);
 
-                            current =
-                                Motion::update_spring(current, target, &mut velocity, &spring, dt);
+    use_future(move || async move {
+        let mut last_frame = Time::now();
 
-                            value.set(current);
+        loop {
+            let frame_start = Time::now();
+            let dt = frame_start.duration_since(last_frame).as_secs_f32();
+            last_frame = frame_start;
 
-                            // Check if spring has settled
-                            if velocity.abs() < 0.01 && (current - target).abs() < 0.01 {
-                                break;
-                            }
-
-                            Time::delay(Duration::from_millis(5)).await;
-                        }
-
-                        // Ensure we reach exact target
-                        value.set(target);
-                        running_state.set(false);
-                        completion_state.set(AnimationState::Completed);
-                    }
-                }
-
-                if *loop_state.read() {
-                    // Reset for next loop iteration
-                    *value.write() = config.initial;
-                    *elapsed_time.write() = Duration::from_secs(0);
-                    Time::delay(Duration::from_millis(5)).await;
-                    continue;
-                }
-                break;
+            if !state.is_running() {
+                Time::delay(IDLE_DELAY).await;
+                continue;
             }
+
+            if state.update(dt) {
+                Time::delay(frame_time).await;
+            }
+
+            Time::delay(IDLE_DELAY).await;
         }
     });
 
-    UseMotion {
-        value,
-        running_state,
-        completion_state,
-        elapsed_time,
-        config,
-        channel,
-        reverse_state,
-        loop_state,
-    }
+    state
 }

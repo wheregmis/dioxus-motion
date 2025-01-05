@@ -1,26 +1,52 @@
+//! Platform abstraction for time-related functionality
+//!
+//! Provides cross-platform timing operations for animations.
+//! Supports both web (WASM) and native platforms.
+
 use instant::{Duration, Instant};
 use std::future::Future;
 
+/// Provides platform-agnostic timing operations
+///
+/// Abstracts timing functionality across different platforms,
+/// ensuring consistent animation behavior in both web and native environments.
 pub trait TimeProvider {
+    /// Returns the current instant
     fn now() -> Instant;
+
+    /// Creates a future that completes after the specified duration
     fn delay(duration: Duration) -> impl Future<Output = ()>;
 }
 
+/// Default time provider implementation for motion animations
+///
+/// Implements platform-specific timing operations:
+/// - For web: Uses requestAnimationFrame or setTimeout
+/// - For native: Uses tokio's sleep
 #[derive(Debug, Clone, Copy)]
-pub struct WebTime;
+pub struct MotionTime;
 
-impl TimeProvider for WebTime {
+impl TimeProvider for MotionTime {
     fn now() -> Instant {
         Instant::now()
     }
 
-    fn delay(duration: Duration) -> impl Future<Output = ()> {
-        // Use web-sys for wasm-bindgen compatible setTimeout
+    /// Creates a delay future using platform-specific implementations
+    ///
+    /// # Web
+    /// Uses requestAnimationFrame for short delays (<16ms)
+    /// Uses setTimeout for longer delays
+    ///
+    /// # Native
+    /// Uses tokio::time::sleep
+    fn delay(_duration: Duration) -> impl Future<Output = ()> {
         #[cfg(feature = "web")]
         {
             use futures_util::FutureExt;
             use wasm_bindgen::prelude::*;
             use web_sys::window;
+
+            const RAF_THRESHOLD_MS: u64 = 16;
 
             let (sender, receiver) = futures_channel::oneshot::channel::<()>();
 
@@ -29,56 +55,36 @@ impl TimeProvider for WebTime {
                     let _ = sender.send(());
                 });
 
-                // Use requestAnimationFrame for smoother animations
-                if duration.as_millis() < 16 {
-                    window
-                        .request_animation_frame(cb.as_ref().unchecked_ref())
-                        .unwrap();
-                    cb.forget();
+                // Cache the callback reference
+                let cb_ref = cb.as_ref().unchecked_ref();
+
+                // Choose timing method based on duration
+                if _duration.as_millis() < RAF_THRESHOLD_MS as u128 {
+                    window.request_animation_frame(cb_ref).unwrap();
                 } else {
-                    // Use setTimeout for longer delays
                     window
                         .set_timeout_with_callback_and_timeout_and_arguments_0(
-                            cb.as_ref().unchecked_ref(),
-                            duration.as_millis() as i32,
+                            cb_ref,
+                            _duration.as_millis() as i32,
                         )
                         .unwrap();
-                    cb.forget();
                 }
+
+                cb.forget();
             }
 
             receiver.map(|_| ())
         }
 
-        // Fallback for non-wasm or in case of window lookup failure
         #[cfg(not(feature = "web"))]
         {
-            use futures_util::future::ready;
-            std::thread::sleep(duration);
-            ready(())
+            use futures_util::future::BoxFuture;
+            Box::pin(async move {
+                tokio::time::sleep(_duration).await;
+            })
         }
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct DesktopTime;
-
-impl TimeProvider for DesktopTime {
-    fn now() -> Instant {
-        Instant::now()
-    }
-
-    fn delay(duration: Duration) -> impl Future<Output = ()> {
-        #[cfg(not(feature = "web"))]
-        {
-            async move {
-                tokio::time::sleep(duration).await;
-            }
-        }
-
-        #[cfg(feature = "web")]
-        {
-            WebTime::delay(duration)
-        }
-    }
-}
+/// Type alias for the default time provider
+pub type Time = MotionTime;

@@ -1,47 +1,46 @@
 use dioxus::prelude::*;
-use dioxus_motion::{
-    prelude::*,
-    use_transform_motion::{use_transform_animation, Transform},
-};
+use dioxus_motion::prelude::*;
+use easer::functions::Easing;
 
 #[component]
 fn BouncingLetter(letter: char, delay: f32) -> Element {
-    let mut y_pos = use_value_animation(Motion::new(0.0).to(-20.0).spring(Spring {
-        stiffness: 200.0, // Reduced for smoother bounce
-        damping: 8.0,     // Less damping for more bounce
-        mass: 0.8,        // Lighter mass
-        velocity: 0.0,
-    }));
-
-    let mut scale = use_value_animation(Motion::new(1.0).to(1.2).spring(Spring {
-        stiffness: 200.0,
-        damping: 8.0,
-        mass: 0.8,
-        velocity: 0.0,
-    }));
+    let mut transform = use_motion(Transform::identity());
 
     use_effect(move || {
-        y_pos.loop_animation();
-        scale.loop_animation();
+        let delay = Duration::from_secs_f32(delay);
+        transform.animate_to(
+            Transform {
+                y: -30.0,
+                scale: 1.5,
+                rotation: 5.0 * (std::f32::consts::PI / 180.0),
+                x: 0.0,
+            },
+            AnimationConfig::new(AnimationMode::Tween(Tween {
+                duration: Duration::from_secs(1),
+                easing: easer::functions::Sine::ease_in_out,
+            }))
+            .with_loop(LoopMode::Infinite)
+            .with_delay(delay),
+        );
     });
 
     use_drop(move || {
-        y_pos.stop_loop();
-        scale.stop_loop();
+        transform.stop();
     });
 
     rsx! {
         span {
-            class: "text-4xl font-bold text-indigo-600 inline-block",
-            style: "transform: translateY({y_pos.value()}px) scale({scale.value()});
-                   transition: transform 0.1s linear;",
+            class: "text-4xl font-bold text-indigo-600 inline-block origin-bottom
+                   transition-transform duration-300",
+            style: "transform: translateY({transform.get_value().y}px)
+                            scale({transform.get_value().scale})",
             "{letter}"
         }
     }
 }
 
 #[component]
-pub fn BouncingText(text: String, delay: f32) -> Element {
+pub fn BouncingText(text: String) -> Element {
     rsx! {
         div { class: "flex space-x-1",
             {
@@ -49,7 +48,7 @@ pub fn BouncingText(text: String, delay: f32) -> Element {
                     .enumerate()
                     .map(|(i, char)| {
                         rsx! {
-                            BouncingLetter { letter: char, delay: i as f32 * delay }
+                            BouncingLetter { letter: char, delay: i as f32 * 0.1 }
                         }
                     })
             }

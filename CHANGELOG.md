@@ -1,5 +1,61 @@
 # Changelog
 
+# Changelog
+
+## [v0.2.0] - 2024-01-05
+### Breaking Changes
+- Replaced `use_value_animation` and `use_transform_animation` with `use_motion` hook
+- Removed old animation configuration system
+- Updated Transform property names for consistency
+- Changed spring physics default parameters
+- Removed deprecated animation methods
+
+### New Features
+- Added Color animation support
+- Introduced new `AnimationConfig` API
+- Added support for animation delays
+- Implemented loop modes (Infinite, Times)
+- Added new spring physics configuration
+- Improved cross-platform performance
+- Added new examples and documentation
+
+### Performance Improvements
+- Optimized animation frame handling
+- Reduced CPU usage on desktop platforms
+- Improved interpolation calculations
+- Better memory management
+- Enhanced cleanup on unmount
+
+### Bug Fixes
+- Fixed color interpolation for decreasing values
+- Corrected spring physics calculations
+- Fixed desktop platform timing issues
+- Resolved memory leaks in animation loops
+- Fixed transform rotation interpolation
+
+## 🆕 What's New in v0.2.0
+
+### New Animation API
+- Unified animation hook `use_animation`
+- Simplified configuration
+- Enhanced type safety
+- Better performance
+
+### Color Animations
+```rust
+let color = use_motion(Color::from_rgba(59, 130, 246, 255));
+color.animate_to(
+    Color::from_rgba(168, 85, 247, 255),
+    AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+);
+```
+### Animation Delays & Loops
+```rust
+AnimationConfig::new(mode)
+    .with_delay(Duration::from_secs(1))
+    .with_loop(LoopMode::Times(3))
+```
+
 ## [v0.1.4] - 2024-12-28
 ### Changes
 - Update dependencies and remove unused UUID references

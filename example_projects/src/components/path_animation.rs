@@ -1,22 +1,26 @@
 use dioxus::prelude::*;
-use dioxus_motion::{
-    prelude::*,
-    use_transform_motion::{use_transform_animation, Transform},
-};
+use dioxus_motion::prelude::*;
+use easer::functions::Easing;
+
 #[component]
 pub fn PathAnimation(path: &'static str, duration: f32) -> Element {
-    let mut offset = use_value_animation(
-        Motion::new(1000.0)
-            .to(0.0)
-            .duration(Duration::from_secs_f32(duration)),
-    );
+    let mut dash_offset = use_motion(1000.0f32);
+    let mut mounted = use_signal(|| true);
 
     use_effect(move || {
-        offset.loop_animation();
+        dash_offset.animate_to(
+            0.0,
+            AnimationConfig::new(AnimationMode::Tween(Tween {
+                duration: Duration::from_secs_f32(duration),
+                easing: easer::functions::Cubic::ease_in_out,
+            }))
+            .with_loop(LoopMode::Infinite),
+        );
     });
 
     use_drop(move || {
-        offset.stop_loop();
+        mounted.set(false);
+        dash_offset.stop();
     });
 
     rsx! {
@@ -28,7 +32,8 @@ pub fn PathAnimation(path: &'static str, duration: f32) -> Element {
                     stroke: "url(#gradient)",
                     stroke_width: "4",
                     stroke_dasharray: "1000",
-                    style: "stroke-dashoffset: {offset.value()}",
+                    style: "stroke-dashoffset: {dash_offset.get_value()};
+                            transition: stroke-dashoffset 0.1s linear;",
                 }
                 defs {
                     linearGradient {
@@ -37,8 +42,8 @@ pub fn PathAnimation(path: &'static str, duration: f32) -> Element {
                         y1: "0%",
                         x2: "100%",
                         y2: "0%",
-                        stop { offset: "0%", style: "stop-color: #3B82F6" }
-                        stop { offset: "100%", style: "stop-color: #8B5CF6" }
+                        stop { offset: "0%", style: "stop-color: #3B82F6;" }
+                        stop { offset: "100%", style: "stop-color: #8B5CF6;" }
                     }
                 }
             }

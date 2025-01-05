@@ -22,11 +22,17 @@ pub use morphing_shape::MorphingShape;
 pub mod card_3d_flip;
 pub use card_3d_flip::Card3DFlip;
 
-pub mod particle_system;
-pub use particle_system::ParticleSystem;
-
 pub mod path_animation;
 pub use path_animation::PathAnimation;
 
 pub mod progress_bar;
 pub use progress_bar::ProgressBar;
+
+pub mod color_animation;
+pub use color_animation::ColorAnimation;
+
+pub mod cube_animation;
+pub use cube_animation::SwingingCube;
+
+pub mod animated_flower;
+pub use animated_flower::AnimatedFlower;
