@@ -34,7 +34,7 @@ fn PulseEffect() -> Element {
                 stiffness: 100.0,
                 damping: 5.0,
                 mass: 0.5,
-                ..Default::default()
+                velocity: 1.0
             }))
             .with_loop(LoopMode::Infinite)
         );
@@ -123,7 +123,7 @@ transform.animate_to(
 );
 ```
 ### If you were using transform.get_style(), that function is removed to make the library more generic so i recommend building something like
-```
+```rust
     let transform = use_motion(Transform::default());
     
     let transform_style = use_memo(move || {

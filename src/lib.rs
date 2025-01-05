@@ -1,3 +1,23 @@
+//! Dioxus Motion - Animation library for Dioxus
+//!
+//! Provides smooth animations for web and native applications built with Dioxus.
+//! Supports both spring physics and tween-based animations with configurable parameters.
+//!
+//! # Features
+//! - Spring physics animations
+//! - Tween animations with custom easing
+//! - Color interpolation
+//! - Transform animations
+//! - Configurable animation loops
+//!
+//! # Example
+//! ```rust
+//! use dioxus_motion::prelude::*;
+//!
+//! let mut value = use_motion(0.0f32);
+//! value.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
+//! ```
+
 use animations::{Animatable, AnimationMode};
 use dioxus_hooks::{use_future, use_signal};
 use dioxus_signals::{Readable, Signal, Writable};
@@ -33,6 +53,9 @@ pub mod prelude {
 
 pub type Time = MotionTime;
 
+/// Trait for managing animations of a value
+///
+/// Provides methods to start, stop, and control animations
 pub trait AnimationManager<T: Animatable>: Clone + Copy {
     fn new(initial: T) -> Self;
     fn animate_to(&mut self, target: T, config: AnimationConfig);
@@ -44,6 +67,9 @@ pub trait AnimationManager<T: Animatable>: Clone + Copy {
     fn delay(&mut self, duration: Duration); // Add delay function
 }
 
+/// Internal state for an animation
+///
+/// Tracks current value, target, velocity and other animation parameters
 pub struct AnimationState<T: Animatable> {
     current: T,
     target: T,
@@ -57,6 +83,7 @@ pub struct AnimationState<T: Animatable> {
 }
 
 impl<T: Animatable> AnimationState<T> {
+    /// Creates a new animation state with initial value
     fn new(initial: T) -> Self {
         Self {
             current: initial,
@@ -88,6 +115,9 @@ impl<T: Animatable> AnimationState<T> {
         self.velocity = T::zero();
     }
 
+    /// Updates animation state based on elapsed time
+    ///
+    /// Returns true if animation should continue, false if completed
     fn update(&mut self, dt: f32) -> bool {
         if !self.running {
             return false;
@@ -126,6 +156,9 @@ impl<T: Animatable> AnimationState<T> {
         }
     }
 
+    /// Updates spring physics simulation
+    ///
+    /// Returns spring state (Active/Completed)
     fn update_spring(&mut self, spring: Spring, dt: f32) -> SpringState {
         // Limit dt to prevent instability
         let dt = dt.min(0.064);
@@ -199,6 +232,9 @@ impl<T: Animatable> AnimationState<T> {
     }
 }
 
+/// Signal wrapper for animation state
+///
+/// Provides reactive updates for animation values
 #[derive(Clone, Copy)]
 struct AnimationSignal<T: Animatable>(Signal<AnimationState<T>>);
 
@@ -235,6 +271,20 @@ impl<T: Animatable> AnimationManager<T> for AnimationSignal<T> {
         self.0.write().config.delay = duration;
     }
 }
+
+/// Creates a new motion animation hook
+///
+/// # Arguments
+/// * `initial` - Initial value for the animation
+///
+/// # Returns
+/// An animation manager implementing AnimationManager trait
+///
+/// # Example
+/// ```rust
+/// let position = use_motion(0.0f32);
+/// position.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
+/// ```
 pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
     let mut state = AnimationSignal(use_signal(|| AnimationState::new(initial)));
 
