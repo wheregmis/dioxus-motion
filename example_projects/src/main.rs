@@ -3,9 +3,9 @@ use std::vec;
 use dioxus::prelude::*;
 
 use example_projects::components::{
-    AnimatedFlower, BouncingText, Card3DFlip, ColorAnimation, MorphingShape, Navbar, PathAnimation,
-    ProgressBar, PulseEffect, SwingingCube, TransformAnimationShowcase, TypewriterEffect,
-    ValueAnimationShowcase,
+    AnimatedFlower, AnimationShowcase, BouncingText, Card3DFlip, ColorAnimation, MorphingShape,
+    Navbar, PathAnimation, ProgressBar, PulseEffect, SwingingCube, TransformAnimationShowcase,
+    TypewriterEffect, ValueAnimationShowcase,
 };
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -17,7 +17,8 @@ fn main() {
 fn app() -> Element {
     rsx! {
         document::Link { rel: "stylesheet", href: MAIN_CSS }
-        ShowcaseGallery {}
+        // ShowcaseGallery {}
+        AnimationShowcase {}
     }
 }
 

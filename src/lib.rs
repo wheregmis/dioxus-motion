@@ -25,6 +25,7 @@ pub use instant::Duration;
 
 pub mod animations;
 pub mod colors;
+pub mod enhanced_motion;
 pub mod platform;
 pub mod spring;
 pub mod transform;
@@ -208,8 +209,10 @@ impl<T: Animatable> AnimationState<T> {
         };
 
         if !should_continue {
-            if let Some(ref mut f) = self.config.on_complete {
-                f();
+            if let Some(ref f) = self.config.on_complete {
+                if let Ok(mut guard) = f.lock() {
+                    guard();
+                }
             }
         }
 

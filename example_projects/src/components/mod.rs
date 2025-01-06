@@ -36,3 +36,6 @@ pub use cube_animation::SwingingCube;
 
 pub mod animated_flower;
 pub use animated_flower::AnimatedFlower;
+
+pub mod enhanced_showcase;
+pub use enhanced_showcase::AnimationShowcase;
