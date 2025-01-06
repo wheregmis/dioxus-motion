@@ -39,37 +39,32 @@ impl TimeProvider for MotionTime {
     ///
     /// # Native
     /// Uses tokio::time::sleep
+    #[cfg(feature = "web")]
     fn delay(_duration: Duration) -> impl Future<Output = ()> {
-        #[cfg(feature = "web")]
-        {
-            use futures_util::FutureExt;
-            use wasm_bindgen::prelude::*;
-            use web_sys::window;
+        use futures_util::FutureExt;
+        use wasm_bindgen::prelude::*;
 
-            let (sender, receiver) = futures_channel::oneshot::channel::<()>();
+        let (sender, receiver) = futures_channel::oneshot::channel::<()>();
 
-            if let Some(window) = window() {
-                let cb = Closure::once(move || {
-                    let _ = sender.send(());
-                });
-
-                // Cache the callback reference
-                let cb_ref = cb.as_ref().unchecked_ref();
-
-                window.request_animation_frame(cb_ref).unwrap();
-                cb.forget();
-            }
-
-            receiver.map(|_| ())
+        // Always use rAF for smooth web animations
+        if let Some(window) = web_sys::window() {
+            let cb = Closure::once(move || {
+                let _ = sender.send(());
+            });
+            window
+                .request_animation_frame(cb.as_ref().unchecked_ref())
+                .unwrap();
+            cb.forget();
         }
 
-        #[cfg(not(feature = "web"))]
-        {
-            use futures_util::future::BoxFuture;
-            Box::pin(async move {
-                tokio::time::sleep(_duration).await;
-            })
-        }
+        receiver.map(|_| ())
+    }
+
+    #[cfg(not(feature = "web"))]
+    fn delay(duration: Duration) -> impl Future<Output = ()> {
+        Box::pin(async move {
+            tokio::time::sleep(duration).await;
+        })
     }
 }
 
