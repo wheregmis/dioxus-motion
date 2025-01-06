@@ -1,6 +1,4 @@
 use crate::platform::Time;
-use crate::prelude::AnimationMode;
-use crate::tween::Tween;
 use crate::TimeProvider;
 use crate::{
     animations::Animatable, prelude::AnimationConfig, AnimationManager, AnimationSignal,
@@ -8,7 +6,6 @@ use crate::{
 };
 use dioxus_hooks::{use_future, use_signal};
 use dioxus_signals::{Readable, Signal, Writable};
-use easer::functions::Easing;
 use instant::Duration;
 /// Animation sequence that can chain multiple animations together
 pub struct AnimationSequence<T: Animatable> {
@@ -33,13 +30,19 @@ pub struct AnimationStep<T: Animatable> {
     config: AnimationConfig,
 }
 
-impl<T: Animatable> AnimationSequence<T> {
-    pub fn new() -> Self {
+impl<T: Animatable> Default for AnimationSequence<T> {
+    fn default() -> Self {
         Self {
             steps: Vec::new(),
             current_step: 0,
             on_complete: None,
         }
+    }
+}
+
+impl<T: Animatable> AnimationSequence<T> {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn then(mut self, target: T, config: AnimationConfig) -> Self {
@@ -99,7 +102,7 @@ impl FrameRateController {
         }
     }
 
-    pub fn update(&mut self, frame_time: f32, animation_count: usize) {
+    pub fn update(&mut self, _frame_time: f32, animation_count: usize) {
         let load_factor = animation_count as f32 / 100.0; // Arbitrary scaling
         let target = self.target_fps * (1.0 - load_factor.min(0.5));
         let target = target.clamp(self.min_fps, self.max_fps);
@@ -123,12 +126,18 @@ struct BatchedAnimation<T: Animatable> {
     priority: u32,
 }
 
-impl<T: Animatable> AnimationBatch<T> {
-    pub fn new() -> Self {
+impl<T: Animatable> Default for AnimationBatch<T> {
+    fn default() -> Self {
         Self {
             animations: Vec::new(),
             frame_rate_controller: FrameRateController::new(90.0),
         }
+    }
+}
+
+impl<T: Animatable> AnimationBatch<T> {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn add(&mut self, animation: AnimationState<T>, priority: u32) {
@@ -357,44 +366,6 @@ fn evaluate_path_point<T: Animatable>(path: &AnimationPath<T>, progress: f32) ->
     }
 
     Some(path.points[i].interpolate(&path.points[i + 1], t))
-}
-impl<T: Animatable> EnhancedMotionState<T> {
-    fn update_path_animation(&mut self, dt: f32) -> bool {
-        let current_state = self.path_state.read().clone();
-        let path_state = match current_state {
-            Some(mut state) => {
-                // Update progress
-                state.progress += dt / state.config.get_duration().as_secs_f32();
-
-                // Handle completion or looping
-                if state.progress >= 1.0 {
-                    if state.path.closed {
-                        state.progress -= state.progress.floor();
-                    } else {
-                        self.path_state.set(None);
-                        return false;
-                    }
-                }
-
-                // Get current point on path
-                if let Some(point) = evaluate_path_point(&state.path, state.progress) {
-                    self.base.animate_to(
-                        point,
-                        AnimationConfig::new(AnimationMode::Tween(Tween {
-                            duration: Duration::from_millis(16),
-                            easing: easer::functions::Linear::ease_in_out,
-                        })),
-                    );
-                }
-
-                self.path_state.set(Some(state));
-                true
-            }
-            None => false,
-        };
-
-        path_state
-    }
 }
 
 pub struct SequenceState<T: Animatable> {
