@@ -19,7 +19,6 @@
 //! ```
 
 use animations::{Animatable, AnimationMode};
-use dioxus_hooks::{use_future, use_signal};
 use dioxus_signals::{Readable, Signal, Writable};
 pub use instant::Duration;
 
@@ -42,10 +41,10 @@ pub mod prelude {
     pub use crate::animations::AnimationMode;
     pub use crate::animations::LoopMode;
     pub use crate::colors::Color;
+    pub use crate::enhanced_motion::use_motion;
     pub use crate::spring::Spring;
     pub use crate::transform::Transform;
     pub use crate::tween::Tween;
-    pub use crate::use_motion;
     pub use crate::AnimationManager;
     pub use crate::Duration;
     pub use crate::Time;
@@ -273,49 +272,4 @@ impl<T: Animatable> AnimationManager<T> for AnimationSignal<T> {
     fn delay(&mut self, duration: Duration) {
         self.0.write().config.delay = duration;
     }
-}
-
-/// Creates a new motion animation hook
-///
-/// # Arguments
-/// * `initial` - Initial value for the animation
-///
-/// # Returns
-/// An animation manager implementing AnimationManager trait
-///
-/// # Example
-/// ```rust
-/// let position = use_motion(0.0f32);
-/// position.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
-/// ```
-pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
-    let mut state = AnimationSignal(use_signal(|| AnimationState::new(initial)));
-
-    const TARGET_FPS: f32 = 90.0; // Until we have dynamic frame rate support
-    let frame_time: Duration = Duration::from_secs_f32(1.0 / TARGET_FPS);
-
-    const IDLE_DELAY: Duration = Duration::from_millis(70);
-
-    use_future(move || async move {
-        let mut last_frame = Time::now();
-
-        loop {
-            let frame_start = Time::now();
-            let dt = frame_start.duration_since(last_frame).as_secs_f32();
-            last_frame = frame_start;
-
-            if !state.is_running() {
-                Time::delay(IDLE_DELAY).await;
-                continue;
-            }
-
-            if state.update(dt) {
-                Time::delay(frame_time).await;
-            }
-
-            Time::delay(IDLE_DELAY).await;
-        }
-    });
-
-    state
 }

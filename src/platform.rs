@@ -46,8 +46,6 @@ impl TimeProvider for MotionTime {
             use wasm_bindgen::prelude::*;
             use web_sys::window;
 
-            const RAF_THRESHOLD_MS: u64 = 16;
-
             let (sender, receiver) = futures_channel::oneshot::channel::<()>();
 
             if let Some(window) = window() {
@@ -58,18 +56,7 @@ impl TimeProvider for MotionTime {
                 // Cache the callback reference
                 let cb_ref = cb.as_ref().unchecked_ref();
 
-                // Choose timing method based on duration
-                if _duration.as_millis() < RAF_THRESHOLD_MS as u128 {
-                    window.request_animation_frame(cb_ref).unwrap();
-                } else {
-                    window
-                        .set_timeout_with_callback_and_timeout_and_arguments_0(
-                            cb_ref,
-                            _duration.as_millis() as i32,
-                        )
-                        .unwrap();
-                }
-
+                window.request_animation_frame(cb_ref).unwrap();
                 cb.forget();
             }
 

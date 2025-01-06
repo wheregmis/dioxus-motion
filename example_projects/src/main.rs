@@ -17,8 +17,7 @@ fn main() {
 fn app() -> Element {
     rsx! {
         document::Link { rel: "stylesheet", href: MAIN_CSS }
-        // ShowcaseGallery {}
-        AnimationShowcase {}
+        ShowcaseGallery {}
     }
 }
 

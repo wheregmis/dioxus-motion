@@ -65,7 +65,7 @@ pub enum LoopMode {
 
 pub type OnComplete = Arc<Mutex<dyn FnMut() + Send + 'static>>;
 /// Configuration for an animation
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct AnimationConfig {
     /// The type of animation (Tween or Spring)
     pub mode: AnimationMode,
@@ -75,17 +75,6 @@ pub struct AnimationConfig {
     pub delay: Duration,
     /// Callback when animation completes
     pub on_complete: Option<OnComplete>,
-}
-
-impl Default for AnimationConfig {
-    fn default() -> Self {
-        Self {
-            mode: AnimationMode::default(),
-            loop_mode: None,
-            delay: Duration::default(),
-            on_complete: None,
-        }
-    }
 }
 
 impl AnimationConfig {
