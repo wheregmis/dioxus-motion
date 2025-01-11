@@ -1,8 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_motion::{
-    enhanced_motion::{use_motion, AnimationSequence, EnhancedAnimationManager},
-    prelude::*,
-};
+use dioxus_motion::{prelude::*, AnimationSequence};
 use easer::functions::Easing;
 use std::time::Duration;
 

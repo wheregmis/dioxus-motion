@@ -43,17 +43,33 @@ impl TimeProvider for MotionTime {
     fn delay(_duration: Duration) -> impl Future<Output = ()> {
         use futures_util::FutureExt;
         use wasm_bindgen::prelude::*;
+        use web_sys::window;
+
+        const RAF_THRESHOLD_MS: u64 = 16;
 
         let (sender, receiver) = futures_channel::oneshot::channel::<()>();
 
         // Always use rAF for smooth web animations
-        if let Some(window) = web_sys::window() {
+        if let Some(window) = window() {
             let cb = Closure::once(move || {
                 let _ = sender.send(());
             });
-            window
-                .request_animation_frame(cb.as_ref().unchecked_ref())
-                .unwrap();
+
+            // Cache the callback reference
+            let cb_ref = cb.as_ref().unchecked_ref();
+
+            // Choose timing method based on duration
+            if _duration.as_millis() < RAF_THRESHOLD_MS as u128 {
+                window.request_animation_frame(cb_ref).unwrap();
+            } else {
+                window
+                    .set_timeout_with_callback_and_timeout_and_arguments_0(
+                        cb_ref,
+                        _duration.as_millis() as i32,
+                    )
+                    .unwrap();
+            }
+
             cb.forget();
         }
 
