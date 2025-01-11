@@ -2,25 +2,24 @@
 <html>
 
 <head>
-    <title></title>
+    <title>Dioxus Motion 🚀</title>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="UTF-8" />
     <!-- <link rel="preload" href="/./dioxus-motion/wasm/example_projects_bg.wasm" as="fetch" type="application/wasm"
         crossorigin="">
     <link rel="preload" href="/./dioxus-motion/wasm/example_projects_bg.js" as="script"> -->
-    <link rel="stylesheet" href="https://wheregmis.github.io/dioxus-motion/assets/main-3e01f8fa5527dc70.css">
-    <link rel="preload" href="/./dioxus-motion/wasm/example_projects_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
-    <link rel="preload" href="/./dioxus-motion/wasm/example_projects.js" as="script">
+    <link rel="preload" href="/./wasm/example_projects_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
+    <link rel="preload" href="/./wasm/example_projects_bg.js" as="script">
 </head>
 
 <body>
     <div id="main"></div>
     <script>
         // We can't use a module script here because we need to start the script immediately when streaming
-        import("/./dioxus-motion/wasm/example_projects.js").then(
+        import("/./wasm/example_projects.js").then(
             ({ default: init }) => {
-                init("/./dioxus-motion/wasm/example_projects_bg.wasm").then((wasm) => {
+                init("/./wasm/example_projects_bg.wasm").then((wasm) => {
                     if (wasm.__wbindgen_start == undefined) {
                         wasm.main();
                     }
