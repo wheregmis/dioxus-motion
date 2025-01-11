@@ -8,7 +8,7 @@ A lightweight, cross-platform animation library for Dioxus, designed to bring sm
 
 ## 🎯 Live Examples
 
-<img src="example.gif" width="90%" height="700" />
+<img src="example.gif" width="100%" height="400" />
 
 Visit our [Example Website](https://wheregmis.github.io/dioxus-motion/) to see these animations in action:
 
