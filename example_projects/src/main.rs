@@ -3,9 +3,10 @@ use std::vec;
 use dioxus::prelude::*;
 
 use example_projects::components::{
-    AnimatedFlower, AnimationShowcase, BouncingText, Card3DFlip, ColorAnimation, MorphingShape,
-    Navbar, PathAnimation, ProgressBar, PulseEffect, SwingingCube, TransformAnimationShowcase,
-    TypewriterEffect, ValueAnimationShowcase,
+    AnimatedCounter, AnimatedFlower, AnimatedMenuItem, BouncingText, Card3DFlip, ColorAnimation,
+    InteractiveCube, MorphingShape, Navbar, PathAnimation, ProgressBar, PulseEffect,
+    RotatingButton, SwingingCube, TransformAnimationShowcase, TypewriterEffect,
+    ValueAnimationShowcase,
 };
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -26,8 +27,11 @@ pub fn ShowcaseGallery() -> Element {
     rsx! {
         div { class: "flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-gray-100",
             Navbar {}
-
             div { class: "container mx-auto px-8 py-12 pt-20",
+                div {
+                    h2 { class: "text-xl font-bold", "Animated Counter" }
+                    AnimatedCounter {}
+                }
                 div { class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8",
                     // Update each card with fixed height and overflow control
                     div { class: "flex flex-col items-start justify-between h-[400px] bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
@@ -70,6 +74,18 @@ pub fn ShowcaseGallery() -> Element {
                         ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/morphing_shape.rs" }
                     }
 
+                    div { class: "flex flex-col items-start justify-between h-[400px] bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "Interactive Cube"
+                        }
+                        div {
+                            class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
+                            style: "max-height: 280px;",
+                            InteractiveCube {}
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/interactive_cube.rs" }
+                    }
+
                     // Value Animation Card
                     div { class: "flex flex-col items-start justify-between h-[400px] bg-white rounded-2xl shadow-lg shadow-blue-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
                         h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
@@ -94,6 +110,37 @@ pub fn ShowcaseGallery() -> Element {
                             TransformAnimationShowcase {}
                         }
                         ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/transform_animation.rs" }
+                    }
+
+                    div { class: "flex flex-col items-start justify-between h-[400px] bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "Animated Menu Bar"
+                        }
+                        div {
+                            class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
+                            style: "max-height: 280px;",
+                            section { class: "",
+                                p { class: "text-gray-600", "Shows smooth transitions on hover" }
+                                div { class: "space-y-2",
+                                    AnimatedMenuItem { label: "Home" }
+                                    AnimatedMenuItem { label: "About" }
+                                    AnimatedMenuItem { label: "Contact" }
+                                }
+                            }
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/animated_menu_item.rs" }
+                    }
+
+                    div { class: "flex flex-col items-start justify-between h-[400px] bg-white rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
+                        h3 { class: "text-lg font-semibold text-gray-800 mb-4 w-full",
+                            "Rotating Button"
+                        }
+                        div {
+                            class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
+                            style: "max-height: 280px;",
+                            RotatingButton {}
+                        }
+                        ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/rotating_button.rs" }
                     }
 
                     // Progress Bar Card

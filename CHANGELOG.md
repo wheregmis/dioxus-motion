@@ -1,6 +1,10 @@
 # Changelog
 
-# Changelog
+## [v0.2.1] - 2024-01-11
+### Performance Improvements
+- Smoothness Optimization
+### New Features
+- Animation Sequence
 
 ## [v0.2.0] - 2024-01-05
 ### Breaking Changes

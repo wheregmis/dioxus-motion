@@ -45,6 +45,7 @@ pub mod prelude {
     pub use crate::transform::Transform;
     pub use crate::tween::Tween;
     pub use crate::use_motion;
+    pub use crate::AnimationSequence;
     pub use crate::Duration;
     pub use crate::Time;
     pub use crate::TimeProvider;
