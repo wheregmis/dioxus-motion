@@ -8,7 +8,7 @@ A lightweight, cross-platform animation library for Dioxus, designed to bring sm
 
 ## 🎯 Live Examples
 
-<img src="example.gif" width="400" height="400" />
+<img src="example.gif" width="100%" height="700" />
 
 Visit our [Example Website](https://wheregmis.github.io/dioxus-motion/) to see these animations in action:
 
@@ -47,6 +47,43 @@ fn PulseEffect() -> Element {
         }
     }
 }
+```
+
+### Animation Sequences
+
+Chain multiple animations together with different configurations:
+
+```rust
+let scale = use_motion(1.0f32);
+
+// Create a bouncy sequence
+let sequence = AnimationSequence::new()
+    .then(
+        1.2, // Scale up
+        AnimationConfig::new(AnimationMode::Spring(Spring {
+            stiffness: 400.0,
+            damping: 10.0,
+            mass: 1.0,
+            velocity: 5.0,
+        }))
+    )
+    .then(
+        0.8, // Scale down
+        AnimationConfig::new(AnimationMode::Spring(Spring {
+            stiffness: 300.0,
+            damping: 15.0,
+            mass: 1.0,
+            velocity: -2.0,
+        }))
+    )
+    .then(
+        1.0, // Return to original
+        AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+    );
+
+// Start the sequence
+scale.animate_sequence(sequence);
+// Each step in the sequence can have its own timing, easing, and spring physics configuration. Sequences can also be looped or chained with other animations. 
 ```
 
 ## ✨ Features

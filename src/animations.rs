@@ -4,6 +4,8 @@
 //! It provides support for both tweening and spring-based animations with configurable
 //! parameters.
 
+use std::sync::{Arc, Mutex};
+
 use crate::{spring::Spring, tween::Tween};
 use instant::Duration;
 
@@ -61,11 +63,9 @@ pub enum LoopMode {
     Times(u32),
 }
 
-/// Type alias for animation completion callback
-pub type OnComplete = Box<dyn FnMut() + 'static>;
-
+pub type OnComplete = Arc<Mutex<dyn FnMut() + Send + 'static>>;
 /// Configuration for an animation
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct AnimationConfig {
     /// The type of animation (Tween or Spring)
     pub mode: AnimationMode,
@@ -79,11 +79,6 @@ pub struct AnimationConfig {
 
 impl AnimationConfig {
     /// Creates a new animation configuration with specified mode
-    ///
-    /// # Example
-    /// ```rust
-    /// let config = AnimationConfig::new(AnimationMode::Spring(Spring::default()));
-    /// ```
     pub fn new(mode: AnimationMode) -> Self {
         Self {
             mode,
@@ -94,12 +89,6 @@ impl AnimationConfig {
     }
 
     /// Sets the loop mode for the animation
-    ///
-    /// # Example
-    /// ```rust
-    /// let config = AnimationConfig::new(mode)
-    ///     .with_loop(LoopMode::Infinite);
-    /// ```
     pub fn with_loop(mut self, loop_mode: LoopMode) -> Self {
         self.loop_mode = Some(loop_mode);
         self
@@ -114,9 +103,36 @@ impl AnimationConfig {
     /// Sets a callback to be called when animation completes
     pub fn with_on_complete<F>(mut self, f: F) -> Self
     where
-        F: FnMut() + 'static,
+        F: FnMut() + Send + 'static,
     {
-        self.on_complete = Some(Box::new(f));
+        self.on_complete = Some(Arc::new(Mutex::new(f)));
         self
+    }
+
+    /// Gets the total duration of the animation
+    pub fn get_duration(&self) -> Duration {
+        match &self.mode {
+            AnimationMode::Spring(_) => {
+                // Springs don't have a fixed duration, estimate based on typical settling time
+                Duration::from_secs_f32(1.0) // You might want to adjust this based on spring parameters
+            }
+            AnimationMode::Tween(tween) => {
+                let base_duration = tween.duration;
+                match self.loop_mode {
+                    Some(LoopMode::Infinite) => Duration::from_secs(f32::INFINITY as u64),
+                    Some(LoopMode::Times(count)) => base_duration * count,
+                    Some(LoopMode::None) | None => base_duration,
+                }
+            }
+        }
+    }
+
+    /// Execute the completion callback if it exists
+    pub fn execute_completion(&mut self) {
+        if let Some(on_complete) = &self.on_complete {
+            if let Ok(mut callback) = on_complete.lock() {
+                callback();
+            }
+        }
     }
 }

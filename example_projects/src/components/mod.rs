@@ -36,3 +36,15 @@ pub use cube_animation::SwingingCube;
 
 pub mod animated_flower;
 pub use animated_flower::AnimatedFlower;
+
+pub mod animated_counter;
+pub use animated_counter::AnimatedCounter;
+
+pub mod interactive_cube;
+pub use interactive_cube::InteractiveCube;
+
+pub mod animated_menu_item;
+pub use animated_menu_item::AnimatedMenuItem;
+
+pub mod rotating_button;
+pub use rotating_button::RotatingButton;
