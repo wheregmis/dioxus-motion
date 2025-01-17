@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.2.2] - 2024-01-17
+### Performance Improvements
+- Resource optimization for web
+
 ## [v0.2.1] - 2024-01-11
 ### Performance Improvements
 - Smoothness Optimization
