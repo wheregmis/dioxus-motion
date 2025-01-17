@@ -60,7 +60,7 @@ pub enum LoopMode {
     /// Loop animation indefinitely
     Infinite,
     /// Loop animation a specific number of times
-    Times(u32),
+    Times(u8),
 }
 
 pub type OnComplete = Arc<Mutex<dyn FnMut() + Send + 'static>>;
@@ -120,7 +120,7 @@ impl AnimationConfig {
                 let base_duration = tween.duration;
                 match self.loop_mode {
                     Some(LoopMode::Infinite) => Duration::from_secs(f32::INFINITY as u64),
-                    Some(LoopMode::Times(count)) => base_duration * count,
+                    Some(LoopMode::Times(count)) => base_duration * count.into(),
                     Some(LoopMode::None) | None => base_duration,
                 }
             }
