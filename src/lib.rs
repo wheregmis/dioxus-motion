@@ -19,6 +19,19 @@
 //! value.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
 //! ```
 
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::panic)]
+#![deny(unused_variables)]
+#![deny(unused_must_use)]
+#![deny(unsafe_code)] // Prevent unsafe blocks
+#![deny(clippy::unwrap_in_result)] // No unwrap() on Result
+// #![deny(clippy::indexing_slicing)] // Prevent unchecked indexing
+#![deny(rustdoc::broken_intra_doc_links)] // Check doc links
+// #![deny(clippy::arithmetic_side_effects)] // Check for integer overflow
+#![deny(clippy::modulo_arithmetic)] // Check modulo operations
+#![deny(clippy::option_if_let_else)] // Prefer map/and_then
+#![deny(clippy::option_if_let_else)] // Prefer map/and_then
+
 use animations::{Animatable, AnimationMode};
 use dioxus_hooks::{use_future, use_signal};
 use dioxus_signals::{Readable, Signal, Writable};
@@ -103,7 +116,7 @@ pub struct AnimationState<T: Animatable> {
     running: bool,
     elapsed: Duration,
     delay_elapsed: Duration,
-    current_loop: u32,
+    current_loop: u8,
 }
 
 impl<T: Animatable> AnimationState<T> {
@@ -158,6 +171,7 @@ impl<T: Animatable> AnimationState<T> {
             }
             AnimationMode::Tween(tween) => {
                 self.elapsed += Duration::from_secs_f32(dt);
+                #[allow(clippy::float_arithmetic)]
                 let progress =
                     (self.elapsed.as_secs_f32() / tween.duration.as_secs_f32()).clamp(0.0, 1.0);
 
@@ -465,7 +479,14 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl EnhancedAnimationManager<T>
 
             if state.read().is_running() {
                 state.write().update(dt);
-                Time::delay(Duration::from_millis(16)).await;
+                // Do something with dt and delay it if its more than 100ms to avoid hogging the CPU
+                let delay = if dt > 0.15 {
+                    Duration::from_millis(16)
+                } else {
+                    Duration::from_millis(32)
+                };
+
+                Time::delay(delay).await;
             } else {
                 Time::delay(Duration::from_millis(100)).await;
             }
