@@ -10,9 +10,9 @@
     <div id="main"></div>
   <script>
             // We can't use a module script here because we need to start the script immediately when streaming
-            import("/.dioxus-motion/assets/example_projects-e0636da46d90f4f4.js").then(
+            import("/./dioxus-motion/assets/example_projects-e0636da46d90f4f4.js").then(
                 ({ default: init }) => {
-                init("/.dioxus-motion/assets/example_projects_bg-1962de42ad732cb4.wasm").then((wasm) => {
+                init("/./dioxus-motion/assets/example_projects_bg-1962de42ad732cb4.wasm").then((wasm) => {
                     if (wasm.__wbindgen_start == undefined) {
                     wasm.main();
                     }
