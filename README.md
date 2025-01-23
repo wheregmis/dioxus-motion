@@ -100,7 +100,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-motion = { version = "0.2.2", optional = true, default-features = false }
+dioxus-motion = { version = "0.2.3", optional = true, default-features = false }
 
 [features]
 default = ["web"]

@@ -1,7 +1,7 @@
 [package]
 name = "dioxus-motion"
 description = "Animations library for Dioxus."
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 license = "MIT"
 authors = ["Sabin Regmi <get2sabin@gmail.com>"]
@@ -13,9 +13,9 @@ categories = ["graphics", "gui"]
 
 [dependencies]
 easer = "0.3.0"
-dioxus-hooks = "0.6.1"
+dioxus-hooks = "0.6.2"
 futures-util = { version = "0.3.31", default-features = false }
-dioxus-signals = "0.6.1"
+dioxus-signals = "0.6.2"
 instant = { version = "0.1.13", optional = true }
 wasm-bindgen = { version = "0.2.100", optional = true, default-features = false }
 web-sys = { version = "0.3.77", optional = true, default-features = false, features = [

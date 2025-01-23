@@ -24,7 +24,7 @@ pub fn PathAnimation(path: &'static str, duration: f32) -> Element {
     });
 
     rsx! {
-        div { class: "w-full h-48 flex items-center justify-center bg-white rounded-xl",
+        div { class: "w-full h-48 flex items-center justify-center rounded-xl",
             svg { class: "w-full h-full", view_box: "0 0 200 200",
                 path {
                     d: "{path}",

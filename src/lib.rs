@@ -387,6 +387,8 @@ impl<T: Animatable> AnimationManager<T> for EnhancedMotionState<T> {
                             on_complete();
                         }
                         should_clear_sequence = true;
+                        still_animating = false;
+                        self.base.stop();
                     }
                     std::cmp::Ordering::Greater => {}
                 }

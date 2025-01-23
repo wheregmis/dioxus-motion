@@ -74,12 +74,18 @@ impl Animatable for Color {
 
     /// Minimum difference between color components
     fn epsilon() -> f32 {
-        0.001
+        0.00001 // Increased precision for smoother transitions
     }
 
     /// Calculates color vector magnitude
     fn magnitude(&self) -> f32 {
-        (self.r * self.r + self.g * self.g + self.b * self.b + self.a * self.a).sqrt()
+        // Weighted magnitude calculation for better precision
+        let r_diff = self.r;
+        let g_diff = self.g;
+        let b_diff = self.b;
+        let a_diff = self.a;
+
+        (r_diff * r_diff + g_diff * g_diff + b_diff * b_diff + a_diff * a_diff).sqrt()
     }
 
     /// Scales color components by a factor
@@ -118,13 +124,14 @@ impl Animatable for Color {
     /// * `target` - Target color to interpolate towards
     /// * `t` - Interpolation factor (0.0-1.0)
     fn interpolate(&self, target: &Self, t: f32) -> Self {
-        let lerp = |start: f32, end: f32, t: f32| -> f32 { start + (end - start) * t };
+        let t = t.clamp(0.0, 1.0);
 
-        Color::new(
-            lerp(self.r, target.r, t),
-            lerp(self.g, target.g, t),
-            lerp(self.b, target.b, t),
-            lerp(self.a, target.a, t),
-        )
+        // Direct linear interpolation that works for both increasing and decreasing values
+        let r = self.r * (1.0 - t) + target.r * t;
+        let g = self.g * (1.0 - t) + target.g * t;
+        let b = self.b * (1.0 - t) + target.b * t;
+        let a = self.a * (1.0 - t) + target.a * t;
+
+        Color::new(r, g, b, a)
     }
 }

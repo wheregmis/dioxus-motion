@@ -20,10 +20,10 @@ pub fn ProgressBar(title: &'static str) -> Element {
     use_drop(move || progress.stop());
 
     rsx! {
-        div { class: "w-full p-6 bg-white rounded-xl shadow-lg",
+        div { class: "w-full p-6  rounded-xl shadow-lg",
             // Title and percentage display
             div { class: "flex justify-between items-center mb-4",
-                span { class: "text-lg font-semibold text-gray-700", "{title}" }
+                span { class: "text-lg font-semibold", "{title}" }
                 span { class: "text-sm font-medium text-blue-600", "{progress.get_value() as i32}%" }
             }
 

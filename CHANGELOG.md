@@ -1,4 +1,8 @@
 # Changelog
+## [v0.2.3] - 2024-01-23
+### Dioxus Version Bump
+- updated to dioxus v0.6.2
+- minor fixes
 
 ## [v0.2.2] - 2024-01-17
 ### Performance Improvements
