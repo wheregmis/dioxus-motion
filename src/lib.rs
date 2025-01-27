@@ -58,11 +58,11 @@ pub mod prelude {
     pub use crate::transform::Transform;
     pub use crate::tween::Tween;
     pub use crate::use_motion;
+    pub use crate::AnimationManager;
     pub use crate::AnimationSequence;
     pub use crate::Duration;
     pub use crate::Time;
     pub use crate::TimeProvider;
-    pub use crate::{AnimationManager, EnhancedAnimationManager};
 }
 
 pub type Time = MotionTime;
@@ -70,7 +70,7 @@ pub type Time = MotionTime;
 /// Animation sequence that can chain multiple animations together
 pub struct AnimationSequence<T: Animatable> {
     steps: Vec<AnimationStep<T>>,
-    current_step: usize,
+    current_step: u8,
     on_complete: Option<Box<dyn FnOnce()>>,
 }
 
@@ -192,16 +192,17 @@ impl<T: Animatable> AnimationState<T> {
     fn update_spring(&mut self, spring: Spring, dt: f32) -> SpringState {
         let dt = dt.min(0.064);
 
-        let force = self.target.sub(&self.current).scale(spring.stiffness);
+        // Cache intermediate calculations
+        let delta = self.target.sub(&self.current);
+        let force = delta.scale(spring.stiffness);
         let damping = self.velocity.scale(spring.damping);
         let acceleration = force.sub(&damping).scale(1.0 / spring.mass);
 
         self.velocity = self.velocity.add(&acceleration.scale(dt));
         self.current = self.current.add(&self.velocity.scale(dt));
 
-        if self.velocity.magnitude() < T::epsilon()
-            && self.current.sub(&self.target).magnitude() < T::epsilon()
-        {
+        // Check completion with cached delta
+        if self.velocity.magnitude() < T::epsilon() && delta.magnitude() < T::epsilon() {
             self.current = self.target;
             SpringState::Completed
         } else {
@@ -262,21 +263,17 @@ impl<T: Animatable> AnimationState<T> {
     }
 }
 
-/// Trait for managing animations of a value
+/// Combined Animation Manager trait
 pub trait AnimationManager<T: Animatable>: Clone + Copy {
     fn new(initial: T) -> Self;
     fn animate_to(&mut self, target: T, config: AnimationConfig);
+    fn animate_sequence(&mut self, sequence: AnimationSequence<T>);
     fn update(&mut self, dt: f32) -> bool;
     fn get_value(&self) -> T;
     fn is_running(&self) -> bool;
     fn reset(&mut self);
     fn stop(&mut self);
     fn delay(&mut self, duration: Duration);
-}
-
-/// Enhanced AnimationManager trait with sequence capabilities
-pub trait EnhancedAnimationManager<T: Animatable>: AnimationManager<T> {
-    fn animate_sequence(&mut self, sequence: AnimationSequence<T>);
 }
 
 #[derive(Clone, Copy)]
@@ -289,6 +286,10 @@ impl<T: Animatable> AnimationManager<T> for AnimationSignal<T> {
 
     fn animate_to(&mut self, target: T, config: AnimationConfig) {
         self.0.write().animate_to(target, config);
+    }
+
+    fn animate_sequence(&mut self, _sequence: AnimationSequence<T>) {
+        // No-op for base AnimationSignal
     }
 
     fn update(&mut self, dt: f32) -> bool {
@@ -317,7 +318,7 @@ impl<T: Animatable> AnimationManager<T> for AnimationSignal<T> {
 }
 
 #[derive(Clone, Copy)]
-pub struct EnhancedMotionState<T: Animatable> {
+pub struct MotionState<T: Animatable> {
     base: AnimationSignal<T>,
     sequence: Signal<Option<SequenceState<T>>>,
 }
@@ -327,7 +328,7 @@ struct SequenceState<T: Animatable> {
     current_value: T,
 }
 
-impl<T: Animatable> EnhancedMotionState<T> {
+impl<T: Animatable> MotionState<T> {
     fn new(initial: T) -> Self {
         Self {
             base: AnimationSignal::new(initial),
@@ -336,34 +337,27 @@ impl<T: Animatable> EnhancedMotionState<T> {
     }
 }
 
-impl<T: Animatable> EnhancedAnimationManager<T> for EnhancedMotionState<T> {
-    fn animate_sequence(&mut self, sequence: AnimationSequence<T>) {
-        if sequence.steps.is_empty() {
-            return;
-        }
-
-        let first_step = &sequence.steps[0];
-        self.base
-            .animate_to(first_step.target, first_step.config.clone());
-
-        self.sequence.set(Some(SequenceState {
-            sequence,
-            current_value: self.base.get_value(),
-        }));
-    }
-}
-
-impl<T: Animatable> AnimationManager<T> for EnhancedMotionState<T> {
+impl<T: Animatable> AnimationManager<T> for MotionState<T> {
     fn new(initial: T) -> Self {
-        Self {
-            base: AnimationSignal::new(initial),
-            sequence: Signal::new(None),
-        }
+        Self::new(initial)
     }
 
     fn animate_to(&mut self, target: T, config: AnimationConfig) {
         self.sequence.set(None);
         self.base.animate_to(target, config);
+    }
+
+    fn animate_sequence(&mut self, sequence: AnimationSequence<T>) {
+        if sequence.steps.is_empty() {
+            return;
+        }
+        let first_step = &sequence.steps[0];
+        self.base
+            .animate_to(first_step.target, first_step.config.clone());
+        self.sequence.set(Some(SequenceState {
+            sequence,
+            current_value: self.base.get_value(),
+        }));
     }
 
     fn update(&mut self, dt: f32) -> bool {
@@ -375,10 +369,10 @@ impl<T: Animatable> AnimationManager<T> for EnhancedMotionState<T> {
             let total_steps = sequence_state.sequence.steps.len();
 
             if !self.base.is_running() {
-                match current_step.cmp(&(total_steps - 1)) {
+                match current_step.cmp(&(total_steps as u8 - 1)) {
                     std::cmp::Ordering::Less => {
                         sequence_state.sequence.current_step += 1;
-                        let step = &sequence_state.sequence.steps[current_step + 1];
+                        let step = &sequence_state.sequence.steps[(current_step + 1) as usize];
                         self.base.animate_to(step.target, step.config.clone());
                         still_animating = true;
                     }
@@ -429,19 +423,17 @@ impl<T: Animatable> AnimationManager<T> for EnhancedMotionState<T> {
 }
 
 // Signal wrapper implementations
-impl<T: Animatable> EnhancedAnimationManager<T> for Signal<EnhancedMotionState<T>> {
-    fn animate_sequence(&mut self, sequence: AnimationSequence<T>) {
-        self.write().animate_sequence(sequence);
-    }
-}
-
-impl<T: Animatable> AnimationManager<T> for Signal<EnhancedMotionState<T>> {
+impl<T: Animatable> AnimationManager<T> for Signal<MotionState<T>> {
     fn new(initial: T) -> Self {
-        Signal::new(EnhancedMotionState::new(initial))
+        Signal::new(MotionState::new(initial))
     }
 
     fn animate_to(&mut self, target: T, config: AnimationConfig) {
         self.write().animate_to(target, config);
+    }
+
+    fn animate_sequence(&mut self, sequence: AnimationSequence<T>) {
+        self.write().animate_sequence(sequence);
     }
 
     fn update(&mut self, dt: f32) -> bool {
@@ -469,8 +461,8 @@ impl<T: Animatable> AnimationManager<T> for Signal<EnhancedMotionState<T>> {
     }
 }
 
-pub fn use_motion<T: Animatable>(initial: T) -> impl EnhancedAnimationManager<T> {
-    let mut state = use_signal(|| EnhancedMotionState::new(initial));
+pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
+    let mut state = use_signal(|| MotionState::new(initial));
 
     use_future(move || async move {
         let mut last_frame = Time::now();

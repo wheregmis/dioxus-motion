@@ -74,7 +74,7 @@ pub struct AnimationConfig {
     /// Delay before animation starts
     pub delay: Duration,
     /// Callback when animation completes
-    pub on_complete: Option<OnComplete>,
+    pub on_complete: Option<Arc<Mutex<dyn FnMut() + Send>>>,
 }
 
 impl AnimationConfig {
@@ -84,7 +84,7 @@ impl AnimationConfig {
             mode,
             loop_mode: None,
             delay: Duration::default(),
-            on_complete: None,
+            on_complete: None.into(),
         }
     }
 
