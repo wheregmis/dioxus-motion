@@ -11,8 +11,6 @@ use crate::{
     use_motion, AnimationManager,
 };
 
-/// Ask for MARC Permission and Give him Credit for his work on this code
-
 #[derive(Clone)]
 pub enum AnimatedRouterContext<R: Routable + PartialEq> {
     /// Transition from one route to another.
