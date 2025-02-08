@@ -131,6 +131,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "dioxus"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "60a247114500f1a78e87022defa8173de847accfada8e8809dfae23a118a580c"
+dependencies = [
+ "dioxus-core",
+ "dioxus-core-macro",
+ "dioxus-hooks",
+ "dioxus-html",
+ "dioxus-router",
+ "dioxus-signals",
+]
+
+[[package]]
 name = "dioxus-cli-config"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -290,8 +304,7 @@ dependencies = [
 name = "dioxus-motion"
 version = "0.3.0"
 dependencies = [
- "dioxus-lib",
- "dioxus-router",
+ "dioxus",
  "easer",
  "futures-channel",
  "futures-util",

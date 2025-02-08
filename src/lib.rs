@@ -33,7 +33,7 @@
 #![deny(clippy::option_if_let_else)] // Prefer map/and_then
 
 use animations::utils::{Animatable, AnimationMode};
-use dioxus_lib::prelude::*;
+use dioxus::prelude::*;
 pub use instant::Duration;
 
 pub mod animations;

@@ -1,10 +1,6 @@
 use std::marker::PhantomData;
 
-use dioxus_lib::prelude::*;
-use dioxus_router::{
-    hooks::use_route,
-    prelude::{Outlet, Routable},
-};
+use dioxus::prelude::*;
 
 use crate::{
     prelude::{AnimationConfig, AnimationMode, Spring, Transform},
