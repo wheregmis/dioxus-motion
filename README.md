@@ -52,12 +52,11 @@ fn NavBar() -> Element {
     }
 }
 ```
-
 Each route can have its own transition effect:
 - `Fade`: Smooth opacity transition
 - `ZoomIn`: Scale and fade combination
 - `SlideLeft`: Horizontal slide animation
-- And more!
+- [And more!](https://github.com/wheregmis/dioxus-motion/blob/main/src/transitions/page_transitions.rs)
 - Also, add transitions feature to support page transitions. [Example](https://github.com/wheregmis/animated_router/blob/main/src/main.rs) which was translated from router [example](https://github.com/DioxusLabs/dioxus/blob/main/examples/router.rs) of Dioxus. More detailed guide will be updated soon.
 
 ### Quick Value Animation Example
