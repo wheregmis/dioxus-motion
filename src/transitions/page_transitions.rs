@@ -61,11 +61,9 @@ pub fn AnimatedOutlet<R: AnimatableRoute>(AnimatedRouterProps {}: AnimatedRouter
     let mut prev_route = use_signal(|| AnimatedRouterContext::In(route.clone()));
     use_context_provider(move || prev_route);
 
-    use_effect(move || {
-        if prev_route.peek().target_route() != &route {
-            prev_route.write().set_target_route(route.clone());
-        }
-    });
+    if prev_route.peek().target_route() != &route {
+        prev_route.write().set_target_route(route.clone());
+    }
 
     rsx!(AnimatedOutletChildren::<R> {})
 }
