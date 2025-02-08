@@ -47,4 +47,4 @@ inherits = "dev"
 inherits = "dev"
 
 [workspace]
-members = [".", "example_projects"]
+members = ["."]
