@@ -176,7 +176,11 @@ Choose the right feature for your platform:
 - `default`: Web support (if no feature specified)
 
 ## 🚀 Quick Start
-
+## 🔄 Migration Guide (v0.3.0)
+- No breaking changes to the existing APIs. Just minor exports might change so just import prelude::* if anything breaks on import
+```rust
+use dioxus_motion::prelude::*;
+```
 ## 🔄 Migration Guide (v0.2.0)
 
 ### Breaking Changes
