@@ -39,7 +39,7 @@ enum Route {
     PageNotFound { route: Vec<String> },
 }
 ```
-### And replace all your `Outlet::<Route> {}` with `AnimatedOutlet::<Route> {}` and place the layout containing OutletRouter on top with something like this
+And replace all your `Outlet::<Route> {}` with `AnimatedOutlet::<Route> {}` and place the layout containing OutletRouter on top with something like this
 ```rust
 #[component]
 fn NavBar() -> Element {
