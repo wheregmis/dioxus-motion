@@ -1,7 +1,7 @@
 # Changelog
 ## [v0.3.0] - 2024-02-08
 ### New Features
-- Added initial support for page transitions
+- Added initial support for page transitions (Special thanks to Marc and Evan)
 ### Bug Fixes or Enhancements
 - Support dioxus 0.6.3
 ### Changes
