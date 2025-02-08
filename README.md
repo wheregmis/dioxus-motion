@@ -16,26 +16,39 @@ Visit our [Example Website](https://wheregmis.github.io/dioxus-motion/) to see t
 ```rust
 use dioxus_motion::prelude::*;
 
-#[derive(Routable, Clone, Debug, PartialEq, MotionTransitions)]
+#[derive(Routable, Clone, Debug, PartialEq, MotionTransitions )]
+#[rustfmt::skip]
 enum Route {
-    #[layout(MotionTransitionBuilder)]
-    #[route("/")]
-    #[transition(Fade)]
-    Home {},
-    
-    #[route("/about")]
-    #[transition(ZoomIn)]
-    About {},
-    
-    #[route("/contact")]
-    #[transition(SlideLeft)]
-    Contact {},
+    #[layout(NavBar)]
+        #[route("/")]
+        #[transition(Fade)]
+        Home {},
+        #[route("/slide-left")]
+        #[transition(ZoomIn)]
+        SlideLeft {},
+        #[route("/slide-right")]
+        SlideRight {},
+        #[route("/slide-up")]
+        SlideUp {},
+        #[route("/slide-down")]
+        SlideDown {},
+        #[route("/fade")]
+        Fade {},
+    #[end_layout]
+    #[route("/:..route")]
+    PageNotFound { route: Vec<String> },
 }
-
+```
+### And replace all your `Outlet::<Route> {}` with `AnimatedOutlet::<Route> {}` and place the layout containing OutletRouter on top with something like this
+```rust
 #[component]
-fn App() -> Element {
+fn NavBar() -> Element {
     rsx! {
-        Router::<Route> {}
+        nav { id: "navbar take it",
+            Link { to: Route::Home {}, "Home" }
+            Link { to: Route::SlideLeft {}, "Blog" }
+        }
+        AnimatedOutlet::<Route> {}
     }
 }
 ```
