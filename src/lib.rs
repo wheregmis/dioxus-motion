@@ -32,31 +32,37 @@
 #![deny(clippy::option_if_let_else)] // Prefer map/and_then
 #![deny(clippy::option_if_let_else)] // Prefer map/and_then
 
-use animations::{Animatable, AnimationMode};
-use dioxus_hooks::{use_future, use_signal};
-use dioxus_signals::{Readable, Signal, Writable};
+use animations::utils::{Animatable, AnimationMode};
+use dioxus_lib::prelude::*;
 pub use instant::Duration;
 
 pub mod animations;
-pub mod colors;
-pub mod platform;
-pub mod spring;
-pub mod transform;
-pub mod tween;
+pub mod transitions;
 
-pub use platform::{MotionTime, TimeProvider};
+#[cfg(feature = "transitions")]
+pub use route_transitions;
+
+pub use animations::platform::{MotionTime, TimeProvider};
+use animations::spring::{Spring, SpringState};
 use prelude::{AnimationConfig, LoopMode};
-use spring::{Spring, SpringState};
 
 // Re-exports
 pub mod prelude {
-    pub use crate::animations::AnimationConfig;
-    pub use crate::animations::AnimationMode;
-    pub use crate::animations::LoopMode;
-    pub use crate::colors::Color;
-    pub use crate::spring::Spring;
-    pub use crate::transform::Transform;
-    pub use crate::tween::Tween;
+    pub use crate::animations::colors::Color;
+    pub use crate::animations::spring::Spring;
+    pub use crate::animations::transform::Transform;
+    pub use crate::animations::tween::Tween;
+    pub use crate::animations::utils::AnimationConfig;
+    pub use crate::animations::utils::AnimationMode;
+    pub use crate::animations::utils::LoopMode;
+    #[cfg(feature = "transitions")]
+    pub use crate::route_transitions::MotionTransitions;
+    #[cfg(feature = "transitions")]
+    pub use crate::transitions::page_transitions::AnimatableRoute;
+    #[cfg(feature = "transitions")]
+    pub use crate::transitions::page_transitions::AnimatedRouter;
+    #[cfg(feature = "transitions")]
+    pub use crate::transitions::page_transitions::TransitionVariant;
     pub use crate::use_motion;
     pub use crate::AnimationManager;
     pub use crate::AnimationSequence;

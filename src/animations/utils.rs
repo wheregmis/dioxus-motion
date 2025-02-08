@@ -6,7 +6,7 @@
 
 use std::sync::{Arc, Mutex};
 
-use crate::{spring::Spring, tween::Tween};
+use crate::animations::{spring::Spring, tween::Tween};
 use instant::Duration;
 
 /// A trait for types that can be animated
