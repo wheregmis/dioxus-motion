@@ -1,4 +1,12 @@
 # Changelog
+## [v0.3.0] - 2024-02-08
+### New Features
+- Added initial support for page transitions
+### Bug Fixes or Enhancements
+- Support dioxus 0.6.3
+### Changes
+- Most of the things should be on the prelude, so if you face any erros while migrating, just import prelude::*.
+
 ## [v0.2.3] - 2024-01-23
 ### Dioxus Version Bump
 - updated to dioxus v0.6.2

@@ -11,14 +11,43 @@ A lightweight, cross-platform animation library for Dioxus, designed to bring sm
 <img src="example.gif" width="100%" height="400" />
 
 Visit our [Example Website](https://wheregmis.github.io/dioxus-motion/) to see these animations in action:
+## 🚀 Page Transitions
 
-- 🌸 Flower Animation
-- 📝 Cube Floating Animation
-- 🔄 Morphing Shapes
-- 📝 Typewriter Effect
-- ⚡ Path Animations
+```rust
+use dioxus_motion::prelude::*;
 
-### Quick Example
+#[derive(Routable, Clone, Debug, PartialEq, MotionTransitions)]
+enum Route {
+    #[layout(MotionTransitionBuilder)]
+    #[route("/")]
+    #[transition(Fade)]
+    Home {},
+    
+    #[route("/about")]
+    #[transition(ZoomIn)]
+    About {},
+    
+    #[route("/contact")]
+    #[transition(SlideLeft)]
+    Contact {},
+}
+
+#[component]
+fn App() -> Element {
+    rsx! {
+        Router::<Route> {}
+    }
+}
+```
+
+Each route can have its own transition effect:
+- `Fade`: Smooth opacity transition
+- `ZoomIn`: Scale and fade combination
+- `SlideLeft`: Horizontal slide animation
+- And more!
+- Also, add transitions feature to support page transitions. [Example](https://github.com/wheregmis/animated_router/blob/main/src/main.rs) which was translated from router [example](https://github.com/DioxusLabs/dioxus/blob/main/examples/router.rs) of Dioxus. More detailed guide will be updated soon.
+
+### Quick Value Animation Example
 
 ```rust
 use dioxus_motion::prelude::*;
@@ -49,7 +78,7 @@ fn PulseEffect() -> Element {
 }
 ```
 
-### Animation Sequences
+### Animation Sequences Example
 
 Chain multiple animations together with different configurations:
 
@@ -87,12 +116,12 @@ scale.animate_sequence(sequence);
 ```
 
 ## ✨ Features
-
 - **Cross-Platform Support**: Works on web, desktop, and mobile
 - **Flexible Animation Configuration**
 - **Custom Easing Functions**
 - **Modular Feature Setup**
 - **Simple, Intuitive API**
+- **Page Transitions**
 
 ## 🛠 Installation
 
@@ -100,13 +129,30 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-motion = { version = "0.2.3", optional = true, default-features = false }
+dioxus-motion = { version = "0.3.0", optional = true, default-features = false }
 
 [features]
 default = ["web"]
 web = ["dioxus/web", "dioxus-motion/web"]
 desktop = ["dioxus/desktop", "dioxus-motion/desktop"]
 mobile = ["dioxus/mobile", "dioxus-motion/desktop"]
+```
+
+If you want to use page transiton dependency will look like,
+
+```toml
+[dependencies]
+dioxus-motion = { version = "0.3.0", optional = true, default-features = false }
+
+[features]
+default = ["web"]
+web = ["dioxus/web", "dioxus-motion/web", "dioxus-motion/transitions"]
+desktop = [
+    "dioxus/desktop",
+    "dioxus-motion/desktop",
+    "dioxus-motion/transitions",
+]
+mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
 ```
 
 ## 🌐 Platform Support
