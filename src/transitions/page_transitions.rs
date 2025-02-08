@@ -56,7 +56,7 @@ pub struct AnimatedRouterProps {}
 ///
 /// See the `animated_sidebar.rs` or `animated_tabs.rs` for an example on how to use it.
 #[allow(non_snake_case)]
-pub fn AnimatedRouter<R: AnimatableRoute>(AnimatedRouterProps {}: AnimatedRouterProps) -> Element {
+pub fn AnimatedOutlet<R: AnimatableRoute>(AnimatedRouterProps {}: AnimatedRouterProps) -> Element {
     let route = use_route::<R>();
     let mut prev_route = use_signal(|| AnimatedRouterContext::In(route.clone()));
     use_context_provider(move || prev_route);
@@ -65,7 +65,7 @@ pub fn AnimatedRouter<R: AnimatableRoute>(AnimatedRouterProps {}: AnimatedRouter
         prev_route.write().set_target_route(route);
     }
 
-    rsx!(AnimatedOutlet::<R> {})
+    rsx!(AnimatedOutletChildren::<R> {})
 }
 
 pub trait AnimatableRoute: Routable + Clone + PartialEq {
@@ -74,7 +74,7 @@ pub trait AnimatableRoute: Routable + Clone + PartialEq {
 }
 
 #[allow(non_snake_case)]
-pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
+pub fn AnimatedOutletChildren<R: AnimatableRoute>() -> Element {
     let animated_router = use_context::<Signal<AnimatedRouterContext<R>>>();
     let from_route: Option<(Element, TransitionVariant)> = match animated_router() {
         AnimatedRouterContext::FromTo(from, to) => {

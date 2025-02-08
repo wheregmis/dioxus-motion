@@ -43,7 +43,7 @@ enum Route {
 #[component]
 pub fn MotionTransitionBuilder() -> Element {
     rsx! {
-        AnimatedRouter::<Route> {}
+        AnimatedOutlet::<Route> {}
     }
 }
 
