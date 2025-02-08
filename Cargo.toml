@@ -46,5 +46,19 @@ inherits = "dev"
 [profile.android-dev]
 inherits = "dev"
 
-[workspace]
-members = ["."]
+[profile.dev]
+debug = 0
+opt-level = 0
+incremental = true
+overflow-checks = false
+lto = "thin"
+panic = "unwind"
+split-debuginfo = "unpacked"
+strip = "debuginfo"
+
+[profile.release]
+codegen-units = 1 # Allows LLVM to perform better optimization.
+lto = true        # Enables link-time-optimizations.
+opt-level = "s"   # Prioritizes small binary size. Use `3` if you prefer speed.
+panic = "abort"   # Higher performance by disabling panic handlers.
+strip = true      # Ensures debug symbols are removed.

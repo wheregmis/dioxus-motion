@@ -331,7 +331,7 @@ pub struct MotionState<T: Animatable> {
 
 struct SequenceState<T: Animatable> {
     sequence: AnimationSequence<T>,
-    current_value: T,
+    _current_value: T,
 }
 
 impl<T: Animatable> MotionState<T> {
@@ -362,7 +362,7 @@ impl<T: Animatable> AnimationManager<T> for MotionState<T> {
             .animate_to(first_step.target, first_step.config.clone());
         self.sequence.set(Some(SequenceState {
             sequence,
-            current_value: self.base.get_value(),
+            _current_value: self.base.get_value(),
         }));
     }
 

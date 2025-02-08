@@ -7,21 +7,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dioxus = { version = "0.6.3", features = [
-    "asset",
-    "devtools",
-    "document",
-    "hooks",
-    "html",
-    "launch",
-    "macro",
-    "mounted",
-    "signals",
-    "router",
-], default-features = false }
-dioxus-motion = { path = "../", optional = true, default-features = false, features = [
-    "transitions",
-] }
+dioxus = { version = "0.6.3", features = ["asset", "devtools", "document", "hooks", "html", "launch", "macro", "router", "signals"], default-features = false }
+dioxus-motion = { path = "../", optional = true, default-features = false, version = "*", features = ["transitions"] }
 easer = { version = "0.3.0", default-features = false }
 
 [features]
