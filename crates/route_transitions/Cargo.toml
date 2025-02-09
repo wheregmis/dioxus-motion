@@ -1,7 +1,11 @@
 [package]
-name = "route_transitions"
+name = "dioxus-motion-transitions-macro"
 version = "0.1.0"
 edition = "2021"
+description = "Page transition support for dioxus-motion"
+license = "MIT"
+authors = ["Sabin Regmi <get2sabin@gmail.com>"]
+repository = "https://github.com/wheregmis/dioxus-motion"
 
 [lib]
 proc-macro = true
