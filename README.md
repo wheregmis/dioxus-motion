@@ -58,6 +58,9 @@ Each route can have its own transition effect:
 - `SlideLeft`: Horizontal slide animation
 - [And more!](https://github.com/wheregmis/dioxus-motion/blob/main/src/transitions/page_transitions.rs)
 - Also, add transitions feature to support page transitions. [Example](https://github.com/wheregmis/animated_router/blob/main/src/main.rs) which was translated from router [example](https://github.com/DioxusLabs/dioxus/blob/main/examples/router.rs) of Dioxus. More detailed guide will be updated soon.
+> ⚠️ **Caution**  
+> Nested router might animations might look abit weird. The fix is planned for a future release.
+
 
 ### Quick Value Animation Example
 
