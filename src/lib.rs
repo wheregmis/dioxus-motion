@@ -40,7 +40,7 @@ pub mod animations;
 pub mod transitions;
 
 #[cfg(feature = "transitions")]
-pub use route_transitions;
+pub use dioxus_motion_transitions_macro;
 
 pub use animations::platform::{MotionTime, TimeProvider};
 use animations::spring::{Spring, SpringState};
@@ -56,7 +56,7 @@ pub mod prelude {
     pub use crate::animations::utils::AnimationMode;
     pub use crate::animations::utils::LoopMode;
     #[cfg(feature = "transitions")]
-    pub use crate::route_transitions::MotionTransitions;
+    pub use crate::dioxus_motion_transitions_macro::MotionTransitions;
     #[cfg(feature = "transitions")]
     pub use crate::transitions::page_transitions::AnimatableRoute;
     #[cfg(feature = "transitions")]
