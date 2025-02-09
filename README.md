@@ -11,14 +11,58 @@ A lightweight, cross-platform animation library for Dioxus, designed to bring sm
 <img src="example.gif" width="100%" height="400" />
 
 Visit our [Example Website](https://wheregmis.github.io/dioxus-motion/) to see these animations in action:
+## 🚀 Page Transitions
 
-- 🌸 Flower Animation
-- 📝 Cube Floating Animation
-- 🔄 Morphing Shapes
-- 📝 Typewriter Effect
-- ⚡ Path Animations
+```rust
+use dioxus_motion::prelude::*;
 
-### Quick Example
+#[derive(Routable, Clone, Debug, PartialEq, MotionTransitions )]
+#[rustfmt::skip]
+enum Route {
+    #[layout(NavBar)]
+        #[route("/")]
+        #[transition(Fade)]
+        Home {},
+        #[route("/slide-left")]
+        #[transition(ZoomIn)]
+        SlideLeft {},
+        #[route("/slide-right")]
+        SlideRight {},
+        #[route("/slide-up")]
+        SlideUp {},
+        #[route("/slide-down")]
+        SlideDown {},
+        #[route("/fade")]
+        Fade {},
+    #[end_layout]
+    #[route("/:..route")]
+    PageNotFound { route: Vec<String> },
+}
+```
+And replace all your `Outlet::<Route> {}` with `AnimatedOutlet::<Route> {}` and place the layout containing OutletRouter on top with something like this
+```rust
+#[component]
+fn NavBar() -> Element {
+    rsx! {
+        nav { id: "navbar take it",
+            Link { to: Route::Home {}, "Home" }
+            Link { to: Route::SlideLeft {}, "Blog" }
+        }
+        AnimatedOutlet::<Route> {}
+    }
+}
+```
+Each route can have its own transition effect:
+- `Fade`: Smooth opacity transition
+- `ZoomIn`: Scale and fade combination
+- `SlideLeft`: Horizontal slide animation
+- [And more!](https://github.com/wheregmis/dioxus-motion/blob/main/src/transitions/page_transitions.rs)
+- Also, add transitions feature to support page transitions. [Example](https://github.com/wheregmis/animated_router/blob/main/src/main.rs) which was translated from router [example](https://github.com/DioxusLabs/dioxus/blob/main/examples/router.rs) of Dioxus. More detailed guide will be updated soon.
+> ⚠️ **Caution**  
+> Nested router is not fully tested. Test and fix is planned for a future release.
+
+
+### Quick Value Animation Example
 
 ```rust
 use dioxus_motion::prelude::*;
@@ -49,7 +93,7 @@ fn PulseEffect() -> Element {
 }
 ```
 
-### Animation Sequences
+### Animation Sequences Example
 
 Chain multiple animations together with different configurations:
 
@@ -87,12 +131,12 @@ scale.animate_sequence(sequence);
 ```
 
 ## ✨ Features
-
 - **Cross-Platform Support**: Works on web, desktop, and mobile
 - **Flexible Animation Configuration**
 - **Custom Easing Functions**
 - **Modular Feature Setup**
 - **Simple, Intuitive API**
+- **Page Transitions**
 
 ## 🛠 Installation
 
@@ -100,13 +144,30 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-motion = { version = "0.2.3", optional = true, default-features = false }
+dioxus-motion = { version = "0.3.0", optional = true, default-features = false }
 
 [features]
 default = ["web"]
 web = ["dioxus/web", "dioxus-motion/web"]
 desktop = ["dioxus/desktop", "dioxus-motion/desktop"]
 mobile = ["dioxus/mobile", "dioxus-motion/desktop"]
+```
+
+If you want to use page transiton dependency will look like,
+
+```toml
+[dependencies]
+dioxus-motion = { version = "0.3.0", optional = true, default-features = false }
+
+[features]
+default = ["web"]
+web = ["dioxus/web", "dioxus-motion/web", "dioxus-motion/transitions"]
+desktop = [
+    "dioxus/desktop",
+    "dioxus-motion/desktop",
+    "dioxus-motion/transitions",
+]
+mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
 ```
 
 ## 🌐 Platform Support
@@ -118,7 +179,11 @@ Choose the right feature for your platform:
 - `default`: Web support (if no feature specified)
 
 ## 🚀 Quick Start
-
+## 🔄 Migration Guide (v0.3.0)
+- No breaking changes to the existing APIs. Just minor exports might change so just import prelude::* if anything breaks on import
+```rust
+use dioxus_motion::prelude::*;
+```
 ## 🔄 Migration Guide (v0.2.0)
 
 ### Breaking Changes

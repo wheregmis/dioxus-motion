@@ -1,7 +1,7 @@
 [package]
 name = "dioxus-motion"
 description = "Animations library for Dioxus."
-version = "0.2.3"
+version = "0.3.0"
 edition = "2021"
 license = "MIT"
 authors = ["Sabin Regmi <get2sabin@gmail.com>"]
@@ -13,9 +13,7 @@ categories = ["graphics", "gui"]
 
 [dependencies]
 easer = "0.3.0"
-dioxus-hooks = "0.6.2"
 futures-util = { version = "0.3.31", default-features = false }
-dioxus-signals = "0.6.2"
 instant = { version = "0.1.13", optional = true }
 wasm-bindgen = { version = "0.2.100", optional = true, default-features = false }
 web-sys = { version = "0.3.77", optional = true, default-features = false, features = [
@@ -24,12 +22,21 @@ web-sys = { version = "0.3.77", optional = true, default-features = false, featu
 futures-channel = { version = "0.3.31", default-features = false }
 # For desktop platforms
 tokio = { version = "1.43.0", optional = true, default-features = false }
-
+# For transitions
+route_transitions = { path = "crates/route_transitions", optional = true }
+dioxus = { version = "0.6.3", default-features = false, features = [
+    "router",
+    "hooks",
+    "signals",
+    "html",
+    "macro",
+] }
 
 [features]
 default = ["web"]
 web = ["wasm-bindgen", "web-sys", "instant/wasm-bindgen"]
 desktop = ["tokio", "instant"]
+transitions = ["route_transitions"]
 
 
 [profile]
@@ -44,5 +51,19 @@ inherits = "dev"
 [profile.android-dev]
 inherits = "dev"
 
-[workspace]
-members = [".", "example_projects"]
+[profile.dev]
+debug = 0
+opt-level = 0
+incremental = true
+overflow-checks = false
+lto = "thin"
+panic = "unwind"
+split-debuginfo = "unpacked"
+strip = "debuginfo"
+
+[profile.release]
+codegen-units = 1 # Allows LLVM to perform better optimization.
+lto = true        # Enables link-time-optimizations.
+opt-level = "s"   # Prioritizes small binary size. Use `3` if you prefer speed.
+panic = "abort"   # Higher performance by disabling panic handlers.
+strip = true      # Ensures debug symbols are removed.
