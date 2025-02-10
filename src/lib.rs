@@ -62,7 +62,7 @@ pub mod prelude {
     #[cfg(feature = "transitions")]
     pub use crate::transitions::page_transitions::AnimatedOutlet;
     #[cfg(feature = "transitions")]
-    pub use crate::transitions::page_transitions::TransitionVariant;
+    pub use crate::transitions::utils::TransitionVariant;
     pub use crate::use_motion;
     pub use crate::AnimationManager;
     pub use crate::AnimationSequence;
