@@ -15,6 +15,19 @@ fn get_transition_from_attrs(attrs: &[Attribute]) -> Option<String> {
         })
 }
 
+fn get_layout_from_attrs(attrs: &[Attribute]) -> Option<syn::Path> {
+    attrs
+        .iter()
+        .find(|attr| attr.path().is_ident("layout"))
+        .and_then(|attr| {
+            if let Ok(Meta::Path(path)) = attr.parse_args::<Meta>() {
+                Some(path.clone())
+            } else {
+                None
+            }
+        })
+}
+
 #[proc_macro_derive(MotionTransitions, attributes(transition))]
 pub fn derive_route_transitions(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -71,6 +84,43 @@ pub fn derive_route_transitions(input: TokenStream) -> TokenStream {
         }
     });
 
+    let layout_match_arms = variants.iter().map(|variant| {
+        let variant_ident = &variant.ident;
+        let layout = get_layout_from_attrs(&variant.attrs);
+
+        match &variant.fields {
+            Fields::Named(fields) => {
+                let field_patterns = fields.named.iter().map(|f| {
+                    let name = &f.ident;
+                    quote! { #name: _ }
+                });
+                if let Some(layout_path) = layout {
+                    quote! {
+                        Self::#variant_ident { #(#field_patterns,)* } => Some(rsx! { #layout_path {} })
+                    }
+                } else {
+                    quote! {
+                        Self::#variant_ident { #(#field_patterns,)* } => None
+                    }
+                }
+            }
+            Fields::Unnamed(_) => {
+                if let Some(layout_path) = layout {
+                    quote! { Self::#variant_ident(..) => Some(rsx! { #layout_path {} }) }
+                } else {
+                    quote! { Self::#variant_ident(..) => None }
+                }
+            }
+            Fields::Unit => {
+                if let Some(layout_path) = layout {
+                    quote! { Self::#variant_ident => Some(rsx! { #layout_path {} }) }
+                } else {
+                    quote! { Self::#variant_ident => None }
+                }
+            }
+        }
+    });
+
     let expanded = quote! {
         impl AnimatableRoute for  #name {
             fn get_transition(&self) -> TransitionVariant {
@@ -83,6 +133,13 @@ pub fn derive_route_transitions(input: TokenStream) -> TokenStream {
             fn get_component(&self) -> Element {
                 match self {
                     #(#component_match_arms,)*
+                }
+            }
+
+            fn get_layout(&self) -> Option<Element> {
+                match self {
+                    #(#layout_match_arms,)*
+                    _ => None,
                 }
             }
         }

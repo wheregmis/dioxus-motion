@@ -1,9 +1,10 @@
 use std::marker::PhantomData;
 
-use dioxus::prelude::*;
+use dioxus_lib::prelude::*;
+use dioxus_router::prelude::*;
 
 use crate::{
-    prelude::{AnimationConfig, AnimationMode, Spring, Transform},
+    prelude::{AnimationConfig, AnimationMode, Spring},
     use_motion, AnimationManager,
 };
 
@@ -45,14 +46,11 @@ impl<R: Routable + PartialEq> AnimatedRouterContext<R> {
     }
 }
 
-#[derive(Props, Clone, PartialEq)]
-pub struct AnimatedRouterProps {}
-
 /// Provide a mechanism for outlets to animate between route transitions.
 ///
 /// See the `animated_sidebar.rs` or `animated_tabs.rs` for an example on how to use it.
-#[allow(non_snake_case)]
-pub fn AnimatedOutlet<R: AnimatableRoute>(AnimatedRouterProps {}: AnimatedRouterProps) -> Element {
+#[component]
+pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
     let route = use_route::<R>();
     let mut prev_route = use_signal(|| AnimatedRouterContext::In(route.clone()));
     use_context_provider(move || prev_route);
@@ -68,9 +66,10 @@ pub fn AnimatedOutlet<R: AnimatableRoute>(AnimatedRouterProps {}: AnimatedRouter
 
     rsx! {
         if let Some((from, to)) = from_route {
-            FromRouteToCurrent::<R> { route_type: PhantomData, from, to }
+            FromRouteToCurrent::<R> { route_type: PhantomData, from: from.clone(), to: to.clone() }
         } else {
-            Outlet::<R> {}
+            // When not transitioning, render the current route's component directly
+            {route.get_component()}
         }
     }
 }
@@ -78,13 +77,13 @@ pub fn AnimatedOutlet<R: AnimatableRoute>(AnimatedRouterProps {}: AnimatedRouter
 pub trait AnimatableRoute: Routable + Clone + PartialEq {
     fn get_transition(&self) -> TransitionVariant;
     fn get_component(&self) -> Element;
+    fn get_layout(&self) -> Option<Element>;
 }
 
 /// Shortcut to get access to the [AnimatedRouterContext].
 pub fn use_animated_router<Route: Routable + PartialEq>() -> Signal<AnimatedRouterContext<Route>> {
     use_context()
 }
-
 #[component]
 fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, to: R) -> Element {
     let mut animated_router = use_animated_router::<R>();
@@ -96,25 +95,20 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
 
     use_effect(move || {
         let spring = Spring {
-            stiffness: 160.0, // Reduced from 180.0 for less aggressive movement
-            damping: 20.0,    // Increased from 12.0 for faster settling
-            mass: 1.5,        // Slightly increased for more "weight"
-            velocity: 10.0,   // Keep at 0 for predictable start
+            stiffness: 160.0,
+            damping: 20.0,
+            mass: 1.5,
+            velocity: 10.0,
         };
 
-        // Animate FROM route
         from_transform.animate_to(
             config.final_from,
             AnimationConfig::new(AnimationMode::Spring(spring)),
         );
-
-        // Animate TO route
         to_transform.animate_to(
             config.final_to,
             AnimationConfig::new(AnimationMode::Spring(spring)),
         );
-
-        // Fade out old route
         from_opacity.animate_to(0.0, AnimationConfig::new(AnimationMode::Spring(spring)));
         to_opacity.animate_to(1.0, AnimationConfig::new(AnimationMode::Spring(spring)));
     });
@@ -127,7 +121,6 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
 
     rsx! {
         div {
-
             class: "route-container",
             style: "
                 position: relative; 
@@ -170,7 +163,7 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
                     backface-visibility: hidden;
                     -webkit-backface-visibility: hidden;
                 ",
-                Outlet::<R> {}
+                {to.get_component()}
             }
         }
     }
