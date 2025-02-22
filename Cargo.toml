@@ -24,9 +24,8 @@ futures-channel = { version = "0.3.31", default-features = false }
 tokio = { version = "1.43.0", optional = true, default-features = false }
 # For transitions
 dioxus-motion-transitions-macro = { path = "crates/route_transitions", version = "0.1.0", optional = true }
-dioxus = { git = "https://github.com/wheregmis/dioxus.git", branch = "outlet_pub", features = [
+dioxus = { git = "https://github.com/wheregmis/dioxus.git", branch = "expose_outlet_context", features = [
     "router",
-    "ssr",
 ] }
 
 
@@ -67,5 +66,5 @@ panic = "abort"   # Higher performance by disabling panic handlers.
 strip = true      # Ensures debug symbols are removed.
 
 [workspace]
-members = ["crates/route_transitions", ".", "router_test"]
+members = ["crates/route_transitions", "."]
 resolver = "2"

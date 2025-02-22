@@ -56,8 +56,6 @@ pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
     let mut prev_route = use_signal(|| AnimatedRouterContext::In(route.clone()));
     use_context_provider(move || prev_route);
 
-    println!("route: {:?}", prev_route.peek().target_route().to_string());
-
     // Update route if changed
     if prev_route.peek().target_route() != &route {
         prev_route.write().set_target_route(route.clone());
@@ -70,15 +68,7 @@ pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
 
     rsx! {
         if let Some((from, to)) = from_route {
-            if prev_route.peek().target_route() == &route {
-                FromRouteToCurrent::<R> {
-                    route_type: PhantomData,
-                    from: from.clone(),
-                    to: to.clone(),
-                }
-            } else {
-                Outlet::<R> {}
-            }
+            FromRouteToCurrent::<R> { route_type: PhantomData, from: from.clone(), to: to.clone() }
         } else {
             Outlet::<R> {}
         }
@@ -104,31 +94,44 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     let mut from_opacity = use_motion(1.0f32);
     let mut to_opacity = use_motion(0.0f32);
 
+    let outlet: OutletContext<R> = use_outlet_context();
+    let current_level = outlet.current_level;
+
+    provide_context({
+        OutletContext::<R> {
+            current_level: current_level + 1,
+            _marker: std::marker::PhantomData,
+        }
+    });
+
     use_effect(move || {
         let spring = Spring {
-            stiffness: 160.0,
-            damping: 25.0,
-            mass: 2.0,
-            velocity: 0.0,
+            stiffness: 160.0, // Reduced from 180.0 for less aggressive movement
+            damping: 20.0,    // Increased from 12.0 for faster settling
+            mass: 1.5,        // Slightly increased for more "weight"
+            velocity: 10.0,   // Keep at 0 for predictable start
         };
 
+        // Animate FROM route
         from_transform.animate_to(
             config.final_from,
             AnimationConfig::new(AnimationMode::Spring(spring)),
         );
+
+        // Animate TO route
         to_transform.animate_to(
             config.final_to,
             AnimationConfig::new(AnimationMode::Spring(spring)),
         );
-        from_opacity.animate_to(0.5, AnimationConfig::new(AnimationMode::Spring(spring)));
-        to_opacity.animate_to(0.5, AnimationConfig::new(AnimationMode::Spring(spring)));
+
+        // Fade out old route
+        from_opacity.animate_to(0.0, AnimationConfig::new(AnimationMode::Spring(spring)));
+        to_opacity.animate_to(1.0, AnimationConfig::new(AnimationMode::Spring(spring)));
     });
 
     use_effect(move || {
         if !from_transform.is_running() && !to_transform.is_running() {
             animated_router.write().settle();
-
-            // I need to reset the animated router context
         }
     });
 
@@ -159,7 +162,7 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
                     backface-visibility: hidden;
                     -webkit-backface-visibility: hidden;
                 ",
-                Outlet::<R> {}
+                {from.render(current_level)}
             }
             div {
                 class: "route-content to",
@@ -176,7 +179,7 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
                     backface-visibility: hidden;
                     -webkit-backface-visibility: hidden;
                 ",
-                Outlet::<R> {}
+                {to.render(current_level)}
             }
         }
     }
