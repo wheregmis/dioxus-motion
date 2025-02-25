@@ -61,6 +61,10 @@ pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
         prev_route.write().set_target_route(route.clone());
     }
 
+    let outlet: OutletContext<R> = use_outlet_context();
+
+    println!("Outlet level: {}", outlet.level());
+
     let from_route: Option<(R, R)> = match prev_route() {
         AnimatedRouterContext::FromTo(from, to) => Some((from, to)),
         _ => None,
@@ -95,14 +99,8 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     let mut to_opacity = use_motion(0.0f32);
 
     let outlet: OutletContext<R> = use_outlet_context();
-    let current_level = outlet.current_level;
 
-    provide_context({
-        OutletContext::<R> {
-            current_level: current_level + 1,
-            _marker: std::marker::PhantomData,
-        }
-    });
+    use_context_provider(|| outlet.next());
 
     use_effect(move || {
         let spring = Spring {
@@ -162,7 +160,7 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
                     backface-visibility: hidden;
                     -webkit-backface-visibility: hidden;
                 ",
-                {from.render(current_level)}
+                {from.render(outlet.level())}
             }
             div {
                 class: "route-content to",
@@ -179,7 +177,7 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
                     backface-visibility: hidden;
                     -webkit-backface-visibility: hidden;
                 ",
-                {to.render(current_level)}
+                {to.render(outlet.level())}
             }
         }
     }
