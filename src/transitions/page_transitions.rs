@@ -100,6 +100,7 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
 
     let outlet: OutletContext<R> = use_outlet_context();
 
+    // Co-authored Evan Almloff
     use_context_provider(|| outlet.next());
 
     use_effect(move || {
