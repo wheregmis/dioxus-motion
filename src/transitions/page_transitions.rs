@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, str::FromStr};
 
 use dioxus::prelude::*;
 
@@ -45,10 +45,6 @@ impl<R: Routable + PartialEq> AnimatedRouterContext<R> {
     }
 }
 
-/// Provide a mechanism for outlets to animate between route transitions.
-///
-/// See the `animated_sidebar.rs` or `animated_tabs.rs` for an example on how to use it.
-
 #[component]
 pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
     let route = use_route::<R>();
@@ -63,6 +59,11 @@ pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
 
     let outlet: OutletContext<R> = use_outlet_context();
 
+    println!("Route level: {}", route.get_layout_depth());
+    println!(
+        "Current Route: {:?}",
+        prev_route().target_route().to_string()
+    );
     println!("Outlet level: {}", outlet.level());
 
     let from_route: Option<(R, R)> = match prev_route() {
@@ -70,25 +71,44 @@ pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
         _ => None,
     };
 
-    rsx! {
-        if let Some((from, to)) = from_route {
-            FromRouteToCurrent::<R> { route_type: PhantomData, from: from.clone(), to: to.clone() }
+    if let Some((from, to)) = from_route {
+        println!("From: {:?} To: {:?}", from.to_string(), to.to_string());
+
+        // Special handling for transitions from root path
+        let is_from_root = from.to_string() == "/";
+
+        // Animate if either we're at the correct level OR we're transitioning from root
+        if is_from_root || outlet.level() == route.get_layout_depth() {
+            return rsx! {
+                FromRouteToCurrent::<R> {
+                    route_type: PhantomData,
+                    from: from.clone(),
+                    to: to.clone(),
+                }
+            };
         } else {
-            Outlet::<R> {}
+            return rsx! {
+                Outlet::<R> {}
+            };
         }
+    } else {
+        return rsx! {
+            Outlet::<R> {}
+        };
     }
 }
 
 pub trait AnimatableRoute: Routable + Clone + PartialEq {
     fn get_transition(&self) -> TransitionVariant;
     fn get_component(&self) -> Element;
-    fn get_layout(&self) -> Option<Element>;
+    fn get_layout_depth(&self) -> usize;
 }
 
 /// Shortcut to get access to the [AnimatedRouterContext].
 pub fn use_animated_router<Route: Routable + PartialEq>() -> Signal<AnimatedRouterContext<Route>> {
     use_context()
 }
+
 #[component]
 fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, to: R) -> Element {
     let mut animated_router = use_animated_router::<R>();
@@ -97,11 +117,6 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     let mut to_transform = use_motion(config.initial_to);
     let mut from_opacity = use_motion(1.0f32);
     let mut to_opacity = use_motion(0.0f32);
-
-    let outlet: OutletContext<R> = use_outlet_context();
-
-    // Co-authored Evan Almloff
-    use_context_provider(|| outlet.next());
 
     use_effect(move || {
         let spring = Spring {
@@ -135,25 +150,10 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     });
 
     rsx! {
-        div {
-            class: "route-container",
-            style: "
-                position: relative; 
-                width: 100%; 
-                height: 100vh; 
-                overflow: hidden;
-                transform-style: preserve-3d;
-                -webkit-transform-style: preserve-3d;
-                -webkit-tap-highlight-color: transparent;
-            ",
+        div { style: "position: relative; overflow: hidden;",
             div {
                 class: "route-content from",
                 style: "
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
                     transform: translate3d({from_transform.get_value().x}%, {from_transform.get_value().y}%, 0) 
                              scale({from_transform.get_value().scale});
                     opacity: {from_opacity.get_value()};
@@ -161,16 +161,11 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
                     backface-visibility: hidden;
                     -webkit-backface-visibility: hidden;
                 ",
-                {from.render(outlet.level())}
+                {from.get_component()}
             }
             div {
                 class: "route-content to",
                 style: "
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
                     transform: translate3d({to_transform.get_value().x}%, {to_transform.get_value().y}%, 0) 
                              scale({to_transform.get_value().scale});
                     opacity: {to_opacity.get_value()};
@@ -178,7 +173,7 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
                     backface-visibility: hidden;
                     -webkit-backface-visibility: hidden;
                 ",
-                {to.render(outlet.level())}
+                Outlet::<R> {}
             }
         }
     }
