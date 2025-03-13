@@ -59,12 +59,12 @@ pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
 
     let outlet: OutletContext<R> = use_outlet_context();
 
-    println!("Route level: {}", route.get_layout_depth());
-    println!(
-        "Current Route: {:?}",
-        prev_route().target_route().to_string()
-    );
-    println!("Outlet level: {}", outlet.level());
+    // println!("Route level: {}", route.get_layout_depth());
+    // println!(
+    //     "Current Route: {:?}",
+    //     prev_route().target_route().to_string()
+    // );
+    // println!("Outlet level: {}", outlet.level());
 
     let from_route: Option<(R, R)> = match prev_route() {
         AnimatedRouterContext::FromTo(from, to) => Some((from, to)),
@@ -113,8 +113,8 @@ pub fn use_animated_router<Route: Routable + PartialEq>() -> Signal<AnimatedRout
 fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, to: R) -> Element {
     let mut animated_router = use_animated_router::<R>();
     let config = to.get_transition().get_config();
-    let mut from_transform = use_motion(config.initial_from);
-    let mut to_transform = use_motion(config.initial_to);
+    let mut from_transform = use_motion(config.exit_start);
+    let mut to_transform = use_motion(config.enter_start);
     let mut from_opacity = use_motion(1.0f32);
     let mut to_opacity = use_motion(0.0f32);
 
@@ -128,13 +128,13 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
 
         // Animate FROM route
         from_transform.animate_to(
-            config.final_from,
+            config.exit_end,
             AnimationConfig::new(AnimationMode::Spring(spring)),
         );
 
         // Animate TO route
         to_transform.animate_to(
-            config.final_to,
+            config.enter_end,
             AnimationConfig::new(AnimationMode::Spring(spring)),
         );
 
@@ -150,7 +150,9 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     });
 
     rsx! {
-        div { style: "position: relative; overflow: hidden;",
+        div {
+            class: "route-container",
+            style: "position: relative; overflow-visible;",
             div {
                 class: "route-content from",
                 style: "
@@ -158,10 +160,10 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
                              scale({from_transform.get_value().scale});
                     opacity: {from_opacity.get_value()};
                     will-change: transform, opacity;
-                    backface-visibility: hidden;
+                       backface-visibility: hidden;
                     -webkit-backface-visibility: hidden;
                 ",
-                {from.get_component()}
+                {from.render(from.get_layout_depth() + 1)}
             }
             div {
                 class: "route-content to",
