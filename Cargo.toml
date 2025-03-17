@@ -67,4 +67,4 @@ strip = true      # Ensures debug symbols are removed.
 
 [workspace]
 members = ["crates/route_transitions", "."]
-resolver = "2"
+resolver = "3"
