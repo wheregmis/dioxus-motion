@@ -66,5 +66,5 @@ panic = "abort"   # Higher performance by disabling panic handlers.
 strip = true      # Ensures debug symbols are removed.
 
 [workspace]
-members = ["crates/route_transitions", ".", "router_test"]
+members = ["crates/route_transitions", ".", "docs"]
 resolver = "2"
