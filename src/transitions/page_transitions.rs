@@ -52,19 +52,15 @@ pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
     let mut prev_route = use_signal(|| AnimatedRouterContext::In(route.clone()));
     use_context_provider(move || prev_route);
 
-    // Update route if changed
-    if prev_route.peek().target_route() != &route {
-        prev_route.write().set_target_route(route.clone());
-    }
+    use_effect(move || {
+        if prev_route.peek().target_route() != &use_route::<R>() {
+            prev_route
+                .write()
+                .set_target_route(use_route::<R>().clone());
+        }
+    });
 
     let outlet: OutletContext<R> = use_outlet_context();
-
-    // println!("Route level: {}", route.get_layout_depth());
-    // println!(
-    //     "Current Route: {:?}",
-    //     prev_route().target_route().to_string()
-    // );
-    // println!("Outlet level: {}", outlet.level());
 
     let from_route: Option<(R, R)> = match prev_route() {
         AnimatedRouterContext::FromTo(from, to) => Some((from, to)),
