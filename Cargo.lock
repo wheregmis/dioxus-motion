@@ -491,7 +491,16 @@ name = "const-serialize"
 version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
 dependencies = [
- "const-serialize-macro",
+ "const-serialize-macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "serde",
+]
+
+[[package]]
+name = "const-serialize"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "const-serialize-macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
  "serde",
 ]
 
@@ -499,6 +508,16 @@ dependencies = [
 name = "const-serialize-macro"
 version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.99",
+]
+
+[[package]]
+name = "const-serialize-macro"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -803,23 +822,47 @@ version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
 dependencies = [
  "dioxus-cli-config 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
- "dioxus-config-macro",
- "dioxus-config-macros",
- "dioxus-core",
- "dioxus-core-macro",
+ "dioxus-config-macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-config-macros 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-core-macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "dioxus-desktop",
- "dioxus-devtools",
- "dioxus-document",
- "dioxus-fullstack",
- "dioxus-history",
- "dioxus-hooks",
- "dioxus-html",
- "dioxus-logger 0.6.3",
+ "dioxus-devtools 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-document 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-fullstack 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-history 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-hooks 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-html 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-logger 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "dioxus-mobile",
- "dioxus-router",
- "dioxus-signals",
- "dioxus-web",
- "manganis",
+ "dioxus-router 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-signals 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-web 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "manganis 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "warnings",
+]
+
+[[package]]
+name = "dioxus"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "dioxus-cli-config 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-config-macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-config-macros 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-core-macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-devtools 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-document 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-fullstack 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-history 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-hooks 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-html 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-logger 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-router 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-signals 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-web 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "manganis 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
  "warnings",
 ]
 
@@ -838,9 +881,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "dioxus-cli-config"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "dioxus-config-macro"
 version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
+dependencies = [
+ "proc-macro2",
+ "quote",
+]
+
+[[package]]
+name = "dioxus-config-macro"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -852,15 +912,40 @@ version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
 
 [[package]]
+name = "dioxus-config-macros"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+
+[[package]]
 name = "dioxus-core"
 version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
 dependencies = [
  "const_format",
- "dioxus-core-types",
+ "dioxus-core-types 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "futures-channel",
  "futures-util",
- "generational-box",
+ "generational-box 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "longest-increasing-subsequence",
+ "rustc-hash",
+ "rustversion",
+ "serde",
+ "slab",
+ "slotmap",
+ "tracing",
+ "warnings",
+]
+
+[[package]]
+name = "dioxus-core"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "const_format",
+ "dioxus-core-types 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "futures-channel",
+ "futures-util",
+ "generational-box 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
  "longest-increasing-subsequence",
  "rustc-hash",
  "rustversion",
@@ -877,7 +962,19 @@ version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
 dependencies = [
  "convert_case 0.6.0",
- "dioxus-rsx",
+ "dioxus-rsx 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.99",
+]
+
+[[package]]
+name = "dioxus-core-macro"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "convert_case 0.6.0",
+ "dioxus-rsx 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
  "proc-macro2",
  "quote",
  "syn 2.0.99",
@@ -892,6 +989,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "dioxus-core-types"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "once_cell",
+]
+
+[[package]]
 name = "dioxus-desktop"
 version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
@@ -901,22 +1006,22 @@ dependencies = [
  "cocoa 0.25.0",
  "core-foundation 0.9.4",
  "dioxus-cli-config 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
- "dioxus-core",
- "dioxus-devtools",
- "dioxus-document",
- "dioxus-history",
- "dioxus-hooks",
- "dioxus-html",
- "dioxus-interpreter-js",
- "dioxus-signals",
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-devtools 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-document 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-history 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-hooks 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-html 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-interpreter-js 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-signals 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "dunce",
  "futures-channel",
  "futures-util",
- "generational-box",
+ "generational-box 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "global-hotkey",
  "infer",
  "jni",
- "lazy-js-bundle",
+ "lazy-js-bundle 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "muda",
  "ndk",
  "ndk-context",
@@ -945,9 +1050,24 @@ name = "dioxus-devtools"
 version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
 dependencies = [
- "dioxus-core",
- "dioxus-devtools-types",
- "dioxus-signals",
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-devtools-types 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-signals 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "serde",
+ "serde_json",
+ "tracing",
+ "tungstenite",
+ "warnings",
+]
+
+[[package]]
+name = "dioxus-devtools"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-devtools-types 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-signals 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
  "serde",
  "serde_json",
  "tracing",
@@ -960,7 +1080,16 @@ name = "dioxus-devtools-types"
 version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
 dependencies = [
- "dioxus-core",
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "serde",
+]
+
+[[package]]
+name = "dioxus-devtools-types"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
  "serde",
 ]
 
@@ -969,14 +1098,32 @@ name = "dioxus-document"
 version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
 dependencies = [
- "dioxus-core",
- "dioxus-core-macro",
- "dioxus-core-types",
- "dioxus-html",
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-core-macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-core-types 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-html 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "futures-channel",
  "futures-util",
- "generational-box",
- "lazy-js-bundle",
+ "generational-box 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "lazy-js-bundle 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "serde",
+ "serde_json",
+ "tracing",
+]
+
+[[package]]
+name = "dioxus-document"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-core-macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-core-types 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-html 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "futures-channel",
+ "futures-util",
+ "generational-box 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "lazy-js-bundle 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
  "serde",
  "serde_json",
  "tracing",
@@ -991,15 +1138,15 @@ dependencies = [
  "bytes",
  "ciborium",
  "dioxus-desktop",
- "dioxus-devtools",
- "dioxus-history",
- "dioxus-lib",
+ "dioxus-devtools 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-history 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-lib 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "dioxus-mobile",
- "dioxus-web",
- "dioxus_server_macro",
+ "dioxus-web 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus_server_macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "futures-channel",
  "futures-util",
- "generational-box",
+ "generational-box 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "once_cell",
  "serde",
  "server_fn",
@@ -1008,11 +1155,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "dioxus-fullstack"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "base64",
+ "bytes",
+ "ciborium",
+ "dioxus-devtools 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-history 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-lib 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-web 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus_server_macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "futures-channel",
+ "futures-util",
+ "generational-box 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "once_cell",
+ "serde",
+ "server_fn",
+ "tracing",
+]
+
+[[package]]
 name = "dioxus-history"
 version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
 dependencies = [
- "dioxus-core",
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "tracing",
+]
+
+[[package]]
+name = "dioxus-history"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
  "tracing",
 ]
 
@@ -1021,11 +1199,27 @@ name = "dioxus-hooks"
 version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
 dependencies = [
- "dioxus-core",
- "dioxus-signals",
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-signals 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "futures-channel",
  "futures-util",
- "generational-box",
+ "generational-box 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "rustversion",
+ "slab",
+ "tracing",
+ "warnings",
+]
+
+[[package]]
+name = "dioxus-hooks"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-signals 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "futures-channel",
+ "futures-util",
+ "generational-box 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
  "rustversion",
  "slab",
  "tracing",
@@ -1038,21 +1232,42 @@ version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
 dependencies = [
  "async-trait",
- "dioxus-core",
- "dioxus-core-macro",
- "dioxus-core-types",
- "dioxus-hooks",
- "dioxus-html-internal-macro",
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-core-macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-core-types 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-hooks 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-html-internal-macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "enumset",
  "euclid",
  "futures-channel",
- "generational-box",
+ "generational-box 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "keyboard-types",
- "lazy-js-bundle",
+ "lazy-js-bundle 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "rustversion",
  "serde",
  "serde_json",
  "serde_repr",
+ "tracing",
+]
+
+[[package]]
+name = "dioxus-html"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "async-trait",
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-core-macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-core-types 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-hooks 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-html-internal-macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "enumset",
+ "euclid",
+ "futures-channel",
+ "generational-box 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "keyboard-types",
+ "lazy-js-bundle 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "rustversion",
  "tracing",
 ]
 
@@ -1068,17 +1283,43 @@ dependencies = [
 ]
 
 [[package]]
+name = "dioxus-html-internal-macro"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "convert_case 0.6.0",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.99",
+]
+
+[[package]]
 name = "dioxus-interpreter-js"
 version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
 dependencies = [
- "dioxus-core",
- "dioxus-core-types",
- "dioxus-html",
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-core-types 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-html 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "js-sys",
- "lazy-js-bundle",
+ "lazy-js-bundle 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "rustc-hash",
  "serde",
+ "sledgehammer_bindgen",
+ "sledgehammer_utils",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
+name = "dioxus-interpreter-js"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "js-sys",
+ "lazy-js-bundle 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "rustc-hash",
  "sledgehammer_bindgen",
  "sledgehammer_utils",
  "wasm-bindgen",
@@ -1091,15 +1332,32 @@ name = "dioxus-lib"
 version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
 dependencies = [
- "dioxus-config-macro",
- "dioxus-core",
- "dioxus-core-macro",
- "dioxus-document",
- "dioxus-history",
- "dioxus-hooks",
- "dioxus-html",
- "dioxus-rsx",
- "dioxus-signals",
+ "dioxus-config-macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-core-macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-document 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-history 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-hooks 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-html 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-rsx 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-signals 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "warnings",
+]
+
+[[package]]
+name = "dioxus-lib"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "dioxus-config-macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-core-macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-document 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-history 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-hooks 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-html 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-rsx 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-signals 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
  "warnings",
 ]
 
@@ -1129,13 +1387,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "dioxus-logger"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "console_error_panic_hook",
+ "dioxus-cli-config 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "tracing",
+ "tracing-subscriber",
+ "tracing-wasm",
+]
+
+[[package]]
 name = "dioxus-mobile"
 version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
 dependencies = [
  "dioxus-cli-config 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "dioxus-desktop",
- "dioxus-lib",
+ "dioxus-lib 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "jni",
  "libc",
  "once_cell",
@@ -1145,7 +1415,7 @@ dependencies = [
 name = "dioxus-motion"
 version = "0.3.1"
 dependencies = [
- "dioxus",
+ "dioxus 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
  "dioxus-motion-transitions-macro",
  "easer",
  "futures-channel",
@@ -1171,9 +1441,24 @@ version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
 dependencies = [
  "dioxus-cli-config 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
- "dioxus-history",
- "dioxus-lib",
- "dioxus-router-macro",
+ "dioxus-history 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-lib 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-router-macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "rustversion",
+ "tracing",
+ "url",
+ "urlencoding",
+]
+
+[[package]]
+name = "dioxus-router"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "dioxus-cli-config 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-history 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-lib 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-router-macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
  "rustversion",
  "tracing",
  "url",
@@ -1184,6 +1469,20 @@ dependencies = [
 name = "dioxus-router-macro"
 version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
+dependencies = [
+ "base16",
+ "digest",
+ "proc-macro2",
+ "quote",
+ "sha2",
+ "slab",
+ "syn 2.0.99",
+]
+
+[[package]]
+name = "dioxus-router-macro"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
 dependencies = [
  "base16",
  "digest",
@@ -1206,14 +1505,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "dioxus-rsx"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "proc-macro2",
+ "proc-macro2-diagnostics",
+ "quote",
+ "syn 2.0.99",
+]
+
+[[package]]
 name = "dioxus-signals"
 version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
 dependencies = [
- "dioxus-core",
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "futures-channel",
  "futures-util",
- "generational-box",
+ "generational-box 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "once_cell",
+ "parking_lot",
+ "rustc-hash",
+ "tracing",
+ "warnings",
+]
+
+[[package]]
+name = "dioxus-signals"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "futures-channel",
+ "futures-util",
+ "generational-box 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
  "once_cell",
  "parking_lot",
  "rustc-hash",
@@ -1229,19 +1555,50 @@ dependencies = [
  "async-trait",
  "ciborium",
  "dioxus-cli-config 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
- "dioxus-core",
- "dioxus-core-types",
- "dioxus-devtools",
- "dioxus-document",
- "dioxus-history",
- "dioxus-html",
- "dioxus-interpreter-js",
- "dioxus-signals",
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-core-types 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-devtools 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-document 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-history 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-html 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-interpreter-js 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "dioxus-signals 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "futures-channel",
  "futures-util",
- "generational-box",
+ "generational-box 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "js-sys",
- "lazy-js-bundle",
+ "lazy-js-bundle 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "rustc-hash",
+ "serde",
+ "serde-wasm-bindgen",
+ "serde_json",
+ "tracing",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
+name = "dioxus-web"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "async-trait",
+ "ciborium",
+ "dioxus-cli-config 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-core-types 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-devtools 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-document 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-history 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-html 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-interpreter-js 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-signals 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "futures-channel",
+ "futures-util",
+ "generational-box 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "js-sys",
+ "lazy-js-bundle 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
  "rustc-hash",
  "serde",
  "serde-wasm-bindgen",
@@ -1256,6 +1613,17 @@ dependencies = [
 name = "dioxus_server_macro"
 version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "server_fn_macro",
+ "syn 2.0.99",
+]
+
+[[package]]
+name = "dioxus_server_macro"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1756,6 +2124,15 @@ dependencies = [
 name = "generational-box"
 version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
+dependencies = [
+ "parking_lot",
+ "tracing",
+]
+
+[[package]]
+name = "generational-box"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
 dependencies = [
  "parking_lot",
  "tracing",
@@ -2446,6 +2823,11 @@ version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
 
 [[package]]
+name = "lazy-js-bundle"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+
+[[package]]
 name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2585,9 +2967,19 @@ name = "manganis"
 version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
 dependencies = [
- "const-serialize",
- "manganis-core",
- "manganis-macro",
+ "const-serialize 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "manganis-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "manganis-macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+]
+
+[[package]]
+name = "manganis"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "const-serialize 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "manganis-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "manganis-macro 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
 ]
 
 [[package]]
@@ -2595,9 +2987,20 @@ name = "manganis-core"
 version = "0.6.3"
 source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context#85dcdee986e3aa96f3e4786d4a982370e25fee73"
 dependencies = [
- "const-serialize",
+ "const-serialize 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "dioxus-cli-config 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
- "dioxus-core-types",
+ "dioxus-core-types 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "serde",
+]
+
+[[package]]
+name = "manganis-core"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "const-serialize 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-cli-config 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
+ "dioxus-core-types 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
  "serde",
 ]
 
@@ -2608,7 +3011,20 @@ source = "git+https://github.com/wheregmis/dioxus.git?branch=expose_router_conte
 dependencies = [
  "dunce",
  "macro-string",
- "manganis-core",
+ "manganis-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.99",
+]
+
+[[package]]
+name = "manganis-macro"
+version = "0.6.3"
+source = "git+https://github.com/wheregmis/dioxus.git?branch=main#650605f4d14d3b9e006f645e95109e21f1ff63da"
+dependencies = [
+ "dunce",
+ "macro-string",
+ "manganis-core 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=main)",
  "proc-macro2",
  "quote",
  "syn 2.0.99",
@@ -3607,7 +4023,7 @@ dependencies = [
 name = "router_test"
 version = "0.1.0"
 dependencies = [
- "dioxus",
+ "dioxus 0.6.3 (git+https://github.com/wheregmis/dioxus.git?branch=expose_router_context)",
  "dioxus-logger 0.6.2",
  "dioxus-motion",
 ]
