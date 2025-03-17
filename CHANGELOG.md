@@ -1,4 +1,10 @@
 # Changelog
+## [v0.3.2] - 2024-02-22
+### Fixes:
+- Layout not being shown when animating in the case of nested Layouts
+### Changes:
+- Few code refactoring
+
 ## [v0.3.1] - 2024-02-08
 - Rerelease
 
