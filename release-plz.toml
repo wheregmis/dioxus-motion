@@ -18,7 +18,6 @@ git_release_enable = true
 
 [[package]]
 name = "dioxus-motion-transitions-macro"
-path = "./crates/route_transitions"
 changelog_include = []
 changelog_path = "./CHANGELOG.md"
 git_release_enable = true
