@@ -1,14 +1,21 @@
 # Changelog
-## [v0.3.2] - 2024-02-22
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
 ### Fixes:
 - Layout not being shown when animating in the case of nested Layouts
+- Nested Layout fully fixed
 ### Changes:
 - Few code refactoring
 
-## [v0.3.1] - 2024-02-08
+## [0.3.1] - 2024-02-08
 - Rerelease
 
-## [v0.3.0] - 2024-02-08
+## [0.3.0] - 2024-02-08
 ### New Features
 - Added initial support for page transitions (Special thanks to Marc and Evan)
 ### Bug Fixes or Enhancements
@@ -16,22 +23,22 @@
 ### Changes
 - Most of the things should be on the prelude, so if you face any erros while migrating, just import prelude::*.
 
-## [v0.2.3] - 2024-01-23
+## [0.2.3] - 2024-01-23
 ### Dioxus Version Bump
 - updated to dioxus v0.6.2
 - minor fixes
 
-## [v0.2.2] - 2024-01-17
+## [0.2.2] - 2024-01-17
 ### Performance Improvements
 - Resource optimization for web
 
-## [v0.2.1] - 2024-01-11
+## [0.2.1] - 2024-01-11
 ### Performance Improvements
 - Smoothness Optimization
 ### New Features
 - Animation Sequence
 
-## [v0.2.0] - 2024-01-05
+## [0.2.0] - 2024-01-05
 ### Breaking Changes
 - Replaced `use_value_animation` and `use_transform_animation` with `use_motion` hook
 - Removed old animation configuration system
@@ -85,7 +92,7 @@ AnimationConfig::new(mode)
     .with_loop(LoopMode::Times(3))
 ```
 
-## [v0.1.4] - 2024-12-28
+## [0.1.4] - 2024-12-28
 ### Changes
 - Update dependencies and remove unused UUID references
 - Stop animations on component drop for improved resource management
@@ -100,24 +107,24 @@ AnimationConfig::new(mode)
 - Revert to initial implementation of delay function
 - Code cleanup and optimization
 
-## [v0.1.3] - 2024-12-27
+## [0.1.3] - 2024-12-27
 ### Changes
 - Adjust animation frame threshold for smoother performance
 
 ### Fixes
 - Fixed Desktop Platform (Seemed to be broken previously)
 
-## [v0.1.2] - 2024-12-27
+## [0.1.2] - 2024-12-27
 ### Changes
 - Example Overhaul
 
 ### Fixes
 - Fixed Desktop Platform (Seemed to be broken previously)
 
-## [v0.1.1] - 2024-12-27
+## [0.1.1] - 2024-12-27
 ### Changes
 - Update Readme
 
-## [v0.1.0] - 2024-12-27
+## [0.1.0] - 2024-12-27
 ### Changes
 - Initial Release

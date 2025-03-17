@@ -1,0 +1,23 @@
+[workspace]
+git_release_enable = false
+
+git_release_body = """
+{{ changelog }}
+{% if remote.contributors %}
+### Contributors
+{% for contributor in remote.contributors %}
+* @{{ contributor.username }}
+{% endfor %}
+{% endif %}
+"""
+
+[[package]]
+name = "dioxus-motion"
+changelog_path = "./CHANGELOG.md"
+git_release_enable = true
+
+[[package]]
+name = "dioxus-motion-transitions-macro"
+changelog_include = []
+changelog_path = "./CHANGELOG.md"
+git_release_enable = true
