@@ -64,10 +64,24 @@ enum Route {
 #[component]
 fn NavBar() -> Element {
     rsx! {
-        nav { id: "navbar take it",
-            Link { to: Route::Home {}, "Home" }
-            Link { to: Route::DocsLanding {}, "Docs" }
-            Link { to: Route::Blog {}, "Blog" }
+        nav { class: "bg-white shadow-sm py-4 px-6",
+            div { class: "max-w-4xl mx-auto flex gap-6",
+                Link {
+                    class: "text-gray-600 hover:text-gray-900 font-medium",
+                    to: Route::Home {},
+                    "Home"
+                }
+                Link {
+                    class: "text-gray-600 hover:text-gray-900 font-medium",
+                    to: Route::DocsLanding {},
+                    "Docs"
+                }
+                Link {
+                    class: "text-gray-600 hover:text-gray-900 font-medium",
+                    to: Route::Blog {},
+                    "Blog"
+                }
+            }
         }
         AnimatedOutlet::<Route> {}
     }
@@ -76,54 +90,83 @@ fn NavBar() -> Element {
 #[component]
 fn Home() -> Element {
     rsx! {
-        h1 { "Welcome to the Dioxus Blog!" }
+        div { class: "max-w-4xl mx-auto px-6 py-12",
+            h1 { class: "text-4xl font-bold text-gray-900 mb-4", "Welcome to the Dioxus Blog!" }
+        }
     }
 }
 
 #[component]
 fn Blog() -> Element {
     rsx! {
-        h1 { "Welcome to the Dioxus Blog!" }
+        div { class: "max-w-4xl mx-auto px-6 py-12",
+            h1 { class: "text-4xl font-bold text-gray-900 mb-4", "Welcome to the Dioxus Blog!" }
+        }
     }
 }
 
 #[component]
 fn Docs() -> Element {
     rsx! {
-        h1 { "Blog" }
-        AnimatedOutlet::<Route> {}
+        div { class: "max-w-4xl mx-auto px-6 py-12",
+            h1 { class: "text-4xl font-bold text-gray-900 mb-4", "Documentation" }
+            AnimatedOutlet::<Route> {}
+        }
     }
 }
 
 #[component]
 fn DocsLanding() -> Element {
     rsx! {
-        h1 { "Docs Landing Page" }
-        AnimatedOutlet::<Route> {}
+        div { class: "max-w-4xl mx-auto px-6 py-12",
+            h1 { class: "text-4xl font-bold text-gray-900 mb-4", "Docs Landing Page" }
+            p { class: "text-gray-600 mb-4", "This is the landing page for the documentation." }
+
+            Link {
+                class: "text-blue-600 hover:underline",
+                to: Route::PageTransition {},
+                "Page Transitions"
+            }
+            Link {
+                class: "text-blue-600 hover:underline",
+                to: Route::Animations {},
+                "Animations"
+            }
+        }
     }
 }
 
 #[component]
 fn PageTransition() -> Element {
     rsx! {
-        h1 { "Blog" }
-        AnimatedOutlet::<Route> {}
+        div { class: "max-w-4xl mx-auto px-6 py-12",
+            h1 { class: "text-4xl font-bold text-gray-900 mb-4", "Page Transitions" }
+            AnimatedOutlet::<Route> {}
+        }
     }
 }
 
 #[component]
 fn Animations() -> Element {
     rsx! {
-        h1 { "Blog" }
-        AnimatedOutlet::<Route> {}
+        div { class: "max-w-4xl mx-auto px-6 py-12",
+            h1 { class: "text-4xl font-bold text-gray-900 mb-4", "Animations" }
+            AnimatedOutlet::<Route> {}
+        }
     }
 }
 
 #[component]
 fn PageNotFound(route: Vec<String>) -> Element {
     rsx! {
-        h1 { "Page not found" }
-        p { "We are terribly sorry, but the page you requested doesn't exist." }
-        pre { color: "red", "log:\nattemped to navigate to: {route:?}" }
+        div { class: "max-w-4xl mx-auto px-6 py-12",
+            h1 { class: "text-4xl font-bold text-gray-900 mb-4", "Page not found" }
+            p { class: "text-gray-600 mb-4",
+                "We are terribly sorry, but the page you requested doesn't exist."
+            }
+            pre { class: "bg-red-50 text-red-600 p-4 rounded-md font-mono text-sm",
+                "log:\nattemped to navigate to: {route:?}"
+            }
+        }
     }
 }
