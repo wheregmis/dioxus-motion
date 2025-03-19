@@ -11,6 +11,9 @@ dioxus = { git = "https://github.com/wheregmis/dioxus.git", branch = "main", fea
     "router",
 ] }
 dioxus-motion = { path = "../", default-features = false, optional = true }
+easer = { version = "0.3.0", default-features = false }
+web-sys = { version = "0.3.77", features = ["Window", "Document", "Element"] }
+wasm-bindgen = "0.2"
 
 [features]
 default = ["web"]
