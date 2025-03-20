@@ -19,7 +19,7 @@ pub enum Route {
     #[layout(NavBar)]
         // The default route is always "/" unless otherwise specified
         #[route("/")]
-        #[transition(SlideDown)]
+        #[transition(Fade)]
         Home {},
 
         // Wrap the next routes in a layout and a nest
