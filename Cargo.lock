@@ -1312,8 +1312,6 @@ dependencies = [
  "dioxus",
  "dioxus-motion",
  "easer",
- "wasm-bindgen",
- "web-sys",
 ]
 
 [[package]]

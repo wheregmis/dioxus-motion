@@ -123,6 +123,7 @@ pub struct AnimationState<T: Animatable> {
     elapsed: Duration,
     delay_elapsed: Duration,
     current_loop: u8,
+    _phantom: std::marker::PhantomData<T>,
 }
 
 impl<T: Animatable> AnimationState<T> {
@@ -134,9 +135,10 @@ impl<T: Animatable> AnimationState<T> {
             velocity: T::zero(),
             config: AnimationConfig::default(),
             running: false,
-            elapsed: Duration::default(),
-            delay_elapsed: Duration::default(),
+            elapsed: Duration::ZERO,
+            delay_elapsed: Duration::ZERO,
             current_loop: 0,
+            _phantom: std::marker::PhantomData,
         }
     }
 
@@ -145,8 +147,8 @@ impl<T: Animatable> AnimationState<T> {
         self.target = target;
         self.config = config;
         self.running = true;
-        self.elapsed = Duration::default();
-        self.delay_elapsed = Duration::default();
+        self.elapsed = Duration::ZERO;
+        self.delay_elapsed = Duration::ZERO;
         self.velocity = T::zero();
         self.current_loop = 0;
     }
@@ -200,15 +202,25 @@ impl<T: Animatable> AnimationState<T> {
 
         // Cache intermediate calculations
         let delta = self.target.sub(&self.current);
+        let delta_magnitude = delta.magnitude();
+
+        // Early exit if we're close enough to target
+        if delta_magnitude < T::epsilon() && self.velocity.magnitude() < T::epsilon() {
+            self.current = self.target;
+            return SpringState::Completed;
+        }
+
+        // Optimize force calculation
         let force = delta.scale(spring.stiffness);
         let damping = self.velocity.scale(spring.damping);
         let acceleration = force.sub(&damping).scale(1.0 / spring.mass);
 
+        // Update velocity and position
         self.velocity = self.velocity.add(&acceleration.scale(dt));
         self.current = self.current.add(&self.velocity.scale(dt));
 
-        // Check completion with cached delta
-        if self.velocity.magnitude() < T::epsilon() && delta.magnitude() < T::epsilon() {
+        // Check completion with cached delta magnitude
+        if self.velocity.magnitude() < T::epsilon() && delta_magnitude < T::epsilon() {
             self.current = self.target;
             SpringState::Completed
         } else {
@@ -469,25 +481,41 @@ impl<T: Animatable> AnimationManager<T> for Signal<MotionState<T>> {
 
 pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
     let mut state = use_signal(|| MotionState::new(initial));
+    let mut last_frame = Time::now();
+    let mut frame_count = 0;
+    let mut last_fps_update = Time::now();
 
     use_future(move || async move {
-        let mut last_frame = Time::now();
-
         loop {
             let now = Time::now();
             let dt = now.duration_since(last_frame).as_secs_f32();
 
             if state.read().is_running() {
                 state.write().update(dt);
-                // Do something with dt and delay it if its more than 100ms to avoid hogging the CPU
-                let delay = if dt > 0.15 {
-                    Duration::from_millis(16)
-                } else {
-                    Duration::from_millis(32)
-                };
 
-                Time::delay(delay).await;
+                // Adaptive frame timing based on FPS
+                frame_count += 1;
+                if now.duration_since(last_fps_update).as_secs_f32() >= 1.0 {
+                    let fps = frame_count as f32;
+                    frame_count = 0;
+                    last_fps_update = now;
+
+                    // Adjust delay based on FPS and dt
+                    let delay = if fps < 30.0 || dt > 0.15 {
+                        Duration::from_millis(16) // ~60fps
+                    } else if fps < 45.0 {
+                        Duration::from_millis(24) // ~40fps
+                    } else {
+                        Duration::from_millis(32) // ~30fps
+                    };
+
+                    Time::delay(delay).await;
+                } else {
+                    // Use shorter delay for smoother animations
+                    Time::delay(Duration::from_millis(16)).await;
+                }
             } else {
+                // Longer delay when no animations are running
                 Time::delay(Duration::from_millis(100)).await;
             }
 
