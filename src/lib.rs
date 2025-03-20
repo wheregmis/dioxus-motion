@@ -481,41 +481,25 @@ impl<T: Animatable> AnimationManager<T> for Signal<MotionState<T>> {
 
 pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
     let mut state = use_signal(|| MotionState::new(initial));
-    let mut last_frame = Time::now();
-    let mut frame_count = 0;
-    let mut last_fps_update = Time::now();
 
     use_future(move || async move {
+        let mut last_frame = Time::now();
+
         loop {
             let now = Time::now();
             let dt = now.duration_since(last_frame).as_secs_f32();
 
             if state.read().is_running() {
                 state.write().update(dt);
-
-                // Adaptive frame timing based on FPS
-                frame_count += 1;
-                if now.duration_since(last_fps_update).as_secs_f32() >= 1.0 {
-                    let fps = frame_count as f32;
-                    frame_count = 0;
-                    last_fps_update = now;
-
-                    // Adjust delay based on FPS and dt
-                    let delay = if fps < 30.0 || dt > 0.15 {
-                        Duration::from_millis(16) // ~60fps
-                    } else if fps < 45.0 {
-                        Duration::from_millis(24) // ~40fps
-                    } else {
-                        Duration::from_millis(32) // ~30fps
-                    };
-
-                    Time::delay(delay).await;
+                // Do something with dt and delay it if its more than 100ms to avoid hogging the CPU
+                let delay = if dt > 0.15 {
+                    Duration::from_millis(16)
                 } else {
-                    // Use shorter delay for smoother animations
-                    Time::delay(Duration::from_millis(16)).await;
-                }
+                    Duration::from_millis(32)
+                };
+
+                Time::delay(delay).await;
             } else {
-                // Longer delay when no animations are running
                 Time::delay(Duration::from_millis(100)).await;
             }
 

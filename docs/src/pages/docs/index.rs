@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
 use easer::functions::Easing;
 
+use crate::components::code_block::CodeBlock;
 use crate::utils::router::Route;
 
 #[component]
@@ -45,7 +46,7 @@ fn DocLayout(title: &'static str, description: &'static str, children: Element) 
                                     SectionLink {
                                         to: Route::Animations {},
                                         icon: "✨",
-                                        label: "Animations",
+                                        label: "Interactive Animation Guide",
                                     }
                                 }
                             }
@@ -86,7 +87,7 @@ fn SectionLink(to: Route, icon: &'static str, label: &'static str) -> Element {
             to,
             class: {
                 let base_classes = "flex items-center gap-3 px-4 py-2 rounded-lg text-sm
-                                                 transition-all duration-300";
+                                                                         transition-all duration-300";
                 if is_active {
                     format!("{} bg-primary/10 text-primary", base_classes)
                 } else {
@@ -172,47 +173,122 @@ fn ResourceLink(href: &'static str, label: &'static str, icon: &'static str) -> 
 pub fn DocsLanding() -> Element {
     rsx! {
         div { class: "space-y-12",
+            // Installation Guide
+            section { class: "space-y-6",
+                h2 { class: "text-2xl font-semibold text-text-primary", "Installation" }
+                p { class: "text-text-secondary",
+                    "Get started with Dioxus Motion by adding it to your project's Cargo.toml."
+                }
 
-            // Guide sections
-            div { class: "grid md:grid-cols-2 gap-6",
-                // Page Transitions Card
-                Link {
-                    to: Route::PageTransition {},
-                    class: "group relative overflow-hidden rounded-xl bg-dark-200/50 backdrop-blur-sm
-                           border border-primary/10 transition-all duration-300 hover:border-primary/20
-                           hover:shadow-lg hover:shadow-primary/10",
-                    div { class: "p-6",
-                        div { class: "flex items-center justify-between mb-4",
-                            h3 { class: "text-xl font-semibold text-text-primary",
-                                "Page Transitions"
-                            }
-                            span { class: "text-primary transform transition-transform group-hover:translate-x-1",
-                                "→"
-                            }
-                        }
-                        p { class: "text-text-secondary leading-relaxed",
-                            "Learn how to create smooth page transitions and routing animations in your Dioxus app."
+                // Basic Installation
+                div { class: "space-y-4",
+                    h3 { class: "text-lg font-semibold text-text-primary", "Basic Setup" }
+                    div { class: "bg-dark-200/50 backdrop-blur-sm rounded-xl p-6 border border-primary/10",
+                        CodeBlock {
+                            code: r#"[dependencies]
+dioxus-motion = { version = "0.3.0", optional = true, default-features = false }
+
+[features]
+default = ["web"]
+web = ["dioxus/web", "dioxus-motion/web"]
+desktop = ["dioxus/desktop", "dioxus-motion/desktop"]
+mobile = ["dioxus/mobile", "dioxus-motion/desktop"]"#.to_string(),
+                            language: "toml".to_string(),
                         }
                     }
                 }
 
-                // Animations Card
-                Link {
-                    to: Route::Animations {},
-                    class: "group relative overflow-hidden rounded-xl bg-dark-200/50 backdrop-blur-sm
-                           border border-primary/10 transition-all duration-300 hover:border-primary/20
-                           hover:shadow-lg hover:shadow-primary/10",
-                    div { class: "p-6",
-                        div { class: "flex items-center justify-between mb-4",
-                            h3 { class: "text-xl font-semibold text-text-primary",
-                                "Animations"
-                            }
-                            span { class: "text-primary transform transition-transform group-hover:translate-x-1",
-                                "→"
+                // With Page Transitions
+                div { class: "space-y-4",
+                    h3 { class: "text-lg font-semibold text-text-primary", "With Page Transitions" }
+                    div { class: "bg-dark-200/50 backdrop-blur-sm rounded-xl p-6 border border-primary/10",
+                        CodeBlock {
+                            code: r#"[dependencies]
+dioxus-motion = { version = "0.3.0", optional = true, default-features = false }
+
+[features]
+default = ["web"]
+web = ["dioxus/web", "dioxus-motion/web", "dioxus-motion/transitions"]
+desktop = [
+    "dioxus/desktop",
+    "dioxus-motion/desktop",
+    "dioxus-motion/transitions",
+]
+mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]"#.to_string(),
+                            language: "toml".to_string(),
+                        }
+                    }
+                }
+
+                // Platform Support
+                div { class: "space-y-4",
+                    h3 { class: "text-lg font-semibold text-text-primary", "Platform Support" }
+                    div { class: "grid grid-cols-1 md:grid-cols-3 gap-4",
+                        div { class: "p-4 rounded-lg bg-dark-200/50 backdrop-blur-sm border border-primary/10",
+                            h4 { class: "font-semibold text-text-primary mb-2", "Web" }
+                            p { class: "text-text-secondary text-sm",
+                                "For web applications using WASM"
                             }
                         }
-                        p { class: "text-text-secondary leading-relaxed",
-                            "Master component animations using springs, tweens, and transforms."
+                        div { class: "p-4 rounded-lg bg-dark-200/50 backdrop-blur-sm border border-primary/10",
+                            h4 { class: "font-semibold text-text-primary mb-2", "Desktop" }
+                            p { class: "text-text-secondary text-sm",
+                                "For desktop and mobile applications"
+                            }
+                        }
+                        div { class: "p-4 rounded-lg bg-dark-200/50 backdrop-blur-sm border border-primary/10",
+                            h4 { class: "font-semibold text-text-primary mb-2", "Default" }
+                            p { class: "text-text-secondary text-sm",
+                                "Web support (if no feature specified)"
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Guide sections
+            section { class: "space-y-6",
+                h2 { class: "text-2xl font-semibold text-text-primary", "Guides" }
+                div { class: "grid md:grid-cols-2 gap-6",
+                    // Page Transitions Card
+                    Link {
+                        to: Route::PageTransition {},
+                        class: "group relative overflow-hidden rounded-xl bg-dark-200/50 backdrop-blur-sm
+                               border border-primary/10 transition-all duration-300 hover:border-primary/20
+                               hover:shadow-lg hover:shadow-primary/10",
+                        div { class: "p-6",
+                            div { class: "flex items-center justify-between mb-4",
+                                h3 { class: "text-xl font-semibold text-text-primary",
+                                    "Page Transitions"
+                                }
+                                span { class: "text-primary transform transition-transform group-hover:translate-x-1",
+                                    "→"
+                                }
+                            }
+                            p { class: "text-text-secondary leading-relaxed",
+                                "Learn how to create smooth page transitions and routing animations in your Dioxus app."
+                            }
+                        }
+                    }
+
+                    // Animations Card
+                    Link {
+                        to: Route::Animations {},
+                        class: "group relative overflow-hidden rounded-xl bg-dark-200/50 backdrop-blur-sm
+                               border border-primary/10 transition-all duration-300 hover:border-primary/20
+                               hover:shadow-lg hover:shadow-primary/10",
+                        div { class: "p-6",
+                            div { class: "flex items-center justify-between mb-4",
+                                h3 { class: "text-xl font-semibold text-text-primary",
+                                    "Interactive Animation Guide"
+                                }
+                                span { class: "text-primary transform transition-transform group-hover:translate-x-1",
+                                    "→"
+                                }
+                            }
+                            p { class: "text-text-secondary leading-relaxed",
+                                "Learn animation basics with interactive examples, from simple tweens to custom types."
+                            }
                         }
                     }
                 }

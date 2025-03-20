@@ -37,7 +37,7 @@ pub enum Route {
             // At "/blog/:name", we want to show a specific blog post, using the name slug
             #[route("/animations")]
             #[transition(SlideRight)]
-            Animations { },
+            Animations {},
 
         // We need to end the blog layout and nest
         // Note we don't need either - we could've just done `/blog/` and `/blog/:name` without nesting,

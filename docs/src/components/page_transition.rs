@@ -1,6 +1,8 @@
 use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
 
+use crate::components::code_block::CodeBlock;
+
 #[component]
 fn TransitionCard(name: &'static str, description: &'static str, example: &'static str) -> Element {
     rsx! {
@@ -28,9 +30,8 @@ pub fn PageTransition() -> Element {
                         p { class: "text-text-secondary mb-4",
                             "Add the transitions feature to your dioxus-motion dependency in Cargo.toml:"
                         }
-                        pre { class: "language-toml overflow-x-auto",
-                            code {
-                                {r#"dioxus-motion = { git = "https://github.com/wheregmis/dioxus-motion.git", branch = "main", default-features = false, optional = true }
+                        CodeBlock {
+                            code: r#"dioxus-motion = { git = "https://github.com/wheregmis/dioxus-motion.git", branch = "main", default-features = false, optional = true }
 
 [features]
 default = ["web"]
@@ -40,8 +41,8 @@ desktop = [
     "dioxus-motion/desktop",
     "dioxus-motion/transitions",
 ]
-mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]"#}
-                            }
+mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]"#.to_string(),
+                            language: "toml".to_string(),
                         }
                     }
 
@@ -51,9 +52,8 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
                         p { class: "text-text-secondary mb-4",
                             "Add the MotionTransitions derive macro to your Route enum:"
                         }
-                        pre { class: "language-rust overflow-x-auto",
-                            code {
-                                {r#"#[derive(Routable, Clone, Debug, PartialEq, MotionTransitions)]
+                        CodeBlock {
+                            code: r#"#[derive(Routable, Clone, Debug, PartialEq, MotionTransitions)]
 #[rustfmt::skip]
 enum Route {
     #[layout(NavBar)]
@@ -74,8 +74,8 @@ enum Route {
     #[end_layout]
     #[route("/:..route")]
     PageNotFound { route: Vec<String> },
-}"#}
-                            }
+}"#.to_string(),
+                            language: "rust".to_string(),
                         }
                     }
 
@@ -85,9 +85,8 @@ enum Route {
                         p { class: "text-text-secondary mb-4",
                             "Replace Outlet with AnimatedOutlet in your layout component:"
                         }
-                        pre { class: "language-rust overflow-x-auto",
-                            code {
-                                {r#"#[component]
+                        CodeBlock {
+                            code: r#"#[component]
 fn NavBar() -> Element {
     rsx! {
         nav { id: "navbar",
@@ -96,8 +95,8 @@ fn NavBar() -> Element {
         }
         AnimatedOutlet::<Route> {}
     }
-}"#}
-                            }
+}"#.to_string(),
+                            language: "rust".to_string(),
                         }
                     }
                 }
@@ -144,9 +143,8 @@ fn NavBar() -> Element {
             section { class: "space-y-6",
                 h2 { class: "text-2xl font-semibold text-text-primary", "Example with Nested Routes" }
                 div { class: "bg-dark-200/50 backdrop-blur-sm rounded-xl p-6 border border-primary/10",
-                    pre { class: "language-rust overflow-x-auto",
-                        code {
-                            {r#"#[derive(Routable, Clone, Debug, PartialEq, MotionTransitions)]
+                    CodeBlock {
+                        code: r#"#[derive(Routable, Clone, Debug, PartialEq, MotionTransitions)]
 #[rustfmt::skip]
 enum Route {
     #[layout(NavBar)]
@@ -172,8 +170,8 @@ enum Route {
     #[route("/:..route")]
     #[transition(Fade)]
     PageNotFound { route: Vec<String> },
-}"#}
-                        }
+}"#.to_string(),
+                        language: "rust".to_string(),
                     }
                 }
             }

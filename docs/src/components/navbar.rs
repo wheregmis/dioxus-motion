@@ -10,8 +10,6 @@ pub fn NavBar() -> Element {
     let mut nav_opacity = use_motion(0.0f32);
     let mut is_menu_open = use_signal(|| false);
 
-    // let mut is_dark_mode = use_signal(|| false);
-
     use_effect(move || {
         nav_bg.animate_to(
             Transform::new(0.0, 0.0, 1.0, 0.0),
@@ -31,10 +29,6 @@ pub fn NavBar() -> Element {
             })),
         );
     });
-
-    // let toggle_theme = move |_| {
-    //     is_dark_mode.toggle();
-    // };
 
     rsx! {
         div { class: "w-full h-full bg-gradient-dark text-text-secondary",
@@ -57,8 +51,8 @@ pub fn NavBar() -> Element {
                             div { class: "flex items-center gap-8 px-6 py-2 bg-dark-200/50 backdrop-blur-sm
                                        border border-primary/10 rounded-full shadow-lg shadow-primary/5
                                        rust-accent",
-                                // Rust logo
-                                span { class: "text-2xl", "🦀" }
+                                // Rocket logo
+                                span { class: "text-2xl performance-pulse", "🚀" }
 
                                 // Logo/Home link
                                 Link {
@@ -88,18 +82,6 @@ pub fn NavBar() -> Element {
 
                         // Right side - Theme toggle and GitHub
                         div { class: "flex items-center space-x-4",
-                            // Theme toggle
-                            // button {
-                            //     class: "p-2 rounded-lg transition-colors duration-300
-                            //            bg-surface-light/10 hover:bg-surface-light/20",
-                            //     onclick: toggle_theme,
-                            //     if *is_dark_mode.read() {
-                            //         span { class: "text-xl", "☀️" }
-                            //     } else {
-                            //         span { class: "text-xl", "🌙" }
-                            //     }
-                            // }
-
                             // GitHub link
                             a {
                                 class: "hidden sm:flex items-center px-4 py-2 rounded-lg
@@ -143,7 +125,6 @@ pub fn NavBar() -> Element {
                 (*is_menu_open.read())
                     .then(|| {
                         rsx! {
-                            
                             // Mobile menu overlay
                             div { class: "fixed inset-0 z-40 bg-dark-200/95 backdrop-blur-lg transition-all duration-300 rust-accent",
                                 // Background elements for mobile menu
@@ -157,31 +138,31 @@ pub fn NavBar() -> Element {
                                         NavLink { to: Route::DocsLanding {}, "Documentation" }
                                         a {
                                             class: "flex items-center px-6 py-3 rounded-xl
-                                                                                                                                                                                                                       bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
-                                                                                                                                                                                                                       text-text-secondary hover:text-text-primary
-                                                                                                                                                                                                                       border border-primary/10 transition-all duration-300
-                                                                                                                                                                                                                       rust-accent",
+                                                                                                                                                                                                                                                                                                                                           bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
+                                                                                                                                                                                                                                                                                                                                           text-text-secondary hover:text-text-primary
+                                                                                                                                                                                                                                                                                                                                           border border-primary/10 transition-all duration-300
+                                                                                                                                                                                                                                                                                                                                           rust-accent",
                                             href: "https://github.com/wheregmis/dioxus-motion",
                                             target: "_blank",
                                             rel: "noopener",
                                             "GitHub"
                                             span { class: "ml-2 px-2 py-1 text-xs rounded-full
-                                                                                                                                                                                                                           bg-primary/10 text-primary",
+                                                                                                                                                                                                                                                                                                                                           bg-primary/10 text-primary",
                                                 "★ Star"
                                             }
                                         }
                                         a {
                                             class: "flex items-center px-6 py-3 rounded-xl
-                                                                                                                                                                                                                       bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
-                                                                                                                                                                                                                       text-text-secondary hover:text-text-primary
-                                                                                                                                                                                                                       border border-primary/10 transition-all duration-300
-                                                                                                                                                                                                                       rust-accent",
+                                                                                                                                                                                                                                                                                                                                           bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
+                                                                                                                                                                                                                                                                                                                                           text-text-secondary hover:text-text-primary
+                                                                                                                                                                                                                                                                                                                                           border border-primary/10 transition-all duration-300
+                                                                                                                                                                                                                                                                                                                                           rust-accent",
                                             href: "https://crates.io/crates/dioxus-motion",
                                             target: "_blank",
                                             rel: "noopener",
                                             "Crates.io"
                                             span { class: "ml-2 px-2 py-1 text-xs rounded-full
-                                                                                                                                                                                                                           bg-primary/10 text-primary",
+                                                                                                                                                                                                                                                                                                                                           bg-primary/10 text-primary",
                                                 "0.3.1"
                                             }
                                         }
