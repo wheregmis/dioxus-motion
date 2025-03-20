@@ -39,7 +39,7 @@ pub fn NavBar() -> Element {
     rsx! {
         div { class: "w-full h-full bg-gradient-dark text-text-secondary",
             header {
-                class: "fixed top-0 w-full z-50 h-16 backdrop-blur-md border-b border-surface-light/20",
+                class: "fixed top-0 w-full z-50 h-16 backdrop-blur-md border-b border-primary/10 rust-accent",
                 style: "
                     transform: translateY({nav_bg.get_value().y}px);
                     opacity: {nav_opacity.get_value()};
@@ -55,9 +55,10 @@ pub fn NavBar() -> Element {
                         // Left side - Logo and navigation
                         div { class: "flex items-center space-x-3",
                             div { class: "flex items-center gap-8 px-6 py-2 bg-dark-200/50 backdrop-blur-sm
-                                       border border-primary/10 rounded-full shadow-lg shadow-background/5",
-                                // Rocket emoji logo
-                                span { class: "text-2xl", "🚀" }
+                                       border border-primary/10 rounded-full shadow-lg shadow-primary/5
+                                       rust-accent",
+                                // Rust logo
+                                span { class: "text-2xl", "🦀" }
 
                                 // Logo/Home link
                                 Link {
@@ -75,7 +76,7 @@ pub fn NavBar() -> Element {
                             // Mobile menu button
                             button {
                                 class: "md:hidden p-2 rounded-lg transition-colors duration-300
-                                       hover:bg-surface-light/10",
+                                       hover:bg-primary/10",
                                 onclick: move |_| is_menu_open.toggle(),
                                 if *is_menu_open.read() {
                                     span { class: "text-xl", "✕" }
@@ -104,7 +105,8 @@ pub fn NavBar() -> Element {
                                 class: "hidden sm:flex items-center px-4 py-2 rounded-lg
                                        bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
                                        text-text-secondary hover:text-text-primary
-                                       border border-primary/10 transition-all duration-300",
+                                       border border-primary/10 transition-all duration-300
+                                       rust-accent",
                                 href: "https://github.com/wheregmis/dioxus-motion",
                                 target: "_blank",
                                 rel: "noopener",
@@ -120,7 +122,8 @@ pub fn NavBar() -> Element {
                                 class: "hidden sm:flex items-center px-4 py-2 rounded-lg
                                        bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
                                        text-text-secondary hover:text-text-primary
-                                       border border-primary/10 transition-all duration-300",
+                                       border border-primary/10 transition-all duration-300
+                                       rust-accent",
                                 href: "https://crates.io/crates/dioxus-motion",
                                 target: "_blank",
                                 rel: "noopener",
@@ -135,65 +138,67 @@ pub fn NavBar() -> Element {
                 }
             }
 
-            // Mobile menu
-            div {
-                class: "fixed inset-0 z-40 bg-dark-200/95 backdrop-blur-lg transition-all duration-300",
-                style: format!(
-                    "opacity: {}; pointer-events: {}; transform: translateX({})",
-                    if *is_menu_open.read() { 1.0 } else { 0.0 },
-                    if *is_menu_open.read() { "auto" } else { "none" },
-                    if *is_menu_open.read() { "0%" } else { "100%" },
-                ),
-                // Background elements for mobile menu
-                div { class: "absolute inset-0 overflow-hidden",
-                    div { class: "absolute -top-1/2 -left-1/2 w-full h-full bg-primary/5 rounded-full blur-3xl" }
-                    div { class: "absolute -bottom-1/2 -right-1/2 w-full h-full bg-secondary/5 rounded-full blur-3xl" }
-                }
-                // Mobile menu content
-                div { class: "relative z-10 container mx-auto px-4 pt-24",
-                    div { class: "flex flex-col space-y-6",
-                        NavLink { to: Route::DocsLanding {}, "Documentation" }
-                        a {
-                            class: "flex items-center px-6 py-3 rounded-xl
-                                   bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
-                                   text-text-secondary hover:text-text-primary
-                                   border border-primary/10 transition-all duration-300",
-                            href: "https://github.com/wheregmis/dioxus-motion",
-                            target: "_blank",
-                            rel: "noopener",
-                            "GitHub"
-                            span { class: "ml-2 px-2 py-1 text-xs rounded-full
-                                       bg-primary/10 text-primary",
-                                "★ Star"
+            // Mobile menu - only render when open
+            {
+                (*is_menu_open.read())
+                    .then(|| {
+                        rsx! {
+                            
+                            // Mobile menu overlay
+                            div { class: "fixed inset-0 z-40 bg-dark-200/95 backdrop-blur-lg transition-all duration-300 rust-accent",
+                                // Background elements for mobile menu
+                                div { class: "absolute inset-0 overflow-hidden",
+                                    div { class: "absolute -top-1/2 -left-1/2 w-full h-full bg-primary/5 rounded-full blur-3xl" }
+                                    div { class: "absolute -bottom-1/2 -right-1/2 w-full h-full bg-secondary/5 rounded-full blur-3xl" }
+                                }
+                                // Mobile menu content
+                                div { class: "relative z-10 container mx-auto px-4 pt-24",
+                                    div { class: "flex flex-col space-y-6",
+                                        NavLink { to: Route::DocsLanding {}, "Documentation" }
+                                        a {
+                                            class: "flex items-center px-6 py-3 rounded-xl
+                                                                                                                                                               bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
+                                                                                                                                                               text-text-secondary hover:text-text-primary
+                                                                                                                                                               border border-primary/10 transition-all duration-300
+                                                                                                                                                               rust-accent",
+                                            href: "https://github.com/wheregmis/dioxus-motion",
+                                            target: "_blank",
+                                            rel: "noopener",
+                                            "GitHub"
+                                            span { class: "ml-2 px-2 py-1 text-xs rounded-full
+                                                                                                                                                                   bg-primary/10 text-primary",
+                                                "★ Star"
+                                            }
+                                        }
+                                        a {
+                                            class: "flex items-center px-6 py-3 rounded-xl
+                                                                                                                                                               bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
+                                                                                                                                                               text-text-secondary hover:text-text-primary
+                                                                                                                                                               border border-primary/10 transition-all duration-300
+                                                                                                                                                               rust-accent",
+                                            href: "https://crates.io/crates/dioxus-motion",
+                                            target: "_blank",
+                                            rel: "noopener",
+                                            "Crates.io"
+                                            span { class: "ml-2 px-2 py-1 text-xs rounded-full
+                                                                                                                                                                   bg-primary/10 text-primary",
+                                                "0.3.1"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Close menu when clicking outside
+                            div {
+                                class: "fixed inset-0 z-30 bg-black/20 backdrop-blur-sm",
+                                onclick: move |_| is_menu_open.set(false),
                             }
                         }
-                        a {
-                            class: "flex items-center px-6 py-3 rounded-xl
-                                   bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
-                                   text-text-secondary hover:text-text-primary
-                                   border border-primary/10 transition-all duration-300",
-                            href: "https://crates.io/crates/dioxus-motion",
-                            target: "_blank",
-                            rel: "noopener",
-                            "Crates.io"
-                            span { class: "ml-2 px-2 py-1 text-xs rounded-full
-                                       bg-primary/10 text-primary",
-                                "0.3.1"
-                            }
-                        }
-                    }
-                }
+                    })
             }
 
-            // Close menu when clicking outside
-            if *is_menu_open.read() {
-                div {
-                    class: "fixed inset-0 z-30 bg-black/20 backdrop-blur-sm",
-                    onclick: move |_| is_menu_open.set(false),
-                }
-            }
-
-            div { class: "pt-16", Outlet::<Route> {} }
+            AnimatedOutlet::<Route> {}
         }
     }
 }
