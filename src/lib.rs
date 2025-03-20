@@ -35,6 +35,7 @@
 use animations::utils::{Animatable, AnimationMode};
 use dioxus::prelude::*;
 pub use instant::Duration;
+use std::sync::Arc;
 
 pub mod animations;
 pub mod transitions;
@@ -74,10 +75,11 @@ pub mod prelude {
 pub type Time = MotionTime;
 
 /// Animation sequence that can chain multiple animations together
+#[derive(Clone)]
 pub struct AnimationSequence<T: Animatable> {
     steps: Vec<AnimationStep<T>>,
     current_step: u8,
-    on_complete: Option<Box<dyn FnOnce()>>,
+    on_complete: Option<Arc<dyn Fn() + Send + Sync + 'static>>,
 }
 
 #[derive(Clone)]
@@ -106,8 +108,8 @@ impl<T: Animatable> AnimationSequence<T> {
         self
     }
 
-    pub fn on_complete<F: FnOnce() + 'static>(mut self, f: F) -> Self {
-        self.on_complete = Some(Box::new(f));
+    pub fn on_complete<F: Fn() + Send + Sync + 'static>(mut self, f: F) -> Self {
+        self.on_complete = Some(Arc::new(f));
         self
     }
 }
@@ -198,30 +200,40 @@ impl<T: Animatable> AnimationState<T> {
     }
 
     fn update_spring(&mut self, spring: Spring, dt: f32) -> SpringState {
-        let dt = dt.min(0.064);
+        let dt = dt.min(0.064); // Cap maximum time step for stability
 
-        // Cache intermediate calculations
+        // Pre-calculate common values
         let delta = self.target.sub(&self.current);
         let delta_magnitude = delta.magnitude();
+        let velocity_magnitude = self.velocity.magnitude();
 
-        // Early exit if we're close enough to target
-        if delta_magnitude < T::epsilon() && self.velocity.magnitude() < T::epsilon() {
+        // Early exit conditions with epsilon comparison
+        let epsilon = T::epsilon();
+        if delta_magnitude < epsilon && velocity_magnitude < epsilon {
             self.current = self.target;
+            self.velocity = T::zero();
             return SpringState::Completed;
         }
 
-        // Optimize force calculation
+        // Semi-implicit Euler integration for better stability
+        // Calculate acceleration first
         let force = delta.scale(spring.stiffness);
         let damping = self.velocity.scale(spring.damping);
         let acceleration = force.sub(&damping).scale(1.0 / spring.mass);
 
-        // Update velocity and position
+        // Update velocity first
         self.velocity = self.velocity.add(&acceleration.scale(dt));
+
+        // Then update position using new velocity
         self.current = self.current.add(&self.velocity.scale(dt));
 
-        // Check completion with cached delta magnitude
-        if self.velocity.magnitude() < T::epsilon() && delta_magnitude < T::epsilon() {
+        // Check for completion
+        let new_delta = self.target.sub(&self.current);
+        let new_delta_magnitude = new_delta.magnitude();
+
+        if self.velocity.magnitude() < epsilon && new_delta_magnitude < epsilon {
             self.current = self.target;
+            self.velocity = T::zero();
             SpringState::Completed
         } else {
             SpringState::Active
@@ -339,6 +351,16 @@ impl<T: Animatable> AnimationManager<T> for AnimationSignal<T> {
 pub struct MotionState<T: Animatable> {
     base: AnimationSignal<T>,
     sequence: Signal<Option<SequenceState<T>>>,
+    pending_updates: Signal<Vec<PendingUpdate<T>>>,
+}
+
+#[derive(Clone)]
+enum PendingUpdate<T: Animatable> {
+    AnimateTo(T, AnimationConfig),
+    Sequence(AnimationSequence<T>),
+    Stop,
+    Reset,
+    Delay(Duration),
 }
 
 struct SequenceState<T: Animatable> {
@@ -351,6 +373,51 @@ impl<T: Animatable> MotionState<T> {
         Self {
             base: AnimationSignal::new(initial),
             sequence: Signal::new(None),
+            pending_updates: Signal::new(Vec::new()),
+        }
+    }
+
+    fn process_pending_updates(&mut self) {
+        let mut updates = self.pending_updates.write();
+        for update in updates.drain(..) {
+            match update {
+                PendingUpdate::AnimateTo(target, config) => {
+                    self.sequence.set(None);
+                    self.base.0.write().animate_to(target, config);
+                }
+                PendingUpdate::Sequence(sequence) => {
+                    if !sequence.steps.is_empty() {
+                        let mut optimized_steps = Vec::with_capacity(sequence.steps.len());
+                        optimized_steps.extend(sequence.steps.into_iter());
+
+                        let first_step = &optimized_steps[0];
+                        self.base
+                            .0
+                            .write()
+                            .animate_to(first_step.target, first_step.config.clone());
+
+                        self.sequence.set(Some(SequenceState {
+                            sequence: AnimationSequence {
+                                steps: optimized_steps,
+                                current_step: 0,
+                                on_complete: sequence.on_complete,
+                            },
+                            _current_value: self.base.0.read().get_value(),
+                        }));
+                    }
+                }
+                PendingUpdate::Stop => {
+                    self.sequence.set(None);
+                    self.base.0.write().stop();
+                }
+                PendingUpdate::Reset => {
+                    self.sequence.set(None);
+                    self.base.0.write().reset();
+                }
+                PendingUpdate::Delay(duration) => {
+                    self.base.0.write().config.delay = duration;
+                }
+            }
         }
     }
 }
@@ -361,24 +428,20 @@ impl<T: Animatable> AnimationManager<T> for MotionState<T> {
     }
 
     fn animate_to(&mut self, target: T, config: AnimationConfig) {
-        self.sequence.set(None);
-        self.base.animate_to(target, config);
+        self.pending_updates
+            .write()
+            .push(PendingUpdate::AnimateTo(target, config));
     }
 
     fn animate_sequence(&mut self, sequence: AnimationSequence<T>) {
-        if sequence.steps.is_empty() {
-            return;
-        }
-        let first_step = &sequence.steps[0];
-        self.base
-            .animate_to(first_step.target, first_step.config.clone());
-        self.sequence.set(Some(SequenceState {
-            sequence,
-            _current_value: self.base.get_value(),
-        }));
+        self.pending_updates
+            .write()
+            .push(PendingUpdate::Sequence(sequence));
     }
 
     fn update(&mut self, dt: f32) -> bool {
+        self.process_pending_updates();
+
         let mut still_animating = false;
         let mut should_clear_sequence = false;
 
@@ -390,9 +453,16 @@ impl<T: Animatable> AnimationManager<T> for MotionState<T> {
                 match current_step.cmp(&(total_steps as u8 - 1)) {
                     std::cmp::Ordering::Less => {
                         sequence_state.sequence.current_step += 1;
-                        let step = &sequence_state.sequence.steps[(current_step + 1) as usize];
-                        self.base.animate_to(step.target, step.config.clone());
-                        still_animating = true;
+                        let next_step = &sequence_state.sequence.steps[(current_step + 1) as usize];
+
+                        let current_value = self.base.get_value();
+                        if current_value.sub(&next_step.target).magnitude() > T::epsilon() {
+                            self.pending_updates.write().push(PendingUpdate::AnimateTo(
+                                next_step.target,
+                                next_step.config.clone(),
+                            ));
+                            still_animating = true;
+                        }
                     }
                     std::cmp::Ordering::Equal => {
                         if let Some(on_complete) = sequence_state.sequence.on_complete.take() {
@@ -400,7 +470,7 @@ impl<T: Animatable> AnimationManager<T> for MotionState<T> {
                         }
                         should_clear_sequence = true;
                         still_animating = false;
-                        self.base.stop();
+                        self.pending_updates.write().push(PendingUpdate::Stop);
                     }
                     std::cmp::Ordering::Greater => {}
                 }
@@ -422,21 +492,23 @@ impl<T: Animatable> AnimationManager<T> for MotionState<T> {
     }
 
     fn is_running(&self) -> bool {
-        self.base.is_running() || self.sequence.read().is_some()
+        !self.pending_updates.read().is_empty()
+            || self.base.is_running()
+            || self.sequence.read().is_some()
     }
 
     fn reset(&mut self) {
-        self.sequence.set(None);
-        self.base.reset();
+        self.pending_updates.write().push(PendingUpdate::Reset);
     }
 
     fn stop(&mut self) {
-        self.sequence.set(None);
-        self.base.stop();
+        self.pending_updates.write().push(PendingUpdate::Stop);
     }
 
     fn delay(&mut self, duration: Duration) {
-        self.base.delay(duration);
+        self.pending_updates
+            .write()
+            .push(PendingUpdate::Delay(duration));
     }
 }
 
@@ -484,18 +556,27 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
 
     use_future(move || async move {
         let mut last_frame = Time::now();
+        let mut frame_times = [0.016f32; 10];
+        let mut frame_index = 0;
 
         loop {
             let now = Time::now();
             let dt = now.duration_since(last_frame).as_secs_f32();
 
+            frame_times[frame_index] = dt;
+            frame_index = (frame_index + 1) % frame_times.len();
+
+            let avg_frame_time = frame_times.iter().sum::<f32>() / frame_times.len() as f32;
+
             if state.read().is_running() {
                 state.write().update(dt);
-                // Do something with dt and delay it if its more than 100ms to avoid hogging the CPU
-                let delay = if dt > 0.15 {
+
+                let delay = if avg_frame_time > 0.032 {
+                    Duration::from_millis(32)
+                } else if avg_frame_time > 0.016 {
                     Duration::from_millis(16)
                 } else {
-                    Duration::from_millis(32)
+                    Duration::from_millis(8)
                 };
 
                 Time::delay(delay).await;

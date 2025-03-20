@@ -45,7 +45,8 @@ impl TimeProvider for MotionTime {
         use wasm_bindgen::prelude::*;
         use web_sys::window;
 
-        const RAF_THRESHOLD_MS: u8 = 16;
+        const RAF_THRESHOLD_MS: u8 = 8; // Optimized for 120Hz displays
+        const LONG_FRAME_MS: u32 = 32; // ~30fps threshold
 
         let (sender, receiver) = futures_channel::oneshot::channel::<()>();
         let duration_ms = duration.as_millis() as i32;
@@ -57,13 +58,24 @@ impl TimeProvider for MotionTime {
 
             let cb_ref = cb.as_ref().unchecked_ref();
 
+            // Optimize timing strategy based on duration
             if duration_ms < RAF_THRESHOLD_MS as i32 {
+                // Use requestAnimationFrame for very short delays
                 window
                     .request_animation_frame(cb_ref)
                     .expect("Failed to request animation frame");
-            } else {
+            } else if duration_ms < LONG_FRAME_MS as i32 {
+                // Use setTimeout with high resolution for medium delays
                 window
                     .set_timeout_with_callback_and_timeout_and_arguments_0(cb_ref, duration_ms)
+                    .expect("Failed to set timeout");
+            } else {
+                // Use lower resolution setTimeout for longer delays to reduce overhead
+                window
+                    .set_timeout_with_callback_and_timeout_and_arguments_0(
+                        cb_ref,
+                        (duration_ms / LONG_FRAME_MS as i32) * LONG_FRAME_MS as i32,
+                    )
                     .expect("Failed to set timeout");
             }
 
@@ -76,6 +88,7 @@ impl TimeProvider for MotionTime {
     #[cfg(not(feature = "web"))]
     fn delay(duration: Duration) -> impl Future<Output = ()> {
         Box::pin(async move {
+            // For native platforms, use tokio's optimized sleep
             tokio::time::sleep(duration).await;
         })
     }
