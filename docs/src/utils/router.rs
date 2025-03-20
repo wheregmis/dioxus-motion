@@ -1,13 +1,13 @@
 use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
 
-use crate::components::extras::Animations;
-use crate::components::extras::PageTransition;
 use crate::components::navbar::NavBar;
 use crate::components::page_not_found::PageNotFound;
 use crate::pages::blog::index::Blog;
+use crate::pages::docs::index::Animations;
 use crate::pages::docs::index::Docs;
 use crate::pages::docs::index::DocsLanding;
+use crate::pages::docs::index::PageTransition;
 use crate::pages::home::index::Home;
 
 // Turn off rustfmt since we're doing layouts and routes in the same enum

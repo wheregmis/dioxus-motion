@@ -9,7 +9,7 @@ pub fn NavBar() -> Element {
     let mut nav_bg = use_motion(Transform::new(0.0, -100.0, 1.0, 0.0));
     let mut nav_opacity = use_motion(0.0f32);
 
-    let mut is_dark_mode = use_signal(|| false);
+    // let mut is_dark_mode = use_signal(|| false);
 
     use_effect(move || {
         nav_bg.animate_to(
@@ -31,9 +31,9 @@ pub fn NavBar() -> Element {
         );
     });
 
-    let toggle_theme = move |_| {
-        is_dark_mode.toggle();
-    };
+    // let toggle_theme = move |_| {
+    //     is_dark_mode.toggle();
+    // };
 
     rsx! {
         div { class: "w-full h-full bg-background text-text-secondary",
@@ -62,7 +62,7 @@ pub fn NavBar() -> Element {
                                 // Navigation links
                                 nav { class: "hidden md:flex items-center space-x-6",
                                     NavLink { to: Route::DocsLanding {}, "Documentation" }
-                                    NavLink { to: Route::Blog {}, "Blog" }
+                                                                //  NavLink { to: Route::Blog {}, "Blog" }
                                 }
                             }
                         }
@@ -70,16 +70,16 @@ pub fn NavBar() -> Element {
                         // Right side - Theme toggle and GitHub
                         div { class: "flex items-center space-x-4",
                             // Theme toggle
-                            button {
-                                class: "p-2 rounded-lg transition-colors duration-300
-                                       bg-surface-light/10 hover:bg-surface-light/20",
-                                onclick: toggle_theme,
-                                if *is_dark_mode.read() {
-                                    span { class: "text-xl", "☀️" }
-                                } else {
-                                    span { class: "text-xl", "🌙" }
-                                }
-                            }
+                            // button {
+                            //     class: "p-2 rounded-lg transition-colors duration-300
+                            //            bg-surface-light/10 hover:bg-surface-light/20",
+                            //     onclick: toggle_theme,
+                            //     if *is_dark_mode.read() {
+                            //         span { class: "text-xl", "☀️" }
+                            //     } else {
+                            //         span { class: "text-xl", "🌙" }
+                            //     }
+                            // }
 
                             // GitHub link
                             a {
@@ -96,11 +96,27 @@ pub fn NavBar() -> Element {
                                     "★ Star"
                                 }
                             }
+
+                            // Crates.io badge
+                            a {
+                                class: "flex items-center px-4 py-2 rounded-lg
+                                       bg-surface-light/10 hover:bg-surface-light/20
+                                       text-text-secondary hover:text-text-primary
+                                       transition-all duration-300",
+                                href: "https://crates.io/crates/dioxus-motion",
+                                target: "_blank",
+                                rel: "noopener",
+                                "Crates.io"
+                                span { class: "ml-2 px-2 py-1 text-xs rounded-full
+                                           bg-surface-light/20 text-primary",
+                                    "0.3.1"
+                                }
+                            }
                         }
                     }
                 }
             }
-            Outlet::<Route> {}
+            div { class: "pt-16", Outlet::<Route> {} }
         }
     }
 }
