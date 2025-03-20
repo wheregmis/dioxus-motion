@@ -157,31 +157,31 @@ pub fn NavBar() -> Element {
                                         NavLink { to: Route::DocsLanding {}, "Documentation" }
                                         a {
                                             class: "flex items-center px-6 py-3 rounded-xl
-                                                                                                                                                               bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
-                                                                                                                                                               text-text-secondary hover:text-text-primary
-                                                                                                                                                               border border-primary/10 transition-all duration-300
-                                                                                                                                                               rust-accent",
+                                                                                                                                                                                                                       bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
+                                                                                                                                                                                                                       text-text-secondary hover:text-text-primary
+                                                                                                                                                                                                                       border border-primary/10 transition-all duration-300
+                                                                                                                                                                                                                       rust-accent",
                                             href: "https://github.com/wheregmis/dioxus-motion",
                                             target: "_blank",
                                             rel: "noopener",
                                             "GitHub"
                                             span { class: "ml-2 px-2 py-1 text-xs rounded-full
-                                                                                                                                                                   bg-primary/10 text-primary",
+                                                                                                                                                                                                                           bg-primary/10 text-primary",
                                                 "★ Star"
                                             }
                                         }
                                         a {
                                             class: "flex items-center px-6 py-3 rounded-xl
-                                                                                                                                                               bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
-                                                                                                                                                               text-text-secondary hover:text-text-primary
-                                                                                                                                                               border border-primary/10 transition-all duration-300
-                                                                                                                                                               rust-accent",
+                                                                                                                                                                                                                       bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
+                                                                                                                                                                                                                       text-text-secondary hover:text-text-primary
+                                                                                                                                                                                                                       border border-primary/10 transition-all duration-300
+                                                                                                                                                                                                                       rust-accent",
                                             href: "https://crates.io/crates/dioxus-motion",
                                             target: "_blank",
                                             rel: "noopener",
                                             "Crates.io"
                                             span { class: "ml-2 px-2 py-1 text-xs rounded-full
-                                                                                                                                                                   bg-primary/10 text-primary",
+                                                                                                                                                                                                                           bg-primary/10 text-primary",
                                                 "0.3.1"
                                             }
                                         }
