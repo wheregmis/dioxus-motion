@@ -7,6 +7,23 @@ use crate::components::cube_animation::SwingingCube;
 use crate::{components::transformation_example::TransformAnimationShowcase, utils::router::Route};
 
 #[component]
+/// Renders the main landing page of the application.
+///
+/// This component initializes animated states for opacity, scale, and vertical positioning of key elements.
+/// On mount, it triggers staggered spring and tween animations that animate the hero section, titles, and feature overlays,
+/// creating a dynamic and engaging home page layout.
+///
+/// # Examples
+///
+/// ```
+/// use dioxus::prelude::*;
+/// // Adjust the import path below according to your project setup.
+/// use your_crate::Home;
+///
+/// fn main() {
+///     dioxus::web::launch(Home);
+/// }
+/// ```
 pub fn Home() -> Element {
     let mut hero_opacity = use_motion(0.0f32);
     let mut demo_scale = use_motion(1.0f32);
@@ -239,6 +256,33 @@ pub fn Home() -> Element {
 }
 
 #[component]
+/// Renders an animated feature card with a specified icon, title, and description.
+/// 
+/// This component displays a card that animates on hover by scaling up and shifting slightly upward,
+/// then reverting to its original state when the mouse leaves. The animations are achieved using spring
+/// dynamics to ensure smooth transitions.
+/// 
+/// # Arguments
+///
+/// * `title` - The title text displayed on the card.
+/// * `description` - A brief description of the feature.
+/// * `icon` - A static string representing the feature's icon (e.g., an emoji).
+/// 
+/// # Returns
+///
+/// A Dioxus `Element` representing the rendered feature card.
+/// 
+/// # Examples
+///
+/// ```
+/// use dioxus::prelude::*;
+///
+/// fn app(cx: Scope) -> Element {
+///     cx.render(rsx! {
+///         FeatureCard("Efficiency", "Boosts performance significantly.", "⚡")
+///     })
+/// }
+/// ```
 fn FeatureCard(title: &'static str, description: &'static str, icon: &'static str) -> Element {
     let mut card_scale = use_motion(1.0f32);
     let mut card_y = use_motion(0.0f32);

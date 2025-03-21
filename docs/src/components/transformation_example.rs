@@ -2,6 +2,22 @@ use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
 
 #[component]
+/// Renders a Dioxus component that showcases a hover-triggered transform animation effect.
+/// 
+/// When hovered, the component animates a card by translating, scaling, and rotating it using a spring-based motion,
+/// while a glow effect provides additional visual feedback. The animation resets once the mouse leaves,
+/// and any ongoing animations are halted when the component is dropped.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use dioxus::desktop::launch;
+/// use transformation_example::TransformAnimationShowcase;
+/// 
+/// fn main() {
+///     launch(TransformAnimationShowcase);
+/// }
+/// ```
 pub fn TransformAnimationShowcase() -> Element {
     let mut transform = use_motion(Transform::identity());
 

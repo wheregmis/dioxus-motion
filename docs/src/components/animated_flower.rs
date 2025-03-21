@@ -11,6 +11,23 @@ pub struct PetalTransform {
 }
 
 impl PetalTransform {
+    /// Creates a new `PetalTransform` with the specified rotation, scale, and translation values.
+    ///
+    /// This constructor initializes a new instance of `PetalTransform` using the provided parameters:
+    /// - `rotate`: The rotation angle in radians.
+    /// - `scale`: The scaling factor.
+    /// - `translate_x`: The horizontal translation value.
+    /// - `translate_y`: The vertical translation value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let transform = PetalTransform::new(1.57, 1.0, 5.0, 3.0);
+    /// assert_eq!(transform.rotate, 1.57);
+    /// assert_eq!(transform.scale, 1.0);
+    /// assert_eq!(transform.translate_x, 5.0);
+    /// assert_eq!(transform.translate_y, 3.0);
+    /// ```
     pub fn new(rotate: f32, scale: f32, translate_x: f32, translate_y: f32) -> Self {
         Self {
             rotate,
@@ -22,14 +39,48 @@ impl PetalTransform {
 }
 
 impl Animatable for PetalTransform {
+    /// Returns a `PetalTransform` with all transformation parameters set to zero.
+    ///
+    /// This function provides a neutral baseline where no rotation, scaling, or translation
+    /// is applied, making it useful as a starting point for further transformations.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let transform = PetalTransform::zero();
+    /// assert_eq!(transform.rotate, 0.0);
+    /// assert_eq!(transform.scale, 0.0);
+    /// assert_eq!(transform.translate_x, 0.0);
+    /// assert_eq!(transform.translate_y, 0.0);
+    /// ```
     fn zero() -> Self {
         Self::new(0.0, 0.0, 0.0, 0.0)
     }
 
+    /// Returns a small epsilon value (0.001) used as a precision threshold.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let eps = epsilon();
+    /// assert!((eps - 0.001).abs() < std::f32::EPSILON);
+    /// ```
     fn epsilon() -> f32 {
         0.001
     }
 
+    /// Computes the Euclidean magnitude of the transformation.
+    ///
+    /// The magnitude is calculated as the square root of the sum of squares of the rotation, scale,
+    /// horizontal translation, and vertical translation components. This value reflects the overall
+    /// intensity of the transformation.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let transform = PetalTransform::new(3.0, 4.0, 0.0, 0.0);
+    /// assert_eq!(transform.magnitude(), 5.0);
+    /// ```
     fn magnitude(&self) -> f32 {
         (self.rotate * self.rotate
             + self.scale * self.scale
@@ -38,6 +89,21 @@ impl Animatable for PetalTransform {
             .sqrt()
     }
 
+    /// Returns a new transformation with each property scaled by the specified factor.
+    ///
+    /// The method multiplies the transformation's fields (`rotate`, `scale`, `translate_x`, and `translate_y`)
+    /// by the given factor, producing a new instance with the scaled values.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let transform = PetalTransform::new(1.0, 2.0, 3.0, 4.0);
+    /// let scaled = transform.scale(2.0);
+    /// assert_eq!(scaled.rotate, 2.0);
+    /// assert_eq!(scaled.scale, 4.0);
+    /// assert_eq!(scaled.translate_x, 6.0);
+    /// assert_eq!(scaled.translate_y, 8.0);
+    /// ```
     fn scale(&self, factor: f32) -> Self {
         Self::new(
             self.rotate * factor,
@@ -47,6 +113,22 @@ impl Animatable for PetalTransform {
         )
     }
 
+    /// Returns a new `PetalTransform` by component-wise adding the corresponding transformation values of `self` and `other`.
+    ///
+    /// This operation sums the rotation, scale, and translation values (both horizontal and vertical) of the two transforms,
+    /// resulting in a combined transformation.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let transform1 = PetalTransform::new(1.0, 2.0, 3.0, 4.0);
+    /// let transform2 = PetalTransform::new(0.5, 1.0, 1.5, 2.0);
+    /// let combined = transform1.add(&transform2);
+    /// assert_eq!(combined.rotate, 1.5);
+    /// assert_eq!(combined.scale, 3.0);
+    /// assert_eq!(combined.translate_x, 4.5);
+    /// assert_eq!(combined.translate_y, 6.0);
+    /// ```
     fn add(&self, other: &Self) -> Self {
         Self::new(
             self.rotate + other.rotate,
@@ -56,6 +138,21 @@ impl Animatable for PetalTransform {
         )
     }
 
+    /// Subtracts the corresponding components of another `PetalTransform` from this one.
+    ///
+    /// Returns a new `PetalTransform` where each field is the difference between the fields of `self` and `other`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let t1 = PetalTransform::new(1.0, 2.0, 3.0, 4.0);
+    /// let t2 = PetalTransform::new(0.5, 1.0, 1.5, 2.0);
+    /// let result = t1.sub(&t2);
+    /// assert_eq!(result.rotate, 0.5);
+    /// assert_eq!(result.scale, 1.0);
+    /// assert_eq!(result.translate_x, 1.5);
+    /// assert_eq!(result.translate_y, 2.0);
+    /// ```
     fn sub(&self, other: &Self) -> Self {
         Self::new(
             self.rotate - other.rotate,
@@ -65,6 +162,22 @@ impl Animatable for PetalTransform {
         )
     }
 
+    /// Linearly interpolates between this transform and a target transform.
+    ///
+    /// Computes each field (rotate, scale, translate_x, and translate_y) by linearly
+    /// interpolating between the current and target values using the factor `t`. When
+    /// `t` is 0.0 the result is equal to the current transform, and when `t` is 1.0
+    /// the result is equal to the target transform.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let start = PetalTransform::new(0.0, 1.0, 0.0, 0.0);
+    /// let target = PetalTransform::new(3.14, 2.0, 5.0, 5.0);
+    /// let result = start.interpolate(&target, 0.5);
+    /// // result.rotate should be approximately 1.57 (halfway between 0.0 and 3.14)
+    /// assert!((result.rotate - 1.57).abs() < 0.01);
+    /// ```
     fn interpolate(&self, target: &Self, t: f32) -> Self {
         Self::new(
             self.rotate + (target.rotate - self.rotate) * t,
@@ -76,6 +189,28 @@ impl Animatable for PetalTransform {
 }
 
 #[component]
+/// Renders an animated flower component using Dioxus.  
+///  
+/// This component creates and animates various parts of a flower—stem, leaves, petals, and center—using spring physics.
+/// On mounting, it triggers an animation for the stem and leaves, and once the leaves have grown, it starts continuous,
+/// looping animations for the petals and the flower's center scale. The returned SVG element visually represents the animated flower.
+///  
+/// # Examples
+///  
+/// ```no_run
+/// use dioxus::prelude::*;
+/// use your_crate::AnimatedFlower;
+///  
+/// fn main() {
+///     dioxus::desktop::launch(App);
+/// }
+///  
+/// fn App(cx: Scope) -> Element {
+///     cx.render(rsx! {
+///         AnimatedFlower()
+///     })
+/// }
+/// ```
 pub fn AnimatedFlower() -> Element {
     let mut petal_transform = use_motion(PetalTransform::zero());
     let mut leaf_transform = use_motion(PetalTransform::zero());

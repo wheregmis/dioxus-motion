@@ -5,6 +5,27 @@ use easer::functions::Easing;
 use crate::utils::router::Route;
 
 #[component]
+/// Renders a responsive navigation bar with animated transitions.
+///
+/// On mount, the component animates into view by sliding down from an off-screen position and fading in.
+/// It displays a logo, navigation links, and buttons for GitHub and Crates.io. On smaller viewports,
+/// a mobile menu can be toggled to show similar navigation links with an overlay effect.
+///
+/// # Examples
+///
+/// ```rust
+/// use dioxus::prelude::*;
+///
+/// fn main() {
+///     dioxus::web::launch(app);
+/// }
+///
+/// fn app(cx: Scope) -> Element {
+///     cx.render(rsx! {
+///         NavBar {}
+///     })
+/// }
+/// ```
 pub fn NavBar() -> Element {
     let mut nav_bg = use_motion(Transform::new(0.0, -100.0, 1.0, 0.0));
     let mut nav_opacity = use_motion(0.0f32);
@@ -185,6 +206,36 @@ pub fn NavBar() -> Element {
 }
 
 #[component]
+/// Renders a navigation link with an animated underline that highlights when active.
+///
+/// This function generates a clickable link styled based on whether it matches the current route.
+/// When the link's destination (`to`) equals the current route, an active style is applied to emphasize it.
+/// The link also features an animated underline that expands on hover.
+///
+/// # Arguments
+///
+/// * `to` - The destination route for the link.
+/// * `children` - The content displayed within the link.
+///
+/// # Examples
+///
+/// ```
+/// use dioxus::prelude::*;
+///
+/// // Example route enum for demonstration.
+/// #[derive(PartialEq, Eq)]
+/// enum Route {
+///     Home,
+///     About,
+/// }
+///
+/// // An example component utilizing NavLink.
+/// fn App(cx: Scope) -> Element {
+///     cx.render(rsx! {
+///         NavLink(Route::Home, rsx! { "Home" })
+///     })
+/// }
+/// ```
 fn NavLink(to: Route, children: Element) -> Element {
     let current_route = use_route::<Route>();
     let is_active = current_route == to;
