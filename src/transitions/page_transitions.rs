@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, str::FromStr};
 
 use dioxus::prelude::*;
 
@@ -46,6 +46,49 @@ impl<R: Routable + PartialEq> AnimatedRouterContext<R> {
 }
 
 #[component]
+/// Renders an animated outlet that manages route transitions in a Dioxus application.
+/// 
+/// This component monitors changes in the current route and, based on the routing state and layout depth,
+/// renders either an animated transition (via a transition component) or a standard outlet component.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use dioxus::prelude::*;
+/// // Assume the following items are available from your crate:
+/// // - AnimatedOutlet
+/// // - AnimatableRoute
+/// // - TransitionVariant
+/// 
+/// // Dummy route type for demonstration purposes.
+/// #[derive(Clone)]
+/// struct DummyRoute(&'static str);
+/// 
+/// impl AnimatableRoute for DummyRoute {
+///     fn get_transition(&self) -> TransitionVariant {
+///         // Provide a dummy transition configuration.
+///         unimplemented!()
+///     }
+/// 
+///     fn get_component(&self) -> Element {
+///         // Provide a dummy component.
+///         unimplemented!()
+///     }
+/// 
+///     fn get_layout_depth(&self) -> usize {
+///         1
+///     }
+/// }
+/// 
+/// fn app(cx: Scope) -> Element {
+///     cx.render(rsx! {
+///         AnimatedOutlet::<DummyRoute> {}
+///     })
+/// }
+/// 
+/// // To run the example, integrate `app` into a Dioxus application.
+/// ```
+/// pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element { /* ... */ }
 pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
     let route = use_route::<R>();
     // Create router context only if we're the root AnimatedOutlet

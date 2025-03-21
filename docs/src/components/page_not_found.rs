@@ -1,6 +1,23 @@
 use dioxus::prelude::*;
 
 #[component]
+/// Renders the "Page Not Found" UI component.
+///
+/// This component displays an error message indicating that the requested page does not exist.
+/// It includes a large heading, an apology message, and a preformatted text block that shows
+/// the attempted navigation route.
+///
+/// # Examples
+///
+/// ```
+/// use dioxus::prelude::*;
+///
+/// fn App(cx: Scope) -> Element {
+///     cx.render(rsx! {
+///         PageNotFound(route: vec!["/unknown/path".to_string()]),
+///     })
+/// }
+/// ```
 pub fn PageNotFound(route: Vec<String>) -> Element {
     rsx! {
         div { class: "max-w-4xl mx-auto px-6 py-12",

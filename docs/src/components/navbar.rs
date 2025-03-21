@@ -5,6 +5,26 @@ use easer::functions::Easing;
 use crate::utils::router::Route;
 
 #[component]
+/// Renders a responsive navigation bar with animated slide-in and fade-in transitions.
+///
+/// This component leverages motion hooks to animate its background position and opacity on mount, creating a smooth entrance effect.
+/// It provides desktop navigation links, a toggleable mobile menu, and external links to GitHub and Crates.io.
+///
+/// # Examples
+///
+/// ```
+/// use dioxus::prelude::*;
+///
+/// fn main() {
+///     dioxus::desktop::launch(App);
+/// }
+///
+/// fn App(cx: Scope) -> Element {
+///     cx.render(rsx! {
+///         NavBar {}
+///     })
+/// }
+/// ```
 pub fn NavBar() -> Element {
     let mut nav_bg = use_motion(Transform::new(0.0, -100.0, 1.0, 0.0));
     let mut nav_opacity = use_motion(0.0f32);
@@ -185,6 +205,37 @@ pub fn NavBar() -> Element {
 }
 
 #[component]
+/// Renders a navigation link that applies active styling when its destination matches the current route.
+/// 
+/// This component compares the provided target route (`to`) with the current route obtained via `use_route`. When both routes match, it conditionally adds active styling—such as a highlighted text color and an animated underline effect on hover—to accentuate the active navigation link. The `children` parameter supplies the inner content of the link.
+/// 
+/// # Parameters
+/// 
+/// - `to`: The target route that the link navigates to.
+/// - `children`: The content to be displayed within the link.
+/// 
+/// # Examples
+/// 
+/// ```rust
+/// use dioxus::prelude::*;
+/// 
+/// // Example enum for application routes.
+/// #[derive(PartialEq, Eq)]
+/// enum Route {
+///     Home,
+///     About,
+/// }
+/// 
+/// // Example component demonstrating usage of NavLink.
+/// fn App(cx: Scope) -> Element {
+///     rsx! {
+///         nav {
+///             NavLink(Route::Home, rsx!("Home")),
+///             NavLink(Route::About, rsx!("About")),
+///         }
+///     }
+/// }
+/// ```
 fn NavLink(to: Route, children: Element) -> Element {
     let current_route = use_route::<Route>();
     let is_active = current_route == to;

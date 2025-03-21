@@ -4,6 +4,26 @@ use dioxus_motion::{animations::utils::Animatable, prelude::*};
 use easer::functions::Easing;
 
 #[component]
+/// Renders a two-column layout for presenting an animation example.
+///
+/// The left column shows a title, descriptive text, and a formatted Rust code snippet, while the right column displays a live demo provided through the child elements. This component is ideal for interactive documentation or tutorials where both the code and its effect are showcased.
+///
+/// # Examples
+///
+/// ```
+/// use dioxus::prelude::*;
+///
+/// fn App(cx: Scope) -> Element {
+///     AnimationStep(
+///         "Fade In Animation".to_string(),
+///         "This example demonstrates a fade in effect by animating opacity.".to_string(),
+///         "animate_fade_in();".to_string(),
+///         cx.render(rsx! {
+///             div { "Live demo: fading element" }
+///         })
+///     )
+/// }
+/// ```
 fn AnimationStep(title: String, description: String, code: String, children: Element) -> Element {
     rsx! {
         div { class: "flex flex-col md:flex-row gap-6 p-6 bg-dark-200/50 backdrop-blur-sm rounded-xl border border-primary/10",
@@ -25,6 +45,27 @@ fn AnimationStep(title: String, description: String, code: String, children: Ele
 }
 
 #[component]
+/// Animates an element's opacity based on a toggle state.
+/// 
+/// This component displays a button that toggles the visibility of a colored box. When the button is clicked,
+/// the box's opacity animates between 0.0 (hidden) and 1.0 (visible) over 500 milliseconds using a cubic tween
+/// easing function.
+/// 
+/// # Examples
+/// 
+/// ```rust
+/// use dioxus::prelude::*;
+/// 
+/// fn app(cx: Scope) -> Element {
+///     cx.render(rsx! {
+///         BasicValueAnimation()
+///     })
+/// }
+/// 
+/// fn main() {
+///     dioxus::desktop::launch(app);
+/// }
+/// ```
 fn BasicValueAnimation() -> Element {
     let mut opacity = use_motion(0.0f32);
     let mut is_visible = use_signal(|| false);
@@ -65,6 +106,26 @@ fn BasicValueAnimation() -> Element {
 }
 
 #[component]
+/// Renders a component that animates an element's transform properties using a spring-based animation.
+///
+/// This function returns a Dioxus Element containing a button and an animated box. When the button is clicked,
+/// the component toggles its state, causing the element to transition between its default transform (no translation,
+/// unit scale, no rotation) and an animated state (translated, scaled, and rotated). The animation uses a spring
+/// configuration for a smooth, natural motion.
+///
+/// # Examples
+///
+/// ```rust
+/// use dioxus::prelude::*;
+///
+/// fn App(cx: Scope) -> Element {
+///     cx.render(rsx! {
+///         TransformAnimation()
+///     })
+/// }
+/// ```
+///
+/// // In this example, clicking the button toggles the transform animation of the box.
 fn TransformAnimation() -> Element {
     let mut transform = use_motion(Transform::new(0.0, 0.0, 1.0, 0.0));
     let mut is_animated = use_signal(|| false);
@@ -126,6 +187,18 @@ struct ColorValue {
 }
 
 impl Animatable for ColorValue {
+    /// Returns a `ColorValue` with all components set to zero.
+    ///
+    /// This method provides the zero-initialized state for a `ColorValue`, which is useful as a starting point for color animations.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let color = ColorValue::zero();
+    /// assert_eq!(color.r, 0.0);
+    /// assert_eq!(color.g, 0.0);
+    /// assert_eq!(color.b, 0.0);
+    /// ```
     fn zero() -> Self {
         ColorValue {
             r: 0.0,
@@ -134,14 +207,51 @@ impl Animatable for ColorValue {
         }
     }
 
+    /// Returns a small epsilon value used for floating-point comparisons.
+    ///
+    /// This constant serves as a threshold to account for numerical imprecision in calculations,
+    /// particularly useful when determining if two floating-point numbers are effectively equal.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let tol = epsilon();
+    /// assert!((tol - 0.001).abs() < f32::EPSILON);
+    /// ```
     fn epsilon() -> f32 {
         0.001
     }
 
+    /// Computes the Euclidean magnitude of the color using its RGB components.
+    ///
+    /// The magnitude is calculated as the square root of the sum of the squares of the red, green, and blue values.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Assuming ColorValue is defined in the current module or imported appropriately.
+    /// let color = ColorValue { r: 3.0, g: 4.0, b: 0.0 };
+    /// assert_eq!(color.magnitude(), 5.0);
+    /// ```
     fn magnitude(&self) -> f32 {
         (self.r * self.r + self.g * self.g + self.b * self.b).sqrt()
     }
 
+    /// Returns a new `ColorValue` with each channel scaled by the given factor.
+    ///
+    /// Multiplies the red, green, and blue components by the provided `factor` and clamps each
+    /// resulting value to the range [0.0, 1.0] to ensure the color remains valid.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let color = ColorValue { r: 0.3, g: 0.6, b: 0.9 };
+    /// let scaled = color.scale(1.5);
+    /// assert_eq!(scaled.r, 0.45);
+    /// assert_eq!(scaled.g, 0.9);
+    /// // 0.9 * 1.5 = 1.35, which is clamped to 1.0.
+    /// assert_eq!(scaled.b, 1.0);
+    /// ```
     fn scale(&self, factor: f32) -> Self {
         ColorValue {
             r: (self.r * factor).clamp(0.0, 1.0),
@@ -150,6 +260,20 @@ impl Animatable for ColorValue {
         }
     }
 
+    /// Returns a new `ColorValue` that is the component-wise sum of two colors, with each channel clamped to the range [0.0, 1.0].
+    ///
+    /// Each color component (red, green, and blue) of `self` and `other` is added together, and the result is clamped to ensure it remains within valid bounds.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let color1 = ColorValue { r: 0.4, g: 0.5, b: 0.6 };
+    /// let color2 = ColorValue { r: 0.7, g: 0.8, b: 0.3 };
+    /// let result = color1.add(&color2);
+    /// assert!(result.r >= 0.0 && result.r <= 1.0);
+    /// assert!(result.g >= 0.0 && result.g <= 1.0);
+    /// assert!(result.b >= 0.0 && result.b <= 1.0);
+    /// ```
     fn add(&self, other: &Self) -> Self {
         ColorValue {
             r: (self.r + other.r).clamp(0.0, 1.0),
@@ -158,6 +282,19 @@ impl Animatable for ColorValue {
         }
     }
 
+    /// Subtracts the corresponding components of another `ColorValue` from this one, clamping each resulting value between 0.0 and 1.0.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// let a = ColorValue { r: 0.7, g: 0.6, b: 0.5 };
+    /// let b = ColorValue { r: 0.2, g: 0.4, b: 0.3 };
+    /// let result = a.sub(&b);
+    /// 
+    /// assert_eq!(result.r, 0.5);
+    /// assert_eq!(result.g, 0.2);
+    /// assert_eq!(result.b, 0.2);
+    /// ```
     fn sub(&self, other: &Self) -> Self {
         ColorValue {
             r: (self.r - other.r).clamp(0.0, 1.0),
@@ -166,6 +303,22 @@ impl Animatable for ColorValue {
         }
     }
 
+    /// Returns a new `ColorValue` that is a linear interpolation between `self` and `target`.
+    ///
+    /// The interpolation is performed on each color channel (red, green, and blue) using the formula:
+    /// `result = self + (target - self) * t`. The interpolation factor `t` should typically be in the range
+    /// [0.0, 1.0], where 0.0 returns the original color and 1.0 returns the target color.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let color1 = ColorValue { r: 0.0, g: 0.0, b: 0.0 };
+    /// let color2 = ColorValue { r: 1.0, g: 1.0, b: 1.0 };
+    /// let mid_color = color1.interpolate(&color2, 0.5);
+    /// assert!((mid_color.r - 0.5).abs() < f32::EPSILON);
+    /// assert!((mid_color.g - 0.5).abs() < f32::EPSILON);
+    /// assert!((mid_color.b - 0.5).abs() < f32::EPSILON);
+    /// ```
     fn interpolate(&self, target: &Self, t: f32) -> Self {
         ColorValue {
             r: self.r + (target.r - self.r) * t,
@@ -176,6 +329,27 @@ impl Animatable for ColorValue {
 }
 
 #[component]
+/// Renders an interactive component that animates a color transition between warm and cool color schemes.
+///
+/// The component displays a button that toggles the animation between two predefined color values using a spring animation.
+/// When the button is clicked, the background color of a square div smoothly transitions between a cool blue-inspired color
+/// and a warm reddish hue.
+///
+/// # Examples
+///
+/// ```
+/// use dioxus::prelude::*;
+///
+/// fn main() {
+///     dioxus::web::launch(app);
+/// }
+///
+/// fn app(cx: Scope) -> Element {
+///     cx.render(rsx! {
+///         CustomColorAnimation {}
+///     })
+/// }
+/// ```
 fn CustomColorAnimation() -> Element {
     let mut color = use_motion(ColorValue {
         r: 0.2,
@@ -241,6 +415,27 @@ fn CustomColorAnimation() -> Element {
 }
 
 #[component]
+/// Generates a UI component demonstrating a sequence animation.
+/// 
+/// The component displays a counter that increments on each button press. When clicked, it triggers a chained animation:
+/// a spring-based vertical translation proportional to the updated counter and a brief scale animation that enlarges the element.
+/// These animations combine to provide dynamic visual feedback for sequential interactions.
+/// 
+/// # Examples
+/// 
+/// ```rust
+/// use dioxus::prelude::*;
+///
+/// fn main() {
+///     dioxus::desktop::launch(app);
+/// }
+///
+/// fn app(cx: Scope) -> Element {
+///     cx.render(rsx! {
+///         SequenceAnimation()
+///     })
+/// }
+/// ```
 fn SequenceAnimation() -> Element {
     let mut value = use_motion(0.0f32);
     let mut scale = use_motion(1.0f32);
@@ -282,6 +477,28 @@ fn SequenceAnimation() -> Element {
 }
 
 #[component]
+/// Returns a Dioxus element representing the interactive animation guide.
+///
+/// This component composes a comprehensive demo of various animation techniques available
+/// in Dioxus Motion. It displays interactive examples for basic tween animations, spring animations,
+/// transform animations, custom animations, and animation sequences, along with sections outlining best practices for animation performance and user experience.
+///
+/// # Examples
+///
+/// ```
+/// use dioxus::prelude::*;
+///
+/// fn main() {
+///     dioxus::desktop::launch(App);
+/// }
+///
+/// #[component]
+/// fn App(cx: Scope) -> Element {
+///     cx.render(rsx! {
+///         Animations()
+///     })
+/// }
+/// ```
 pub fn Animations() -> Element {
     rsx! {
         div { class: "space-y-12",

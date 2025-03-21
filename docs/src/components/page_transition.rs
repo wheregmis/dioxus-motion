@@ -1,8 +1,33 @@
 use dioxus::prelude::*;
+use dioxus_motion::prelude::*;
 
 use crate::components::code_block::CodeBlock;
 
 #[component]
+/// Renders a styled card displaying a transition effect's details.
+///
+/// This component accepts three static strings representing the transition's name,
+/// a brief description, and an accompanying example usage. It returns an Element
+/// that can be integrated into a Dioxus application's UI.
+///
+/// # Examples
+///
+/// ```
+/// use dioxus::prelude::*;
+///
+/// fn app(cx: Scope) -> Element {
+///     cx.render(rsx! {
+///         TransitionCard(
+///             "Fade",
+///             "Smoothly transitions an element using a fade effect.",
+///             "Example: Use 'Fade' for gradual appearance on mount."
+///         )
+///     })
+/// }
+///
+/// // To run the example with Dioxus, uncomment the following line:
+/// // dioxus::web::launch(app);
+/// ```
 fn TransitionCard(name: &'static str, description: &'static str, example: &'static str) -> Element {
     rsx! {
         div { class: "p-6 rounded-xl bg-dark-200/50 backdrop-blur-sm
@@ -16,6 +41,29 @@ fn TransitionCard(name: &'static str, description: &'static str, example: &'stat
 }
 
 #[component]
+/// Renders a comprehensive page demonstrating how to integrate page transitions in a Dioxus application.
+///
+/// The component is divided into three main sections:
+/// - **Quick Start**: Provides step-by-step instructions for enabling transitions, including setting features in Cargo.toml, using the MotionTransitions derive macro in your route enum, and replacing the Outlet component with AnimatedOutlet.
+/// - **Available Transitions**: Displays a grid of transition cards, each describing a different effect and its use case.
+/// - **Example with Nested Routes**: Shows a code example of a nested routes setup with associated transitions.
+///
+/// # Examples
+///
+/// ```rust
+/// use dioxus::prelude::*;
+/// use your_crate::PageTransition; // Update the import path as needed
+///
+/// fn main() {
+///     dioxus::web::launch(app);
+/// }
+///
+/// fn app(cx: Scope) -> Element {
+///     cx.render(rsx! {
+///         PageTransition {}
+///     })
+/// }
+/// ```
 pub fn PageTransition() -> Element {
     rsx! {
         div { class: "space-y-12",

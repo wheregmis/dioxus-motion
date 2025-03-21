@@ -1,10 +1,30 @@
 use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
+use easer::functions::Easing;
 
 use crate::components::code_block::CodeBlock;
 use crate::utils::router::Route;
 
 #[component]
+/// Creates a full-screen documentation layout with a header and three main sections: a navigation sidebar, a content area, and a related links sidebar.
+/// 
+/// The layout displays the provided title and description in the header, uses a gradient background with decorative elements, and organizes content into three columns. The left sidebar includes navigation links for key documentation sections, the center area renders custom child content, and the right sidebar shows related resources.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use dioxus::prelude::*;
+/// 
+/// fn app(cx: Scope) -> Element {
+///     DocLayout(
+///         "Documentation",
+///         "Explore our comprehensive guide.",
+///         cx.render(rsx! {
+///             div { "Main Content" }
+///         }),
+///     )
+/// }
+/// ```
 fn DocLayout(title: &'static str, description: &'static str, children: Element) -> Element {
     rsx! {
         div { class: "min-h-screen bg-gradient-dark relative overflow-hidden w-full",
@@ -66,6 +86,22 @@ fn DocLayout(title: &'static str, description: &'static str, children: Element) 
 }
 
 #[component]
+/// Renders the main documentation page element.
+///
+/// This function creates and returns a Dioxus `Element` using the `DocLayout` component to provide a structured
+/// documentation page. The layout displays a header with a title and description and includes an animated outlet for
+/// managing dynamic routing.
+///
+/// # Examples
+///
+/// ```
+/// use dioxus::prelude::*;
+///
+/// // Retrieve the documentation page element.
+/// let docs_page = Docs();
+///
+/// // Integrate the returned element into your Dioxus application tree or router.
+/// ```
 pub fn Docs() -> Element {
     rsx! {
         DocLayout {
@@ -77,6 +113,17 @@ pub fn Docs() -> Element {
 }
 
 #[component]
+/// Renders a navigation link component styled according to its active state.
+///
+/// This function creates a link with a target route, an icon, and a label. It determines whether the link is active by comparing the current route with the target. Active links receive distinct styling to indicate they are selected.
+///
+/// # Examples
+///
+/// ```
+/// // Example: Render a navigation link for the home route.
+/// let home_link = SectionLink(Route::Home, "🏠", "Home");
+/// // Include `home_link` in your component layout.
+/// ```
 fn SectionLink(to: Route, icon: &'static str, label: &'static str) -> Element {
     let current_route = use_route::<Route>();
     let is_active = current_route == to;
@@ -103,6 +150,25 @@ fn SectionLink(to: Route, icon: &'static str, label: &'static str) -> Element {
 }
 
 #[component]
+/// Renders a UI component displaying related external links organized in two categories: "Resources" and "Community".
+///
+/// The "Resources" section includes links to the GitHub Repository, Crates.io, and the API Documentation. The "Community" section provides links to Discord and the GitHub issues page for reporting bugs.
+///
+/// # Examples
+///
+/// ```rust
+/// use dioxus::prelude::*;
+///
+/// fn main() {
+///     dioxus::desktop::launch(app);
+/// }
+///
+/// fn app(cx: Scope) -> Element {
+///     cx.render(rsx! {
+///         RelatedLinks()
+///     })
+/// }
+/// ```
 fn RelatedLinks() -> Element {
     rsx! {
         div { class: "space-y-6",
@@ -153,6 +219,27 @@ fn RelatedLinks() -> Element {
 }
 
 #[component]
+/// Creates a resource link element with an icon and label that opens in a new tab.
+///
+/// This function generates a styled anchor element intended for use in related links sections
+/// of the documentation layout. The link opens in a new window and uses security attributes
+/// to prevent potential issues with external resources.
+///
+/// # Arguments
+///
+/// * `href` - The URL to navigate to when the link is clicked.
+/// * `label` - The text label to display next to the icon.
+/// * `icon` - A string representation of the icon to display alongside the label.
+///
+/// # Examples
+///
+/// ```
+/// use dioxus::prelude::*;
+///
+/// // Create a resource link element for "Example.com"
+/// let resource = ResourceLink("https://example.com", "Example", "🔗");
+/// // The `resource` element can then be included in your Dioxus UI layout.
+/// ```
 fn ResourceLink(href: &'static str, label: &'static str, icon: &'static str) -> Element {
     rsx! {
         a {
@@ -169,6 +256,27 @@ fn ResourceLink(href: &'static str, label: &'static str, icon: &'static str) -> 
 }
 
 #[component]
+/// Renders the documentation landing page containing installation instructions, platform support details, and guides for interactive animations and page transitions.
+/// 
+/// This component builds a structured layout that includes sections for basic setup, installation with page transitions enabled, and a breakdown of platform support (Web, Desktop, and Default).
+/// It also provides guide cards linking to detailed pages for page transitions and interactive animation guides.
+/// 
+/// # Examples
+///
+/// ```
+/// use dioxus::prelude::*;
+/// use your_module::DocsLanding;
+///
+/// fn main() {
+///     dioxus::desktop::launch(app);
+/// }
+///
+/// fn app(cx: Scope) -> Element {
+///     cx.render(rsx! {
+///         DocsLanding()
+///     })
+/// }
+/// ```
 pub fn DocsLanding() -> Element {
     rsx! {
         div { class: "space-y-12",

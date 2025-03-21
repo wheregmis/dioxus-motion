@@ -13,6 +13,22 @@ pub struct Transform3D {
 }
 
 impl Transform3D {
+    /// Creates a new 3D transformation with specified rotation angles, translation values, and scaling.
+    ///
+    /// The rotation angles are provided for the x, y, and z axes, and the translation values apply to the x and y axes.
+    /// The scale represents a uniform scaling factor.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let transform = Transform3D::new(30.0, 45.0, 60.0, 100.0, 200.0, 1.0);
+    /// assert_eq!(transform.rotate_x, 30.0);
+    /// assert_eq!(transform.rotate_y, 45.0);
+    /// assert_eq!(transform.rotate_z, 60.0);
+    /// assert_eq!(transform.translate_x, 100.0);
+    /// assert_eq!(transform.translate_y, 200.0);
+    /// assert_eq!(transform.scale, 1.0);
+    /// ```
     pub fn new(
         rotate_x: f32,
         rotate_y: f32,
@@ -33,14 +49,55 @@ impl Transform3D {
 }
 
 impl Animatable for Transform3D {
+    /// Returns a neutral transformation with no rotation or translation and a unit scale.
+    ///
+    /// This method constructs a `Transform3D` instance where all rotation angles and translations are zero,
+    /// and the scale is set to 1.0, effectively representing the identity transformation.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let transform = Transform3D::zero();
+    /// assert_eq!(transform.rotation_x, 0.0);
+    /// assert_eq!(transform.rotation_y, 0.0);
+    /// assert_eq!(transform.rotation_z, 0.0);
+    /// assert_eq!(transform.translation_x, 0.0);
+    /// assert_eq!(transform.translation_y, 0.0);
+    /// assert_eq!(transform.scale, 1.0);
+    /// ```
     fn zero() -> Self {
         Self::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0)
     }
 
+    /// Returns a small constant value for floating-point precision comparisons.
+    ///
+    /// This value is commonly used as a threshold when performing approximate equality checks
+    /// between floating-point numbers.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let eps = epsilon();
+    /// assert_eq!(eps, 0.001);
+    /// ```
     fn epsilon() -> f32 {
         0.001
     }
 
+    /// Computes the Euclidean magnitude of the transformation.
+    ///
+    /// This method calculates the square root of the sum of the squares of all transformation
+    /// components including rotations around the x, y, and z axes, translations along the x and y axes,
+    /// and the scale factor.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let transform = Transform3D::zero();
+    /// // Since a zero transformation has no rotation or translation and a scale of 1,
+    /// // the magnitude is √(0²+0²+0²+0²+0²+1²) = 1.0.
+    /// assert_eq!(transform.magnitude(), 1.0);
+    /// ```
     fn magnitude(&self) -> f32 {
         (self.rotate_x * self.rotate_x
             + self.rotate_y * self.rotate_y
@@ -51,6 +108,27 @@ impl Animatable for Transform3D {
             .sqrt()
     }
 
+    /// Scales the transformation by the given factor, returning a new `Transform3D` instance with all components multiplied by that factor.
+    ///
+    /// This method multiplies the rotation, translation, and scaling components of the transformation uniformly.
+    /// 
+    /// # Examples
+    ///
+    /// ```
+    /// // Create an initial transformation with specific rotation, translation, and scale values.
+    /// let transform = Transform3D::new(1.0, 2.0, 3.0, 4.0, 5.0, 1.0);
+    ///
+    /// // Scale the transformation by a factor of 2.
+    /// let scaled = transform.scale(2.0);
+    ///
+    /// // Verify that each component has been scaled correctly.
+    /// assert_eq!(scaled.rotate_x, 2.0);
+    /// assert_eq!(scaled.rotate_y, 4.0);
+    /// assert_eq!(scaled.rotate_z, 6.0);
+    /// assert_eq!(scaled.translate_x, 8.0);
+    /// assert_eq!(scaled.translate_y, 10.0);
+    /// assert_eq!(scaled.scale, 2.0);
+    /// ```
     fn scale(&self, factor: f32) -> Self {
         Self::new(
             self.rotate_x * factor,
@@ -62,6 +140,19 @@ impl Animatable for Transform3D {
         )
     }
 
+    /// Adds the corresponding components of two `Transform3D` instances.
+    ///
+    /// This method returns a new instance where each field is the sum of the corresponding fields
+    /// (rotations, translations, and scale) from `self` and `other`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let t1 = Transform3D::new(1.0, 2.0, 3.0, 4.0, 5.0, 1.0);
+    /// let t2 = Transform3D::new(0.5, 1.0, 1.5, 2.0, 2.5, 2.0);
+    /// let result = t1.add(&t2);
+    /// assert_eq!(result, Transform3D::new(1.5, 3.0, 4.5, 6.0, 7.5, 3.0));
+    /// ```
     fn add(&self, other: &Self) -> Self {
         Self::new(
             self.rotate_x + other.rotate_x,
@@ -73,6 +164,25 @@ impl Animatable for Transform3D {
         )
     }
 
+    /// Subtracts the corresponding components of another `Transform3D` from this transformation.
+    ///
+    /// Performs an element-wise subtraction of rotation angles, translation distances, and scaling factors,
+    /// returning a new `Transform3D` that represents the difference between the two transformations.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let t1 = Transform3D::new(10.0, 20.0, 30.0, 40.0, 50.0, 2.0);
+    /// let t2 = Transform3D::new(5.0, 15.0, 25.0, 35.0, 45.0, 1.0);
+    /// let subtracted = t1.sub(&t2);
+    ///
+    /// assert_eq!(subtracted.rotate_x, 5.0);
+    /// assert_eq!(subtracted.rotate_y, 5.0);
+    /// assert_eq!(subtracted.rotate_z, 5.0);
+    /// assert_eq!(subtracted.translate_x, 5.0);
+    /// assert_eq!(subtracted.translate_y, 5.0);
+    /// assert_eq!(subtracted.scale, 1.0);
+    /// ```
     fn sub(&self, other: &Self) -> Self {
         Self::new(
             self.rotate_x - other.rotate_x,
@@ -84,6 +194,23 @@ impl Animatable for Transform3D {
         )
     }
 
+    /// Returns a new 3D transformation that is a linear interpolation between this transformation and a target transformation.
+    ///
+    /// Each component (rotation around the x, y, and z axes; translation along the x and y axes; and scale) is
+    /// interpolated independently using the factor `t`. A value of `t = 0.0` yields the current transformation,
+    /// while `t = 1.0` yields the target transformation. Values outside the [0.0, 1.0] range will produce an extrapolated result.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let start = Transform3D::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    /// let end = Transform3D::new(90.0, 90.0, 90.0, 10.0, 10.0, 2.0);
+    /// let mid = start.interpolate(&end, 0.5);
+    ///
+    /// assert_eq!(mid.rotate_x, 45.0);
+    /// assert_eq!(mid.translate_x, 5.0);
+    /// // Other components are interpolated similarly.
+    /// ```
     fn interpolate(&self, target: &Self, t: f32) -> Self {
         Self::new(
             self.rotate_x + (target.rotate_x - self.rotate_x) * t,
@@ -104,6 +231,20 @@ struct Point3D {
 }
 
 impl Point3D {
+    /// Rotates this 3D point around the x-axis by the specified angle in radians.
+    ///
+    /// The x coordinate remains unchanged while the y and z coordinates are recalculated
+    /// using standard rotation formulas, effectively rotating the point in the yz-plane.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let p = Point3D { x: 0.0, y: 1.0, z: 0.0 };
+    /// let rotated = p.rotate_x(std::f32::consts::PI / 2.0);
+    /// // After a 90° rotation, the point should be approximately (0.0, 0.0, 1.0)
+    /// assert!(rotated.y.abs() < 1e-6);
+    /// assert!((rotated.z - 1.0).abs() < 1e-6);
+    /// ```
     fn rotate_x(self, angle: f32) -> Self {
         Point3D {
             x: self.x,
@@ -112,6 +253,23 @@ impl Point3D {
         }
     }
 
+    /// Rotates the point around the y-axis by the given angle in radians.
+    /// 
+    /// This method returns a new `Point3D` that results from rotating the original point
+    /// around the y-axis using standard trigonometric transformations.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use cube_animation::Point3D;
+    /// 
+    /// let point = Point3D { x: 1.0, y: 0.0, z: 0.0 };
+    /// let rotated = point.rotate_y(std::f32::consts::FRAC_PI_2);
+    /// // For a 90° rotation (pi/2 radians), the point (1, 0, 0) becomes approximately (0, 0, -1).
+    /// assert!(rotated.x.abs() < 1e-6);
+    /// assert_eq!(rotated.y, 0.0);
+    /// assert!((rotated.z + 1.0).abs() < 1e-6);
+    /// ```
     fn rotate_y(self, angle: f32) -> Self {
         Point3D {
             x: self.x * angle.cos() + self.z * angle.sin(),
@@ -120,6 +278,23 @@ impl Point3D {
         }
     }
 
+    /// Rotates the point around the Z-axis by a given angle in radians.
+    /// 
+    /// This method applies a 2D rotation to the point's x and y coordinates while leaving the z coordinate unchanged.
+    /// 
+    /// # Examples
+    /// 
+    /// ```rust
+    /// // Create a point at (1.0, 0.0, 5.0)
+    /// let point = Point3D { x: 1.0, y: 0.0, z: 5.0 };
+    /// // Rotate the point 90 degrees (π/2 radians)
+    /// let rotated = point.rotate_z(std::f32::consts::FRAC_PI_2);
+    /// 
+    /// // After a 90° rotation, the point (1.0, 0.0) becomes approximately (0.0, 1.0)
+    /// assert!((rotated.x).abs() < 1e-6);
+    /// assert!((rotated.y - 1.0).abs() < 1e-6);
+    /// assert_eq!(rotated.z, 5.0);
+    /// ```
     fn rotate_z(self, angle: f32) -> Self {
         Point3D {
             x: self.x * angle.cos() - self.y * angle.sin(),
@@ -128,6 +303,19 @@ impl Point3D {
         }
     }
 
+    /// Translates the point by adding the specified offsets to its x and y coordinates, leaving the z coordinate unchanged.
+    ///
+    /// Consumes the point and returns a new instance with the updated coordinates.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let point = Point3D { x: 1.0, y: 2.0, z: 3.0 };
+    /// let translated_point = point.translate(5.0, -3.0);
+    /// assert_eq!(translated_point.x, 6.0);
+    /// assert_eq!(translated_point.y, -1.0);
+    /// assert_eq!(translated_point.z, 3.0);
+    /// ```
     fn translate(self, tx: f32, ty: f32) -> Self {
         Point3D {
             x: self.x + tx,
@@ -136,6 +324,24 @@ impl Point3D {
         }
     }
 
+    /// Projects the 3D point onto a 2D plane using a simple perspective transformation.
+    /// 
+    /// The computation adds an offset of 100.0 to both the x and y coordinates and adjusts them
+    /// based on the point’s depth by dividing by (z + 4.0). The provided `scale` factor controls
+    /// the degree of magnification for the x and y components.
+    /// 
+    /// # Examples
+    ///
+    /// ```
+    /// // Assuming a Point3D struct with fields x, y, and z is defined
+    /// let point = Point3D { x: 4.0, y: 4.0, z: 0.0 };
+    /// let (proj_x, proj_y) = point.project(50.0);
+    /// // The projection computes: 
+    /// // proj_x = 100.0 + 50.0 * 4.0 / (0.0 + 4.0) = 150.0
+    /// // proj_y = 100.0 + 50.0 * 4.0 / (0.0 + 4.0) = 150.0
+    /// assert_eq!(proj_x, 150.0);
+    /// assert_eq!(proj_y, 150.0);
+    /// ```
     fn project(self, scale: f32) -> (f32, f32) {
         (
             100.0 + scale * self.x / (self.z + 4.0),
@@ -198,6 +404,22 @@ const FACES: [[usize; 4]; 6] = [
 ];
 
 #[component]
+/// Renders a 3D swinging cube component with animated transformations and a glow effect.
+/// 
+/// This component continuously animates its rotation, translation, and scaling using spring physics,
+/// projecting 3D vertices onto a 2D plane to form an SVG representation of a cube. The SVG includes
+/// dynamic gradient backgrounds, shadowed faces, and a glowing background circle, all updated in real-time.
+/// 
+/// # Examples
+/// 
+/// ```
+/// // Within a Dioxus component:
+/// rsx! {
+///     div {
+///         SwingingCube()
+///     }
+/// }
+/// ```
 pub fn SwingingCube() -> Element {
     let mut transform = use_motion(Transform3D::zero());
     let mut glow_scale = use_motion(1.0f32);

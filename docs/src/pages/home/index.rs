@@ -7,6 +7,29 @@ use crate::components::cube_animation::SwingingCube;
 use crate::{components::transformation_example::TransformAnimationShowcase, utils::router::Route};
 
 #[component]
+/// Renders the home page with animated elements for a dynamic user experience.
+/// 
+/// This component initializes several motion states for animations such as fading the hero section,
+/// translating the title and subtitle, and continuously scaling a demo element. When the component mounts,
+/// these animations are triggered using spring and tween configurations. The layout includes a hero
+/// section with animated backgrounds, a content area with a title, subtitle, call-to-action buttons,
+/// a features grid showcasing various functionality, and a footer with external links.
+/// 
+/// # Examples
+///
+/// ```rust
+/// use dioxus::prelude::*;
+///
+/// fn main() {
+///     dioxus_web::launch(app);
+/// }
+///
+/// fn app(cx: Scope) -> Element {
+///     cx.render(rsx! {
+///         Home {}
+///     })
+/// }
+/// ```
 pub fn Home() -> Element {
     let mut hero_opacity = use_motion(0.0f32);
     let mut demo_scale = use_motion(1.0f32);
@@ -239,6 +262,22 @@ pub fn Home() -> Element {
 }
 
 #[component]
+/// Creates a feature card component that displays an icon, title, and description with hover animations.
+/// 
+/// When hovered, the card scales up and shifts upward, providing a subtle interactive effect. This component
+/// is designed for use in Dioxus-based interfaces to showcase key features alongside descriptive information.
+/// 
+/// # Examples
+///
+/// ```
+/// use dioxus::prelude::*;
+///
+/// fn app(cx: Scope) -> Element {
+///     cx.render(rsx! {
+///         FeatureCard("Feature Title", "This is a description.", "🔥")
+///     })
+/// }
+/// ```
 fn FeatureCard(title: &'static str, description: &'static str, icon: &'static str) -> Element {
     let mut card_scale = use_motion(1.0f32);
     let mut card_y = use_motion(0.0f32);

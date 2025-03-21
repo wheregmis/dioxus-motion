@@ -8,6 +8,18 @@ use docs::utils::router::Route;
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 
+/// Launches the Dioxus web application.
+///
+/// This function serves as the entry point of the application. It initializes the Dioxus runtime
+/// by setting up the HTML document head with external stylesheets (including Google Fonts and the
+/// main CSS asset) and configuring client-side routing using the Router component.
+///
+/// # Examples
+///
+/// ```rust
+/// // Running the application will start the Dioxus web app:
+/// main();
+/// ```
 fn main() {
     dioxus::launch(|| {
         rsx! {

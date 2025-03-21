@@ -2,6 +2,26 @@ use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
 
 #[component]
+/// Renders a Dioxus component demonstrating animated transformations and glow effects on hover.
+///
+/// This component leverages Dioxus Motion to animate a card element. When hovered, the card smoothly translates, scales, and rotates using a spring-configured animation. On mouse leave, it reverts to its original state with a distinct spring animation. The component also computes dynamic CSS styles to apply both the transformation and a glow effect based on the current animation state.
+///
+/// # Examples
+///
+/// ```rust
+/// use dioxus::prelude::*;
+/// use your_crate::TransformAnimationShowcase;
+///
+/// fn main() {
+///     dioxus::desktop::launch(app);
+/// }
+///
+/// fn app(cx: Scope) -> Element {
+///     cx.render(rsx! {
+///         TransformAnimationShowcase {}
+///     })
+/// }
+/// ```
 pub fn TransformAnimationShowcase() -> Element {
     let mut transform = use_motion(Transform::identity());
 
