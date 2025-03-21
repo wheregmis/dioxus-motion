@@ -1,6 +1,5 @@
 use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
-use easer::functions::Easing;
 
 use crate::components::code_block::CodeBlock;
 use crate::utils::router::Route;

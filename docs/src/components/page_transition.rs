@@ -1,5 +1,4 @@
 use dioxus::prelude::*;
-use dioxus_motion::prelude::*;
 
 use crate::components::code_block::CodeBlock;
 
