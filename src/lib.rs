@@ -467,6 +467,29 @@ impl<T: Animatable> AnimationManager<T> for Signal<MotionState<T>> {
     }
 }
 
+/// Creates an animation manager that continuously updates a motion state.
+///
+/// This function initializes a motion state with the provided initial value and spawns an asynchronous loop 
+/// that updates the animation state based on the elapsed time between frames. When the animation is running, 
+/// it updates the state using the calculated time delta and dynamically adjusts the update interval to optimize CPU usage; 
+/// when the animation is inactive, it waits longer before polling again.
+///
+/// # Examples
+///
+/// ```
+/// # use dioxus_motion::{use_motion, AnimationManager, Animatable};
+/// #
+/// # struct MyAnimatable;
+/// #
+/// # impl Default for MyAnimatable {
+/// #     fn default() -> Self { MyAnimatable }
+/// # }
+/// #
+/// # impl Animatable for MyAnimatable {}
+/// let initial_value = MyAnimatable::default();
+/// let animation_manager = use_motion(initial_value);
+/// // `animation_manager` now implements AnimationManager and can be used to control animations.
+/// ```
 pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
     let mut state = use_signal(|| MotionState::new(initial));
 
