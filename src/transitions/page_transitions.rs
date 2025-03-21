@@ -68,8 +68,6 @@ pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
     };
 
     if let Some((from, to)) = from_route {
-        println!("From: {:?} To: {:?}", from.to_string(), to.to_string());
-
         // Special handling for transitions from root path
         let is_from_root = from.to_string() == "/";
 
