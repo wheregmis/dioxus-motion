@@ -6,7 +6,7 @@ use dioxus::prelude::*;
 /// string literals (enclosed in unescaped `"` characters), and token separators. It wraps detected
 /// comments in a gray-colored span and string literals in a green-colored span, while other tokens
 /// are processed to apply additional styling relevant to Dioxus patterns.
-/// 
+///
 /// # Examples
 ///
 /// ```
@@ -18,7 +18,7 @@ use dioxus::prelude::*;
 /// let highlighted = highlight_rust_syntax(code);
 /// assert!(highlighted.contains("<span class='text-gray-500'>"));
 /// assert!(highlighted.contains("<span class='text-green-500'>"));
-/// ```fn highlight_rust_syntax(code: &str) -> String {
+fn highlight_rust_syntax(code: &str) -> String {
     // Create a more robust token-based approach rather than simple replacement
     let mut result = String::new();
     let mut in_string = false;
@@ -140,7 +140,7 @@ use dioxus::prelude::*;
 /// let token_in_string = highlight_token("any_token", true);
 /// // When the token is inside a string literal, no highlighting is applied
 /// assert_eq!(token_in_string, "any_token");
-/// ```fn highlight_token(token: &str, in_string: bool) -> String {
+fn highlight_token(token: &str, in_string: bool) -> String {
     if in_string {
         return token.to_string();
     }
@@ -226,7 +226,7 @@ use dioxus::prelude::*;
 /// let highlighted = highlight_toml_syntax(toml_code);
 /// assert!(highlighted.contains("text-green-500"));
 /// assert!(highlighted.contains("text-gray-500"));
-/// ```fn highlight_toml_syntax(code: &str) -> String {
+fn highlight_toml_syntax(code: &str) -> String {
     let mut result = String::new();
     let mut in_string = false;
     let mut in_comment = false;
@@ -354,7 +354,7 @@ use dioxus::prelude::*;
 ///
 /// // Token inside a string is returned unchanged
 /// assert_eq!(highlight_toml_token("data", true), "data");
-/// ```fn highlight_toml_token(token: &str, in_string: bool) -> String {
+fn highlight_toml_token(token: &str, in_string: bool) -> String {
     if in_string {
         return token.to_string();
     }
@@ -421,7 +421,7 @@ use dioxus::prelude::*;
 ///
 /// let unchanged = highlight_toml_value("example");
 /// assert_eq!(unchanged, "example");
-/// ```fn highlight_toml_value(value: &str) -> String {
+fn highlight_toml_value(value: &str) -> String {
     // Handle boolean values
     if value == "true" || value == "false" {
         return format!("<span class='text-orange-400'>{}</span>", value);
