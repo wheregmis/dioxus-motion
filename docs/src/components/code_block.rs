@@ -337,8 +337,7 @@ fn highlight_toml_syntax(code: &str) -> String {
 /// - Tokens containing an '=' are treated as key-value pairs, with the key highlighted in purple and the value processed recursively.
 /// - Tokens ending with '=' (indicating keys) are highlighted in purple.
 /// - Tokens consisting solely of digits, dots, or quotes (e.g., version numbers or literals) are styled with an orange class.
-/// If the token is empty after trimming or if `in_string` is true, the original token is returned unmodified.
-///
+///   If the token is empty after trimming or if `in_string` is true, the original token is returned unmodified.
 /// # Examples
 ///
 /// ```
@@ -354,6 +353,7 @@ fn highlight_toml_syntax(code: &str) -> String {
 ///
 /// // Token inside a string is returned unchanged
 /// assert_eq!(highlight_toml_token("data", true), "data");
+/// ```
 fn highlight_toml_token(token: &str, in_string: bool) -> String {
     if in_string {
         return token.to_string();
