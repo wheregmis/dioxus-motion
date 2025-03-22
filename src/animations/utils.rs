@@ -84,7 +84,7 @@ impl AnimationConfig {
             mode,
             loop_mode: None,
             delay: Duration::default(),
-            on_complete: None.into(),
+            on_complete: None,
         }
     }
 

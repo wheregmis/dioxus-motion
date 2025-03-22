@@ -1,0 +1,386 @@
+@import "tailwindcss";
+
+@theme {
+    /* Typography */
+    --font-display: "JetBrains Mono", monospace;
+    --font-body: "Inter", sans-serif;
+
+    /* Base theme colors */
+    --color-background: oklch(0.04 0 0);
+    /* #0A0F1A */
+    --color-background-light: oklch(1 0 0);
+    /* #FFFFFF */
+
+    /* Dark theme colors */
+    --color-dark-50: oklch(0.10 0 0);
+    --color-dark-100: oklch(0.15 0 0);
+    --color-dark-200: oklch(0.20 0 0);
+    --color-dark-300: oklch(0.25 0 0);
+    --color-dark-400: oklch(0.30 0 0);
+
+    /* Light theme colors */
+    --color-light-50: oklch(0.98 0 0);
+    --color-light-100: oklch(0.95 0 0);
+    --color-light-200: oklch(0.90 0 0);
+    --color-light-300: oklch(0.85 0 0);
+    --color-light-400: oklch(0.80 0 0);
+
+    /* Primary colors - Rust orange */
+    --color-primary: oklch(0.75 0.15 30);
+    /* #CD7F32 - Rust bronze */
+    --color-primary-light: oklch(0.80 0.15 30);
+    /* #FFA07A - Light salmon */
+    --color-primary-dark: oklch(0.70 0.15 30);
+    /* #B87333 - Bronze */
+    --color-primary-hover: oklch(0.85 0.15 30);
+
+    /* Secondary colors - Rust gray */
+    --color-secondary: oklch(0.65 0.02 30);
+    /* #8B4513 - Saddle brown */
+    --color-secondary-light: oklch(0.90 0.02 30);
+    /* #DEB887 - Burly wood */
+    --color-secondary-dark: oklch(0.35 0.02 30);
+    /* #A0522D - Sienna */
+
+    /* Accent colors */
+    --color-accent-rust: oklch(0.75 0.15 30);
+    /* #CD7F32 - Rust bronze */
+    --color-accent-rust-hover: oklch(0.85 0.15 30);
+    /* #FFA07A - Light salmon */
+
+    /* Surface colors */
+    --color-surface: oklch(0.25 0 0);
+    /* #1F2937 */
+    --color-surface-light: oklch(0.35 0 0);
+    /* #374151 */
+    --color-surface-dark: oklch(0.15 0 0);
+    /* #111827 */
+    --color-surface-hover: oklch(0.15 0 0 / 0.7);
+    /* #111827B3 */
+
+    /* Text colors */
+    --color-text-primary: oklch(1 0 0);
+    /* #FFFFFF */
+    --color-text-secondary: oklch(0.85 0 0);
+    /* #D1D5DB */
+    --color-text-muted: oklch(0.65 0 0);
+    /* #9CA3AF */
+
+    /* Text colors for light mode */
+    --color-text-primary-light: oklch(0.15 0 0);
+    --color-text-secondary-light: oklch(0.25 0 0);
+    --color-text-muted-light: oklch(0.35 0 0);
+
+    /* Transitions */
+    --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    --ease-snappy: cubic-bezier(0.2, 0, 0, 1);
+    --transition-fast: 150ms var(--ease-snappy);
+    --transition-medium: 300ms var(--ease-smooth);
+    --transition-spring: 500ms var(--ease-spring);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-neumorphic: 20px 20px 60px #d9d9d9,
+        -20px -20px 60px #ffffff,
+        0 4px 6px -1px rgba(255, 255, 255, 0.1),
+        0 2px 4px -1px rgba(255, 255, 255, 0.06),
+        0 10px 15px -3px rgba(0, 0, 0, 0.1),
+        0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Keyframes */
+@keyframes down {
+    0% {
+        transform: translateY(0%);
+    }
+
+    100% {
+        transform: translateY(calc(45vh - 8rem));
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes glow {
+
+    0%,
+    100% {
+        filter: brightness(1);
+    }
+
+    50% {
+        filter: brightness(1.2);
+    }
+}
+
+/* Animation classes */
+.animate-move-down {
+    animation: down 3s linear infinite;
+}
+
+.animate-shimmer {
+    animation: shimmer 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-float {
+    animation: float 3s ease-in-out infinite;
+}
+
+.animate-glow {
+    animation: glow 2s ease-in-out infinite;
+}
+
+/* Gradient backgrounds */
+.bg-gradient-dark {
+    background: linear-gradient(to right,
+            var(--color-dark-50),
+            var(--color-dark-100));
+}
+
+.bg-gradient-light {
+    background: linear-gradient(to right,
+            var(--color-light-50),
+            var(--color-light-100));
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(to right,
+            var(--color-primary),
+            var(--color-primary-light));
+}
+
+/* Dark mode utilities */
+:root[class~="dark"] {
+    --bg-primary: var(--color-dark-50);
+    --text-primary: var(--color-text-primary);
+    --text-secondary: var(--color-text-secondary);
+    --text-muted: var(--color-text-muted);
+}
+
+:root:not([class~="dark"]) {
+    --bg-primary: var(--color-light-50);
+    --text-primary: var(--color-text-primary-light);
+    --text-secondary: var(--color-text-secondary-light);
+    --text-muted: var(--color-text-muted-light);
+}
+
+/* Component styles */
+.card {
+    @apply rounded-lg border transition-all duration-300;
+    background-color: var(--bg-primary);
+    border-color: color-mix(in oklab, var(--bg-primary) 80%, var(--text-primary));
+    color: var(--text-primary);
+}
+
+.btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-300;
+}
+
+.btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-dark-50);
+}
+
+.btn-primary:hover {
+    background-color: var(--color-primary-hover);
+}
+
+.nav-link {
+    @apply px-4 py-2 rounded-lg transition-all duration-300;
+    color: var(--text-secondary);
+}
+
+.nav-link:hover {
+    color: var(--text-primary);
+    background-color: color-mix(in oklab, var(--bg-primary) 90%, var(--text-primary));
+}
+
+/* Code block styles */
+.code-block {
+    @apply font-mono bg-dark-100 rounded-lg p-4;
+    border: 1px solid var(--color-dark-300);
+    position: relative;
+}
+
+.code-block::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--color-primary);
+    border-radius: 2px;
+    opacity: 0.5;
+}
+
+/* Logo animation - more subtle */
+@keyframes gentle-float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+.logo-float {
+    animation: gentle-float 3s ease-in-out infinite;
+}
+
+/* Animation keyframes */
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes glow {
+
+    0%,
+    100% {
+        filter: brightness(1);
+    }
+
+    50% {
+        filter: brightness(1.2);
+    }
+}
+
+@keyframes performance-pulse {
+
+    0%,
+    100% {
+        box-shadow: var(--shadow-glow-perf);
+        transform: scale(1);
+    }
+
+    50% {
+        box-shadow: none;
+        transform: scale(0.98);
+    }
+}
+
+/* Animation classes */
+.animate-float {
+    animation: float 3s ease-in-out infinite;
+}
+
+.animate-glow {
+    animation: glow 2s ease-in-out infinite;
+}
+
+.animate-performance {
+    animation: performance-pulse 1.5s var(--ease-spring) infinite;
+}
+
+/* Layout utilities */
+.container-lg {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.container-md {
+    @apply max-w-5xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Performance indicator styles */
+.performance-badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full;
+    background: var(--color-perf-300);
+    color: var(--color-dark-100);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* Documentation specific styles */
+.doc-section {
+    @apply py-12 border-b border-dark-300;
+}
+
+.doc-heading {
+    @apply text-2xl font-bold text-text-primary mb-4;
+}
+
+.doc-text {
+    @apply text-text-secondary leading-relaxed;
+}
+
+/* Rust-themed decorative elements */
+.rust-accent {
+    position: relative;
+}
+
+.rust-accent::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg,
+            transparent 0%,
+            var(--color-primary) 0.1%,
+            transparent 0.2%);
+    opacity: 0.1;
+    pointer-events: none;
+}
+
+/* Rust-themed decorative elements */
+.rust-border {
+    border: 1px solid var(--color-primary);
+    opacity: 0.1;
+}
+
+.rust-glow {
+    box-shadow: 0 0 20px var(--color-primary);
+    opacity: 0.1;
+}
+
+/* Animation keyframes */
+@keyframes rust-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 var(--color-primary);
+    }
+
+    50% {
+        box-shadow: 0 0 20px 0 var(--color-primary);
+    }
+}
+
+.animate-rust-pulse {
+    animation: rust-pulse 2s infinite;
+}

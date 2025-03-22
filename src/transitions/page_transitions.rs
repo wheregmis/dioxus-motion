@@ -46,6 +46,20 @@ impl<R: Routable + PartialEq> AnimatedRouterContext<R> {
 }
 
 #[component]
+/// Renders an outlet that supports animated transitions between routes.
+///
+/// This function sets up a routing context and monitors changes in the current route to
+/// determine when an animated transition should occur. When a transition is detected and
+/// the layout depth or route conditions are met, it renders a transition component; otherwise,
+/// it renders a standard outlet.
+///
+/// # Examples
+///
+/// ```
+/// // Assuming `AppRoute` implements `AnimatableRoute`:
+/// let animated_outlet = AnimatedOutlet::<AppRoute>();
+/// // Use `animated_outlet` as part of your Dioxus component tree.
+/// ```
 pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
     let route = use_route::<R>();
     // Create router context only if we're the root AnimatedOutlet
@@ -68,8 +82,6 @@ pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
     };
 
     if let Some((from, to)) = from_route {
-        println!("From: {:?} To: {:?}", from.to_string(), to.to_string());
-
         // Special handling for transitions from root path
         let is_from_root = from.to_string() == "/";
 
