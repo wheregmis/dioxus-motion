@@ -201,19 +201,27 @@ impl<T: Animatable> AnimationState<T> {
     }
 
     fn update_spring(&mut self, spring: Spring, dt: f32) -> SpringState {
+        // Cache frequently used values
         let dt = dt.min(0.064);
+        let stiffness = spring.stiffness;
+        let damping = spring.damping;
+        let mass_inv = 1.0 / spring.mass;
 
-        // Cache intermediate calculations
+        // SIMD-friendly data layout
         let delta = self.target.sub(&self.current);
-        let force = delta.scale(spring.stiffness);
-        let damping = self.velocity.scale(spring.damping);
-        let acceleration = force.sub(&damping).scale(1.0 / spring.mass);
+        let force = delta.scale(stiffness);
+        let damping_force = self.velocity.scale(damping);
 
+        // Combine calculations to reduce temporary allocations
+        let acceleration = (force.sub(&damping_force)).scale(mass_inv);
         self.velocity = self.velocity.add(&acceleration.scale(dt));
         self.current = self.current.add(&self.velocity.scale(dt));
 
-        // Check completion with cached delta
-        if self.velocity.magnitude() < T::epsilon() && delta.magnitude() < T::epsilon() {
+        // Use squared magnitude for performance
+        let velocity_squared = self.velocity.magnitude().powi(2);
+        let delta_squared = delta.magnitude().powi(2);
+
+        if velocity_squared < T::epsilon().powi(2) && delta_squared < T::epsilon().powi(2) {
             self.current = self.target;
             SpringState::Completed
         } else {
