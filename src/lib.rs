@@ -32,6 +32,8 @@
 #![deny(clippy::option_if_let_else)] // Prefer map/and_then
 #![deny(clippy::option_if_let_else)] // Prefer map/and_then
 
+use std::sync::Arc;
+
 use animations::utils::{Animatable, AnimationMode};
 use dioxus::prelude::*;
 pub use instant::Duration;
@@ -83,7 +85,7 @@ pub struct AnimationSequence<T: Animatable> {
 #[derive(Clone)]
 pub struct AnimationStep<T: Animatable> {
     target: T,
-    config: AnimationConfig,
+    config: Arc<AnimationConfig>, // Use Arc for shared configs
 }
 
 impl<T: Animatable> Default for AnimationSequence<T> {
@@ -102,7 +104,10 @@ impl<T: Animatable> AnimationSequence<T> {
     }
 
     pub fn then(mut self, target: T, config: AnimationConfig) -> Self {
-        self.steps.push(AnimationStep { target, config });
+        self.steps.push(AnimationStep {
+            target,
+            config: config.into(),
+        });
         self
     }
 
@@ -118,7 +123,7 @@ pub struct AnimationState<T: Animatable> {
     target: T,
     initial: T,
     velocity: T,
-    config: AnimationConfig,
+    config: Arc<AnimationConfig>,
     running: bool,
     elapsed: Duration,
     delay_elapsed: Duration,
@@ -132,7 +137,7 @@ impl<T: Animatable> AnimationState<T> {
             target: initial,
             initial,
             velocity: T::zero(),
-            config: AnimationConfig::default(),
+            config: AnimationConfig::default().into(),
             running: false,
             elapsed: Duration::default(),
             delay_elapsed: Duration::default(),
@@ -143,7 +148,7 @@ impl<T: Animatable> AnimationState<T> {
     fn animate_to(&mut self, target: T, config: AnimationConfig) {
         self.initial = self.current;
         self.target = target;
-        self.config = config;
+        self.config = config.into();
         self.running = true;
         self.elapsed = Duration::default();
         self.delay_elapsed = Duration::default();
@@ -319,7 +324,9 @@ impl<T: Animatable> AnimationManager<T> for AnimationSignal<T> {
     }
 
     fn delay(&mut self, duration: Duration) {
-        self.0.write().config.delay = duration;
+        let mut new_config = (*self.0.write().config).clone();
+        new_config.delay = duration;
+        self.0.write().config = Arc::new(new_config);
     }
 }
 
@@ -359,7 +366,7 @@ impl<T: Animatable> AnimationManager<T> for MotionState<T> {
         }
         let first_step = &sequence.steps[0];
         self.base
-            .animate_to(first_step.target, first_step.config.clone());
+            .animate_to(first_step.target, (*first_step.config).clone());
         self.sequence.set(Some(SequenceState {
             sequence,
             _current_value: self.base.get_value(),
@@ -379,7 +386,7 @@ impl<T: Animatable> AnimationManager<T> for MotionState<T> {
                     std::cmp::Ordering::Less => {
                         sequence_state.sequence.current_step += 1;
                         let step = &sequence_state.sequence.steps[(current_step + 1) as usize];
-                        self.base.animate_to(step.target, step.config.clone());
+                        self.base.animate_to(step.target, (*step.config).clone());
                         still_animating = true;
                     }
                     std::cmp::Ordering::Equal => {
