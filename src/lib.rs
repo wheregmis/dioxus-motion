@@ -51,52 +51,33 @@ use smallvec::SmallVec;
 
 // Re-exports
 pub mod prelude {
-    pub use crate::animations::colors::Color;
-    pub use crate::animations::spring::Spring;
-    pub use crate::animations::transform::Transform;
-    pub use crate::animations::tween::Tween;
-    pub use crate::animations::utils::AnimationConfig;
-    pub use crate::animations::utils::AnimationMode;
-    pub use crate::animations::utils::LoopMode;
+    pub use crate::animations::utils::{AnimationConfig, AnimationMode, LoopMode};
+    pub use crate::animations::{
+        colors::Color, spring::Spring, transform::Transform, tween::Tween,
+    };
     #[cfg(feature = "transitions")]
     pub use crate::dioxus_motion_transitions_macro::MotionTransitions;
     #[cfg(feature = "transitions")]
-    pub use crate::transitions::page_transitions::AnimatableRoute;
-    #[cfg(feature = "transitions")]
-    pub use crate::transitions::page_transitions::AnimatedOutlet;
+    pub use crate::transitions::page_transitions::{AnimatableRoute, AnimatedOutlet};
     #[cfg(feature = "transitions")]
     pub use crate::transitions::utils::TransitionVariant;
-    pub use crate::use_motion;
-    pub use crate::AnimationManager;
-    pub use crate::AnimationSequence;
-    pub use crate::Duration;
-    pub use crate::Time;
-    pub use crate::TimeProvider;
+    pub use crate::{
+        use_motion, AnimationManager, AnimationSequence, Duration, Time, TimeProvider,
+    };
 }
 
 pub type Time = MotionTime;
 
-/// Animation sequence that can chain multiple animations together
+#[derive(Clone)]
+struct AnimationStep<T: Animatable> {
+    target: T,
+    config: Arc<AnimationConfig>,
+}
+
 pub struct AnimationSequence<T: Animatable> {
     steps: SmallVec<[AnimationStep<T>; 4]>,
     current_step: u8,
     on_complete: Option<Box<dyn FnOnce()>>,
-}
-
-#[derive(Clone)]
-pub struct AnimationStep<T: Animatable> {
-    target: T,
-    config: Arc<AnimationConfig>, // Use Arc for shared configs
-}
-
-impl<T: Animatable> Default for AnimationSequence<T> {
-    fn default() -> Self {
-        Self {
-            steps: SmallVec::new(),
-            current_step: 0,
-            on_complete: None,
-        }
-    }
 }
 
 impl<T: Animatable> AnimationSequence<T> {
@@ -107,7 +88,7 @@ impl<T: Animatable> AnimationSequence<T> {
     pub fn then(mut self, target: T, config: AnimationConfig) -> Self {
         self.steps.push(AnimationStep {
             target,
-            config: config.into(),
+            config: Arc::new(config),
         });
         self
     }
@@ -115,6 +96,16 @@ impl<T: Animatable> AnimationSequence<T> {
     pub fn on_complete<F: FnOnce() + 'static>(mut self, f: F) -> Self {
         self.on_complete = Some(Box::new(f));
         self
+    }
+}
+
+impl<T: Animatable> Default for AnimationSequence<T> {
+    fn default() -> Self {
+        Self {
+            steps: SmallVec::new(),
+            current_step: 0,
+            on_complete: None,
+        }
     }
 }
 
@@ -356,21 +347,51 @@ impl<T: Animatable> AnimationManager<T> for AnimationSignal<T> {
 
 #[derive(Clone, Copy)]
 pub struct MotionState<T: Animatable> {
-    base: AnimationSignal<T>,
-    sequence: Signal<Option<SequenceState<T>>>,
-}
-
-struct SequenceState<T: Animatable> {
-    sequence: AnimationSequence<T>,
-    _current_value: T,
+    animation: Signal<AnimationState<T>>,
+    sequence: Signal<Option<AnimationSequence<T>>>,
 }
 
 impl<T: Animatable> MotionState<T> {
     fn new(initial: T) -> Self {
         Self {
-            base: AnimationSignal::new(initial),
+            animation: Signal::new(AnimationState::new(initial)),
             sequence: Signal::new(None),
         }
+    }
+
+    fn update_sequence(&mut self, dt: f32) -> bool {
+        let mut still_animating = false;
+
+        if let Some(mut sequence) = self.sequence.take() {
+            if !self.animation.read().is_running() {
+                let current_step = sequence.current_step;
+                let total_steps = sequence.steps.len();
+
+                match current_step.cmp(&(total_steps as u8 - 1)) {
+                    std::cmp::Ordering::Less => {
+                        sequence.current_step += 1;
+                        let step = &sequence.steps[sequence.current_step as usize];
+                        self.animation
+                            .write()
+                            .animate_to(step.target, (*step.config).clone());
+                        still_animating = true;
+                        self.sequence.set(Some(sequence));
+                    }
+                    std::cmp::Ordering::Equal => {
+                        if let Some(on_complete) = sequence.on_complete {
+                            on_complete();
+                        }
+                        self.animation.write().stop();
+                    }
+                    std::cmp::Ordering::Greater => {}
+                }
+            } else {
+                still_animating = true;
+                self.sequence.set(Some(sequence));
+            }
+        }
+
+        still_animating || self.animation.write().update(dt)
     }
 }
 
@@ -381,81 +402,45 @@ impl<T: Animatable> AnimationManager<T> for MotionState<T> {
 
     fn animate_to(&mut self, target: T, config: AnimationConfig) {
         self.sequence.set(None);
-        self.base.animate_to(target, config);
+        self.animation.write().animate_to(target, config);
     }
 
     fn animate_sequence(&mut self, sequence: AnimationSequence<T>) {
-        if sequence.steps.is_empty() {
-            return;
+        if let Some(first_step) = sequence.steps.first() {
+            self.animation
+                .write()
+                .animate_to(first_step.target, (*first_step.config).clone());
+            self.sequence.set(Some(sequence));
         }
-        let first_step = &sequence.steps[0];
-        self.base
-            .animate_to(first_step.target, (*first_step.config).clone());
-        self.sequence.set(Some(SequenceState {
-            sequence,
-            _current_value: self.base.get_value(),
-        }));
     }
 
     fn update(&mut self, dt: f32) -> bool {
-        let mut still_animating = false;
-        let mut should_clear_sequence = false;
-
-        if let Some(sequence_state) = &mut *self.sequence.write() {
-            let current_step = sequence_state.sequence.current_step;
-            let total_steps = sequence_state.sequence.steps.len();
-
-            if !self.base.is_running() {
-                match current_step.cmp(&(total_steps as u8 - 1)) {
-                    std::cmp::Ordering::Less => {
-                        sequence_state.sequence.current_step += 1;
-                        let step = &sequence_state.sequence.steps[(current_step + 1) as usize];
-                        self.base.animate_to(step.target, (*step.config).clone());
-                        still_animating = true;
-                    }
-                    std::cmp::Ordering::Equal => {
-                        if let Some(on_complete) = sequence_state.sequence.on_complete.take() {
-                            on_complete();
-                        }
-                        should_clear_sequence = true;
-                        still_animating = false;
-                        self.base.stop();
-                    }
-                    std::cmp::Ordering::Greater => {}
-                }
-            } else {
-                still_animating = true;
-            }
-        }
-
-        if should_clear_sequence {
-            self.sequence.set(None);
-        }
-
-        still_animating |= self.base.update(dt);
-        still_animating
+        self.update_sequence(dt)
     }
 
     fn get_value(&self) -> T {
-        self.base.get_value()
+        self.animation.read().get_value()
     }
 
     fn is_running(&self) -> bool {
-        self.base.is_running() || self.sequence.read().is_some()
+        self.animation.read().is_running() || self.sequence.read().is_some()
     }
 
     fn reset(&mut self) {
         self.sequence.set(None);
-        self.base.reset();
+        self.animation.write().reset();
     }
 
     fn stop(&mut self) {
         self.sequence.set(None);
-        self.base.stop();
+        self.animation.write().stop();
     }
 
     fn delay(&mut self, duration: Duration) {
-        self.base.delay(duration);
+        let mut state = self.animation.write();
+        let mut config = (*state.config).clone();
+        config.delay = duration;
+        state.config = Arc::new(config);
     }
 }
 
