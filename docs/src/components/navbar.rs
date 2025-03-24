@@ -85,6 +85,7 @@ pub fn NavBar() -> Element {
                                 // Navigation links - Desktop
                                 nav { class: "hidden md:flex items-center space-x-6",
                                     NavLink { to: Route::DocsLanding {}, "Documentation" }
+                                    NavLink { to: Route::ShowcaseGallery {}, "Showcase Gallery" }
                                 }
                             }
 
@@ -157,40 +158,42 @@ pub fn NavBar() -> Element {
                                 div { class: "relative z-10 container mx-auto px-4 pt-24",
                                     div { class: "flex flex-col space-y-6",
                                         NavLink { to: Route::DocsLanding {}, "Documentation" }
+                                        // Add showcase gallery link
+                                        NavLink { to: Route::ShowcaseGallery {}, "Showcase Gallery" }
+
                                         a {
                                             class: "flex items-center px-6 py-3 rounded-xl
-                                                                                                                                                                                                                                                                                                                                           bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
-                                                                                                                                                                                                                                                                                                                                           text-text-secondary hover:text-text-primary
-                                                                                                                                                                                                                                                                                                                                           border border-primary/10 transition-all duration-300
-                                                                                                                                                                                                                                                                                                                                           rust-accent",
+                                                                                                                                                                                                                                                                                                                                                                                                   bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
+                                                                                                                                                                                                                                                                                                                                                                                                   text-text-secondary hover:text-text-primary
+                                                                                                                                                                                                                                                                                                                                                                                                   border border-primary/10 transition-all duration-300
+                                                                                                                                                                                                                                                                                                                                                                                                   rust-accent",
                                             href: "https://github.com/wheregmis/dioxus-motion",
                                             target: "_blank",
                                             rel: "noopener",
                                             "GitHub"
                                             span { class: "ml-2 px-2 py-1 text-xs rounded-full
-                                                                                                                                                                                                                                                                                                                                           bg-primary/10 text-primary",
+                                                                                                                                                                                                                                                                                                                                                                                                   bg-primary/10 text-primary",
                                                 "★ Star"
                                             }
                                         }
                                         a {
                                             class: "flex items-center px-6 py-3 rounded-xl
-                                                                                                                                                                                                                                                                                                                                           bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
-                                                                                                                                                                                                                                                                                                                                           text-text-secondary hover:text-text-primary
-                                                                                                                                                                                                                                                                                                                                           border border-primary/10 transition-all duration-300
-                                                                                                                                                                                                                                                                                                                                           rust-accent",
+                                                                                                                                                                                                                                                                                                                                                                                                   bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
+                                                                                                                                                                                                                                                                                                                                                                                                   text-text-secondary hover:text-text-primary
+                                                                                                                                                                                                                                                                                                                                                                                                   border border-primary/10 transition-all duration-300
+                                                                                                                                                                                                                                                                                                                                                                                                   rust-accent",
                                             href: "https://crates.io/crates/dioxus-motion",
                                             target: "_blank",
                                             rel: "noopener",
                                             "Crates.io"
                                             span { class: "ml-2 px-2 py-1 text-xs rounded-full
-                                                                                                                                                                                                                                                                                                                                           bg-primary/10 text-primary",
+                                                                                                                                                                                                                                                                                                                                                                                                   bg-primary/10 text-primary",
                                                 "0.3.1"
                                             }
                                         }
                                     }
                                 }
                             }
-                            
                             // Close menu when clicking outside
                             div {
                                 class: "fixed inset-0 z-30 bg-black/20 backdrop-blur-sm",

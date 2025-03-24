@@ -371,7 +371,7 @@ impl<T: Animatable> AnimationManager<T> for Signal<MotionState<T>> {
     }
 
     fn is_running(&self) -> bool {
-        self.read().is_running()
+        self.peek().is_running()
     }
 
     fn reset(&mut self) {

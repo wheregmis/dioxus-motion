@@ -5,6 +5,7 @@ use crate::components::animations::Animations;
 use crate::components::navbar::NavBar;
 use crate::components::page_not_found::PageNotFound;
 use crate::components::page_transition::PageTransition;
+use crate::old_showcase::showcase_component::ShowcaseGallery;
 use crate::pages::blog::index::Blog;
 use crate::pages::docs::index::Docs;
 use crate::pages::docs::index::DocsLanding;
@@ -48,6 +49,11 @@ pub enum Route {
         #[route("/blog")]
         #[transition(SlideDown)]
         Blog {},
+
+        #[route("/old_showcase")]
+        #[transition(SlideDown)]
+        ShowcaseGallery {},
+
 
     // And the regular page layout
     #[end_layout]
