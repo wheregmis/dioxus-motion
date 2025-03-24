@@ -32,7 +32,7 @@
 #![deny(clippy::option_if_let_else)] // Prefer map/and_then
 #![deny(clippy::option_if_let_else)] // Prefer map/and_then
 
-use std::sync::Arc;
+use std::{cell::RefCell, sync::Arc};
 
 use animations::utils::{Animatable, AnimationMode};
 use dioxus::prelude::*;
@@ -46,7 +46,7 @@ pub use dioxus_motion_transitions_macro;
 
 pub use animations::platform::{MotionTime, TimeProvider};
 use animations::spring::{Spring, SpringState};
-use prelude::{AnimationConfig, LoopMode, Tween};
+use prelude::{AnimationConfig, LoopMode, Transform, Tween};
 use smallvec::SmallVec;
 
 // Re-exports
@@ -74,8 +74,11 @@ struct AnimationStep<T: Animatable> {
     config: Arc<AnimationConfig>,
 }
 
+// Use a static array instead of Vec for small sequences
+type AnimationSteps<T> = SmallVec<[AnimationStep<T>; 8]>;
+
 pub struct AnimationSequence<T: Animatable> {
-    steps: SmallVec<[AnimationStep<T>; 4]>,
+    steps: AnimationSteps<T>,
     current_step: u8,
     on_complete: Option<Box<dyn FnOnce()>>,
 }
@@ -112,7 +115,7 @@ impl<T: Animatable> AnimationSequence<T> {
 impl<T: Animatable> Default for AnimationSequence<T> {
     fn default() -> Self {
         Self {
-            steps: SmallVec::new(),
+            steps: AnimationSteps::new(),
             current_step: 0,
             on_complete: None,
         }
@@ -468,4 +471,9 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
     });
 
     state
+}
+
+// Reuse allocations for common operations
+thread_local! {
+    static TRANSFORM_BUFFER: RefCell<Transform> = RefCell::new(Transform::identity());
 }
