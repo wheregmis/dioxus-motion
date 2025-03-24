@@ -345,49 +345,6 @@ pub trait AnimationManager<T: Animatable>: Clone + Copy {
     fn delay(&mut self, duration: Duration);
 }
 
-#[derive(Clone, Copy)]
-struct AnimationSignal<T: Animatable>(Signal<MotionState<T>>);
-
-impl<T: Animatable> AnimationManager<T> for AnimationSignal<T> {
-    fn new(initial: T) -> Self {
-        Self(Signal::new(MotionState::new(initial)))
-    }
-
-    fn animate_to(&mut self, target: T, config: AnimationConfig) {
-        self.0.write().animate_to(target, config);
-    }
-
-    fn animate_sequence(&mut self, _sequence: AnimationSequence<T>) {
-        // No-op for base AnimationSignal
-    }
-
-    fn update(&mut self, dt: f32) -> bool {
-        self.0.write().update(dt)
-    }
-
-    fn get_value(&self) -> T {
-        self.0.read().get_value()
-    }
-
-    fn is_running(&self) -> bool {
-        self.0.read().is_running()
-    }
-
-    fn reset(&mut self) {
-        self.0.write().reset()
-    }
-
-    fn stop(&mut self) {
-        self.0.write().stop()
-    }
-
-    fn delay(&mut self, duration: Duration) {
-        let mut new_config = (*self.0.write().config).clone();
-        new_config.delay = duration;
-        self.0.write().config = Arc::new(new_config);
-    }
-}
-
 impl<T: Animatable> AnimationManager<T> for Signal<MotionState<T>> {
     fn new(initial: T) -> Self {
         Signal::new(MotionState::new(initial))
