@@ -1040,6 +1040,9 @@
   .bg-gray-100 {
     background-color: var(--color-gray-100);
   }
+  .bg-gray-950 {
+    background-color: var(--color-gray-950);
+  }
   .bg-primary {
     background-color: var(--color-primary);
   }

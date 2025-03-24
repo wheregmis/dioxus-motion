@@ -416,10 +416,17 @@ impl<T: Animatable> AnimationManager<T> for Signal<MotionState<T>> {
 pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
     let mut state = use_signal(|| MotionState::new(initial));
 
+    #[cfg(feature = "web")]
+    let idle_poll_rate = Duration::from_millis(100);
+
+    #[cfg(not(feature = "web"))]
+    let idle_poll_rate = Duration::from_millis(33);
+
     use_effect(move || {
         // This executes after rendering is complete
         spawn(async move {
             let mut last_frame = Time::now();
+            let mut _running_frames = 0u32;
 
             loop {
                 let now = Time::now();
@@ -427,8 +434,10 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
 
                 // Only check if running first, then write to the signal
                 if state.peek().is_running() {
+                    _running_frames += 1;
                     state.write().update(dt);
 
+                    #[cfg(feature = "web")]
                     // Adaptive frame rate
                     let delay = match dt {
                         x if x < 0.008 => Duration::from_millis(8),  // ~120fps
@@ -436,9 +445,21 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
                         _ => Duration::from_millis(32),              // ~30fps
                     };
 
+                    #[cfg(not(feature = "web"))]
+                    let delay = match _running_frames {
+                        // Higher frame rate for the first ~200 frames for smooth starts
+                        0..=200 => Duration::from_micros(8333), // ~120fps
+                        _ => match dt {
+                            x if x < 0.005 => Duration::from_millis(8),  // ~120fps
+                            x if x < 0.011 => Duration::from_millis(16), // ~60fps
+                            _ => Duration::from_millis(33),              // ~30fps
+                        },
+                    };
+
                     Time::delay(delay).await;
                 } else {
-                    Time::delay(Duration::from_millis(100)).await;
+                    _running_frames = 0;
+                    Time::delay(idle_poll_rate).await;
                 }
 
                 last_frame = now;

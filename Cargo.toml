@@ -28,7 +28,7 @@ dioxus = { git = "https://github.com/wheregmis/dioxus.git", branch = "main", fea
     "router",
 ] }
 smallvec = "1.14.0"
-
+spin_sleep = "1.3.1"
 
 [features]
 default = ["web"]
