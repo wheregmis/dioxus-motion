@@ -416,28 +416,34 @@ impl<T: Animatable> AnimationManager<T> for Signal<MotionState<T>> {
 pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
     let mut state = use_signal(|| MotionState::new(initial));
 
-    use_future(move || async move {
-        let mut last_frame = Time::now();
+    use_effect(move || {
+        // This executes after rendering is complete
+        spawn(async move {
+            let mut last_frame = Time::now();
 
-        loop {
-            let now = Time::now();
-            let dt = (now.duration_since(last_frame).as_secs_f32()).min(0.1); // Clamp to 100ms max
-            if state.peek().is_running() {
-                state.write().update(dt);
-                // Do something with dt and delay it if its more than 100ms to avoid hogging the CPU
-                let delay = match dt {
-                    x if x < 0.008 => Duration::from_millis(8),  // ~120fps
-                    x if x < 0.016 => Duration::from_millis(16), // ~60fps
-                    _ => Duration::from_millis(32),              // ~30fps
-                };
+            loop {
+                let now = Time::now();
+                let dt = (now.duration_since(last_frame).as_secs_f32()).min(0.1);
 
-                Time::delay(delay).await;
-            } else {
-                Time::delay(Duration::from_millis(100)).await;
+                // Only check if running first, then write to the signal
+                if state.peek().is_running() {
+                    state.write().update(dt);
+
+                    // Adaptive frame rate
+                    let delay = match dt {
+                        x if x < 0.008 => Duration::from_millis(8),  // ~120fps
+                        x if x < 0.016 => Duration::from_millis(16), // ~60fps
+                        _ => Duration::from_millis(32),              // ~30fps
+                    };
+
+                    Time::delay(delay).await;
+                } else {
+                    Time::delay(Duration::from_millis(100)).await;
+                }
+
+                last_frame = now;
             }
-
-            last_frame = now;
-        }
+        });
     });
 
     state

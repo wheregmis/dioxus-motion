@@ -66,22 +66,26 @@ pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
     let mut prev_route = use_signal(|| AnimatedRouterContext::In(route.clone()));
     use_context_provider(move || prev_route);
 
+    // Update route in effect, not during render
     use_effect(move || {
-        if prev_route.peek().target_route() != &use_route::<R>() {
-            prev_route
-                .write()
-                .set_target_route(use_route::<R>().clone());
+        let current_route = use_route::<R>();
+        if prev_route.peek().target_route() != &current_route {
+            // Schedule the write for after render
+            spawn(async move {
+                prev_route.write().set_target_route(current_route.clone());
+            });
         }
     });
 
     let outlet: OutletContext<R> = use_outlet_context();
 
-    let from_route: Option<(R, R)> = match prev_route() {
+    // Read values without mutation
+    let from_route_data = match prev_route() {
         AnimatedRouterContext::FromTo(from, to) => Some((from, to)),
         _ => None,
     };
 
-    if let Some((from, to)) = from_route {
+    if let Some((from, to)) = from_route_data {
         // Special handling for transitions from root path
         let is_from_root = from.to_string() == "/";
 
@@ -94,16 +98,13 @@ pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
                     to: to.clone(),
                 }
             };
-        } else {
-            return rsx! {
-                Outlet::<R> {}
-            };
         }
-    } else {
-        return rsx! {
-            Outlet::<R> {}
-        };
     }
+
+    // Default to regular outlet
+    return rsx! {
+        Outlet::<R> {}
+    };
 }
 
 pub trait AnimatableRoute: Routable + Clone + PartialEq {
