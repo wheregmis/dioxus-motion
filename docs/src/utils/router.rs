@@ -51,7 +51,7 @@ pub enum Route {
         Blog {},
 
         #[route("/old_showcase")]
-        #[transition(SlideDown)]
+        #[transition(Fade)]
         ShowcaseGallery {},
 
 

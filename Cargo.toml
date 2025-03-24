@@ -67,10 +67,5 @@ panic = "abort"   # Higher performance by disabling panic handlers.
 strip = true      # Ensures debug symbols are removed.
 
 [workspace]
-members = [
-    "packages/dioxus-motion-transitions-macro",
-    ".",
-    "docs",
-    "example_projects",
-]
+members = ["packages/dioxus-motion-transitions-macro", ".", "docs"]
 resolver = "3"
