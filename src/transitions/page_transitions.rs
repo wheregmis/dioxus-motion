@@ -66,26 +66,22 @@ pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
     let mut prev_route = use_signal(|| AnimatedRouterContext::In(route.clone()));
     use_context_provider(move || prev_route);
 
-    // Update route in effect, not during render
     use_effect(move || {
-        let current_route = use_route::<R>();
-        if prev_route.peek().target_route() != &current_route {
-            // Schedule the write for after render
-            spawn(async move {
-                prev_route.write().set_target_route(current_route.clone());
-            });
+        if prev_route.peek().target_route() != &use_route::<R>() {
+            prev_route
+                .write()
+                .set_target_route(use_route::<R>().clone());
         }
     });
 
     let outlet: OutletContext<R> = use_outlet_context();
 
-    // Read values without mutation
-    let from_route_data = match prev_route() {
+    let from_route: Option<(R, R)> = match prev_route() {
         AnimatedRouterContext::FromTo(from, to) => Some((from, to)),
         _ => None,
     };
 
-    if let Some((from, to)) = from_route_data {
+    if let Some((from, to)) = from_route {
         // Special handling for transitions from root path
         let is_from_root = from.to_string() == "/";
 
@@ -98,13 +94,16 @@ pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
                     to: to.clone(),
                 }
             };
+        } else {
+            return rsx! {
+                Outlet::<R> {}
+            };
         }
+    } else {
+        return rsx! {
+            Outlet::<R> {}
+        };
     }
-
-    // Default to regular outlet
-    return rsx! {
-        Outlet::<R> {}
-    };
 }
 
 pub trait AnimatableRoute: Routable + Clone + PartialEq {
@@ -130,7 +129,7 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     use_effect(move || {
         let spring = Spring {
             stiffness: 160.0, // Reduced from 180.0 for less aggressive movement
-            damping: 20.0,    // Increased from 12.0 for faster settling
+            damping: 25.0,    // Increased from 12.0 for faster settling
             mass: 1.5,        // Slightly increased for more "weight"
             velocity: 10.0,   // Keep at 0 for predictable start
         };
@@ -153,7 +152,11 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     });
 
     use_effect(move || {
-        if !from_transform.is_running() && !to_transform.is_running() {
+        if !from_transform.is_running()
+            && !to_transform.is_running()
+            && !from_opacity.is_running()
+            && !to_opacity.is_running()
+        {
             animated_router.write().settle();
         }
     });
