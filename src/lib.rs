@@ -176,7 +176,7 @@ impl<T: Animatable> MotionState<T> {
                     std::cmp::Ordering::Less => {
                         let mut new_sequence = (**sequence).clone();
                         new_sequence.current_step += 1;
-                        let step = &sequence.steps[sequence.current_step as usize];
+                        let step = &new_sequence.steps[new_sequence.current_step as usize];
                         let target = step.target;
                         let config = (*step.config).clone();
                         let _ = sequence;
