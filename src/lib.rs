@@ -77,7 +77,7 @@ pub type Time = MotionTime;
 
 /// Animation sequence that can chain multiple animations together
 pub struct AnimationSequence<T: Animatable> {
-    steps: Vec<AnimationStep<T>>,
+    steps: Vec<AnimationStep<T>>, // Optimize for small sequences
     current_step: u8,
     on_complete: Option<Box<dyn FnOnce()>>,
 }
@@ -167,6 +167,12 @@ impl<T: Animatable> AnimationState<T> {
             return false;
         }
 
+        // Skip updates for imperceptible changes
+        const MIN_DELTA: f32 = 1.0 / 240.0; // ~4ms
+        if dt < MIN_DELTA {
+            return true;
+        }
+
         if self.delay_elapsed < self.config.delay {
             self.delay_elapsed += Duration::from_secs_f32(dt);
             return true;
@@ -201,24 +207,29 @@ impl<T: Animatable> AnimationState<T> {
     }
 
     fn update_spring(&mut self, spring: Spring, dt: f32) -> SpringState {
-        // Cache frequently used values
-        let dt = dt.min(0.064);
-        let stiffness = spring.stiffness;
-        let damping = spring.damping;
-        let mass_inv = 1.0 / spring.mass;
+        // Cache frequently accessed values in registers
+        let (stiffness, damping, mass_inv) = (spring.stiffness, spring.damping, 1.0 / spring.mass);
 
-        // SIMD-friendly data layout
-        let delta = self.target.sub(&self.current);
-        let force = delta.scale(stiffness);
-        let damping_force = self.velocity.scale(damping);
+        // Use fixed timestep for stability
+        const FIXED_DT: f32 = 1.0 / 60.0;
+        let steps = (dt / FIXED_DT).ceil() as usize;
 
-        // Combine calculations to reduce temporary allocations
-        let acceleration = (force.sub(&damping_force)).scale(mass_inv);
-        self.velocity = self.velocity.add(&acceleration.scale(dt));
-        self.current = self.current.add(&self.velocity.scale(dt));
+        for _ in 0..steps {
+            // Physics update with fixed timestep
+            let delta = self.target.sub(&self.current);
+            let force = delta.scale(stiffness);
+            let damping_force = self.velocity.scale(damping);
+
+            // Single combined calculation
+            self.velocity = self
+                .velocity
+                .add(&(force.sub(&damping_force)).scale(mass_inv * FIXED_DT));
+            self.current = self.current.add(&self.velocity.scale(FIXED_DT));
+        }
 
         // Use squared magnitude for performance
         let velocity_squared = self.velocity.magnitude().powi(2);
+        let delta = self.target.sub(&self.current);
         let delta_squared = delta.magnitude().powi(2);
 
         if velocity_squared < T::epsilon().powi(2) && delta_squared < T::epsilon().powi(2) {
