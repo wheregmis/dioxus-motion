@@ -47,6 +47,7 @@ pub use dioxus_motion_transitions_macro;
 pub use animations::platform::{MotionTime, TimeProvider};
 use animations::spring::{Spring, SpringState};
 use prelude::{AnimationConfig, LoopMode};
+use smallvec::SmallVec;
 
 // Re-exports
 pub mod prelude {
@@ -77,7 +78,7 @@ pub type Time = MotionTime;
 
 /// Animation sequence that can chain multiple animations together
 pub struct AnimationSequence<T: Animatable> {
-    steps: Vec<AnimationStep<T>>, // Optimize for small sequences
+    steps: SmallVec<[AnimationStep<T>; 4]>,
     current_step: u8,
     on_complete: Option<Box<dyn FnOnce()>>,
 }
@@ -91,7 +92,7 @@ pub struct AnimationStep<T: Animatable> {
 impl<T: Animatable> Default for AnimationSequence<T> {
     fn default() -> Self {
         Self {
-            steps: Vec::new(),
+            steps: SmallVec::new(),
             current_step: 0,
             on_complete: None,
         }
@@ -205,35 +206,39 @@ impl<T: Animatable> AnimationState<T> {
             true
         }
     }
-
     fn update_spring(&mut self, spring: Spring, dt: f32) -> SpringState {
-        // Cache frequently accessed values in registers
-        let (stiffness, damping, mass_inv) = (spring.stiffness, spring.damping, 1.0 / spring.mass);
+        // Cache frequently accessed values
+        let stiffness = spring.stiffness;
+        let damping = spring.damping;
+        let mass_inv = 1.0 / spring.mass;
 
-        // Use fixed timestep for stability
-        const FIXED_DT: f32 = 1.0 / 60.0;
-        let steps = (dt / FIXED_DT).ceil() as usize;
+        // Adaptive step count based on dt
+        const BASE_DT: f32 = 1.0 / 60.0;
+        let steps = ((dt / BASE_DT) as usize).clamp(1, 4); // Limit max steps
+        let step_dt = dt / steps as f32;
 
         for _ in 0..steps {
-            // Physics update with fixed timestep
+            // Semi-implicit Euler integration (more stable)
             let delta = self.target.sub(&self.current);
             let force = delta.scale(stiffness);
             let damping_force = self.velocity.scale(damping);
 
-            // Single combined calculation
+            // Update velocity first, then position
             self.velocity = self
                 .velocity
-                .add(&(force.sub(&damping_force)).scale(mass_inv * FIXED_DT));
-            self.current = self.current.add(&self.velocity.scale(FIXED_DT));
+                .add(&(force.sub(&damping_force)).scale(mass_inv * step_dt));
+            self.current = self.current.add(&self.velocity.scale(step_dt));
         }
 
-        // Use squared magnitude for performance
-        let velocity_squared = self.velocity.magnitude().powi(2);
+        // Early termination optimization with squared distance
+        let epsilon_sq = T::epsilon().powi(2);
+        let velocity_sq = self.velocity.magnitude().powi(2);
         let delta = self.target.sub(&self.current);
-        let delta_squared = delta.magnitude().powi(2);
+        let delta_sq = delta.magnitude().powi(2);
 
-        if velocity_squared < T::epsilon().powi(2) && delta_squared < T::epsilon().powi(2) {
-            self.current = self.target;
+        if velocity_sq < epsilon_sq && delta_sq < epsilon_sq {
+            self.current = self.target; // Snap to target
+            self.velocity = T::zero(); // Reset velocity
             SpringState::Completed
         } else {
             SpringState::Active
@@ -524,8 +529,7 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
 
         loop {
             let now = Time::now();
-            let dt = now.duration_since(last_frame).as_secs_f32();
-
+            let dt = (now.duration_since(last_frame).as_secs_f32()).min(0.1); // Clamp to 100ms max
             if state.peek().is_running() {
                 state.write().update(dt);
                 // Do something with dt and delay it if its more than 100ms to avoid hogging the CPU
