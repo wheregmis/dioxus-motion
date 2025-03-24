@@ -11,7 +11,7 @@ pub fn InteractiveCube() -> Element {
     let mut scale = use_motion(1.0f32);
     let mut glow = use_motion(0.0f32);
 
-    let onclick = move |e: Event<MouseData>| {
+    let onclick = move |_e: Event<MouseData>| {
         let spin_sequence = AnimationSequence::new().then(
             rotation_y.get_value() + 360.0,
             AnimationConfig::new(AnimationMode::Spring(Spring {
@@ -50,7 +50,7 @@ pub fn InteractiveCube() -> Element {
         let rect = e.data().client_coordinates();
         // Now using fixed dimensions for precise calculations
         let x = (rect.x as f32 - CONTAINER_SIZE / 2.0) / CONTAINER_SIZE - 0.5;
-        let y = (rect.y as f32 - CONTAINER_SIZE / 2.0) / CONTAINER_SIZE - 0.5;
+        let _y = (rect.y as f32 - CONTAINER_SIZE / 2.0) / CONTAINER_SIZE - 0.5;
 
         rotation_x.animate_to(
             x * 45.0,

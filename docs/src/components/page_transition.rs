@@ -1,7 +1,5 @@
-use dioxus::prelude::*;
-use dioxus_motion::prelude::*;
-
 use crate::components::code_block::CodeBlock;
+use dioxus::prelude::*;
 
 #[component]
 /// Renders a card component showcasing a transition effect.
