@@ -1132,6 +1132,7 @@ dependencies = [
  "futures-channel",
  "futures-util",
  "instant",
+ "smallvec",
  "tokio",
  "wasm-bindgen",
  "web-sys",

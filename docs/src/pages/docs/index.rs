@@ -106,6 +106,8 @@ pub fn Docs() -> Element {
         DocLayout {
             title: "Documentation",
             description: "Learn how to use Dioxus Motion to create beautiful animations in your applications.",
+
+            // Animated outlet for nested routes
             AnimatedOutlet::<Route> {}
         }
     }
@@ -123,7 +125,7 @@ pub fn Docs() -> Element {
 /// ```
 /// # use dioxus::prelude::*;
 /// # use crate::Route;
-/// 
+///
 /// fn Example(cx: Scope) -> Element {
 ///     SectionLink(Route::Home, "🏠", "Home")
 /// }

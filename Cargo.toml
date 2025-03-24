@@ -27,6 +27,7 @@ dioxus-motion-transitions-macro = { path = "packages/dioxus-motion-transitions-m
 dioxus = { git = "https://github.com/wheregmis/dioxus.git", branch = "main", features = [
     "router",
 ] }
+smallvec = "1.14.0"
 
 
 [features]

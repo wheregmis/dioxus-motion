@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
 
-use crate::BG_COLOR;
+use crate::old_showcase::showcase_component::BG_COLOR;
 
 #[component]
 pub fn ColorAnimation() -> Element {

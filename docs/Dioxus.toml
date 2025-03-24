@@ -3,7 +3,10 @@
 [web.app]
 
 # HTML title tag content
-title = "docs"
+# HTML title tag content
+title = "Dioxus Motion 🚀"
+
+base_path = "dioxus-motion"
 
 # include `assets` in web platform
 [web.resource]
