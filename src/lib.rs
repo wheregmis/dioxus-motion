@@ -140,7 +140,7 @@ impl<T: Animatable> MotionState<T> {
             target: initial,
             initial,
             velocity: T::zero(),
-            config: AnimationConfig::default().into(),
+            config: Arc::new(AnimationConfig::default()),
             running: false,
             elapsed: Duration::default(),
             delay_elapsed: Duration::default(),
@@ -153,7 +153,7 @@ impl<T: Animatable> MotionState<T> {
         self.sequence = None;
         self.initial = self.current;
         self.target = target;
-        self.config = config.into();
+        self.config = Arc::new(config);
         self.running = true;
         self.elapsed = Duration::default();
         self.delay_elapsed = Duration::default();
