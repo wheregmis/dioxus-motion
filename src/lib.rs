@@ -72,15 +72,19 @@ pub type Time = MotionTime;
 struct AnimationStep<T: Animatable> {
     target: T,
     config: Arc<AnimationConfig>,
+    // Add predicted next state for smoother transitions
+    predicted_next: Option<T>,
 }
 
 // Use a static array instead of Vec for small sequences
-type AnimationSteps<T> = SmallVec<[AnimationStep<T>; 16]>;
+type AnimationSteps<T> = SmallVec<[AnimationStep<T>; 8]>;
 
 pub struct AnimationSequence<T: Animatable> {
     steps: AnimationSteps<T>,
     current_step: u8,
     on_complete: Option<Box<dyn FnOnce()>>,
+    // Add capacity hint for better allocation
+    capacity_hint: u8,
 }
 
 impl<T: Animatable> Clone for AnimationSequence<T> {
@@ -89,6 +93,7 @@ impl<T: Animatable> Clone for AnimationSequence<T> {
             steps: self.steps.clone(),
             current_step: self.current_step,
             on_complete: None,
+            capacity_hint: self.capacity_hint,
         }
     }
 }
@@ -98,16 +103,52 @@ impl<T: Animatable> AnimationSequence<T> {
         Self::default()
     }
 
+    pub fn with_capacity(capacity: u8) -> Self {
+        Self {
+            steps: SmallVec::with_capacity(capacity as usize),
+            current_step: 0,
+            on_complete: None,
+            capacity_hint: capacity,
+        }
+    }
+
+    // Add method to reserve space upfront
+    pub fn reserve(&mut self, additional: u8) {
+        self.steps.reserve(additional as usize);
+    }
+
     pub fn then(mut self, target: T, config: AnimationConfig) -> Self {
+        let predicted_next = self
+            .steps
+            .last()
+            .map(|last_step| last_step.target.interpolate(&target, 0.5));
+
         self.steps.push(AnimationStep {
             target,
             config: Arc::new(config),
+            predicted_next,
         });
         self
     }
 
     pub fn on_complete<F: FnOnce() + 'static>(mut self, f: F) -> Self {
         self.on_complete = Some(Box::new(f));
+        self
+    }
+
+    // Batch multiple steps together
+    pub fn batch_steps(mut self, steps: impl IntoIterator<Item = (T, AnimationConfig)>) -> Self {
+        let mut last_target = None;
+
+        for (target, config) in steps {
+            let predicted_next = last_target.map(|last: T| last.interpolate(&target, 0.5));
+            self.steps.push(AnimationStep {
+                target,
+                config: Arc::new(config),
+                predicted_next,
+            });
+            last_target = Some(target);
+        }
         self
     }
 }
@@ -118,12 +159,13 @@ impl<T: Animatable> Default for AnimationSequence<T> {
             steps: AnimationSteps::new(),
             current_step: 0,
             on_complete: None,
+            capacity_hint: 0,
         }
     }
 }
 
 #[derive(Clone)]
-pub struct MotionState<T: Animatable> {
+pub struct Motion<T: Animatable> {
     current: T,
     target: T,
     initial: T,
@@ -136,8 +178,8 @@ pub struct MotionState<T: Animatable> {
     sequence: Option<Arc<AnimationSequence<T>>>,
 }
 
-impl<T: Animatable> MotionState<T> {
-    fn new(initial: T) -> Self {
+impl<T: Animatable> Motion<T> {
+    pub fn new(initial: T) -> Self {
         Self {
             current: initial,
             target: initial,
@@ -152,7 +194,7 @@ impl<T: Animatable> MotionState<T> {
         }
     }
 
-    fn animate_to(&mut self, target: T, config: AnimationConfig) {
+    pub fn animate_to(&mut self, target: T, config: AnimationConfig) {
         self.sequence = None;
         self.initial = self.current;
         self.target = target;
@@ -162,6 +204,40 @@ impl<T: Animatable> MotionState<T> {
         self.delay_elapsed = Duration::default();
         self.velocity = T::zero();
         self.current_loop = 0;
+    }
+
+    pub fn animate_sequence(&mut self, sequence: AnimationSequence<T>) {
+        if let Some(first_step) = sequence.steps.first() {
+            self.animate_to(first_step.target, (*first_step.config).clone());
+            self.sequence = Some(sequence.into());
+        }
+    }
+
+    pub fn value(&self) -> T {
+        self.current
+    }
+
+    pub fn is_running(&self) -> bool {
+        self.running || self.sequence.is_some()
+    }
+
+    pub fn reset(&mut self) {
+        self.stop();
+        self.current = self.initial;
+        self.elapsed = Duration::default();
+    }
+
+    pub fn stop(&mut self) {
+        self.running = false;
+        self.current_loop = 0;
+        self.velocity = T::zero();
+        self.sequence = None;
+    }
+
+    pub fn delay(&mut self, duration: Duration) {
+        let mut config = (*self.config).clone();
+        config.delay = duration;
+        self.config = Arc::new(config);
     }
 
     fn update(&mut self, dt: f32) -> bool {
@@ -401,26 +477,26 @@ impl<T: Animatable> MotionState<T> {
         should_continue
     }
 
-    fn stop(&mut self) {
-        self.running = false;
-        self.current_loop = 0;
-        self.velocity = T::zero();
-        self.sequence = None;
-    }
+    // fn stop(&mut self) {
+    //     self.running = false;
+    //     self.current_loop = 0;
+    //     self.velocity = T::zero();
+    //     self.sequence = None;
+    // }
 
-    fn reset(&mut self) {
-        self.stop();
-        self.current = self.initial;
-        self.elapsed = Duration::default();
-    }
+    // fn reset(&mut self) {
+    //     self.stop();
+    //     self.current = self.initial;
+    //     self.elapsed = Duration::default();
+    // }
 
     fn get_value(&self) -> T {
         self.current
     }
 
-    fn is_running(&self) -> bool {
-        self.running || self.sequence.is_some()
-    }
+    // fn is_running(&self) -> bool {
+    //     self.running || self.sequence.is_some()
+    // }
 }
 
 /// Combined Animation Manager trait
@@ -436,9 +512,9 @@ pub trait AnimationManager<T: Animatable>: Clone + Copy {
     fn delay(&mut self, duration: Duration);
 }
 
-impl<T: Animatable> AnimationManager<T> for Signal<MotionState<T>> {
+impl<T: Animatable> AnimationManager<T> for Signal<Motion<T>> {
     fn new(initial: T) -> Self {
-        Signal::new(MotionState::new(initial))
+        Signal::new(Motion::new(initial))
     }
 
     fn animate_to(&mut self, target: T, config: AnimationConfig) {
@@ -505,7 +581,7 @@ impl<T: Animatable> AnimationManager<T> for Signal<MotionState<T>> {
 /// // `animation_manager` now implements AnimationManager and can be used to control animations.
 /// ```
 pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
-    let mut state = use_signal(|| MotionState::new(initial));
+    let mut state = use_signal(|| Motion::new(initial));
 
     #[cfg(feature = "web")]
     let idle_poll_rate = Duration::from_millis(100);
