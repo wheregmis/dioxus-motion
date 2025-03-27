@@ -226,6 +226,7 @@ impl<T: Animatable> MotionState<T> {
         }
     }
 
+    #[cfg(feature = "web")]
     fn update_spring(&mut self, spring: Spring, dt: f32) -> SpringState {
         // Cache frequently accessed values
         let stiffness = spring.stiffness;
@@ -250,14 +251,94 @@ impl<T: Animatable> MotionState<T> {
             self.current = self.current.add(&self.velocity.scale(step_dt));
         }
 
-        // Early termination optimization with squared distance
+        // Early termination check
+        self.check_spring_completion()
+    }
+
+    #[cfg(not(feature = "web"))]
+    fn update_spring(&mut self, spring: Spring, dt: f32) -> SpringState {
+        // RK4 integration for better accuracy
+        let stiffness = spring.stiffness;
+        let damping = spring.damping;
+        let mass_inv = 1.0 / spring.mass;
+
+        // State vector: [position, velocity]
+        struct State<T> {
+            pos: T,
+            vel: T,
+        }
+
+        // Compute derivatives for RK4
+        let derive = |state: &State<T>| -> State<T> {
+            let delta = self.target.sub(&state.pos);
+            let force = delta.scale(stiffness);
+            let damping_force = state.vel.scale(damping);
+            let acc = (force.sub(&damping_force)).scale(mass_inv);
+
+            State {
+                pos: state.vel.clone(),
+                vel: acc,
+            }
+        };
+
+        let mut state = State {
+            pos: self.current.clone(),
+            vel: self.velocity.clone(),
+        };
+
+        // RK4 integration steps
+        let k1 = derive(&state);
+
+        let half_dt = dt * 0.5;
+        let state2 = State {
+            pos: state.pos.add(&k1.pos.scale(half_dt)),
+            vel: state.vel.add(&k1.vel.scale(half_dt)),
+        };
+        let k2 = derive(&state2);
+
+        let state3 = State {
+            pos: state.pos.add(&k2.pos.scale(half_dt)),
+            vel: state.vel.add(&k2.vel.scale(half_dt)),
+        };
+        let k3 = derive(&state3);
+
+        let state4 = State {
+            pos: state.pos.add(&k3.pos.scale(dt)),
+            vel: state.vel.add(&k3.vel.scale(dt)),
+        };
+        let k4 = derive(&state4);
+
+        // Update state using weighted sum
+        let sixth = 1.0 / 6.0;
+        self.current = state.pos.add(
+            &(k1.pos
+                .add(&k2.pos.scale(2.0))
+                .add(&k3.pos.scale(2.0))
+                .add(&k4.pos))
+            .scale(dt * sixth),
+        );
+
+        self.velocity = state.vel.add(
+            &(k1.vel
+                .add(&k2.vel.scale(2.0))
+                .add(&k3.vel.scale(2.0))
+                .add(&k4.vel))
+            .scale(dt * sixth),
+        );
+
+        // Check completion
+        self.check_spring_completion()
+    }
+
+    // Helper method for spring completion check (shared between both implementations)
+    fn check_spring_completion(&mut self) -> SpringState {
         let epsilon_sq = T::epsilon().powi(2);
         let velocity_sq = self.velocity.magnitude().powi(2);
         let delta = self.target.sub(&self.current);
         let delta_sq = delta.magnitude().powi(2);
 
         if velocity_sq < epsilon_sq && delta_sq < epsilon_sq {
-            self.current = self.target; // Snap to target
+            self.current = self.target.clone(); // Snap to target
             self.velocity = T::zero(); // Reset velocity
             SpringState::Completed
         } else {
