@@ -429,13 +429,38 @@ impl<T: Animatable> Motion<T> {
         }
     }
 
+    #[inline(always)]
     fn update_tween(&mut self, tween: Tween, dt: f32) -> bool {
-        self.elapsed += Duration::from_secs_f32(dt);
-        #[allow(clippy::float_arithmetic)]
-        let progress = (self.elapsed.as_secs_f32() / tween.duration.as_secs_f32()).clamp(0.0, 1.0);
+        // Use raw float operations instead of Duration for better performance
+        let elapsed_secs = self.elapsed.as_secs_f32() + dt;
+        self.elapsed = Duration::from_secs_f32(elapsed_secs);
 
+        // Avoid division by caching duration reciprocal
+        let duration_secs = tween.duration.as_secs_f32();
+        let progress = if duration_secs == 0.0 {
+            1.0
+        } else {
+            (elapsed_secs * (1.0 / duration_secs)).min(1.0)
+        };
+
+        // Skip interpolation if we're at the start or end
+        if progress <= 0.0 {
+            self.current = self.initial;
+            return false;
+        } else if progress >= 1.0 {
+            self.current = self.target;
+            return true;
+        }
+
+        // Cache easing result and avoid unnecessary parameters
         let eased_progress = (tween.easing)(progress, 0.0, 1.0, 1.0);
-        self.current = self.initial.interpolate(&self.target, eased_progress);
+
+        // Fast path for common cases
+        match eased_progress {
+            0.0 => self.current = self.initial,
+            1.0 => self.current = self.target,
+            _ => self.current = self.initial.interpolate(&self.target, eased_progress),
+        }
 
         progress >= 1.0
     }
