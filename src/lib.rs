@@ -75,7 +75,7 @@ struct AnimationStep<T: Animatable> {
 }
 
 // Use a static array instead of Vec for small sequences
-type AnimationSteps<T> = SmallVec<[AnimationStep<T>; 8]>;
+type AnimationSteps<T> = SmallVec<[AnimationStep<T>; 16]>;
 
 pub struct AnimationSequence<T: Animatable> {
     steps: AnimationSteps<T>,
@@ -228,30 +228,41 @@ impl<T: Animatable> MotionState<T> {
 
     #[cfg(feature = "web")]
     fn update_spring(&mut self, spring: Spring, dt: f32) -> SpringState {
+        const VELOCITY_THRESHOLD: f32 = 0.001;
+        const POSITION_THRESHOLD: f32 = 0.001;
+
         // Cache frequently accessed values
         let stiffness = spring.stiffness;
         let damping = spring.damping;
         let mass_inv = 1.0 / spring.mass;
 
-        // Adaptive step count based on dt
-        const BASE_DT: f32 = 1.0 / 60.0;
-        let steps = ((dt / BASE_DT) as usize).clamp(1, 4); // Limit max steps
+        // Use fixed timestep for better stability
+        const FIXED_DT: f32 = 1.0 / 120.0;
+        let steps = ((dt / FIXED_DT) as usize).max(1);
         let step_dt = dt / steps as f32;
 
         for _ in 0..steps {
-            // Semi-implicit Euler integration (more stable)
             let delta = self.target.sub(&self.current);
+
+            // Early exit if movement is negligible
+            if delta.magnitude() < POSITION_THRESHOLD
+                && self.velocity.magnitude() < VELOCITY_THRESHOLD
+            {
+                self.current = self.target;
+                self.velocity = T::zero();
+                return SpringState::Completed;
+            }
+
             let force = delta.scale(stiffness);
             let damping_force = self.velocity.scale(damping);
 
-            // Update velocity first, then position
+            // Fused multiply-add for better performance
             self.velocity = self
                 .velocity
                 .add(&(force.sub(&damping_force)).scale(mass_inv * step_dt));
             self.current = self.current.add(&self.velocity.scale(step_dt));
         }
 
-        // Early termination check
         self.check_spring_completion()
     }
 
@@ -286,36 +297,30 @@ impl<T: Animatable> MotionState<T> {
             vel: self.velocity.clone(),
         };
 
-        // RK4 integration steps
+        // Perform RK4 integration
         let k1 = derive(&state);
-
-        let half_dt = dt * 0.5;
-        let state2 = State {
-            pos: state.pos.add(&k1.pos.scale(half_dt)),
-            vel: state.vel.add(&k1.vel.scale(half_dt)),
-        };
-        let k2 = derive(&state2);
-
-        let state3 = State {
-            pos: state.pos.add(&k2.pos.scale(half_dt)),
-            vel: state.vel.add(&k2.vel.scale(half_dt)),
-        };
-        let k3 = derive(&state3);
-
-        let state4 = State {
+        let k2 = derive(&State {
+            pos: state.pos.add(&k1.pos.scale(dt * 0.5)),
+            vel: state.vel.add(&k1.vel.scale(dt * 0.5)),
+        });
+        let k3 = derive(&State {
+            pos: state.pos.add(&k2.pos.scale(dt * 0.5)),
+            vel: state.vel.add(&k2.vel.scale(dt * 0.5)),
+        });
+        let k4 = derive(&State {
             pos: state.pos.add(&k3.pos.scale(dt)),
             vel: state.vel.add(&k3.vel.scale(dt)),
-        };
-        let k4 = derive(&state4);
+        });
 
-        // Update state using weighted sum
-        let sixth = 1.0 / 6.0;
+        const SIXTH: f32 = 1.0 / 6.0;
+
+        // Update position and velocity
         self.current = state.pos.add(
             &(k1.pos
                 .add(&k2.pos.scale(2.0))
                 .add(&k3.pos.scale(2.0))
                 .add(&k4.pos))
-            .scale(dt * sixth),
+            .scale(dt * SIXTH),
         );
 
         self.velocity = state.vel.add(
@@ -323,23 +328,25 @@ impl<T: Animatable> MotionState<T> {
                 .add(&k2.vel.scale(2.0))
                 .add(&k3.vel.scale(2.0))
                 .add(&k4.vel))
-            .scale(dt * sixth),
+            .scale(dt * SIXTH),
         );
 
-        // Check completion
         self.check_spring_completion()
     }
 
     // Helper method for spring completion check (shared between both implementations)
+    #[inline(always)]
     fn check_spring_completion(&mut self) -> SpringState {
-        let epsilon_sq = T::epsilon().powi(2);
+        const EPSILON: f32 = 0.001;
+        const EPSILON_SQ: f32 = EPSILON * EPSILON;
+
         let velocity_sq = self.velocity.magnitude().powi(2);
         let delta = self.target.sub(&self.current);
         let delta_sq = delta.magnitude().powi(2);
 
-        if velocity_sq < epsilon_sq && delta_sq < epsilon_sq {
-            self.current = self.target.clone(); // Snap to target
-            self.velocity = T::zero(); // Reset velocity
+        if velocity_sq < EPSILON_SQ && delta_sq < EPSILON_SQ {
+            self.current = self.target;
+            self.velocity = T::zero();
             SpringState::Completed
         } else {
             SpringState::Active
@@ -556,5 +563,6 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
 
 // Reuse allocations for common operations
 thread_local! {
-    static TRANSFORM_BUFFER: RefCell<Transform> = RefCell::new(Transform::identity());
+    static TRANSFORM_BUFFER: RefCell<Vec<Transform>> = RefCell::new(Vec::with_capacity(32));
+    static SPRING_BUFFER: RefCell<Vec<SpringState>> = RefCell::new(Vec::with_capacity(16));
 }
