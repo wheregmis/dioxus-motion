@@ -32,7 +32,7 @@
 #![deny(clippy::option_if_let_else)] // Prefer map/and_then
 #![deny(clippy::option_if_let_else)] // Prefer map/and_then
 
-use std::sync::Arc;
+use std::{cell::RefCell, sync::Arc};
 
 use animations::utils::{Animatable, AnimationMode};
 use dioxus::prelude::*;
@@ -46,7 +46,7 @@ pub use dioxus_motion_transitions_macro;
 
 pub use animations::platform::{MotionTime, TimeProvider};
 use animations::spring::{Spring, SpringState};
-use prelude::{AnimationConfig, LoopMode, Tween};
+use prelude::{AnimationConfig, LoopMode, Transform, Tween};
 use smallvec::SmallVec;
 
 // Re-exports
@@ -72,12 +72,19 @@ pub type Time = MotionTime;
 struct AnimationStep<T: Animatable> {
     target: T,
     config: Arc<AnimationConfig>,
+    // Add predicted next state for smoother transitions
+    predicted_next: Option<T>,
 }
 
+// Use a static array instead of Vec for small sequences
+type AnimationSteps<T> = SmallVec<[AnimationStep<T>; 8]>;
+
 pub struct AnimationSequence<T: Animatable> {
-    steps: SmallVec<[AnimationStep<T>; 4]>,
+    steps: AnimationSteps<T>,
     current_step: u8,
     on_complete: Option<Box<dyn FnOnce()>>,
+    // Add capacity hint for better allocation
+    capacity_hint: u8,
 }
 
 impl<T: Animatable> Clone for AnimationSequence<T> {
@@ -86,6 +93,7 @@ impl<T: Animatable> Clone for AnimationSequence<T> {
             steps: self.steps.clone(),
             current_step: self.current_step,
             on_complete: None,
+            capacity_hint: self.capacity_hint,
         }
     }
 }
@@ -95,10 +103,30 @@ impl<T: Animatable> AnimationSequence<T> {
         Self::default()
     }
 
+    pub fn with_capacity(capacity: u8) -> Self {
+        Self {
+            steps: SmallVec::with_capacity(capacity as usize),
+            current_step: 0,
+            on_complete: None,
+            capacity_hint: capacity,
+        }
+    }
+
+    // Add method to reserve space upfront
+    pub fn reserve(&mut self, additional: u8) {
+        self.steps.reserve(additional as usize);
+    }
+
     pub fn then(mut self, target: T, config: AnimationConfig) -> Self {
+        let predicted_next = self
+            .steps
+            .last()
+            .map(|last_step| last_step.target.interpolate(&target, 0.5));
+
         self.steps.push(AnimationStep {
             target,
             config: Arc::new(config),
+            predicted_next,
         });
         self
     }
@@ -107,20 +135,37 @@ impl<T: Animatable> AnimationSequence<T> {
         self.on_complete = Some(Box::new(f));
         self
     }
+
+    // Batch multiple steps together
+    pub fn batch_steps(mut self, steps: impl IntoIterator<Item = (T, AnimationConfig)>) -> Self {
+        let mut last_target = None;
+
+        for (target, config) in steps {
+            let predicted_next = last_target.map(|last: T| last.interpolate(&target, 0.5));
+            self.steps.push(AnimationStep {
+                target,
+                config: Arc::new(config),
+                predicted_next,
+            });
+            last_target = Some(target);
+        }
+        self
+    }
 }
 
 impl<T: Animatable> Default for AnimationSequence<T> {
     fn default() -> Self {
         Self {
-            steps: SmallVec::new(),
+            steps: AnimationSteps::new(),
             current_step: 0,
             on_complete: None,
+            capacity_hint: 0,
         }
     }
 }
 
 #[derive(Clone)]
-pub struct MotionState<T: Animatable> {
+pub struct Motion<T: Animatable> {
     current: T,
     target: T,
     initial: T,
@@ -133,8 +178,8 @@ pub struct MotionState<T: Animatable> {
     sequence: Option<Arc<AnimationSequence<T>>>,
 }
 
-impl<T: Animatable> MotionState<T> {
-    fn new(initial: T) -> Self {
+impl<T: Animatable> Motion<T> {
+    pub fn new(initial: T) -> Self {
         Self {
             current: initial,
             target: initial,
@@ -149,7 +194,7 @@ impl<T: Animatable> MotionState<T> {
         }
     }
 
-    fn animate_to(&mut self, target: T, config: AnimationConfig) {
+    pub fn animate_to(&mut self, target: T, config: AnimationConfig) {
         self.sequence = None;
         self.initial = self.current;
         self.target = target;
@@ -159,6 +204,40 @@ impl<T: Animatable> MotionState<T> {
         self.delay_elapsed = Duration::default();
         self.velocity = T::zero();
         self.current_loop = 0;
+    }
+
+    pub fn animate_sequence(&mut self, sequence: AnimationSequence<T>) {
+        if let Some(first_step) = sequence.steps.first() {
+            self.animate_to(first_step.target, (*first_step.config).clone());
+            self.sequence = Some(sequence.into());
+        }
+    }
+
+    pub fn value(&self) -> T {
+        self.current
+    }
+
+    pub fn is_running(&self) -> bool {
+        self.running || self.sequence.is_some()
+    }
+
+    pub fn reset(&mut self) {
+        self.stop();
+        self.current = self.initial;
+        self.elapsed = Duration::default();
+    }
+
+    pub fn stop(&mut self) {
+        self.running = false;
+        self.current_loop = 0;
+        self.velocity = T::zero();
+        self.sequence = None;
+    }
+
+    pub fn delay(&mut self, duration: Duration) {
+        let mut config = (*self.config).clone();
+        config.delay = duration;
+        self.config = Arc::new(config);
     }
 
     fn update(&mut self, dt: f32) -> bool {
@@ -223,52 +302,165 @@ impl<T: Animatable> MotionState<T> {
         }
     }
 
+    #[cfg(feature = "web")]
     fn update_spring(&mut self, spring: Spring, dt: f32) -> SpringState {
+        const VELOCITY_THRESHOLD: f32 = 0.001;
+        const POSITION_THRESHOLD: f32 = 0.001;
+
         // Cache frequently accessed values
         let stiffness = spring.stiffness;
         let damping = spring.damping;
         let mass_inv = 1.0 / spring.mass;
 
-        // Adaptive step count based on dt
-        const BASE_DT: f32 = 1.0 / 60.0;
-        let steps = ((dt / BASE_DT) as usize).clamp(1, 4); // Limit max steps
+        // Use fixed timestep for better stability
+        const FIXED_DT: f32 = 1.0 / 120.0;
+        let steps = ((dt / FIXED_DT) as usize).max(1);
         let step_dt = dt / steps as f32;
 
         for _ in 0..steps {
-            // Semi-implicit Euler integration (more stable)
             let delta = self.target.sub(&self.current);
+
+            // Early exit if movement is negligible
+            if delta.magnitude() < POSITION_THRESHOLD
+                && self.velocity.magnitude() < VELOCITY_THRESHOLD
+            {
+                self.current = self.target;
+                self.velocity = T::zero();
+                return SpringState::Completed;
+            }
+
             let force = delta.scale(stiffness);
             let damping_force = self.velocity.scale(damping);
 
-            // Update velocity first, then position
+            // Fused multiply-add for better performance
             self.velocity = self
                 .velocity
                 .add(&(force.sub(&damping_force)).scale(mass_inv * step_dt));
             self.current = self.current.add(&self.velocity.scale(step_dt));
         }
 
-        // Early termination optimization with squared distance
-        let epsilon_sq = T::epsilon().powi(2);
+        self.check_spring_completion()
+    }
+
+    #[cfg(not(feature = "web"))]
+    fn update_spring(&mut self, spring: Spring, dt: f32) -> SpringState {
+        // RK4 integration for better accuracy
+        let stiffness = spring.stiffness;
+        let damping = spring.damping;
+        let mass_inv = 1.0 / spring.mass;
+
+        // State vector: [position, velocity]
+        struct State<T> {
+            pos: T,
+            vel: T,
+        }
+
+        // Compute derivatives for RK4
+        let derive = |state: &State<T>| -> State<T> {
+            let delta = self.target.sub(&state.pos);
+            let force = delta.scale(stiffness);
+            let damping_force = state.vel.scale(damping);
+            let acc = (force.sub(&damping_force)).scale(mass_inv);
+
+            State {
+                pos: state.vel.clone(),
+                vel: acc,
+            }
+        };
+
+        let mut state = State {
+            pos: self.current.clone(),
+            vel: self.velocity.clone(),
+        };
+
+        // Perform RK4 integration
+        let k1 = derive(&state);
+        let k2 = derive(&State {
+            pos: state.pos.add(&k1.pos.scale(dt * 0.5)),
+            vel: state.vel.add(&k1.vel.scale(dt * 0.5)),
+        });
+        let k3 = derive(&State {
+            pos: state.pos.add(&k2.pos.scale(dt * 0.5)),
+            vel: state.vel.add(&k2.vel.scale(dt * 0.5)),
+        });
+        let k4 = derive(&State {
+            pos: state.pos.add(&k3.pos.scale(dt)),
+            vel: state.vel.add(&k3.vel.scale(dt)),
+        });
+
+        const SIXTH: f32 = 1.0 / 6.0;
+
+        // Update position and velocity
+        self.current = state.pos.add(
+            &(k1.pos
+                .add(&k2.pos.scale(2.0))
+                .add(&k3.pos.scale(2.0))
+                .add(&k4.pos))
+            .scale(dt * SIXTH),
+        );
+
+        self.velocity = state.vel.add(
+            &(k1.vel
+                .add(&k2.vel.scale(2.0))
+                .add(&k3.vel.scale(2.0))
+                .add(&k4.vel))
+            .scale(dt * SIXTH),
+        );
+
+        self.check_spring_completion()
+    }
+
+    // Helper method for spring completion check (shared between both implementations)
+    #[inline(always)]
+    fn check_spring_completion(&mut self) -> SpringState {
+        const EPSILON: f32 = 0.001;
+        const EPSILON_SQ: f32 = EPSILON * EPSILON;
+
         let velocity_sq = self.velocity.magnitude().powi(2);
         let delta = self.target.sub(&self.current);
         let delta_sq = delta.magnitude().powi(2);
 
-        if velocity_sq < epsilon_sq && delta_sq < epsilon_sq {
-            self.current = self.target; // Snap to target
-            self.velocity = T::zero(); // Reset velocity
+        if velocity_sq < EPSILON_SQ && delta_sq < EPSILON_SQ {
+            self.current = self.target;
+            self.velocity = T::zero();
             SpringState::Completed
         } else {
             SpringState::Active
         }
     }
 
+    #[inline(always)]
     fn update_tween(&mut self, tween: Tween, dt: f32) -> bool {
-        self.elapsed += Duration::from_secs_f32(dt);
-        #[allow(clippy::float_arithmetic)]
-        let progress = (self.elapsed.as_secs_f32() / tween.duration.as_secs_f32()).clamp(0.0, 1.0);
+        // Use raw float operations instead of Duration for better performance
+        let elapsed_secs = self.elapsed.as_secs_f32() + dt;
+        self.elapsed = Duration::from_secs_f32(elapsed_secs);
 
+        // Avoid division by caching duration reciprocal
+        let duration_secs = tween.duration.as_secs_f32();
+        let progress = if duration_secs == 0.0 {
+            1.0
+        } else {
+            (elapsed_secs * (1.0 / duration_secs)).min(1.0)
+        };
+
+        // Skip interpolation if we're at the start or end
+        if progress <= 0.0 {
+            self.current = self.initial;
+            return false;
+        } else if progress >= 1.0 {
+            self.current = self.target;
+            return true;
+        }
+
+        // Cache easing result and avoid unnecessary parameters
         let eased_progress = (tween.easing)(progress, 0.0, 1.0, 1.0);
-        self.current = self.initial.interpolate(&self.target, eased_progress);
+
+        // Fast path for common cases
+        match eased_progress {
+            0.0 => self.current = self.initial,
+            1.0 => self.current = self.target,
+            _ => self.current = self.initial.interpolate(&self.target, eased_progress),
+        }
 
         progress >= 1.0
     }
@@ -310,26 +502,26 @@ impl<T: Animatable> MotionState<T> {
         should_continue
     }
 
-    fn stop(&mut self) {
-        self.running = false;
-        self.current_loop = 0;
-        self.velocity = T::zero();
-        self.sequence = None;
-    }
+    // fn stop(&mut self) {
+    //     self.running = false;
+    //     self.current_loop = 0;
+    //     self.velocity = T::zero();
+    //     self.sequence = None;
+    // }
 
-    fn reset(&mut self) {
-        self.stop();
-        self.current = self.initial;
-        self.elapsed = Duration::default();
-    }
+    // fn reset(&mut self) {
+    //     self.stop();
+    //     self.current = self.initial;
+    //     self.elapsed = Duration::default();
+    // }
 
     fn get_value(&self) -> T {
         self.current
     }
 
-    fn is_running(&self) -> bool {
-        self.running || self.sequence.is_some()
-    }
+    // fn is_running(&self) -> bool {
+    //     self.running || self.sequence.is_some()
+    // }
 }
 
 /// Combined Animation Manager trait
@@ -345,9 +537,9 @@ pub trait AnimationManager<T: Animatable>: Clone + Copy {
     fn delay(&mut self, duration: Duration);
 }
 
-impl<T: Animatable> AnimationManager<T> for Signal<MotionState<T>> {
+impl<T: Animatable> AnimationManager<T> for Signal<Motion<T>> {
     fn new(initial: T) -> Self {
-        Signal::new(MotionState::new(initial))
+        Signal::new(Motion::new(initial))
     }
 
     fn animate_to(&mut self, target: T, config: AnimationConfig) {
@@ -421,7 +613,7 @@ impl<T: Animatable> AnimationManager<T> for Signal<MotionState<T>> {
 /// }
 /// ```
 pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
-    let mut state = use_signal(|| MotionState::new(initial));
+    let mut state = use_signal(|| Motion::new(initial));
 
     #[cfg(feature = "web")]
     let idle_poll_rate = Duration::from_millis(100);
@@ -475,4 +667,10 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
     });
 
     state
+}
+
+// Reuse allocations for common operations
+thread_local! {
+    static TRANSFORM_BUFFER: RefCell<Vec<Transform>> = RefCell::new(Vec::with_capacity(32));
+    static SPRING_BUFFER: RefCell<Vec<SpringState>> = RefCell::new(Vec::with_capacity(16));
 }
