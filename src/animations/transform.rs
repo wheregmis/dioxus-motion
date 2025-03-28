@@ -13,6 +13,8 @@ use crate::Animatable;
 ///
 /// # Examples
 /// ```rust
+/// use dioxus_motion::prelude::Transform;
+/// use std::f32::consts::PI;
 /// let transform = Transform::new(100.0, 50.0, 1.5, PI/4.0);
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -150,5 +152,41 @@ impl Animatable for Transform {
             self.scale + (target.scale - self.scale) * t,
             self.rotation + rotation_diff * t,
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::f32::consts::PI;
+
+    #[test]
+    fn test_transform_new() {
+        let transform = Transform::new(100.0, 50.0, 1.5, PI / 4.0);
+        assert_eq!(transform.x, 100.0);
+        assert_eq!(transform.y, 50.0);
+        assert_eq!(transform.scale, 1.5);
+        assert!((transform.rotation - PI / 4.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_transform_default() {
+        let transform = Transform::identity();
+        assert_eq!(transform.x, 0.0);
+        assert_eq!(transform.y, 0.0);
+        assert_eq!(transform.scale, 1.0);
+        assert_eq!(transform.rotation, 0.0);
+    }
+
+    #[test]
+    fn test_transform_lerp() {
+        let start = Transform::new(0.0, 0.0, 1.0, 0.0);
+        let end = Transform::new(100.0, 100.0, 2.0, PI);
+        let mid = start.interpolate(&end, 0.5);
+
+        assert_eq!(mid.x, 50.0);
+        assert_eq!(mid.y, 50.0);
+        assert_eq!(mid.scale, 1.5);
+        assert!((mid.rotation - PI / 2.0).abs() < f32::EPSILON);
     }
 }

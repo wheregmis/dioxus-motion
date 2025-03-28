@@ -10,6 +10,9 @@ pub use instant::Duration;
 ///
 /// # Examples
 /// ```rust
+/// use dioxus_motion::Duration;
+/// use dioxus_motion::prelude::Tween;
+/// use easer::functions::Easing;
 /// let tween = Tween::new(Duration::from_secs(1))
 ///     .with_easing(easer::functions::Cubic::ease_in_out);
 /// ```
@@ -47,5 +50,42 @@ impl Tween {
     pub fn with_easing(mut self, easing: fn(f32, f32, f32, f32) -> f32) -> Self {
         self.easing = easing;
         self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use easer::functions::{Cubic, Easing};
+
+    #[test]
+    fn test_tween_new() {
+        let tween = Tween {
+            duration: Duration::from_secs(1),
+            easing: Cubic::ease_in_out,
+        };
+
+        assert_eq!(tween.duration, Duration::from_secs(1));
+    }
+
+    #[test]
+    fn test_tween_interpolation() {
+        let tween = Tween {
+            duration: Duration::from_secs(1),
+            easing: Linear::ease_in_out,
+        };
+
+        // Test midpoint
+        let progress = 0.5;
+        let result = (tween.easing)(progress, 0.0, 1.0, 1.0);
+        assert!((result - 0.5).abs() < f32::EPSILON);
+
+        // Test start
+        let result = (tween.easing)(0.0, 0.0, 1.0, 1.0);
+        assert!((result - 0.0).abs() < f32::EPSILON);
+
+        // Test end
+        let result = (tween.easing)(1.0, 0.0, 1.0, 1.0);
+        assert!((result - 1.0).abs() < f32::EPSILON);
     }
 }

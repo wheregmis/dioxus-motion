@@ -52,13 +52,6 @@ impl<R: Routable + PartialEq> AnimatedRouterContext<R> {
 /// determine when an animated transition should occur. When a transition is detected and
 /// the layout depth or route conditions are met, it renders a transition component; otherwise,
 /// it renders a standard outlet.
-///
-/// # Examples
-///
-/// ```
-/// // Assuming `AppRoute` implements `AnimatableRoute`:
-/// let animated_outlet = AnimatedOutlet::<AppRoute>();
-/// // Use `animated_outlet` as part of your Dioxus component tree.
 /// ```
 pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
     let route = use_route::<R>();

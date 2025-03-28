@@ -9,6 +9,7 @@
 ///
 /// # Examples
 /// ```rust
+/// use dioxus_motion::prelude::Spring;
 /// let spring = Spring {
 ///     stiffness: 100.0,  // Higher values = faster snap
 ///     damping: 10.0,     // Higher values = less bounce
@@ -56,4 +57,33 @@ pub enum SpringState {
     Active,
     /// Spring has settled to its target position
     Completed,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_spring_default() {
+        let spring = Spring::default();
+        assert_eq!(spring.stiffness, 100.0);
+        assert_eq!(spring.damping, 10.0);
+        assert_eq!(spring.mass, 1.0);
+        assert_eq!(spring.velocity, 0.0);
+    }
+
+    #[test]
+    fn test_spring_custom() {
+        let spring = Spring {
+            stiffness: 200.0,
+            damping: 20.0,
+            mass: 2.0,
+            velocity: 5.0,
+        };
+
+        assert_eq!(spring.stiffness, 200.0);
+        assert_eq!(spring.damping, 20.0);
+        assert_eq!(spring.mass, 2.0);
+        assert_eq!(spring.velocity, 5.0);
+    }
 }

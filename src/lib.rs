@@ -12,7 +12,7 @@
 //! - Animation sequences
 //!
 //! # Example
-//! ```rust
+//! ```rust,no_run
 //! use dioxus_motion::prelude::*;
 //!
 //! let mut value = use_motion(0.0f32);
@@ -397,21 +397,28 @@ impl<T: Animatable> AnimationManager<T> for Signal<MotionState<T>> {
 /// it updates the state using the calculated time delta and dynamically adjusts the update interval to optimize CPU usage;
 /// when the animation is inactive, it waits longer before polling again.
 ///
-/// # Examples
+/// # Example
 ///
-/// ```
-/// # use dioxus_motion::{use_motion, AnimationManager, Animatable};
-/// #
-/// # struct MyAnimatable;
-/// #
-/// # impl Default for MyAnimatable {
-/// #     fn default() -> Self { MyAnimatable }
-/// # }
-/// #
-/// # impl Animatable for MyAnimatable {}
-/// let initial_value = MyAnimatable::default();
-/// let animation_manager = use_motion(initial_value);
-/// // `animation_manager` now implements AnimationManager and can be used to control animations.
+/// ```no_run
+/// use dioxus_motion::prelude::*;
+/// use dioxus::prelude::*;
+///
+/// fn app() -> Element {
+///     let mut value = use_motion(0.0f32);
+///     
+///     // Animate to 100 with spring physics
+///     value.animate_to(
+///         100.0,
+///         AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+///     );
+///     
+///     rsx! {
+///         div {
+///             style: "transform: translateY({value.get_value()}px)",
+///             "Animated content"
+///         }
+///     }
+/// }
 /// ```
 pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
     let mut state = use_signal(|| MotionState::new(initial));

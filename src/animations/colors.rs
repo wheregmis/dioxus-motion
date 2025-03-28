@@ -25,6 +25,7 @@ impl Color {
     ///
     /// # Examples
     /// ```
+    /// use dioxus_motion::prelude::Color;
     /// let color = Color::new(1.0, 0.5, 0.0, 1.0); // Orange color
     /// ```
     pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
@@ -40,6 +41,7 @@ impl Color {
     ///
     /// # Examples
     /// ```
+    /// use dioxus_motion::prelude::Color;
     /// let color = Color::from_rgba(255, 128, 0, 255); // Orange color
     /// ```
     pub fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
@@ -57,10 +59,10 @@ impl Color {
     /// Tuple of (r,g,b,a) with values from 0-255
     pub fn to_rgba(&self) -> (u8, u8, u8, u8) {
         (
-            (self.r * 255.0) as u8,
-            (self.g * 255.0) as u8,
-            (self.b * 255.0) as u8,
-            (self.a * 255.0) as u8,
+            (self.r * 255.0 + 0.5) as u8,
+            (self.g * 255.0 + 0.5) as u8,
+            (self.b * 255.0 + 0.5) as u8,
+            (self.a * 255.0 + 0.5) as u8,
         )
     }
 }
@@ -133,5 +135,50 @@ impl Animatable for Color {
         let a = self.a * (1.0 - t) + target.a * t;
 
         Color::new(r, g, b, a)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_color_new() {
+        let color = Color::new(1.0, 0.5, 0.0, 1.0);
+        assert_eq!(color.r, 1.0);
+        assert_eq!(color.g, 0.5);
+        assert_eq!(color.b, 0.0);
+        assert_eq!(color.a, 1.0);
+    }
+
+    #[test]
+    fn test_color_from_rgba() {
+        let color = Color::from_rgba(255, 128, 0, 255);
+        assert!((color.r - 1.0).abs() < f32::EPSILON);
+        assert!((color.g - 0.5019608).abs() < 0.000001);
+        assert!((color.b - 0.0).abs() < f32::EPSILON);
+        assert!((color.a - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_color_lerp() {
+        let start = Color::new(0.0, 0.0, 0.0, 1.0);
+        let end = Color::new(1.0, 1.0, 1.0, 1.0);
+        let mid = start.interpolate(&end, 0.5);
+
+        assert!((mid.r - 0.5).abs() < f32::EPSILON);
+        assert!((mid.g - 0.5).abs() < f32::EPSILON);
+        assert!((mid.b - 0.5).abs() < f32::EPSILON);
+        assert!((mid.a - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_color_to_rgba() {
+        let color = Color::new(1.0, 0.5, 0.0, 1.0);
+        let (r, g, b, a) = color.to_rgba();
+        assert_eq!(r, 255);
+        assert_eq!(g, 128);
+        assert_eq!(b, 0);
+        assert_eq!(a, 255);
     }
 }
