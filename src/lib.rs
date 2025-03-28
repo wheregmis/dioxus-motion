@@ -69,6 +69,7 @@ pub mod prelude {
 pub type Time = MotionTime;
 
 #[derive(Clone)]
+#[allow(dead_code)]
 struct AnimationStep<T: Animatable> {
     target: T,
     config: Arc<AnimationConfig>,
@@ -502,26 +503,9 @@ impl<T: Animatable> Motion<T> {
         should_continue
     }
 
-    // fn stop(&mut self) {
-    //     self.running = false;
-    //     self.current_loop = 0;
-    //     self.velocity = T::zero();
-    //     self.sequence = None;
-    // }
-
-    // fn reset(&mut self) {
-    //     self.stop();
-    //     self.current = self.initial;
-    //     self.elapsed = Duration::default();
-    // }
-
     fn get_value(&self) -> T {
         self.current
     }
-
-    // fn is_running(&self) -> bool {
-    //     self.running || self.sequence.is_some()
-    // }
 }
 
 /// Combined Animation Manager trait
