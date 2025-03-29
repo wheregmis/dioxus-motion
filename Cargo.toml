@@ -24,7 +24,7 @@ futures-channel = { version = "0.3.31", default-features = false }
 tokio = { version = "1.43.0", optional = true, default-features = false }
 # For transitions
 dioxus-motion-transitions-macro = { path = "packages/dioxus-motion-transitions-macro", version = "0.1.0", optional = true }
-dioxus = { git = "https://github.com/wheregmis/dioxus.git", branch = "main", features = [
+dioxus = { git = "https://github.com/DioxusLabs/dioxus.git", branch = "main", features = [
     "router",
 ] }
 smallvec = "1.14.0"
