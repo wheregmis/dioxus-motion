@@ -71,7 +71,8 @@ fn DocLayout(title: &'static str, description: &'static str, children: Element) 
                         }
 
                         // Main content
-                        div { class: "flex-[4] min-w-0", {children} }
+                        div { class: "flex-[4] min-w-0",   // Animated outlet for nested routes
+                            AnimatedOutlet::<Route> {} }
 
                         // Right sidebar - Related links
                         div { class: "hidden lg:block flex-1",
@@ -106,8 +107,6 @@ pub fn Docs() -> Element {
             title: "Documentation",
             description: "Learn how to use Dioxus Motion to create beautiful animations in your applications.",
 
-            // Animated outlet for nested routes
-            AnimatedOutlet::<Route> {}
         }
     }
 }

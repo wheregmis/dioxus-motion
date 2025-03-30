@@ -22,18 +22,24 @@ use easer::functions::Easing;
 /// ```
 fn AnimationStep(title: String, description: String, code: String, children: Element) -> Element {
     rsx! {
-        div { class: "flex flex-col md:flex-row gap-6 p-6 bg-dark-200/50 backdrop-blur-sm rounded-xl border border-primary/10",
-            // Left side - Code
-            div { class: "flex-1",
+        div {
+            class: "flex flex-col lg:flex-row gap-6 p-6 bg-dark-200/50 backdrop-blur-sm rounded-xl border border-primary/10",
+            // Left side - Code (85%)
+            div {
+                class: "lg:w-[85%] min-w-0", // Changed to explicit 85% width on larger screens
                 h3 { class: "text-lg font-medium text-text-primary mb-2", {title} }
                 p { class: "text-text-secondary mb-4", {description} }
-                CodeBlock {
-                    code: code,
-                    language: "rust".to_string(),
+                div {
+                    class: "overflow-x-auto rounded-lg", // Added rounded corners to match the demo section
+                    CodeBlock {
+                        code: code,
+                        language: "rust".to_string(),
+                    }
                 }
             }
-            // Right side - Live Demo
-            div { class: "flex-1 flex items-center justify-center min-h-[200px] bg-dark-300/50 rounded-lg",
+            // Right side - Live Demo (15%)
+            div {
+                class: "lg:w-[15%] min-w-[200px] flex items-center justify-center min-h-[200px] bg-dark-300/50 rounded-lg",
                 {children}
             }
         }
@@ -292,18 +298,18 @@ impl Animatable for ColorValue {
     }
 
     /// Linearly interpolates between the current color and a target color.
-    /// 
+    ///
     /// Produces a new `ColorValue` by blending `self` and `target` based on the
     /// interpolation factor `t`. When `t` is 0.0, the result is `self`; when `t` is 1.0,
     /// the result is `target`.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// let start = ColorValue { r: 0.0, g: 0.0, b: 0.0 };
     /// let end = ColorValue { r: 1.0, g: 1.0, b: 1.0 };
     /// let mid = start.interpolate(&end, 0.5);
-    /// 
+    ///
     /// // The mid point should have each component approximately equal to 0.5.
     /// assert!((mid.r - 0.5).abs() < f32::EPSILON);
     /// assert!((mid.g - 0.5).abs() < f32::EPSILON);
@@ -320,9 +326,9 @@ impl Animatable for ColorValue {
 
 #[component]
 /// Renders an interactive color animation component that transitions a div's background color between cool and warm states.
-/// 
+///
 /// The component uses spring-based animations to smoothly switch between a predefined cool color (default) and a warm color when the button is clicked. The button label dynamically reflects the current color mode.
-/// 
+///
 /// # Examples
 ///
 /// ```
@@ -735,6 +741,39 @@ rsx! {
                 SequenceAnimation {}
             }
 
+            // Advanced Features Animation Step
+            AnimationStep {
+                title: "6. Advanced Animation Features".to_string(),
+                description: "Explore additional features like loops, delays, and completion callbacks for more control over your animations.".to_string(),
+                code: r#"// Loop animations infinitely or a specific number of times
+value.animate_to(
+    1.0,
+    AnimationConfig::new(AnimationMode::Tween(Tween::default()))
+        .with_loop(LoopMode::Infinite)  // Loop forever
+);
+
+value.animate_to(
+    1.0,
+    AnimationConfig::new(AnimationMode::Tween(Tween::default()))
+        .with_loop(LoopMode::Times(3))  // Loop 3 times
+);
+
+// Add delays before starting animations
+value.animate_to(
+    1.0,
+    AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+        .with_delay(Duration::from_secs(1))  // Wait 1 second before starting
+);
+
+// Execute callbacks when animations complete
+value.animate_to(
+    1.0,
+    AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+        .with_on_complete(|| println!("Animation complete!"))
+);"#.to_string(),
+                AdvancedFeaturesAnimation {}  // You'll need to implement this component
+            }
+
             // Best Practices
             section { class: "space-y-6",
                 h2 { class: "text-2xl font-semibold text-text-primary", "Best Practices" }
@@ -757,6 +796,137 @@ rsx! {
                             li { "Consider reduced motion preferences" }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn AdvancedFeaturesAnimation() -> Element {
+    let mut infinite_value = use_motion(0.0f32);
+    let mut delayed_value = use_motion(0.0f32);
+    let mut callback_value = use_motion(0.0f32);
+    // Infinite loop animation
+    let start_infinite = move |_| {
+        infinite_value.animate_to(
+            1.0,
+            AnimationConfig::new(AnimationMode::Tween(Tween {
+                duration: Duration::from_millis(1000),
+                easing: easer::functions::Cubic::ease_in_out,
+            }))
+            .with_loop(LoopMode::Infinite),
+        );
+    };
+
+    // Delayed animation
+    let start_delayed = move |_| {
+        delayed_value.animate_to(
+            1.0,
+            AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+                .with_delay(Duration::from_secs(1)),
+        );
+    };
+
+    // Animation with completion callback
+    let start_callback = move |_| {
+        callback_value.animate_to(
+            1.0,
+            AnimationConfig::new(AnimationMode::Tween(Tween {
+                duration: Duration::from_millis(1000),
+                easing: easer::functions::Cubic::ease_in_out,
+            }))
+            .with_loop(LoopMode::Times(3))
+            .with_on_complete(|| println!("Animation completed after 3 loops!")),
+        );
+    };
+
+    // Reset all animations
+    let reset_all = move |_| {
+        infinite_value.animate_to(
+            0.0,
+            AnimationConfig::new(AnimationMode::Tween(Tween {
+                duration: Duration::from_millis(500),
+                easing: easer::functions::Cubic::ease_out,
+            })),
+        );
+        delayed_value.animate_to(
+            0.0,
+            AnimationConfig::new(AnimationMode::Tween(Tween {
+                duration: Duration::from_millis(500),
+                easing: easer::functions::Cubic::ease_out,
+            })),
+        );
+        callback_value.animate_to(
+            0.0,
+            AnimationConfig::new(AnimationMode::Tween(Tween {
+                duration: Duration::from_millis(500),
+                easing: easer::functions::Cubic::ease_out,
+            })),
+        );
+    };
+
+    rsx! {
+        div {
+            class: "space-y-8 flex flex-col items-center w-full", // Added centering classes
+            // Infinite loop animation
+            div {
+                class: "space-y-2 flex flex-col items-center", // Center this section
+                h3 { class: "text-lg font-semibold text-text-primary", "Infinite Loop" }
+                div { class: "flex gap-4 items-center justify-center", // Center buttons and animation
+                    button {
+                        class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
+                        onclick: start_infinite,
+                        "Start Infinite"
+                    }
+                    div {
+                        class: "w-16 h-16 bg-primary rounded-lg transition-transform",
+                        style: "opacity: {infinite_value.get_value()}"
+                    }
+                }
+            }
+
+            // Delayed animation
+            div {
+                class: "space-y-2 flex flex-col items-center", // Center this section
+                h3 { class: "text-lg font-semibold text-text-primary", "Delayed Animation (1s)" }
+                div { class: "flex gap-4 items-center justify-center", // Center buttons and animation
+                    button {
+                        class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
+                        onclick: start_delayed,
+                        "Start Delayed"
+                    }
+                    div {
+                        class: "w-16 h-16 bg-primary rounded-lg transition-transform",
+                        style: "opacity: {delayed_value.get_value()}"
+                    }
+                }
+            }
+
+            // Callback animation
+            div {
+                class: "space-y-2 flex flex-col items-center", // Center this section
+                h3 { class: "text-lg font-semibold text-text-primary", "Loop with Callback" }
+                div { class: "flex gap-4 items-center justify-center", // Center buttons and animation
+                    button {
+                        class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
+                        onclick: start_callback,
+                        "Start (3 loops)"
+                    }
+                    div {
+                        class: "w-16 h-16 bg-primary rounded-lg transition-transform",
+                        style: "opacity: {callback_value.get_value()}"
+                    }
+                }
+            }
+
+            // Reset button
+            div {
+                class: "pt-4 w-full flex justify-center", // Center the reset button
+                button {
+                    class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
+                    onclick: reset_all,
+                    "Reset All"
                 }
             }
         }

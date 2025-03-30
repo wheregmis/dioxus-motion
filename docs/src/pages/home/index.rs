@@ -25,42 +25,15 @@ use crate::{components::transformation_example::TransformAnimationShowcase, util
 /// }
 /// ```
 pub fn Home() -> Element {
-    let mut hero_opacity = use_motion(0.0f32);
+    let hero_opacity = use_motion(1.0f32); // Changed from 0.0 to 1.0
     let mut demo_scale = use_motion(1.0f32);
-    let mut title_y = use_motion(-20.0f32);
-    let mut subtitle_y = use_motion(20.0f32);
+    // Remove these animations since we don't want them
+    // let mut title_y = use_motion(-20.0f32);
+    // let mut subtitle_y = use_motion(20.0f32);
 
     use_effect(move || {
-        // Stagger the animations
         {
-            title_y.animate_to(
-                0.0,
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 100.0,
-                    damping: 15.0,
-                    mass: 1.0,
-                    velocity: 0.0,
-                })),
-            );
-
-            subtitle_y.animate_to(
-                0.0,
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 100.0,
-                    damping: 15.0,
-                    mass: 1.0,
-                    velocity: 0.0,
-                })),
-            );
-
-            hero_opacity.animate_to(
-                1.0,
-                AnimationConfig::new(AnimationMode::Tween(Tween {
-                    duration: Duration::from_millis(800),
-                    easing: easer::functions::Cubic::ease_out,
-                })),
-            );
-
+            // Remove title and subtitle animations
             demo_scale.animate_to(
                 1.1,
                 AnimationConfig::new(AnimationMode::Spring(Spring {
@@ -143,14 +116,12 @@ pub fn Home() -> Element {
 
                     // Title and CTA section
                     div { class: "text-center max-w-4xl mx-auto",
-                        h1 {
-                            class: "text-4xl md:text-5xl lg:text-6xl font-bold mb-4",
-                            style: "transform: translateY({title_y.get_value()}px)",
+                        h1 { class: "text-4xl md:text-5xl lg:text-6xl font-bold mb-4",
+                            // Remove the transform style
                             span { class: "text-gradient-primary", "Dioxus Motion" }
                         }
-                        p {
-                            class: "text-lg md:text-xl text-text-secondary mb-8",
-                            style: "transform: translateY({subtitle_y.get_value()}px)",
+                        p { class: "text-lg md:text-xl text-text-secondary mb-8",
+                            // Remove the transform style
                             "Simple and powerful animations for your Dioxus applications"
                         }
 
@@ -257,21 +228,21 @@ pub fn Home() -> Element {
 
 #[component]
 /// Renders an animated feature card with a specified icon, title, and description.
-/// 
+///
 /// This component displays a card that animates on hover by scaling up and shifting slightly upward,
 /// then reverting to its original state when the mouse leaves. The animations are achieved using spring
 /// dynamics to ensure smooth transitions.
-/// 
+///
 /// # Arguments
 ///
 /// * `title` - The title text displayed on the card.
 /// * `description` - A brief description of the feature.
 /// * `icon` - A static string representing the feature's icon (e.g., an emoji).
-/// 
+///
 /// # Returns
 ///
 /// A Dioxus `Element` representing the rendered feature card.
-/// 
+///
 /// # Examples
 ///
 /// ```
