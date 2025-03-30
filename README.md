@@ -6,6 +6,17 @@
 
 A lightweight, cross-platform animation library for Dioxus, designed to bring smooth, flexible animations to your Rust web, desktop, and mobile applications.
 
+## ⚠️ Important Note
+This repository follows Dioxus's main branch for the latest features and improvements. For production use, we recommend using the stable version from [crates.io](https://crates.io/crates/dioxus-motion) instead of directly depending on the repository.
+
+```toml
+# Recommended: Stable version from crates.io
+dioxus-motion = "0.3.1"
+
+# Development version: Follows Dioxus main branch
+dioxus-motion = { git = "https://github.com/wheregmis/dioxus-motion.git", branch = "main" }
+```
+
 ## 🎯 Live Examples
 
 <img src="example.gif" width="100%" height="400" />

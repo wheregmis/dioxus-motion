@@ -430,7 +430,6 @@ impl<T: Animatable> Motion<T> {
         }
     }
 
-    #[inline(always)]
     fn update_tween(&mut self, tween: Tween, dt: f32) -> bool {
         // Use raw float operations instead of Duration for better performance
         let elapsed_secs = self.elapsed.as_secs_f32() + dt;
