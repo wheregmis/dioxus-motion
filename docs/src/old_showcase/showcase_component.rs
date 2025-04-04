@@ -43,7 +43,7 @@ pub fn ShowcaseGallery() -> Element {
                                 style: "max-height: 280px;",
                                 SwingingCube {}
                             }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/cube_animation.rs" }
+                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/cube_animation.rs" }
                         }
 
                         div { class: "flex flex-col items-start justify-between h-[400px] rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
@@ -53,7 +53,7 @@ pub fn ShowcaseGallery() -> Element {
                                 style: "max-height: 280px;",
                                 AnimatedFlower {}
                             }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/animated_flower.rs" }
+                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/animated_flower.rs" }
                         }
 
                         // Morphing Shape Card
@@ -67,7 +67,7 @@ pub fn ShowcaseGallery() -> Element {
                                     duration: 3.0,
                                 }
                             }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/morphing_shape.rs" }
+                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/morphing_shape.rs" }
                         }
 
                         div { class: "flex flex-col items-start justify-between h-[400px] rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
@@ -77,7 +77,7 @@ pub fn ShowcaseGallery() -> Element {
                                 style: "max-height: 280px;",
                                 InteractiveCube {}
                             }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/interactive_cube.rs" }
+                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/interactive_cube.rs" }
                         }
 
                         // Value Animation Card
@@ -88,7 +88,7 @@ pub fn ShowcaseGallery() -> Element {
                                 style: "max-height: 280px;",
                                 ValueAnimationShowcase {}
                             }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/value_animation.rs" }
+                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/value_animation.rs" }
                         }
 
                         // Transform Animation Card
@@ -99,7 +99,7 @@ pub fn ShowcaseGallery() -> Element {
                                 style: "max-height: 280px;",
                                 TransformAnimationShowcase {}
                             }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/transform_animation.rs" }
+                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/transform_animation.rs" }
                         }
 
                         div { class: "flex flex-col items-start justify-between h-[400px] rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
@@ -116,7 +116,7 @@ pub fn ShowcaseGallery() -> Element {
                                     }
                                 }
                             }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/animated_menu_item.rs" }
+                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/animated_menu_item.rs" }
                         }
 
                         div { class: "flex flex-col items-start justify-between h-[400px] rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
@@ -126,7 +126,7 @@ pub fn ShowcaseGallery() -> Element {
                                 style: "max-height: 280px;",
                                 RotatingButton {}
                             }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/rotating_button.rs" }
+                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/rotating_button.rs" }
                         }
 
                         // Progress Bar Card
@@ -137,7 +137,7 @@ pub fn ShowcaseGallery() -> Element {
                                 style: "max-height: 280px;",
                                 ProgressBar { title: "Loading..." }
                             }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/progress_bar.rs" }
+                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/progress_bar.rs" }
                         }
 
                         // Bouncing Text Card
@@ -148,7 +148,7 @@ pub fn ShowcaseGallery() -> Element {
                                 style: "max-height: 280px;",
                                 BouncingText { text: "Dioxus Motion" }
                             }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/bouncing_text.rs" }
+                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/bouncing_text.rs" }
                         }
 
                         // Path Animation Card
@@ -162,7 +162,7 @@ pub fn ShowcaseGallery() -> Element {
                                     duration: 5.0,
                                 }
                             }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/path_animation.rs" }
+                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/path_animation.rs" }
                         }
 
                         // Pulse Effect Card
@@ -173,7 +173,7 @@ pub fn ShowcaseGallery() -> Element {
                                 style: "max-height: 280px;",
                                 PulseEffect { color: "bg-blue-500", size: "w-16 h-16" }
                             }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/pulse_effect.rs" }
+                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/pulse_effect.rs" }
                         }
 
                         // Card 3D Flip Card
@@ -184,7 +184,7 @@ pub fn ShowcaseGallery() -> Element {
                                 style: "max-height: 280px;",
                                 Card3DFlip {}
                             }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/card_3d_flip.rs" }
+                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/card_3d_flip.rs" }
                         }
 
                         // Typewriter Effect Card
@@ -195,7 +195,7 @@ pub fn ShowcaseGallery() -> Element {
                                 style: "max-height: 280px;",
                                 TypewriterEffect { text: "Hello, Dioxus Motion" }
                             }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/typewriter_effect.rs" }
+                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/typewriter_effect.rs" }
                         }
 
                         // Color Animation
@@ -206,7 +206,7 @@ pub fn ShowcaseGallery() -> Element {
                                 style: "max-height: 280px;",
                                 ColorAnimation {}
                             }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/color_animation.rs" }
+                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/color_animation.rs" }
                         }
                     }
                 }
