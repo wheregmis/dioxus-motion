@@ -1,223 +1,81 @@
 use crate::old_showcase::components::{
-    AnimatedCounter, AnimatedFlower, AnimatedMenuItem, BouncingText, Card3DFlip, ColorAnimation,
-    InteractiveCube, MorphingShape, Navbar, PathAnimation, ProgressBar, PulseEffect,
+    AnimatedCounter, AnimatedFlower, AnimatedMenuItem, BouncingText, Card3DFlip,
+    InteractiveCube, MorphingShape, PathAnimation, ProgressBar, PulseEffect,
     RotatingButton, SwingingCube, TransformAnimationShowcase, TypewriterEffect,
     ValueAnimationShowcase,
 };
 
 use dioxus::prelude::*;
-use dioxus_motion::prelude::*;
 
-pub static BG_COLOR: GlobalSignal<Color> = Signal::global(|| Color::from_rgba(59, 130, 246, 255));
 
-fn is_dark_background(color: Color) -> bool {
-    let (r, g, b, _) = color.to_rgba();
-    // Calculate relative luminance using sRGB formula
-    let luminance = (0.299 * r as f32 + 0.587 * g as f32 + 0.114 * b as f32) / 255.0;
-    luminance < 0.5
-}
 
 #[component]
 pub fn ShowcaseGallery() -> Element {
     rsx! {
-        div {
-            class: if is_dark_background(*BG_COLOR.read()) { "text-white" } else { "text-black" },
-            class: "flex flex-col min-h-screen relative",
-            style: "background-color: rgba({BG_COLOR.read().to_rgba().0},
-                {BG_COLOR.read().to_rgba().1}, 
-                {BG_COLOR.read().to_rgba().2}, 1);",
-            // Navbar {}
-            // Rest of the content
+        div { class: "flex flex-col min-h-screen relative bg-gradient-dark",
             div { class: "flex-grow mt-16",
-                div { class: "container mx-auto px-8 py-12 pt-20",
-                    div {
-                        h2 { class: "text-xl font-bold", "Animated Counter" }
-                        AnimatedCounter {}
-                    }
+                div { class: "container-lg mx-auto px-8 py-12 pt-20",
+                    // div {
+                    //     h2 { class: "text-xl font-display font-bold text-text-primary",
+                    //         "Animated Counter"
+                    //     }
+                    //     AnimatedCounter {}
+                    // }
                     div { class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8",
-                        // Update each card with fixed height and overflow control
-                        div { class: "flex flex-col items-start justify-between h-[400px] rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                            h3 { class: "text-lg font-semibold  mb-4 w-full", "Cube Animation" }
-                            div {
-                                class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
-                                style: "max-height: 280px;",
-                                SwingingCube {}
-                            }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/cube_animation.rs" }
-                        }
-
-                        div { class: "flex flex-col items-start justify-between h-[400px] rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                            h3 { class: "text-lg font-semibold  mb-4 w-full", "Flower Animation" }
-                            div {
-                                class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
-                                style: "max-height: 280px;",
-                                AnimatedFlower {}
-                            }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/animated_flower.rs" }
-                        }
-
-                        // Morphing Shape Card
-                        div { class: "flex flex-col items-start justify-between h-[400px] rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                            h3 { class: "text-lg font-semibold  mb-4 w-full", "Morphing Shape" }
-                            div {
-                                class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
-                                style: "max-height: 280px;",
-                                MorphingShape {
-                                    shapes: vec!["square", "triangle"],
-                                    duration: 3.0,
-                                }
-                            }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/morphing_shape.rs" }
-                        }
-
-                        div { class: "flex flex-col items-start justify-between h-[400px] rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                            h3 { class: "text-lg font-semibold  mb-4 w-full", "Interactive Cube" }
-                            div {
-                                class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
-                                style: "max-height: 280px;",
-                                InteractiveCube {}
-                            }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/interactive_cube.rs" }
-                        }
-
-                        // Value Animation Card
-                        div { class: "flex flex-col items-start justify-between h-[400px] rounded-2xl shadow-lg shadow-blue-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                            h3 { class: "text-lg font-semibold  mb-4 w-full", "Value Animation" }
-                            div {
-                                class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
-                                style: "max-height: 280px;",
-                                ValueAnimationShowcase {}
-                            }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/value_animation.rs" }
-                        }
-
-                        // Transform Animation Card
-                        div { class: "flex flex-col items-start justify-between h-[400px] rounded-2xl shadow-lg shadow-purple-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                            h3 { class: "text-lg font-semibold  mb-4 w-full", "Transform Animation" }
-                            div {
-                                class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
-                                style: "max-height: 280px;",
-                                TransformAnimationShowcase {}
-                            }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/transform_animation.rs" }
-                        }
-
-                        div { class: "flex flex-col items-start justify-between h-[400px] rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                            h3 { class: "text-lg font-semibold  mb-4 w-full", "Animated Menu Bar" }
-                            div {
-                                class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
-                                style: "max-height: 280px;",
-                                section { class: "",
-                                    p { class: "text-gray-600", "Shows smooth transitions on hover" }
-                                    div { class: "space-y-2",
-                                        AnimatedMenuItem { label: "Home" }
-                                        AnimatedMenuItem { label: "About" }
-                                        AnimatedMenuItem { label: "Contact" }
-                                    }
-                                }
-                            }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/animated_menu_item.rs" }
-                        }
-
-                        div { class: "flex flex-col items-start justify-between h-[400px] rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                            h3 { class: "text-lg font-semibold  mb-4 w-full", "Rotating Button" }
-                            div {
-                                class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
-                                style: "max-height: 280px;",
-                                RotatingButton {}
-                            }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/rotating_button.rs" }
-                        }
-
-                        // Progress Bar Card
-                        div { class: "flex flex-col items-start justify-between h-[400px] rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                            h3 { class: "text-lg font-semibold  mb-4 w-full", "Progress Animation" }
-                            div {
-                                class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
-                                style: "max-height: 280px;",
-                                ProgressBar { title: "Loading..." }
-                            }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/progress_bar.rs" }
-                        }
-
-                        // Bouncing Text Card
-                        div { class: "flex flex-col items-start justify-between h-[400px] rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                            h3 { class: "text-lg font-semibold  mb-4 w-full", "Bouncing Text" }
-                            div {
-                                class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
-                                style: "max-height: 280px;",
-                                BouncingText { text: "Dioxus Motion" }
-                            }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/bouncing_text.rs" }
-                        }
-
-                        // Path Animation Card
-                        div { class: "flex flex-col items-start justify-between h-[400px] rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                            h3 { class: "text-lg font-semibold  mb-4 w-full", "Path Animation" }
-                            div {
-                                class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
-                                style: "max-height: 280px;",
-                                PathAnimation {
-                                    path: "M10 80 C 40 10, 65 10, 95 80 S 150 150, 180 80",
-                                    duration: 5.0,
-                                }
-                            }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/path_animation.rs" }
-                        }
-
-                        // Pulse Effect Card
-                        div { class: "flex flex-col items-start justify-between h-[400px] rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                            h3 { class: "text-lg font-semibold  mb-4 w-full", "Pulse Effect" }
-                            div {
-                                class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
-                                style: "max-height: 280px;",
-                                PulseEffect { color: "bg-blue-500", size: "w-16 h-16" }
-                            }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/pulse_effect.rs" }
-                        }
-
-                        // Card 3D Flip Card
-                        div { class: "flex flex-col items-start justify-between h-[400px] rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                            h3 { class: "text-lg font-semibold  mb-4 w-full", "3D Card Flip" }
-                            div {
-                                class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
-                                style: "max-height: 280px;",
-                                Card3DFlip {}
-                            }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/card_3d_flip.rs" }
-                        }
-
-                        // Typewriter Effect Card
-                        div { class: "flex flex-col items-start justify-between h-[400px] rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                            h3 { class: "text-lg font-semibold  mb-4 w-full", "Typewriter Effect" }
-                            div {
-                                class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
-                                style: "max-height: 280px;",
-                                TypewriterEffect { text: "Hello, Dioxus Motion" }
-                            }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/typewriter_effect.rs" }
-                        }
-
-                        // Color Animation
-                        div { class: "flex flex-col items-start justify-between h-[400px] rounded-2xl shadow-lg shadow-green-500/5 p-6 hover:shadow-xl transition-shadow duration-300",
-                            h3 { class: "text-lg font-semibold  mb-4 w-full", "Color Animation" }
-                            div {
-                                class: "flex-grow w-full flex items-center justify-center my-4 overflow-hidden",
-                                style: "max-height: 280px;",
-                                ColorAnimation {}
-                            }
-                            ViewCodeButton { url: "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/color_animation.rs" }
+                        // Update each card with our theme
+                        for (title , component , url) in showcase_items() {
+                            ShowcaseCard { title, url, component }
                         }
                     }
                 }
             }
 
-            // Footer with gradient border
-            footer { class: " border-t border-gradient-to-r from-blue-500/20 to-purple-500/20 py-8 mt-auto",
-                div { class: "max-w-6xl mx-auto px-4 text-center",
-                    p { class: "text-sm ", "© 2024 Sabin Regmi. No Rights Reserved." }
-                    p { class: "text-xs  mt-2", "Built with ❤️ using Dioxus" }
+            footer { class: "border-t border-dark-200 py-8 mt-auto bg-dark-50",
+                div { class: "container-md mx-auto px-4 text-center",
+                    p { class: "text-sm text-text-secondary",
+                        "© 2024 Sabin Regmi. No Rights Reserved."
+                    }
+                    p { class: "text-xs text-text-muted mt-2",
+                        "Built with "
+                        span { class: "text-primary animate-pulse", "❤️" }
+                        " using Dioxus"
+                    }
                 }
+            }
+        }
+    }
+}
+
+#[component]
+fn ShowcaseCard(title: String, url: String, component: Element) -> Element {
+    rsx! {
+        div {
+            class: "group relative flex flex-col items-start justify-between h-[400px]",
+            class: "rounded-xl border border-surface-light/10 backdrop-blur-sm",
+            class: "bg-surface/30 hover:bg-surface-light/10",
+            class: "transition-all duration-500 ease-out",
+            // Gradient glow effect on hover
+            div {
+                class: "absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100",
+                class: "bg-gradient-to-r from-primary/20 to-accent-purple/20",
+                class: "transition-opacity duration-500 ease-out -z-10",
+            }
+            // Title section
+            h3 {
+                class: "text-lg font-display font-semibold text-text-primary mb-4 w-full p-4",
+                class: "border-b border-surface-light/10",
+                "{title}"
+            }
+            // Component showcase area
+            div {
+                class: "flex-grow w-full flex items-center justify-center p-4 overflow-hidden",
+                class: "group-hover:scale-105 transition-transform duration-500 ease-out",
+                style: "max-height: 280px;",
+                {component}
+            }
+            // Button section with gradient border
+            div { class: "w-full p-4 border-t border-surface-light/10",
+                ViewCodeButton { url }
             }
         }
     }
@@ -227,11 +85,53 @@ pub fn ShowcaseGallery() -> Element {
 fn ViewCodeButton(url: String) -> Element {
     rsx! {
         a {
-            class: "inline-flex items-center px-4 py-2 mt-4 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors",
+            class: "group relative inline-flex items-center gap-2 w-full",
+            class: "px-4 py-2 rounded-lg font-medium",
+            class: "bg-surface hover:bg-surface-light/20",
+            class: "text-text-primary hover:text-primary-light",
+            class: "transition-all duration-300 ease-out",
             href: "{url}",
             target: "_blank",
-            span { class: "mr-2", "Example Code" }
-            span { class: "text-xs", "→" }
+            // Button content
+            span { class: "transition-transform duration-300 group-hover:translate-x-1",
+                "View Example Code"
+            }
+            // Arrow icon with animation
+            span {
+                class: "text-xs transition-all duration-300",
+                class: "transform group-hover:translate-x-1 group-hover:text-accent-purple",
+                "→"
+            }
         }
     }
+}
+
+// Helper function to organize showcase items
+fn showcase_items() -> Vec<(&'static str, Element, &'static str)> {
+    vec![
+        ("Cube Animation", rsx!(SwingingCube {}), "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/cube_animation.rs"),
+        ("Flower Animation", rsx!(AnimatedFlower {}), "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/animated_flower.rs"),
+        ("Morphing Shape", rsx!(MorphingShape { shapes: vec!["square", "triangle"], duration: 3.0 }), "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/morphing_shape.rs"),
+        ("Interactive Cube", rsx!(InteractiveCube {}), "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/interactive_cube.rs"),
+        ("Value Animation", rsx!(ValueAnimationShowcase {}), "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/value_animation.rs"),
+        ("Transform Animation", rsx!(TransformAnimationShowcase {}), "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/transform_animation.rs"),
+        ("Animated Menu Bar", rsx!(
+            section { class: "",
+                p { class: "text-gray-600", "Shows smooth transitions on hover" }
+                div { class: "space-y-2",
+                    AnimatedMenuItem { label: "Home" }
+                    AnimatedMenuItem { label: "About" }
+                    AnimatedMenuItem { label: "Contact" }
+                }
+            }
+        ), "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/animated_menu_item.rs"),
+        ("Rotating Button", rsx!(RotatingButton {}), "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/rotating_button.rs"),
+        ("Progress Animation", rsx!(ProgressBar { title: "Loading..." }), "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/progress_bar.rs"),
+        ("Bouncing Text", rsx!(BouncingText { text: "Dioxus Motion" }), "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/bouncing_text.rs"),
+        ("Path Animation", rsx!(PathAnimation { path: "M10 80 C 40 10, 65 10, 95 80 S 150 150, 180 80", duration: 5.0 }), "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/path_animation.rs"),
+        ("Pulse Effect", rsx!(PulseEffect { color: "bg-blue-500", size: "w-16 h-16" }), "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/pulse_effect.rs"),
+        ("3D Card Flip", rsx!(Card3DFlip {}), "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/card_3d_flip.rs"),
+        ("Typewriter Effect", rsx!(TypewriterEffect { text: "Hello, Dioxus Motion" }), "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/typewriter_effect.rs"),
+        
+    ]
 }

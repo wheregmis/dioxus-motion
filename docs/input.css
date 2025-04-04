@@ -189,8 +189,7 @@
 
 /* Component styles */
 .card {
-    @apply rounded-lg border transition-all duration-300;
-    background-color: var(--bg-primary);
+    @apply rounded-lg border transition-all duration-300 bg-transparent;
     border-color: color-mix(in oklab, var(--bg-primary) 80%, var(--text-primary));
     color: var(--text-primary);
 }

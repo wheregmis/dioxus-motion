@@ -18,8 +18,7 @@ const MAIN_CSS: Asset = asset!("/assets/main.css");
 ///
 /// # Examples
 ///
-/// ```no_run
-/// // Entry point of the Dioxus application.
+/// ```no_run``
 /// fn main() {
 ///     dioxus::launch(|| {
 ///         rsx! {

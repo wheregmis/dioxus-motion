@@ -4,9 +4,6 @@ pub use transform_animation::TransformAnimationShowcase;
 pub mod value_animation;
 pub use value_animation::ValueAnimationShowcase;
 
-pub mod navbar;
-pub use navbar::Navbar;
-
 pub mod bouncing_text;
 pub use bouncing_text::BouncingText;
 
@@ -27,9 +24,6 @@ pub use path_animation::PathAnimation;
 
 pub mod progress_bar;
 pub use progress_bar::ProgressBar;
-
-pub mod color_animation;
-pub use color_animation::ColorAnimation;
 
 pub mod cube_animation;
 pub use cube_animation::SwingingCube;
