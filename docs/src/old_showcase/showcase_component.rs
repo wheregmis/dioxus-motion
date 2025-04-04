@@ -26,7 +26,7 @@ pub fn ShowcaseGallery() -> Element {
             style: "background-color: rgba({BG_COLOR.read().to_rgba().0},
                 {BG_COLOR.read().to_rgba().1}, 
                 {BG_COLOR.read().to_rgba().2}, 1);",
-            Navbar {}
+            // Navbar {}
             // Rest of the content
             div { class: "flex-grow mt-16",
                 div { class: "container mx-auto px-8 py-12 pt-20",
