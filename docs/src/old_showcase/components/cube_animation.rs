@@ -221,41 +221,39 @@ pub fn SwingingCube() -> Element {
                 mass: 1.2,       // Increased mass for more weight
                 velocity: 3.0,   // Faster initial velocity
             }))
-            .with_loop(LoopMode::Alternate), // Alternate the animation
+            .with_loop(LoopMode::Alternate), // Makes the animation go back and forth
         );
 
-        // Enhanced glow animation
+        // Add glow and pulse animations
         glow_scale.animate_to(
-            1.8,
+            1.3,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 30.0,
                 damping: 5.0,
-                mass: 0.5,
-                velocity: 2.0,
+                mass: 1.0,
+                velocity: 0.0,
             }))
             .with_loop(LoopMode::Alternate),
         );
 
-        // Pulsing effect
         pulse_scale.animate_to(
-            1.1,
+            1.2,
             AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 100.0,
-                damping: 2.0,
-                mass: 0.3,
-                velocity: 1.0,
+                stiffness: 40.0,
+                damping: 6.0,
+                mass: 0.8,
+                velocity: 0.0,
             }))
             .with_loop(LoopMode::Alternate),
         );
 
-        // Highlight animation
         highlight_opacity.animate_to(
             0.6,
             AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 50.0,
-                damping: 5.0,
+                stiffness: 35.0,
+                damping: 7.0,
                 mass: 0.5,
-                velocity: 1.0,
+                velocity: 0.0,
             }))
             .with_loop(LoopMode::Alternate),
         );

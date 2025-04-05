@@ -79,7 +79,7 @@ impl Animatable for PetalTransform {
 pub fn AnimatedFlower() -> Element {
     let mut petal_transform = use_motion(PetalTransform::zero());
     let mut leaf_transform = use_motion(PetalTransform::zero());
-    let mut center_scale = use_motion(0.0f32);
+    let mut center_scale = use_motion(1.0f32); // Start from 1.0 instead of 0.0
     let mut center_rotate = use_motion(0.0f32);
     let mut is_leaves_grown = use_signal_sync(|| false);
     let mut stem_length = use_motion(100.0f32);
@@ -156,14 +156,14 @@ pub fn AnimatedFlower() -> Element {
                 .with_loop(LoopMode::Infinite),
             );
 
-            // Enhanced center scaling
+            // Modified center scaling animation
             center_scale.animate_to(
                 1.4,
                 AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 80.0,
-                    damping: 8.0,
-                    mass: 0.8,
-                    velocity: 0.8,
+                    stiffness: 60.0, // Reduced stiffness
+                    damping: 12.0,   // Increased damping
+                    mass: 1.0,       // Increased mass
+                    velocity: 0.0,   // Start with zero velocity
                 }))
                 .with_loop(LoopMode::Alternate),
             );
@@ -222,8 +222,8 @@ pub fn AnimatedFlower() -> Element {
                                     d: "M 0 0 C 5 -3, 8 0, 5 5 C 8 0, 5 -3, 0 0",
                                     fill: "url(#leaf_gradient)",
                                     transform: "translate(0 {25.0 + leaf_transform.get_value().translate_y + (i as f32 * 5.0)})
-                                                                                                                                                                          rotate({-20.0 + (i as f32 * 15.0) + stem_sway.get_value()}) 
-                                                                                                                                                                          scale({leaf_transform.get_value().scale})",
+                                                                                                                                                                                                          rotate({-20.0 + (i as f32 * 15.0) + stem_sway.get_value()}) 
+                                                                                                                                                                                                          scale({leaf_transform.get_value().scale})",
                                     opacity: "0.95",
                                     style: "filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2))",
                                 }
@@ -246,7 +246,7 @@ pub fn AnimatedFlower() -> Element {
                 circle {
                     cx: "0",
                     cy: "0",
-                    r: "{3.0 * center_scale.get_value()}",
+                    r: "{(3.0 * center_scale.get_value()).max(0.1)}", // Added minimum radius
                     fill: "url(#center_gradient)",
                     transform: "rotate({center_rotate.get_value()})",
                     style: "filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2))",
@@ -265,8 +265,8 @@ pub fn AnimatedFlower() -> Element {
                                     d: "M 0 -1 C 3 -6, 6 -8, 0 -14 C -6 -8, -3 -6, 0 -1",
                                     fill: "hsl({hue}, 85%, 75%)",
                                     transform: "translate({transform_value.translate_x} {transform_value.translate_y})
-                                                                                                                                                                          rotate({(base_angle + transform_value.rotate) * 180.0 / PI}) 
-                                                                                                                                                                          scale({transform_value.scale})",
+                                                                                                                                                                                                          rotate({(base_angle + transform_value.rotate) * 180.0 / PI}) 
+                                                                                                                                                                                                          scale({transform_value.scale})",
                                     opacity: "0.9",
                                     style: "filter: drop-shadow(0 2px 3px rgba(0,0,0,0.15))",
                                 }

@@ -6,10 +6,12 @@ use crate::components::navbar::NavBar;
 use crate::components::page_not_found::PageNotFound;
 use crate::components::page_transition::PageTransition;
 use crate::old_showcase::showcase_component::ShowcaseGallery;
+use crate::pages::basic_guide::BasicAnimationGuide;
 use crate::pages::blog::index::Blog;
 use crate::pages::docs::index::Docs;
 use crate::pages::docs::index::DocsLanding;
 use crate::pages::home::index::Home;
+use crate::pages::intermediate_guide::IntermediateAnimationGuide;
 
 // Turn off rustfmt since we're doing layouts and routes in the same enum
 #[derive(Routable, Clone, Debug, PartialEq, MotionTransitions)]
@@ -32,13 +34,23 @@ pub enum Route {
             DocsLanding {},
 
             #[route("/transitions")]
-            #[transition(SlideUp)]
+            #[transition(SlideLeft)]
             PageTransition {},
+
+            #[route("/basic_guide")]
+            #[transition(SlideLeft)]
+            BasicAnimationGuide {},
+
+            #[route("/intermediate_guide")]
+            #[transition(SlideLeft)]
+            IntermediateAnimationGuide {},
 
             // At "/blog/:name", we want to show a specific blog post, using the name slug
             #[route("/animations")]
-            #[transition(SlideRight)]
+            #[transition(SlideLeft)]
             Animations {},
+
+
 
         // We need to end the blog layout and nest
         // Note we don't need either - we could've just done `/blog/` and `/blog/:name` without nesting,
@@ -51,7 +63,7 @@ pub enum Route {
         Blog {},
 
         #[route("/old_showcase")]
-        #[transition(SlideUp)]
+        #[transition(Fade)]
         ShowcaseGallery {},
 
 

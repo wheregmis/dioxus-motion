@@ -1,11 +1,9 @@
 use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
-use easer::functions::Easing;
 
-use crate::components::animated_flower::AnimatedFlower;
-use crate::components::cube_animation::SwingingCube;
 use crate::components::footer::Footer;
-use crate::{components::transformation_example::TransformAnimationShowcase, utils::router::Route};
+use crate::old_showcase::components::{AnimatedFlower, SwingingCube, TransformAnimationShowcase};
+use crate::utils::router::Route;
 
 #[component]
 /// Renders the main landing page of the application.

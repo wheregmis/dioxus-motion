@@ -136,22 +136,6 @@ impl<T: Animatable> AnimationSequence<T> {
         self.on_complete = Some(Box::new(f));
         self
     }
-
-    // Batch multiple steps together
-    pub fn batch_steps(mut self, steps: impl IntoIterator<Item = (T, AnimationConfig)>) -> Self {
-        let mut last_target = None;
-
-        for (target, config) in steps {
-            let predicted_next = last_target.map(|last: T| last.interpolate(&target, 0.5));
-            self.steps.push(AnimationStep {
-                target,
-                config: Arc::new(config),
-                predicted_next,
-            });
-            last_target = Some(target);
-        }
-        self
-    }
 }
 
 impl<T: Animatable> Default for AnimationSequence<T> {
