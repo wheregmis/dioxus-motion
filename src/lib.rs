@@ -267,7 +267,6 @@ impl<T: Animatable> Motion<T> {
                     self.delay_elapsed = Duration::default();
                     self.velocity = T::zero();
 
-                    println!("Animating to step {} of {}", next_step + 1, total_steps);
                     return true;
                 } else {
                     // Sequence complete - we've reached the last step
@@ -642,6 +641,7 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
             loop {
                 let now = Time::now();
                 let dt = (now.duration_since(last_frame).as_secs_f32()).min(0.1);
+                last_frame = now;
 
                 // Only check if running first, then write to the signal
                 if state.peek().is_running() {
@@ -672,8 +672,6 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
                     _running_frames = 0;
                     Time::delay(idle_poll_rate).await;
                 }
-
-                last_frame = now;
             }
         });
     });
