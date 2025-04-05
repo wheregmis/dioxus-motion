@@ -5,21 +5,25 @@
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="UTF-8" />
-  <link rel="preload" as="script" href="/dioxus-motion/assets/docs-36b4438d8c5d6f2c.js" crossorigin><link rel="preload" as="fetch" type="application/wasm" href="/dioxus-motion/assets/docs_bg-cd32b17d71de3c25.wasm" crossorigin></head>
+  <link rel="preload" as="script" href="/dioxus-motion/assets/docs-9574af562ad65666.js" crossorigin><link rel="preload" as="fetch" type="application/wasm" href="/dioxus-motion/assets/docs_bg-4a170233683a9530.wasm" crossorigin></head>
   <body>
     <div id="main"></div>
-  <script>
-            // We can't use a module script here because we need to start the script immediately when streaming
-            import("/dioxus-motion/assets/docs-36b4438d8c5d6f2c.js").then(
-                ({ default: init }) => {
-                init("/dioxus-motion/assets/docs_bg-cd32b17d71de3c25.wasm").then((wasm) => {
-                    if (wasm.__wbindgen_start == undefined) {
-                    wasm.main();
-                    }
-                });
-                }
-            );
-            </script>
-            
+   <script>
+  // We can't use a module script here because we need to start the script immediately when streaming
+  import("/dioxus-motion/assets/docs-9574af562ad65666.js").then(
+    ({ default: init, initSync }) => {
+      // export initSync in case a split module needs to initialize
+      window.__wasm_split_main_initSync = initSync;
+
+      // Actually perform the load
+      init("/dioxus-motion/assets/docs_bg-4a170233683a9530.wasm").then((wasm) => {
+        if (wasm.__wbindgen_start == undefined) {
+            wasm.main();
+        }
+      });
+    }
+  );
+  </script>
+  
             </body>
 </html>
