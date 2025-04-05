@@ -29,7 +29,11 @@ pub fn Navbar() -> Element {
                     border-b border-gray-200/20 
                     transition-all duration-300 z-50
                     hover:shadow-xl",
-            style: "transform: translateY({transform.get_value().y}px);",
+            style: "transform: translate({}px, {}px) scale({}) rotate({}deg); transform-style: preserve-3d; will-change: transform;",
+            transform.get_value().x,
+            transform.get_value().y,
+            transform.get_value().scale,
+            transform.get_value().rotation,
             div { class: "max-w-6xl mx-auto px-4",
                 div { class: "flex justify-between items-center h-28",
                     // Logo

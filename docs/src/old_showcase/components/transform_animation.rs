@@ -36,7 +36,7 @@ pub fn TransformAnimationShowcase() -> Element {
 
     let transform_style = use_memo(move || {
         format!(
-            "transform: translate({}px, {}px) scale({}) rotate({}deg);",
+            "transform: translate({}px, {}px) scale({}) rotate({}deg); transform-style: preserve-3d; will-change: transform;",
             transform.get_value().x,
             transform.get_value().y,
             transform.get_value().scale,

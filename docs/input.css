@@ -295,14 +295,20 @@
 /* Animation classes */
 .animate-float {
     animation: float 3s ease-in-out infinite;
+    transform-style: preserve-3d;
+    will-change: transform;
 }
 
 .animate-glow {
     animation: glow 2s ease-in-out infinite;
+    transform-style: preserve-3d;
+    will-change: transform;
 }
 
 .animate-performance {
     animation: performance-pulse 1.5s var(--ease-spring) infinite;
+    transform-style: preserve-3d;
+    will-change: transform;
 }
 
 /* Layout utilities */
