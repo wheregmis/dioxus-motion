@@ -25,15 +25,6 @@ pub use path_animation::PathAnimation;
 pub mod progress_bar;
 pub use progress_bar::ProgressBar;
 
-pub mod cube_animation;
-pub use cube_animation::SwingingCube;
-
-pub mod animated_flower;
-pub use animated_flower::AnimatedFlower;
-
-pub mod animated_counter;
-pub use animated_counter::AnimatedCounter;
-
 pub mod interactive_cube;
 pub use interactive_cube::InteractiveCube;
 
@@ -42,3 +33,9 @@ pub use animated_menu_item::AnimatedMenuItem;
 
 pub mod rotating_button;
 pub use rotating_button::RotatingButton;
+
+pub mod animated_flower;
+pub use animated_flower::AnimatedFlower;
+
+pub mod cube_animation;
+pub use cube_animation::SwingingCube;

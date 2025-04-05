@@ -61,6 +61,16 @@ pub enum LoopMode {
     Infinite,
     /// Loop animation a specific number of times
     Times(u8),
+    /// Loop animation back and forth indefinitely
+    Alternate,
+    /// Loop animation back and forth a specific number of times
+    AlternateTimes(u8),
+}
+
+impl Default for LoopMode {
+    fn default() -> Self {
+        Self::None
+    }
 }
 
 pub type OnComplete = Arc<Mutex<dyn FnMut() + Send + 'static>>;
@@ -121,6 +131,8 @@ impl AnimationConfig {
                 match self.loop_mode {
                     Some(LoopMode::Infinite) => Duration::from_secs(f32::INFINITY as u64),
                     Some(LoopMode::Times(count)) => base_duration * count.into(),
+                    Some(LoopMode::Alternate) => Duration::from_secs(f32::INFINITY as u64),
+                    Some(LoopMode::AlternateTimes(count)) => base_duration * (count * 2).into(),
                     Some(LoopMode::None) | None => base_duration,
                 }
             }

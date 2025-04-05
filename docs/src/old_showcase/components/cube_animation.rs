@@ -201,35 +201,61 @@ const FACES: [[usize; 4]; 6] = [
 pub fn SwingingCube() -> Element {
     let mut transform = use_motion(Transform3D::zero());
     let mut glow_scale = use_motion(1.0f32);
+    let mut pulse_scale = use_motion(1.0f32);
+    let mut highlight_opacity = use_motion(0.0f32);
 
     let animate = move |_| {
+        // More dynamic cube animation
         transform.animate_to(
             Transform3D::new(
-                PI / 3.0, // X rotation
-                PI / 2.0, // Y rotation
-                PI / 4.0, // Z rotation
-                2.0,      // X translation
-                -1.0,     // Y translation
-                1.2,      // Scale
+                PI / 2.5, // More dramatic X rotation
+                PI,       // Full Y rotation
+                PI / 3.0, // Adjusted Z rotation
+                3.0,      // Larger X translation
+                -2.0,     // Larger Y translation
+                1.4,      // Larger scale
             ),
             AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 35.0,
-                damping: 5.0,
-                mass: 1.0,
-                velocity: 2.0,
+                stiffness: 25.0, // Softer spring for smoother motion
+                damping: 8.0,    // Adjusted damping for better bounce
+                mass: 1.2,       // Increased mass for more weight
+                velocity: 3.0,   // Faster initial velocity
             }))
-            .with_loop(LoopMode::Infinite),
+            .with_loop(LoopMode::Alternate), // Makes the animation go back and forth
         );
 
+        // Add glow and pulse animations
         glow_scale.animate_to(
-            1.4,
+            1.3,
+            AnimationConfig::new(AnimationMode::Spring(Spring {
+                stiffness: 30.0,
+                damping: 5.0,
+                mass: 1.0,
+                velocity: 0.0,
+            }))
+            .with_loop(LoopMode::Alternate),
+        );
+
+        pulse_scale.animate_to(
+            1.2,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 40.0,
-                damping: 4.0,
-                mass: 0.5,
-                velocity: 1.0,
+                damping: 6.0,
+                mass: 0.8,
+                velocity: 0.0,
             }))
-            .with_loop(LoopMode::Infinite),
+            .with_loop(LoopMode::Alternate),
+        );
+
+        highlight_opacity.animate_to(
+            0.6,
+            AnimationConfig::new(AnimationMode::Spring(Spring {
+                stiffness: 35.0,
+                damping: 7.0,
+                mass: 0.5,
+                velocity: 0.0,
+            }))
+            .with_loop(LoopMode::Alternate),
         );
     };
 
@@ -243,7 +269,7 @@ pub fn SwingingCube() -> Element {
                     transform.get_value().translate_x,
                     transform.get_value().translate_y,
                 )
-                .project(50.0 * transform.get_value().scale)
+                .project(50.0 * transform.get_value().scale * pulse_scale.get_value())
         })
         .collect();
 
@@ -252,53 +278,71 @@ pub fn SwingingCube() -> Element {
             svg {
                 width: "400.0",
                 height: "400.0",
-                view_box: "0.0 0.0 200.0 200.0",
+                view_box: "-20.0 -20.0 240.0 240.0", // Adjusted viewBox for better centering
                 onmounted: animate,
                 defs {
-                    // Gradient definitions
+                    // Enhanced gradient with more colors
                     linearGradient {
                         id: "cube-gradient",
                         x1: "0%",
                         y1: "0%",
                         x2: "100%",
                         y2: "100%",
-                        stop { offset: "0%", style: "stop-color:#4299e1" }
-                        stop { offset: "50%", style: "stop-color:#9f7aea" }
-                        stop { offset: "100%", style: "stop-color:#ed64a6" }
+                        stop { offset: "0%", style: "stop-color:#60a5fa" }
+                        stop { offset: "25%", style: "stop-color:#7c3aed" }
+                        stop { offset: "50%", style: "stop-color:#db2777" }
+                        stop { offset: "75%", style: "stop-color:#9333ea" }
+                        stop { offset: "100%", style: "stop-color:#3b82f6" }
                     }
-                    // Glow filter
+                    // Enhanced glow filter
                     filter { id: "glow",
                         feGaussianBlur {
                             "in": "SourceGraphic",
-                            std_deviation: "4.0",
+                            std_deviation: "6.0",
                             result: "blur",
                         }
                         feColorMatrix {
                             "in": "blur",
                             r#type: "matrix",
-                            values: "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7",
+                            values: "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -7",
+                        }
+                    }
+                    // Highlight gradient
+                    radialGradient {
+                        id: "highlight",
+                        cx: "50%",
+                        cy: "50%",
+                        r: "50%",
+                        stop {
+                            offset: "0%",
+                            style: "stop-color:rgba(255,255,255,0.8)",
+                        }
+                        stop {
+                            offset: "100%",
+                            style: "stop-color:rgba(255,255,255,0)",
                         }
                     }
                 }
-                //Glowing background circle
+                // Background effects
                 circle {
                     cx: "100.0",
                     cy: "100.0",
-                    r: "{30.0 * glow_scale.get_value()}",
+                    r: "{40.0 * glow_scale.get_value()}",
                     fill: "url(#cube-gradient)",
                     filter: "url(#glow)",
-                    opacity: "0.3",
+                    opacity: "0.4",
                 }
-                // Enhanced rope with gradient
+                // Enhanced rope with double line
                 path {
-                    d: "M 100 20 Q {projected_vertices[4].0} {projected_vertices[4].1 - 20.0}
+                    d: "M 100 10 Q {projected_vertices[4].0} {projected_vertices[4].1 - 30.0}
                        {projected_vertices[4].0} {projected_vertices[4].1}",
                     stroke: "url(#cube-gradient)",
-                    stroke_width: "1",
+                    stroke_width: "2",
                     fill: "none",
-                    stroke_dasharray: "4,4",
+                    stroke_dasharray: "6,6",
+                    filter: "url(#glow)",
                 }
-                // Enhanced cube faces with gradients and animations
+                // Cube faces with enhanced effects
                 {
                     FACES
                         .iter()
@@ -317,23 +361,41 @@ pub fn SwingingCube() -> Element {
                             );
                             rsx! {
                                 g { key: "{i}",
-                                    // Shadow effect
+                                    // Enhanced shadow
                                     path {
                                         d: "{path}",
-                                        fill: "rgba(0,0,0,0.2)",
-                                        transform: "translate(2.0 2.0)",
+                                        fill: "rgba(0,0,0,0.3)",
+                                        transform: "translate(3.0 3.0)",
+                                        filter: "url(#glow)",
                                     }
-                                    // Main face
+                                    // Main face with gradient and stroke
                                     path {
                                         d: "{path}",
                                         fill: "url(#cube-gradient)",
                                         stroke: "#ffffff",
-                                        stroke_width: "0.5",
-                                        opacity: "{0.7 + (i as f32 * 0.05)}",
+                                        stroke_width: "1.0",
+                                        opacity: "{0.8 + (i as f32 * 0.05)}",
+                                    }
+                                    // Highlight overlay
+                                    path {
+                                        d: "{path}",
+                                        fill: "url(#highlight)",
+                                        opacity: "{highlight_opacity.get_value()}",
                                     }
                                 }
                             }
                         })
+                }
+                // Additional decorative elements
+                circle {
+                    cx: "100.0",
+                    cy: "100.0",
+                    r: "80.0",
+                    fill: "none",
+                    stroke: "url(#cube-gradient)",
+                    stroke_width: "0.5",
+                    stroke_dasharray: "4,4",
+                    opacity: "0.3",
                 }
             }
         }

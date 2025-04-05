@@ -136,22 +136,6 @@ impl<T: Animatable> AnimationSequence<T> {
         self.on_complete = Some(Box::new(f));
         self
     }
-
-    // Batch multiple steps together
-    pub fn batch_steps(mut self, steps: impl IntoIterator<Item = (T, AnimationConfig)>) -> Self {
-        let mut last_target = None;
-
-        for (target, config) in steps {
-            let predicted_next = last_target.map(|last: T| last.interpolate(&target, 0.5));
-            self.steps.push(AnimationStep {
-                target,
-                config: Arc::new(config),
-                predicted_next,
-            });
-            last_target = Some(target);
-        }
-        self
-    }
 }
 
 impl<T: Animatable> Default for AnimationSequence<T> {
@@ -167,31 +151,33 @@ impl<T: Animatable> Default for AnimationSequence<T> {
 
 #[derive(Clone)]
 pub struct Motion<T: Animatable> {
+    initial: T,
     current: T,
     target: T,
-    initial: T,
     velocity: T,
-    config: Arc<AnimationConfig>,
     running: bool,
     elapsed: Duration,
-    delay_elapsed: Duration,
+    delay_elapsed: Duration, // Add this field
     current_loop: u8,
+    config: Arc<AnimationConfig>,
     sequence: Option<Arc<AnimationSequence<T>>>,
+    reverse: bool, // New field to track direction for alternating animations
 }
 
 impl<T: Animatable> Motion<T> {
     pub fn new(initial: T) -> Self {
         Self {
+            initial,
             current: initial,
             target: initial,
-            initial,
             velocity: T::zero(),
-            config: Arc::new(AnimationConfig::default()),
             running: false,
             elapsed: Duration::default(),
-            delay_elapsed: Duration::default(),
             current_loop: 0,
+            config: Arc::new(AnimationConfig::default()),
             sequence: None,
+            reverse: false,
+            delay_elapsed: Duration::default(),
         }
     }
 
@@ -209,8 +195,13 @@ impl<T: Animatable> Motion<T> {
 
     pub fn animate_sequence(&mut self, sequence: AnimationSequence<T>) {
         if let Some(first_step) = sequence.steps.first() {
+            // This approach doesn't correctly initialize the sequence state
             self.animate_to(first_step.target, (*first_step.config).clone());
-            self.sequence = Some(sequence.into());
+
+            // Start with current_step as 0 instead of -1 to fix indexing
+            let mut new_sequence = sequence;
+            new_sequence.current_step = 0;
+            self.sequence = Some(Arc::new(new_sequence));
         }
     }
 
@@ -247,32 +238,45 @@ impl<T: Animatable> Motion<T> {
         }
 
         // Handle sequence if present
-        if let Some(sequence) = &mut self.sequence {
+        if let Some(sequence) = &self.sequence {
             if !self.running {
+                // Current animation has completed, move to next step
                 let current_step = sequence.current_step;
                 let total_steps = sequence.steps.len();
 
-                match current_step.cmp(&(total_steps as u8 - 1)) {
-                    std::cmp::Ordering::Less => {
-                        let mut new_sequence = (**sequence).clone();
-                        new_sequence.current_step += 1;
-                        let step = &new_sequence.steps[new_sequence.current_step as usize];
-                        let target = step.target;
-                        let config = (*step.config).clone();
-                        let _ = sequence;
-                        self.sequence = Some(Arc::new(new_sequence));
-                        self.animate_to(target, config);
+                // Check if there are more steps to animate
+                if current_step < (total_steps - 1) as u8 {
+                    // Changed this condition
+                    // Move to the next step
+                    let mut new_sequence = (**sequence).clone();
+                    new_sequence.current_step = current_step + 1;
+                    let next_step = current_step + 1;
+
+                    // Get the next step
+                    let step = &sequence.steps[next_step as usize];
+                    let target = step.target;
+                    let config = (*step.config).clone();
+                    self.sequence = Some(Arc::new(new_sequence));
+
+                    // Start the next animation
+                    self.initial = self.current; // Start from current position
+                    self.target = target;
+                    self.config = Arc::new(config);
+                    self.running = true;
+                    self.elapsed = Duration::default();
+                    self.delay_elapsed = Duration::default();
+                    self.velocity = T::zero();
+
+                    return true;
+                } else {
+                    // Sequence complete - we've reached the last step
+                    let mut sequence_clone = (**sequence).clone();
+                    if let Some(on_complete) = sequence_clone.on_complete.take() {
+                        on_complete();
                     }
-                    std::cmp::Ordering::Equal => {
-                        let mut sequence_clone = (**sequence).clone();
-                        if let Some(on_complete) = sequence_clone.on_complete.take() {
-                            on_complete();
-                        }
-                        self.sequence = None;
-                        self.stop();
-                        return false;
-                    }
-                    std::cmp::Ordering::Greater => {}
+                    self.sequence = None;
+                    self.stop();
+                    return false;
                 }
             }
         }
@@ -489,6 +493,30 @@ impl<T: Animatable> Motion<T> {
                     true
                 }
             }
+            LoopMode::Alternate => {
+                self.reverse = !self.reverse;
+                if self.reverse {
+                    std::mem::swap(&mut self.initial, &mut self.target);
+                }
+                self.elapsed = Duration::default();
+                self.velocity = T::zero();
+                true
+            }
+            LoopMode::AlternateTimes(count) => {
+                self.current_loop += 1;
+                if self.current_loop >= count * 2 {
+                    self.stop();
+                    false
+                } else {
+                    self.reverse = !self.reverse;
+                    if self.reverse {
+                        std::mem::swap(&mut self.initial, &mut self.target);
+                    }
+                    self.elapsed = Duration::default();
+                    self.velocity = T::zero();
+                    true
+                }
+            }
         };
 
         if !should_continue {
@@ -613,6 +641,7 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
             loop {
                 let now = Time::now();
                 let dt = (now.duration_since(last_frame).as_secs_f32()).min(0.1);
+                last_frame = now;
 
                 // Only check if running first, then write to the signal
                 if state.peek().is_running() {
@@ -643,8 +672,6 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
                     _running_frames = 0;
                     Time::delay(idle_poll_rate).await;
                 }
-
-                last_frame = now;
             }
         });
     });

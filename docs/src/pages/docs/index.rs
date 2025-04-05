@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
 
 use crate::components::code_block::CodeBlock;
+use crate::components::footer::Footer;
 use crate::utils::router::Route;
 
 #[component]
@@ -27,7 +28,6 @@ use crate::utils::router::Route;
 fn DocLayout(title: &'static str, description: &'static str, children: Element) -> Element {
     rsx! {
         div { class: "min-h-screen bg-gradient-dark relative overflow-hidden w-full",
-
             // Background elements
             div { class: "absolute inset-0 overflow-hidden",
                 div { class: "absolute -top-1/2 -left-1/2 w-full h-full bg-primary/5 rounded-full blur-3xl" }
@@ -35,7 +35,8 @@ fn DocLayout(title: &'static str, description: &'static str, children: Element) 
             }
 
             // Content
-            div { class: "relative z-10 w-full",
+            div {
+                class: "relative z-10 w-full flex flex-col min-h-screen", // Added flex and min-h-screen
                 // Header
                 div { class: "border-b border-surface-light/20 w-full",
                     div { class: "w-full px-4 sm:px-6 lg:px-8 py-6",
@@ -45,7 +46,8 @@ fn DocLayout(title: &'static str, description: &'static str, children: Element) 
                 }
 
                 // Main content with three columns
-                div { class: "w-full px-4 sm:px-6 lg:px-8 py-8",
+                div {
+                    class: "w-full px-4 sm:px-6 lg:px-8 py-8 flex-grow", // Added flex-grow
                     div { class: "flex gap-8 w-full",
                         // Left sidebar - Sections
                         div { class: "hidden lg:block flex-1",
@@ -57,22 +59,33 @@ fn DocLayout(title: &'static str, description: &'static str, children: Element) 
                                         label: "Getting Started",
                                     }
                                     SectionLink {
-                                        to: Route::PageTransition {},
-                                        icon: "🔄",
-                                        label: "Page Transitions",
+                                        to: Route::BasicAnimationGuide {},
+                                        icon: "🎨",
+                                        label: "Basic Animation Guide",
+                                    }
+                                    SectionLink {
+                                        to: Route::IntermediateAnimationGuide {},
+                                        icon: "🚀",
+                                        label: "Intermediate Animation Guide - 1",
                                     }
                                     SectionLink {
                                         to: Route::Animations {},
                                         icon: "✨",
                                         label: "Interactive Animation Guide",
                                     }
+                                    SectionLink {
+                                        to: Route::PageTransition {},
+                                        icon: "🔄",
+                                        label: "Page Transitions",
+                                    }
                                 }
                             }
                         }
 
                         // Main content
-                        div { class: "flex-[4] min-w-0",   // Animated outlet for nested routes
-                            AnimatedOutlet::<Route> {} }
+                        div { class: "flex-[4] min-w-0",
+                            AnimatedOutlet::<Route> {}
+                        }
 
                         // Right sidebar - Related links
                         div { class: "hidden lg:block flex-1",
@@ -80,6 +93,9 @@ fn DocLayout(title: &'static str, description: &'static str, children: Element) 
                         }
                     }
                 }
+
+                // Footer
+                Footer {}
             }
         }
     }
