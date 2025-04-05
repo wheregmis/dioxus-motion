@@ -4,6 +4,7 @@ use crate::old_showcase::components::{
     RotatingButton, SwingingCube, TransformAnimationShowcase, TypewriterEffect,
     ValueAnimationShowcase,
 };
+use crate::components::footer::Footer;
 
 use dioxus::prelude::*;
 
@@ -30,18 +31,8 @@ pub fn ShowcaseGallery() -> Element {
                 }
             }
 
-            footer { class: "border-t border-dark-200 py-8 mt-auto bg-dark-50",
-                div { class: "container-md mx-auto px-4 text-center",
-                    p { class: "text-sm text-text-secondary",
-                        "© 2024 Sabin Regmi. No Rights Reserved."
-                    }
-                    p { class: "text-xs text-text-muted mt-2",
-                        "Built with "
-                        span { class: "text-primary animate-pulse", "❤️" }
-                        " using Dioxus"
-                    }
-                }
-            }
+            // Footer
+            Footer {}
         }
     }
 }
