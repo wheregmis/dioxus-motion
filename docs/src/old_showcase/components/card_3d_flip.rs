@@ -11,12 +11,11 @@ pub fn Card3DFlip() -> Element {
             transform.animate_to(
                 Transform::identity(),
                 AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 150.0,
-                    damping: 15.0,
-                    mass: 1.0,
-                    velocity: 10.0,
-                }))
-                .with_loop(LoopMode::Infinite),
+                    stiffness: 200.0, // Increased for snappier response
+                    damping: 20.0,    // Increased for less oscillation
+                    mass: 0.8,        // Reduced for lighter feel
+                    velocity: 5.0,    // Reduced for smoother start
+                })),
             );
         } else {
             transform.animate_to(
@@ -27,10 +26,10 @@ pub fn Card3DFlip() -> Element {
                     y: 0.0,
                 },
                 AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 150.0,
-                    damping: 15.0,
-                    mass: 1.0,
-                    velocity: 10.0,
+                    stiffness: 200.0, // Increased for snappier response
+                    damping: 20.0,    // Increased for less oscillation
+                    mass: 0.8,        // Reduced for lighter feel
+                    velocity: 5.0,    // Reduced for smoother start
                 })),
             );
         }
@@ -44,7 +43,7 @@ pub fn Card3DFlip() -> Element {
     rsx! {
         div { class: "perspective-1000",
             div {
-                class: "relative w-64 h-64 cursor-pointer transition-transform duration-700",
+                class: "relative w-64 h-64 cursor-pointer",
                 style: "transform-style: preserve-3d;
                         transform: rotateY({transform.get_value().rotation}deg) 
                                  scale({transform.get_value().scale});",
