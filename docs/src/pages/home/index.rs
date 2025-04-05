@@ -1,6 +1,5 @@
 use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
-use easer::functions::Easing;
 
 use crate::components::animated_flower::AnimatedFlower;
 use crate::components::cube_animation::SwingingCube;

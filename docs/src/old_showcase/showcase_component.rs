@@ -1,5 +1,5 @@
 use crate::old_showcase::components::{
-    AnimatedCounter, AnimatedFlower, AnimatedMenuItem, BouncingText, Card3DFlip,
+    AnimatedFlower, AnimatedMenuItem, BouncingText, Card3DFlip,
     InteractiveCube, MorphingShape, PathAnimation, ProgressBar, PulseEffect,
     RotatingButton, SwingingCube, TransformAnimationShowcase, TypewriterEffect,
     ValueAnimationShowcase,
