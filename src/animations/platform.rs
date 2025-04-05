@@ -49,10 +49,18 @@ impl TimeProvider for MotionTime {
 
         let (sender, receiver) = futures_channel::oneshot::channel::<()>();
 
-        // Always use rAF for smooth web animations
         if let Some(window) = window() {
+            let performance = window.performance().expect("Performance API not available");
+            let start_time = performance.now();
+
             let cb = Closure::once(move || {
-                let _ = sender.send(());
+                let current_time = performance.now();
+                let elapsed = current_time - start_time;
+
+                // Only complete if we've waited the full duration
+                if elapsed >= _duration.as_millis() as f64 {
+                    let _ = sender.send(());
+                }
             });
 
             // Cache the callback reference
