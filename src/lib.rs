@@ -167,31 +167,33 @@ impl<T: Animatable> Default for AnimationSequence<T> {
 
 #[derive(Clone)]
 pub struct Motion<T: Animatable> {
+    initial: T,
     current: T,
     target: T,
-    initial: T,
     velocity: T,
-    config: Arc<AnimationConfig>,
     running: bool,
     elapsed: Duration,
-    delay_elapsed: Duration,
+    delay_elapsed: Duration, // Add this field
     current_loop: u8,
+    config: Arc<AnimationConfig>,
     sequence: Option<Arc<AnimationSequence<T>>>,
+    reverse: bool, // New field to track direction for alternating animations
 }
 
 impl<T: Animatable> Motion<T> {
     pub fn new(initial: T) -> Self {
         Self {
+            initial,
             current: initial,
             target: initial,
-            initial,
             velocity: T::zero(),
-            config: Arc::new(AnimationConfig::default()),
             running: false,
             elapsed: Duration::default(),
-            delay_elapsed: Duration::default(),
             current_loop: 0,
+            config: Arc::new(AnimationConfig::default()),
             sequence: None,
+            reverse: false,
+            delay_elapsed: Duration::default(),
         }
     }
 
@@ -484,6 +486,30 @@ impl<T: Animatable> Motion<T> {
                     false
                 } else {
                     self.current = self.initial;
+                    self.elapsed = Duration::default();
+                    self.velocity = T::zero();
+                    true
+                }
+            }
+            LoopMode::Alternate => {
+                self.reverse = !self.reverse;
+                if self.reverse {
+                    std::mem::swap(&mut self.initial, &mut self.target);
+                }
+                self.elapsed = Duration::default();
+                self.velocity = T::zero();
+                true
+            }
+            LoopMode::AlternateTimes(count) => {
+                self.current_loop += 1;
+                if self.current_loop >= count * 2 {
+                    self.stop();
+                    false
+                } else {
+                    self.reverse = !self.reverse;
+                    if self.reverse {
+                        std::mem::swap(&mut self.initial, &mut self.target);
+                    }
                     self.elapsed = Duration::default();
                     self.velocity = T::zero();
                     true
