@@ -8,6 +8,7 @@ use crate::components::page_transition::PageTransition;
 use crate::old_showcase::showcase_component::ShowcaseGallery;
 use crate::pages::basic_guide::BasicAnimationGuide;
 use crate::pages::blog::index::Blog;
+use crate::pages::complex_guide::ComplexAnimationGuide;
 use crate::pages::docs::index::Docs;
 use crate::pages::docs::index::DocsLanding;
 use crate::pages::home::index::Home;
@@ -45,10 +46,14 @@ pub enum Route {
             #[transition(SlideLeft)]
             IntermediateAnimationGuide {},
 
-            // At "/blog/:name", we want to show a specific blog post, using the name slug
-            #[route("/animations")]
+            #[route("/complex_guide")]
             #[transition(SlideLeft)]
-            Animations {},
+            ComplexAnimationGuide {},
+
+            // // At "/blog/:name", we want to show a specific blog post, using the name slug
+            // #[route("/animations")]
+            // #[transition(SlideLeft)]
+            // Animations {},
 
 
 

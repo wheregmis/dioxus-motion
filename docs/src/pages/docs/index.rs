@@ -66,12 +66,12 @@ fn DocLayout(title: &'static str, description: &'static str, children: Element) 
                                     SectionLink {
                                         to: Route::IntermediateAnimationGuide {},
                                         icon: "🚀",
-                                        label: "Intermediate Animation Guide - 1",
+                                        label: "Intermediate Animation Guide",
                                     }
                                     SectionLink {
-                                        to: Route::Animations {},
+                                        to: Route::ComplexAnimationGuide {},
                                         icon: "✨",
-                                        label: "Interactive Animation Guide",
+                                        label: "Complex Animation Guide",
                                     }
                                     SectionLink {
                                         to: Route::PageTransition {},
@@ -393,7 +393,7 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
 
                     // Animations Card
                     Link {
-                        to: Route::Animations {},
+                        to: Route::BasicAnimationGuide {},
                         class: "group relative overflow-hidden rounded-xl bg-dark-200/50 backdrop-blur-sm
                                border border-primary/10 transition-all duration-300 hover:border-primary/20
                                hover:shadow-lg hover:shadow-primary/10",

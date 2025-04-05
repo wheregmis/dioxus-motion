@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_motion::prelude::*;
+use dioxus_motion::{prelude::*, KeyframeAnimation};
 use easer::functions::Easing;
 
 use crate::components::code_block::CodeBlock;
@@ -22,8 +22,12 @@ pub fn IntermediateAnimationGuide() -> Element {
             // Step 2: Animation Delays
             StepTwo {}
 
-            // Step 3: Animation Sequences
+            // Step 3: Animation Approaches
             StepThree {}
+
+            // Step 4: Advanced Animations
+            StepFour {}
+
         }
     }
 }
@@ -294,12 +298,13 @@ fn StepTwo() -> Element {
 
 #[component]
 fn StepThree() -> Element {
-    let mut value = use_motion(0.0f32);
+    let mut sequence_value = use_motion(0.0f32);
+    let mut keyframe_value = use_motion(0.0f32);
 
-    let start = move |_| {
+    let start_sequence = move |_| {
         let sequence = AnimationSequence::new()
             .then(
-                50.0,
+                100.0,
                 AnimationConfig::new(AnimationMode::Spring(Spring {
                     stiffness: 100.0,
                     damping: 10.0,
@@ -308,7 +313,7 @@ fn StepThree() -> Element {
                 })),
             )
             .then(
-                70.0,
+                50.0,
                 AnimationConfig::new(AnimationMode::Spring(Spring {
                     stiffness: 200.0,
                     damping: 15.0,
@@ -317,7 +322,7 @@ fn StepThree() -> Element {
                 })),
             )
             .then(
-                100.0,
+                0.0,
                 AnimationConfig::new(AnimationMode::Spring(Spring {
                     stiffness: 300.0,
                     damping: 20.0,
@@ -326,90 +331,431 @@ fn StepThree() -> Element {
                 })),
             );
 
-        value.animate_sequence(sequence);
+        sequence_value.animate_sequence(sequence);
+    };
+
+    let start_keyframes = move |_| {
+        let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
+            .add_keyframe(0.0, 0.0, Some(easer::functions::Cubic::ease_in))
+            .add_keyframe(100.0, 0.3, Some(easer::functions::Elastic::ease_out))
+            .add_keyframe(50.0, 0.7, Some(easer::functions::Bounce::ease_out))
+            .add_keyframe(0.0, 1.0, Some(easer::functions::Back::ease_in_out));
+
+        keyframe_value.animate_keyframes(keyframes);
     };
 
     let reset = move |_| {
-        value.animate_to(
-            0.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-        );
+        let config = AnimationConfig::new(AnimationMode::Spring(Spring::default()));
+        sequence_value.animate_to(0.0, config.clone());
+        keyframe_value.animate_to(0.0, config);
     };
 
     rsx! {
         section { class: "space-y-4",
             div {
-                h2 { class: "text-2xl font-semibold mb-2", "Step 3: Animation Sequences" }
+                h2 { class: "text-2xl font-semibold mb-2", "Step 3: Basic Sequences and Keyframes" }
                 p { class: "text-text-secondary",
-                    "Chain multiple animations together to create complex motion sequences."
+                    "Learn how to create simple sequences and keyframe animations with numeric values."
                 }
             }
 
             div { class: "space-y-2",
+                // Code example
                 div { class: "bg-dark-200/50 p-3 rounded-lg",
                     CodeBlock {
-                        code: r#"let sequence = AnimationSequence::new()
-    .then(
-        50.0,
-        AnimationConfig::new(AnimationMode::Spring(Spring {
-            stiffness: 100.0,
-            damping: 10.0,
-            mass: 1.0,
-            velocity: 0.0,
-        }))
-    )
-    .then(
-        70.0,
-        AnimationConfig::new(AnimationMode::Spring(Spring {
-            stiffness: 200.0,
-            damping: 15.0,
-            mass: 1.0,
-            velocity: 0.0,
-        }))
-    )
-    .then(
-        100.0,
-        AnimationConfig::new(AnimationMode::Spring(Spring {
-            stiffness: 300.0,
-            damping: 20.0,
-            mass: 1.0,
-            velocity: 0.0,
-        }))
-    );
+                        code: r#"// Sequence animation
+let sequence = AnimationSequence::new()
+    .then(100.0, spring_config.clone())
+    .then(50.0, spring_config.clone())
+    .then(0.0, spring_config);
+value.animate_sequence(sequence);
 
-value.animate_sequence(sequence);"#.to_string(),
+// Keyframe animation
+let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
+    .add_keyframe(0.0, 0.0, Some(easer::functions::Cubic::ease_in))
+    .add_keyframe(100.0, 0.3, Some(easer::functions::Elastic::ease_out))
+    .add_keyframe(50.0, 0.7, Some(easer::functions::Bounce::ease_out))
+    .add_keyframe(0.0, 1.0, Some(easer::functions::Back::ease_in_out));
+value.animate_keyframes(keyframes);"#.to_string(),
                         language: "rust".to_string(),
                     }
                 }
 
+                // Live preview
                 div { class: "space-y-3 p-4 bg-dark-200/30 rounded-lg",
                     h3 { class: "font-medium", "Live Preview" }
-                    p { class: "text-sm text-text-secondary", "Sequence: 0% → 50% → 70% → 100%" }
 
-                    div { class: "relative h-16 bg-dark-200/30 rounded-lg overflow-hidden",
-                        div {
-                            class: "absolute h-16 bg-primary/50 rounded-lg",
-                            style: "width: {value.get_value()}%"
+                    // Sequence preview
+                    div { class: "space-y-2",
+                        p { class: "text-sm text-text-secondary", "Sequence Animation:" }
+                        div { class: "relative h-8 bg-dark-200/30 rounded-lg overflow-hidden",
+                            div {
+                                class: "absolute h-8 bg-primary/50 rounded-lg",
+                                style: "width: {sequence_value.get_value()}%"
+                            }
                         }
-                    }
-
-                    // Value display
-                    div { class: "text-sm text-text-secondary",
-                        "Current value: {value.get_value():.1}%"
-                    }
-
-                    div { class: "flex gap-2",
+                        // Add value display
+                        div { class: "text-sm text-text-secondary mt-1",
+                            "Current value: {sequence_value.get_value():.1}"
+                        }
                         button {
                             class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
-                            onclick: start,
+                            onclick: start_sequence,
                             "Start Sequence"
                         }
+                    }
+
+                    // Keyframe preview
+                    div { class: "space-y-2 mt-4",
+                        p { class: "text-sm text-text-secondary", "Keyframe Animation:" }
+                        div { class: "relative h-8 bg-dark-200/30 rounded-lg overflow-hidden",
+                            div {
+                                class: "absolute h-8 bg-primary/50 rounded-lg",
+                                style: "width: {keyframe_value.get_value()}%"
+                            }
+                        }
+                        // Add value display
+                        div { class: "text-sm text-text-secondary mt-1",
+                            "Current value: {keyframe_value.get_value():.1}"
+                        }
+                        button {
+                            class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
+                            onclick: start_keyframes,
+                            "Start Keyframes"
+                        }
+                    }
+
+                    // Reset button at the bottom
+                    div { class: "mt-4",
                         button {
                             class: "px-4 py-2 bg-dark-200 hover:bg-dark-300 rounded-lg text-text-secondary transition-colors",
                             onclick: reset,
-                            "Reset"
+                            "Reset All"
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn StepFour() -> Element {
+    let mut sequence_transform = use_motion(Transform::identity());
+    let mut sequence_color = use_motion(Color::from_rgba(59, 130, 246, 255));
+    let mut keyframe_transform = use_motion(Transform::identity());
+    let mut keyframe_color = use_motion(Color::from_rgba(59, 130, 246, 255));
+
+    let start_sequence = move |_| {
+        let transform_sequence = AnimationSequence::new()
+            .then(
+                Transform::new(100.0, 0.0, 1.2, 45.0),
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 100.0,
+                    damping: 10.0,
+                    mass: 1.0,
+                    velocity: 0.0,
+                })),
+            )
+            .then(
+                Transform::new(100.0, 100.0, 0.8, 180.0),
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 200.0,
+                    damping: 15.0,
+                    mass: 1.0,
+                    velocity: 0.0,
+                })),
+            )
+            .then(
+                Transform::identity(),
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 300.0,
+                    damping: 20.0,
+                    mass: 1.0,
+                    velocity: 0.0,
+                })),
+            );
+
+        let color_sequence = AnimationSequence::new()
+            .then(
+                Color::from_rgba(236, 72, 153, 255),
+                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+            )
+            .then(
+                Color::from_rgba(34, 197, 94, 255),
+                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+            )
+            .then(
+                Color::from_rgba(59, 130, 246, 255),
+                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+            );
+
+        sequence_transform.animate_sequence(transform_sequence);
+        sequence_color.animate_sequence(color_sequence);
+    };
+
+    let start_keyframes = move |_| {
+        let transform_keyframes = KeyframeAnimation::new(Duration::from_secs(2))
+            .add_keyframe(
+                Transform::identity(),
+                0.0,
+                Some(easer::functions::Cubic::ease_in),
+            )
+            .add_keyframe(
+                Transform::new(100.0, 50.0, 1.2, 180.0),
+                0.5,
+                Some(easer::functions::Elastic::ease_out),
+            )
+            .add_keyframe(
+                Transform::identity(),
+                1.0,
+                Some(easer::functions::Back::ease_in_out),
+            );
+
+        let color_keyframes = KeyframeAnimation::new(Duration::from_secs(2))
+            .add_keyframe(
+                Color::from_rgba(59, 130, 246, 255),
+                0.0,
+                Some(easer::functions::Cubic::ease_in),
+            )
+            .add_keyframe(
+                Color::from_rgba(236, 72, 153, 255),
+                0.5,
+                Some(easer::functions::Cubic::ease_out),
+            )
+            .add_keyframe(
+                Color::from_rgba(59, 130, 246, 255),
+                1.0,
+                Some(easer::functions::Cubic::ease_in_out),
+            );
+
+        keyframe_transform.animate_keyframes(transform_keyframes);
+        keyframe_color.animate_keyframes(color_keyframes);
+    };
+
+    let reset = move |_| {
+        // Stop all animations with a quick spring animation back to initial state
+        let config = AnimationConfig::new(AnimationMode::Spring(Spring {
+            stiffness: 200.0,
+            damping: 20.0,
+            mass: 1.0,
+            velocity: 0.0,
+        }));
+
+        // Reset transform animations
+        sequence_transform.animate_to(Transform::identity(), config.clone());
+        keyframe_transform.animate_to(Transform::identity(), config.clone());
+
+        // Reset color animations
+        let initial_color = Color::from_rgba(59, 130, 246, 255); // Blue
+        sequence_color.animate_to(initial_color, config.clone());
+        keyframe_color.animate_to(initial_color, config);
+    };
+
+    rsx! {
+        section { class: "space-y-4",
+            div {
+                h2 { class: "text-2xl font-semibold mb-2", "Step 4: Transform and Color Animations" }
+                p { class: "text-text-secondary",
+                    "Learn how to animate more complex types like Transform for position/scale/rotation and Color for smooth color transitions."
+                }
+            }
+
+            // Introduction to Transform and Color
+            div { class: "space-y-4 mb-6",
+                // Transform introduction
+                div { class: "p-4 bg-dark-200/30 rounded-lg",
+                    h3 { class: "font-medium mb-2", "Transform Animation" }
+                    p { class: "text-text-secondary mb-3",
+                        "Transform combines position (x, y), scale, and rotation into a single animatable value."
+                    }
+                    div { class: "bg-dark-200/50 p-3 rounded-lg",
+                        CodeBlock {
+                            code: r#"// Create a transform motion value
+let mut transform = use_motion(Transform::identity());
+
+// Animate to new position, scale, and rotation
+transform.animate_to(
+    Transform::new(100.0, 50.0, 1.2, 45.0), // x, y, scale, rotation(deg)
+    AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+);"#.to_string(),
+                            language: "rust".to_string(),
+                        }
+                    }
+                }
+
+                // Color introduction
+                div { class: "p-4 bg-dark-200/30 rounded-lg",
+                    h3 { class: "font-medium mb-2", "Color Animation" }
+                    p { class: "text-text-secondary mb-3",
+                        "Smoothly interpolate between colors in RGB space."
+                    }
+                    div { class: "bg-dark-200/50 p-3 rounded-lg",
+                        CodeBlock {
+                            code: r#"// Create a color motion value (RGBA format)
+let mut color = use_motion(Color::from_rgba(59, 130, 246, 255)); // Blue
+
+// Animate to a new color
+color.animate_to(
+    Color::from_rgba(236, 72, 153, 255), // Pink
+    AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+);"#.to_string(),
+                            language: "rust".to_string(),
+                        }
+                    }
+                }
+
+                // Key points about Transform and Color
+                div { class: "space-y-2 mt-4",
+                    h3 { class: "font-medium", "Key Points:" }
+                    ul { class: "list-disc list-inside text-text-secondary space-y-1",
+                        li { "Transform combines multiple properties into a single animation" }
+                        li { "Rotation is in radians internally, but typically specified in degrees for convenience" }
+                        li { "Colors are interpolated smoothly in RGB space" }
+                        li { "Both types work with all animation modes (Spring, Tween) and sequences" }
+                    }
+                }
+            }
+
+            // Sequence Animations
+            div { class: "space-y-4 p-4 bg-dark-200/30 rounded-lg",
+                h3 { class: "font-medium", "Sequence Animations" }
+
+                // Code example
+                div { class: "bg-dark-200/50 p-3 rounded-lg mb-4",
+                    CodeBlock {
+                        code: r#"// Transform sequence
+let transform_sequence = AnimationSequence::new()
+    .then(
+        Transform::new(100.0, 0.0, 1.2, 45.0),
+        spring_config.clone(),
+    )
+    .then(
+        Transform::new(100.0, 100.0, 0.8, 180.0),
+        spring_config.clone(),
+    )
+    .then(
+        Transform::identity(),
+        spring_config,
+    );
+
+// Color sequence
+let color_sequence = AnimationSequence::new()
+    .then(Color::from_rgba(236, 72, 153, 255), spring_config.clone())
+    .then(Color::from_rgba(34, 197, 94, 255), spring_config.clone())
+    .then(Color::from_rgba(59, 130, 246, 255), spring_config);"#.to_string(),
+                        language: "rust".to_string(),
+                    }
+                }
+
+                // Preview
+                div { class: "space-y-4",
+                    // Transform preview
+                    div { class: "h-32 flex items-center justify-center bg-dark-200/30 rounded-lg",
+                        div {
+                            class: "w-16 h-16 rounded-lg",
+                            style: {
+                                let (r, g, b, _) = sequence_color.get_value().to_rgba();
+                                format!("background-color: rgb({r}, {g}, {b}); \
+                                        transform: translate({}px, {}px) \
+                                                  rotate({}deg) \
+                                                  scale({})",
+                                        sequence_transform.get_value().x,
+                                        sequence_transform.get_value().y,
+                                        sequence_transform.get_value().rotation,
+                                        sequence_transform.get_value().scale)
+                            }
+                        }
+                    }
+
+                    button {
+                        class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
+                        onclick: start_sequence,
+                        "Start Sequence"
+                    }
+                }
+            }
+
+            // Keyframe Animations
+            div { class: "space-y-4 p-4 bg-dark-200/30 rounded-lg",
+                h3 { class: "font-medium", "Keyframe Animations" }
+
+                // Code example
+                div { class: "bg-dark-200/50 p-3 rounded-lg mb-4",
+                    CodeBlock {
+                        code: r#"// Transform keyframes
+let transform_keyframes = KeyframeAnimation::new(Duration::from_secs(2))
+    .add_keyframe(
+        Transform::identity(),
+        0.0,
+        Some(easer::functions::Cubic::ease_in),
+    )
+    .add_keyframe(
+        Transform::new(100.0, 50.0, 1.2, 180.0),
+        0.5,
+        Some(easer::functions::Elastic::ease_out),
+    )
+    .add_keyframe(
+        Transform::identity(),
+        1.0,
+        Some(easer::functions::Back::ease_in_out),
+    );
+
+// Color keyframes
+let color_keyframes = KeyframeAnimation::new(Duration::from_secs(2))
+    .add_keyframe(
+        Color::from_rgba(59, 130, 246, 255),
+        0.0,
+        Some(easer::functions::Cubic::ease_in),
+    )
+    .add_keyframe(
+        Color::from_rgba(236, 72, 153, 255),
+        0.5,
+        Some(easer::functions::Cubic::ease_out),
+    )
+    .add_keyframe(
+        Color::from_rgba(59, 130, 246, 255),
+        1.0,
+        Some(easer::functions::Cubic::ease_in_out),
+    );"#.to_string(),
+                        language: "rust".to_string(),
+                    }
+                }
+
+                // Preview
+                div { class: "space-y-4",
+                    // Transform preview
+                    div { class: "h-32 flex items-center justify-center bg-dark-200/30 rounded-lg",
+                        div {
+                            class: "w-16 h-16 rounded-lg",
+                            style: {
+                                let (r, g, b, _) = keyframe_color.get_value().to_rgba();
+                                format!("background-color: rgb({r}, {g}, {b}); \
+                                        transform: translate({}px, {}px) \
+                                                  rotate({}deg) \
+                                                  scale({})",
+                                        keyframe_transform.get_value().x,
+                                        keyframe_transform.get_value().y,
+                                        keyframe_transform.get_value().rotation,
+                                        keyframe_transform.get_value().scale)
+                            }
+                        }
+                    }
+
+                    button {
+                        class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
+                        onclick: start_keyframes,
+                        "Start Keyframes"
+                    }
+                }
+            }
+
+            // Reset button
+            div { class: "mt-6",
+                button {
+                    class: "px-4 py-2 bg-dark-200 hover:bg-dark-300 rounded-lg text-text-secondary transition-colors",
+                    onclick: reset,
+                    "Reset All"
                 }
             }
         }

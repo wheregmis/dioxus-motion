@@ -162,6 +162,7 @@ pub struct Motion<T: Animatable> {
     config: Arc<AnimationConfig>,
     sequence: Option<Arc<AnimationSequence<T>>>,
     reverse: bool, // New field to track direction for alternating animations
+    keyframe_animation: Option<Arc<KeyframeAnimation<T>>>,
 }
 
 impl<T: Animatable> Motion<T> {
@@ -178,6 +179,7 @@ impl<T: Animatable> Motion<T> {
             sequence: None,
             reverse: false,
             delay_elapsed: Duration::default(),
+            keyframe_animation: None,
         }
     }
 
@@ -205,12 +207,19 @@ impl<T: Animatable> Motion<T> {
         }
     }
 
+    pub fn animate_keyframes(&mut self, animation: KeyframeAnimation<T>) {
+        self.keyframe_animation = Some(Arc::new(animation));
+        self.running = true;
+        self.elapsed = Duration::default();
+        self.velocity = T::zero();
+    }
+
     pub fn value(&self) -> T {
         self.current
     }
 
     pub fn is_running(&self) -> bool {
-        self.running || self.sequence.is_some()
+        self.running || self.sequence.is_some() || self.keyframe_animation.is_some()
     }
 
     pub fn reset(&mut self) {
@@ -224,6 +233,7 @@ impl<T: Animatable> Motion<T> {
         self.current_loop = 0;
         self.velocity = T::zero();
         self.sequence = None;
+        self.keyframe_animation = None;
     }
 
     pub fn delay(&mut self, duration: Duration) {
@@ -233,11 +243,10 @@ impl<T: Animatable> Motion<T> {
     }
 
     fn update(&mut self, dt: f32) -> bool {
-        if !self.running && self.sequence.is_none() {
+        if !self.running && self.sequence.is_none() && self.keyframe_animation.is_none() {
             return false;
         }
 
-        // Handle sequence if present
         if let Some(sequence) = &self.sequence {
             if !self.running {
                 // Current animation has completed, move to next step
@@ -279,6 +288,10 @@ impl<T: Animatable> Motion<T> {
                     return false;
                 }
             }
+        }
+
+        if let Some(_animation) = &self.keyframe_animation {
+            return self.update_keyframes(dt);
         }
 
         // Skip updates for imperceptible changes
@@ -533,6 +546,60 @@ impl<T: Animatable> Motion<T> {
     fn get_value(&self) -> T {
         self.current
     }
+
+    fn update_keyframes(&mut self, dt: f32) -> bool {
+        if let Some(animation) = &self.keyframe_animation {
+            let progress =
+                (self.elapsed.as_secs_f32() / animation.duration.as_secs_f32()).clamp(0.0, 1.0);
+
+            // Find the current keyframe pair
+            let (start, end) = animation
+                .keyframes
+                .windows(2)
+                .find(|w| progress >= w[0].offset && progress <= w[1].offset)
+                .map(|w| (&w[0], &w[1]))
+                .unwrap_or_else(|| {
+                    // Handle edge cases
+                    if progress <= animation.keyframes[0].offset {
+                        let first = &animation.keyframes[0];
+                        (first, first)
+                    } else {
+                        let last = animation
+                            .keyframes
+                            .last()
+                            .expect("Keyframe animation must contain at least one keyframe");
+                        (last, last)
+                    }
+                });
+
+            // Calculate local progress between keyframes
+            let local_progress = if start.offset == end.offset {
+                1.0
+            } else {
+                (progress - start.offset) / (end.offset - start.offset)
+            };
+
+            // Apply easing if specified
+            let eased_progress = end
+                .easing
+                .map_or(local_progress, |ease| (ease)(local_progress, 0.0, 1.0, 1.0));
+
+            // Interpolate between keyframes
+            self.current = start.value.interpolate(&end.value, eased_progress);
+
+            // Update elapsed time
+            self.elapsed += Duration::from_secs_f32(dt);
+
+            // Check for completion
+            if progress >= 1.0 {
+                self.handle_completion()
+            } else {
+                true
+            }
+        } else {
+            false
+        }
+    }
 }
 
 /// Combined Animation Manager trait
@@ -540,6 +607,7 @@ pub trait AnimationManager<T: Animatable>: Clone + Copy {
     fn new(initial: T) -> Self;
     fn animate_to(&mut self, target: T, config: AnimationConfig);
     fn animate_sequence(&mut self, sequence: AnimationSequence<T>);
+    fn animate_keyframes(&mut self, animation: KeyframeAnimation<T>);
     fn update(&mut self, dt: f32) -> bool;
     fn get_value(&self) -> T;
     fn is_running(&self) -> bool;
@@ -563,6 +631,10 @@ impl<T: Animatable> AnimationManager<T> for Signal<Motion<T>> {
             state.animate_to(first_step.target, (*first_step.config).clone());
             state.sequence = Some(sequence.into());
         }
+    }
+
+    fn animate_keyframes(&mut self, animation: KeyframeAnimation<T>) {
+        self.write().animate_keyframes(animation);
     }
 
     fn update(&mut self, dt: f32) -> bool {
@@ -683,4 +755,50 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
 thread_local! {
     static TRANSFORM_BUFFER: RefCell<Vec<Transform>> = RefCell::new(Vec::with_capacity(32));
     static SPRING_BUFFER: RefCell<Vec<SpringState>> = RefCell::new(Vec::with_capacity(16));
+}
+
+/// Represents a single keyframe in an animation
+/// Represents a single keyframe in an animation
+#[derive(Clone)]
+pub struct Keyframe<T: Animatable> {
+    /// The target value at this keyframe
+    value: T,
+    /// Timing as a percentage (0.0 to 1.0)
+    offset: f32,
+    /// Optional easing function for this specific keyframe
+    easing: Option<fn(f32, f32, f32, f32) -> f32>,
+}
+/// Keyframe animation configuration
+#[derive(Clone)]
+pub struct KeyframeAnimation<T: Animatable> {
+    keyframes: Vec<Keyframe<T>>,
+    duration: Duration,
+}
+
+impl<T: Animatable> KeyframeAnimation<T> {
+    pub fn new(duration: Duration) -> Self {
+        Self {
+            keyframes: Vec::new(),
+            duration,
+        }
+    }
+
+    pub fn add_keyframe(
+        mut self,
+        value: T,
+        offset: f32,
+        easing: Option<fn(f32, f32, f32, f32) -> f32>,
+    ) -> Self {
+        self.keyframes.push(Keyframe {
+            value,
+            offset: offset.clamp(0.0, 1.0),
+            easing,
+        });
+        self.keyframes.sort_by(|a, b| {
+            a.offset
+                .partial_cmp(&b.offset)
+                .expect("Failed to compare keyframe offsets - possible NaN value")
+        });
+        self
+    }
 }
