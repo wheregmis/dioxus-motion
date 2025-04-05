@@ -195,8 +195,13 @@ impl<T: Animatable> Motion<T> {
 
     pub fn animate_sequence(&mut self, sequence: AnimationSequence<T>) {
         if let Some(first_step) = sequence.steps.first() {
+            // This approach doesn't correctly initialize the sequence state
             self.animate_to(first_step.target, (*first_step.config).clone());
-            self.sequence = Some(sequence.into());
+
+            // Start with current_step as 0 instead of -1 to fix indexing
+            let mut new_sequence = sequence;
+            new_sequence.current_step = 0;
+            self.sequence = Some(Arc::new(new_sequence));
         }
     }
 
@@ -233,32 +238,46 @@ impl<T: Animatable> Motion<T> {
         }
 
         // Handle sequence if present
-        if let Some(sequence) = &mut self.sequence {
+        if let Some(sequence) = &self.sequence {
             if !self.running {
+                // Current animation has completed, move to next step
                 let current_step = sequence.current_step;
                 let total_steps = sequence.steps.len();
 
-                match current_step.cmp(&(total_steps as u8 - 1)) {
-                    std::cmp::Ordering::Less => {
-                        let mut new_sequence = (**sequence).clone();
-                        new_sequence.current_step += 1;
-                        let step = &new_sequence.steps[new_sequence.current_step as usize];
-                        let target = step.target;
-                        let config = (*step.config).clone();
-                        let _ = sequence;
-                        self.sequence = Some(Arc::new(new_sequence));
-                        self.animate_to(target, config);
+                // Check if there are more steps to animate
+                if current_step < (total_steps - 1) as u8 {
+                    // Changed this condition
+                    // Move to the next step
+                    let mut new_sequence = (**sequence).clone();
+                    new_sequence.current_step = current_step + 1;
+                    let next_step = current_step + 1;
+
+                    // Get the next step
+                    let step = &sequence.steps[next_step as usize];
+                    let target = step.target;
+                    let config = (*step.config).clone();
+                    self.sequence = Some(Arc::new(new_sequence));
+
+                    // Start the next animation
+                    self.initial = self.current; // Start from current position
+                    self.target = target;
+                    self.config = Arc::new(config);
+                    self.running = true;
+                    self.elapsed = Duration::default();
+                    self.delay_elapsed = Duration::default();
+                    self.velocity = T::zero();
+
+                    println!("Animating to step {} of {}", next_step + 1, total_steps);
+                    return true;
+                } else {
+                    // Sequence complete - we've reached the last step
+                    let mut sequence_clone = (**sequence).clone();
+                    if let Some(on_complete) = sequence_clone.on_complete.take() {
+                        on_complete();
                     }
-                    std::cmp::Ordering::Equal => {
-                        let mut sequence_clone = (**sequence).clone();
-                        if let Some(on_complete) = sequence_clone.on_complete.take() {
-                            on_complete();
-                        }
-                        self.sequence = None;
-                        self.stop();
-                        return false;
-                    }
-                    std::cmp::Ordering::Greater => {}
+                    self.sequence = None;
+                    self.stop();
+                    return false;
                 }
             }
         }
