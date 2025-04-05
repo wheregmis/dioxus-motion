@@ -75,11 +75,22 @@ pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
     };
 
     if let Some((from, to)) = from_route {
-        // Special handling for transitions from root path
-        let is_from_root = from.to_string() == "/";
-
-        // Animate if either we're at the correct level OR we're transitioning from root
-        if is_from_root || outlet.level() == route.get_layout_depth() {
+          // Get the layout depth of both the previous and current routes
+          let from_depth = from.get_layout_depth();
+          let to_depth = to.get_layout_depth();
+ 
+          // Get the current level of nesting in the outlet
+          let current_level = outlet.level();
+ 
+          // Determine if the transition involves the root route (depth 1)
+          let involves_root = from_depth == 1 || to_depth == 1;
+ 
+          // Check if the depth hasn't changed and the outlet level matches
+          let is_same_depth_and_matching_level = from_depth == to_depth && current_level == to_depth;
+ 
+          // If we're transitioning from/to root, or the outlet is at the same depth,
+          // render the animated transition between routes
+          if involves_root || is_same_depth_and_matching_level { 
             return rsx! {
                 FromRouteToCurrent::<R> {
                     route_type: PhantomData,
