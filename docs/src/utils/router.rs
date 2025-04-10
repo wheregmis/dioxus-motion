@@ -1,7 +1,6 @@
 use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
 
-use crate::components::animations::Animations;
 use crate::components::navbar::NavBar;
 use crate::components::page_not_found::PageNotFound;
 use crate::components::page_transition::PageTransition;
@@ -49,6 +48,7 @@ pub enum Route {
             #[route("/complex_guide")]
             #[transition(SlideLeft)]
             ComplexAnimationGuide {},
+
 
             // // At "/blog/:name", we want to show a specific blog post, using the name slug
             // #[route("/animations")]
