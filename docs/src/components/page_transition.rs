@@ -1,4 +1,5 @@
 use crate::components::code_block::CodeBlock;
+use crate::components::guide_navigation::GuideNavigation;
 use dioxus::prelude::*;
 
 #[component]
@@ -206,6 +207,9 @@ enum Route {
                     }
                 }
             }
+
+            // Navigation links
+            GuideNavigation {}
         }
     }
 }

@@ -59,6 +59,11 @@ fn DocLayout(title: &'static str, description: &'static str, children: Element) 
                                         label: "Getting Started",
                                     }
                                     SectionLink {
+                                        to: Route::PageTransition {},
+                                        icon: "🔄",
+                                        label: "Page Transitions",
+                                    }
+                                    SectionLink {
                                         to: Route::BasicAnimationGuide {},
                                         icon: "🎨",
                                         label: "Basic Animation Guide",
@@ -73,11 +78,7 @@ fn DocLayout(title: &'static str, description: &'static str, children: Element) 
                                         icon: "✨",
                                         label: "Complex Animation Guide",
                                     }
-                                    SectionLink {
-                                        to: Route::PageTransition {},
-                                        icon: "🔄",
-                                        label: "Page Transitions",
-                                    }
+
                                 }
                             }
                         }

@@ -3,6 +3,7 @@ use dioxus_motion::{prelude::*, KeyframeAnimation};
 use easer::functions::Easing;
 
 use crate::components::code_block::CodeBlock;
+use crate::components::guide_navigation::GuideNavigation;
 
 // Custom struct for our animation
 #[derive(Clone, Copy)]
@@ -132,6 +133,9 @@ pub fn ComplexAnimationGuide() -> Element {
 
             // Step 3: Advanced Custom Animation
             StepThree {}
+
+            // Navigation links
+            GuideNavigation {}
         }
     }
 }
@@ -332,8 +336,8 @@ petal.animate_to(
                         div {
                             class: "absolute w-16 h-16 bg-primary/50 rounded-lg",
                             style: "
-                                transform: translate({petal.get_value().translate_x}px, {petal.get_value().translate_y}px) 
-                                rotate({petal.get_value().rotate}deg) 
+                                transform: translate({petal.get_value().translate_x}px, {petal.get_value().translate_y}px)
+                                rotate({petal.get_value().rotate}deg)
                                 scale({petal.get_value().scale})
                             "
                         }
@@ -502,8 +506,8 @@ petal.animate_keyframes(keyframes);"#.to_string(),
                         div {
                             class: "absolute w-16 h-16 bg-primary/50 rounded-lg",
                             style: "
-                                transform: translate({petal.get_value().translate_x}px, {petal.get_value().translate_y}px) 
-                                rotate({petal.get_value().rotate}deg) 
+                                transform: translate({petal.get_value().translate_x}px, {petal.get_value().translate_y}px)
+                                rotate({petal.get_value().rotate}deg)
                                 scale({petal.get_value().scale})
                             "
                         }

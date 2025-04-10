@@ -3,6 +3,7 @@ use dioxus_motion::{prelude::*, KeyframeAnimation};
 use easer::functions::Easing;
 
 use crate::components::code_block::CodeBlock;
+use crate::components::guide_navigation::GuideNavigation;
 
 #[component]
 pub fn IntermediateAnimationGuide() -> Element {
@@ -28,6 +29,8 @@ pub fn IntermediateAnimationGuide() -> Element {
             // Step 4: Advanced Animations
             StepFour {}
 
+            // Navigation links
+            GuideNavigation {}
         }
     }
 }

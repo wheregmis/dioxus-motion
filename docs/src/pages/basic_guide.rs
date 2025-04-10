@@ -3,6 +3,7 @@ use dioxus_motion::prelude::*;
 use easer::functions::Easing;
 
 use crate::components::code_block::CodeBlock;
+use crate::components::guide_navigation::GuideNavigation;
 
 #[component]
 pub fn BasicAnimationGuide() -> Element {
@@ -21,6 +22,9 @@ pub fn BasicAnimationGuide() -> Element {
 
             // Step 2: Animation Modes
             StepTwo {}
+
+            // Navigation links
+            GuideNavigation {}
         }
     }
 }
