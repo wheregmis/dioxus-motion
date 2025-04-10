@@ -852,9 +852,6 @@
   .max-w-2xl {
     max-width: var(--container-2xl);
   }
-  .max-w-3xl {
-    max-width: var(--container-3xl);
-  }
   .max-w-4xl {
     max-width: var(--container-4xl);
   }
@@ -924,14 +921,8 @@
   .-rotate-6 {
     rotate: calc(6deg * -1);
   }
-  .-rotate-12 {
-    rotate: calc(12deg * -1);
-  }
   .rotate-6 {
     rotate: 6deg;
-  }
-  .rotate-12 {
-    rotate: 12deg;
   }
   .-rotate-x-90 {
     --tw-rotate-x: rotateX(calc(90deg * -1));
@@ -994,9 +985,6 @@
   }
   .justify-center {
     justify-content: center;
-  }
-  .gap-1 {
-    gap: calc(var(--spacing) * 1);
   }
   .gap-2 {
     gap: calc(var(--spacing) * 2);
@@ -1168,9 +1156,6 @@
   .bg-dark-200\/95 {
     background-color: color-mix(in oklab, var(--color-dark-200) 95%, transparent);
   }
-  .bg-dark-300\/30 {
-    background-color: color-mix(in oklab, var(--color-dark-300) 30%, transparent);
-  }
   .bg-dark-300\/50 {
     background-color: color-mix(in oklab, var(--color-dark-300) 50%, transparent);
   }
@@ -1197,9 +1182,6 @@
   }
   .bg-primary\/50 {
     background-color: color-mix(in oklab, var(--color-primary) 50%, transparent);
-  }
-  .bg-primary\/80 {
-    background-color: color-mix(in oklab, var(--color-primary) 80%, transparent);
   }
   .bg-primary\/90 {
     background-color: color-mix(in oklab, var(--color-primary) 90%, transparent);
@@ -1398,9 +1380,6 @@
   .px-2 {
     padding-inline: calc(var(--spacing) * 2);
   }
-  .px-3 {
-    padding-inline: calc(var(--spacing) * 3);
-  }
   .px-4 {
     padding-inline: calc(var(--spacing) * 4);
   }
@@ -1449,9 +1428,6 @@
   .pt-6 {
     padding-top: calc(var(--spacing) * 6);
   }
-  .pt-8 {
-    padding-top: calc(var(--spacing) * 8);
-  }
   .pt-12 {
     padding-top: calc(var(--spacing) * 12);
   }
@@ -1469,9 +1445,6 @@
   }
   .pb-6 {
     padding-bottom: calc(var(--spacing) * 6);
-  }
-  .pl-6 {
-    padding-left: calc(var(--spacing) * 6);
   }
   .text-center {
     text-align: center;
@@ -1741,6 +1714,9 @@
     --tw-ease: var(--ease-out);
     transition-timing-function: var(--ease-out);
   }
+  .will-change-transform {
+    will-change: transform;
+  }
   .backface-hidden {
     backface-visibility: hidden;
   }
@@ -1820,13 +1796,6 @@
       }
     }
   }
-  .hover\:bg-dark-200 {
-    &:hover {
-      @media (hover: hover) {
-        background-color: var(--color-dark-200);
-      }
-    }
-  }
   .hover\:bg-dark-200\/70 {
     &:hover {
       @media (hover: hover) {
@@ -1838,13 +1807,6 @@
     &:hover {
       @media (hover: hover) {
         background-color: var(--color-dark-300);
-      }
-    }
-  }
-  .hover\:bg-primary {
-    &:hover {
-      @media (hover: hover) {
-        background-color: var(--color-primary);
       }
     }
   }

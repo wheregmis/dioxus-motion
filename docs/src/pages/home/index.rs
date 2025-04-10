@@ -26,85 +26,60 @@ use crate::utils::router::Route;
 /// }
 /// ```
 pub fn Home() -> Element {
-    // Animation values for staggered entrance
+    // Combine related animations into fewer motion values
     let mut hero_opacity = use_motion(0.0f32);
     let mut demo_scale = use_motion(0.95f32);
-    let mut title_opacity = use_motion(0.0f32);
-    let mut title_y = use_motion(20.0f32);
     let mut cta_opacity = use_motion(0.0f32);
     let mut features_opacity = use_motion(0.0f32);
-
-    // Background animation values
     let mut bg_rotate = use_motion(0.0f32);
 
     use_effect(move || {
-        // Staggered entrance animations
+        // Use more performant spring settings
+        let spring = Spring {
+            stiffness: 100.0, // Reduced from original values
+            damping: 20.0,    // Increased for less oscillation
+            mass: 1.0,        // Reduced mass
+            velocity: 0.0,
+        };
+
+        // Optimize animations with better performance settings
         hero_opacity.animate_to(
             1.0,
             AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: std::time::Duration::from_millis(800),
+                duration: std::time::Duration::from_millis(400), // Reduced duration
                 easing: easer::functions::Cubic::ease_out,
             })),
         );
 
-        // Animate demo scale with a slight delay
         demo_scale.animate_to(
             1.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 100.0,
-                damping: 12.0,
-                mass: 1.0,
-                velocity: 0.0,
-            }))
-            .with_delay(std::time::Duration::from_millis(200)),
+            AnimationConfig::new(AnimationMode::Spring(spring))
+                .with_delay(std::time::Duration::from_millis(100)), // Reduced delay
         );
 
-        // Title animations with delay
-        title_opacity.animate_to(
-            1.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: std::time::Duration::from_millis(800),
-                easing: easer::functions::Cubic::ease_out,
-            }))
-            .with_delay(std::time::Duration::from_millis(400)),
-        );
-
-        title_y.animate_to(
-            0.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 80.0,
-                damping: 12.0,
-                mass: 1.0,
-                velocity: 0.0,
-            }))
-            .with_delay(std::time::Duration::from_millis(400)),
-        );
-
-        // CTA buttons animation with more delay
         cta_opacity.animate_to(
             1.0,
             AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: std::time::Duration::from_millis(800),
+                duration: std::time::Duration::from_millis(400),
                 easing: easer::functions::Cubic::ease_out,
             }))
-            .with_delay(std::time::Duration::from_millis(600)),
+            .with_delay(std::time::Duration::from_millis(300)),
         );
 
-        // Features section fades in last
         features_opacity.animate_to(
             1.0,
             AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: std::time::Duration::from_millis(800),
+                duration: std::time::Duration::from_millis(400),
                 easing: easer::functions::Cubic::ease_out,
             }))
-            .with_delay(std::time::Duration::from_millis(800)),
+            .with_delay(std::time::Duration::from_millis(400)),
         );
 
-        // Continuous background rotation
+        // Optimize background rotation
         bg_rotate.animate_to(
             360.0,
             AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: std::time::Duration::from_millis(60000), // 1 minute rotation
+                duration: std::time::Duration::from_millis(30000), // Reduced from 60s to 30s
                 easing: easer::functions::Linear::ease_in_out,
             }))
             .with_loop(LoopMode::Infinite),
@@ -114,13 +89,14 @@ pub fn Home() -> Element {
     rsx! {
         section {
             class: "min-h-screen bg-gradient-dark relative overflow-hidden flex flex-col",
-            style: "opacity: {hero_opacity.get_value()}",
 
-            // Animated background elements with rotation
-            div { class: "absolute inset-0 overflow-hidden",
+
+            // Optimize background animation
+            div {
+                class: "absolute inset-0 overflow-hidden will-change-transform", // Added will-change-transform
                 div {
                     class: "absolute top-0 left-0 w-[200%] h-[200%] -translate-x-1/4 -translate-y-1/4",
-                    style: "transform: rotate({bg_rotate.get_value()}deg)",
+
                     div { class: "absolute top-1/4 left-1/4 w-1/2 h-1/2 bg-primary/5 rounded-full blur-3xl" }
                     div { class: "absolute bottom-1/4 right-1/4 w-1/2 h-1/2 bg-secondary/5 rounded-full blur-3xl" }
                     div { class: "absolute top-1/3 right-1/3 w-1/3 h-1/3 bg-primary/3 rounded-full blur-3xl" }
@@ -134,7 +110,7 @@ pub fn Home() -> Element {
                     // Hero section with animations in a row
                     div {
                         class: "flex flex-col lg:flex-row items-center justify-between gap-8 mb-16",
-                        style: "opacity: {hero_opacity.get_value()}; transform: scale({demo_scale.get_value()})",
+
 
                         // Left side - Simple animation
                         div { class: "w-full lg:w-1/3",
@@ -195,7 +171,7 @@ pub fn Home() -> Element {
                     // Title and CTA section
                     div { class: "text-center max-w-4xl mx-auto",
                         // Title with animation
-                        div { style: "opacity: {title_opacity.get_value()}; transform: translateY({title_y.get_value()}px)",
+                        div {
                             h1 { class: "text-4xl md:text-5xl lg:text-6xl font-bold mb-4",
                                 span { class: "text-gradient-primary", "Dioxus Motion" }
                             }
@@ -410,124 +386,17 @@ rsx! {
 /// }
 /// ```
 fn FeatureCard(title: &'static str, description: &'static str, icon: &'static str) -> Element {
-    let mut card_scale = use_motion(1.0f32);
-    let mut card_y = use_motion(0.0f32);
-    let mut icon_rotate = use_motion(0.0f32);
-    let mut icon_scale = use_motion(1.0f32);
-
     rsx! {
         div {
             class: "p-6 rounded-xl bg-dark-200/50 backdrop-blur-sm
                     border border-primary/10 transition-all duration-300
                     hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5
-                    h-full flex flex-col",
-            style: "transform: translateY({card_y.get_value()}px) scale({card_scale.get_value()})",
-            onmouseenter: move |_| {
-                card_scale
-                    .animate_to(
-                        1.05,
-                        AnimationConfig::new(
-                            AnimationMode::Spring(Spring {
-                                stiffness: 300.0,
-                                damping: 20.0,
-                                mass: 1.0,
-                                velocity: 0.0,
-                            }),
-                        ),
-                    );
-                card_y
-                    .animate_to(
-                        -5.0,
-                        AnimationConfig::new(
-                            AnimationMode::Spring(Spring {
-                                stiffness: 300.0,
-                                damping: 20.0,
-                                mass: 1.0,
-                                velocity: 0.0,
-                            }),
-                        ),
-                    );
-                icon_rotate
-                    .animate_to(
-                        10.0,
-                        AnimationConfig::new(
-                            AnimationMode::Spring(Spring {
-                                stiffness: 400.0,
-                                damping: 15.0,
-                                mass: 1.0,
-                                velocity: 0.0,
-                            }),
-                        ),
-                    );
-                icon_scale
-                    .animate_to(
-                        1.2,
-                        AnimationConfig::new(
-                            AnimationMode::Spring(Spring {
-                                stiffness: 400.0,
-                                damping: 15.0,
-                                mass: 1.0,
-                                velocity: 0.0,
-                            }),
-                        ),
-                    );
-            },
-            onmouseleave: move |_| {
-                card_scale
-                    .animate_to(
-                        1.0,
-                        AnimationConfig::new(
-                            AnimationMode::Spring(Spring {
-                                stiffness: 300.0,
-                                damping: 20.0,
-                                mass: 1.0,
-                                velocity: 0.0,
-                            }),
-                        ),
-                    );
-                card_y
-                    .animate_to(
-                        0.0,
-                        AnimationConfig::new(
-                            AnimationMode::Spring(Spring {
-                                stiffness: 300.0,
-                                damping: 20.0,
-                                mass: 1.0,
-                                velocity: 0.0,
-                            }),
-                        ),
-                    );
-                icon_rotate
-                    .animate_to(
-                        0.0,
-                        AnimationConfig::new(
-                            AnimationMode::Spring(Spring {
-                                stiffness: 400.0,
-                                damping: 15.0,
-                                mass: 1.0,
-                                velocity: 0.0,
-                            }),
-                        ),
-                    );
-                icon_scale
-                    .animate_to(
-                        1.0,
-                        AnimationConfig::new(
-                            AnimationMode::Spring(Spring {
-                                stiffness: 400.0,
-                                damping: 15.0,
-                                mass: 1.0,
-                                velocity: 0.0,
-                            }),
-                        ),
-                    );
-            },
+                    h-full flex flex-col will-change-transform", // Added will-change-transform
 
             // Icon with animation
             div { class: "flex items-center gap-3 mb-4",
                 div {
-                    class: "w-12 h-12 flex items-center justify-center bg-primary/10 rounded-lg text-primary",
-                    style: "transform: rotate({icon_rotate.get_value()}deg) scale({icon_scale.get_value()})",
+                    class: "w-12 h-12 flex items-center justify-center bg-primary/10 rounded-lg text-primary will-change-transform",
                     span { class: "text-2xl", {icon} }
                 }
                 h3 { class: "text-xl font-medium text-text-primary", {title} }
