@@ -59,6 +59,11 @@ fn DocLayout(title: &'static str, description: &'static str, children: Element) 
                                         label: "Getting Started",
                                     }
                                     SectionLink {
+                                        to: Route::PageTransition {},
+                                        icon: "🔄",
+                                        label: "Page Transitions",
+                                    }
+                                    SectionLink {
                                         to: Route::BasicAnimationGuide {},
                                         icon: "🎨",
                                         label: "Basic Animation Guide",
@@ -73,11 +78,7 @@ fn DocLayout(title: &'static str, description: &'static str, children: Element) 
                                         icon: "✨",
                                         label: "Complex Animation Guide",
                                     }
-                                    SectionLink {
-                                        to: Route::PageTransition {},
-                                        icon: "🔄",
-                                        label: "Page Transitions",
-                                    }
+
                                 }
                             }
                         }
@@ -293,16 +294,112 @@ fn ResourceLink(href: &'static str, label: &'static str, icon: &'static str) -> 
 pub fn DocsLanding() -> Element {
     rsx! {
         div { class: "space-y-12",
-            // Installation Guide
+            // Introduction
             section { class: "space-y-6",
+                h2 { class: "text-2xl font-semibold text-text-primary", "Getting Started with Dioxus Motion" }
+                p { class: "text-text-secondary leading-relaxed",
+                    "Dioxus Motion is a powerful animation library for Dioxus that makes it easy to create smooth, "
+                    "interactive animations and transitions in your Rust web applications. Whether you're building "
+                    "a simple UI with basic animations or a complex application with intricate motion effects, "
+                    "Dioxus Motion provides the tools you need."
+                }
+
+                // Why Dioxus Motion?
+                div { class: "mt-8 p-6 bg-primary/5 rounded-xl border border-primary/10",
+                    h3 { class: "text-xl font-semibold text-primary mb-4", "Why Dioxus Motion?" }
+                    div { class: "grid grid-cols-1 md:grid-cols-3 gap-6",
+                        // Feature 1
+                        div { class: "space-y-2",
+                            div { class: "text-primary text-2xl", "🚀" }
+                            h4 { class: "font-medium text-text-primary", "Performance Focused" }
+                            p { class: "text-sm text-text-secondary",
+                                "Built with performance in mind, using efficient animation algorithms that run smoothly even on complex UIs."
+                            }
+                        }
+                        // Feature 2
+                        div { class: "space-y-2",
+                            div { class: "text-primary text-2xl", "🧩" }
+                            h4 { class: "font-medium text-text-primary", "Composable API" }
+                            p { class: "text-sm text-text-secondary",
+                                "Create complex animations by composing simple primitives. Chain, sequence, and combine animations with ease."
+                            }
+                        }
+                        // Feature 3
+                        div { class: "space-y-2",
+                            div { class: "text-primary text-2xl", "🔄" }
+                            h4 { class: "font-medium text-text-primary", "Seamless Transitions" }
+                            p { class: "text-sm text-text-secondary",
+                                "Add beautiful page transitions to your Dioxus app with minimal code changes using the transitions feature."
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Quick Example
+            section { class: "space-y-6 mt-12",
+                h2 { class: "text-2xl font-semibold text-text-primary", "Quick Example" }
+                p { class: "text-text-secondary",
+                    "Here's a simple example of how to use Dioxus Motion to animate a value:"
+                }
+
+                div { class: "bg-dark-200/50 backdrop-blur-sm rounded-xl p-6 border border-primary/10",
+                    CodeBlock {
+                        code: r#"use dioxus::prelude::*;
+use dioxus_motion::prelude::*;
+
+#[component]
+fn AnimatedButton() -> Element {
+    let mut scale = use_motion(1.0f32);
+
+    let hover = move |_| {
+        scale.animate_to(
+            1.2,  // Target value
+            AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+        );
+    };
+
+    let unhover = move |_| {
+        scale.animate_to(
+            1.0,  // Return to original size
+            AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+        );
+    };
+
+    rsx! {
+        button {
+            class: "px-4 py-2 bg-blue-500 text-white rounded",
+            style: "transform: scale({scale.get_value()})",
+            onmouseenter: hover,
+            onmouseleave: unhover,
+            "Hover me!"
+        }
+    }
+}"#.to_string(),
+                        language: "rust".to_string(),
+                    }
+                }
+
+                p { class: "text-text-secondary mt-4",
+                    "This example creates a button that scales up when hovered and returns to its original size when unhovered, "
+                    "using a spring animation for a natural, bouncy effect."
+                }
+            }
+
+            // Installation Guide
+            section { class: "space-y-6 mt-12",
                 h2 { class: "text-2xl font-semibold text-text-primary", "Installation" }
                 p { class: "text-text-secondary",
-                    "Get started with Dioxus Motion by adding it to your project's Cargo.toml."
+                    "Add Dioxus Motion to your project by updating your Cargo.toml file with the appropriate dependencies and features."
                 }
 
                 // Basic Installation
                 div { class: "space-y-4",
                     h3 { class: "text-lg font-semibold text-text-primary", "Basic Setup" }
+                    p { class: "text-text-secondary mb-3",
+                        "For basic animations without page transitions, use this configuration. This setup is perfect for "
+                        "when you want to animate UI elements but don't need route transitions."
+                    }
                     div { class: "bg-dark-200/50 backdrop-blur-sm rounded-xl p-6 border border-primary/10",
                         CodeBlock {
                             code: r#"[dependencies]
@@ -316,11 +413,20 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop"]"#.to_string(),
                             language: "toml".to_string(),
                         }
                     }
+                    div { class: "mt-3 p-3 bg-dark-200/80 rounded-lg text-sm text-text-secondary",
+                        span { class: "text-primary font-medium", "Tip: " }
+                        "Making the dependency optional with feature flags allows you to conditionally compile animations "
+                        "for different platforms, which can be useful for cross-platform applications."
+                    }
                 }
 
                 // With Page Transitions
                 div { class: "space-y-4",
                     h3 { class: "text-lg font-semibold text-text-primary", "With Page Transitions" }
+                    p { class: "text-text-secondary mb-3",
+                        "To enable page transitions, add the ", code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded", "transitions" }, " feature to your configuration. "
+                        "This allows you to create smooth animations between route changes in your application."
+                    }
                     div { class: "bg-dark-200/50 backdrop-blur-sm rounded-xl p-6 border border-primary/10",
                         CodeBlock {
                             code: r#"[dependencies]
@@ -338,37 +444,60 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
                             language: "toml".to_string(),
                         }
                     }
+                    div { class: "mt-3 p-3 bg-dark-200/80 rounded-lg text-sm text-text-secondary",
+                        span { class: "text-primary font-medium", "Note: " }
+                        "After enabling the transitions feature, you'll need to add the ",
+                        code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded", "MotionTransitions" }, " derive macro to your Route enum "
+                        "and replace the standard ", code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded", "Outlet" }, " with ",
+                        code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded", "AnimatedOutlet" }, ". See the Page Transitions guide for details."
+                    }
                 }
 
                 // Platform Support
                 div { class: "space-y-4",
                     h3 { class: "text-lg font-semibold text-text-primary", "Platform Support" }
+                    p { class: "text-text-secondary mb-3",
+                        "Dioxus Motion works across all platforms supported by Dioxus. Here's a breakdown of the platform-specific features:"
+                    }
                     div { class: "grid grid-cols-1 md:grid-cols-3 gap-4",
                         div { class: "p-4 rounded-lg bg-dark-200/50 backdrop-blur-sm border border-primary/10",
                             h4 { class: "font-semibold text-text-primary mb-2", "Web" }
                             p { class: "text-text-secondary text-sm",
-                                "For web applications using WASM"
+                                "Optimized for web applications using WebAssembly. Leverages requestAnimationFrame for smooth animations."
                             }
+                            div { class: "mt-2 text-xs text-primary/80 font-medium", "Feature: web" }
                         }
                         div { class: "p-4 rounded-lg bg-dark-200/50 backdrop-blur-sm border border-primary/10",
                             h4 { class: "font-semibold text-text-primary mb-2", "Desktop" }
                             p { class: "text-text-secondary text-sm",
-                                "For desktop and mobile applications"
+                                "Works with desktop applications built with Dioxus Desktop. Uses the same animation engine as the web version."
                             }
+                            div { class: "mt-2 text-xs text-primary/80 font-medium", "Feature: desktop" }
                         }
                         div { class: "p-4 rounded-lg bg-dark-200/50 backdrop-blur-sm border border-primary/10",
-                            h4 { class: "font-semibold text-text-primary mb-2", "Default" }
+                            h4 { class: "font-semibold text-text-primary mb-2", "Mobile" }
                             p { class: "text-text-secondary text-sm",
-                                "Web support (if no feature specified)"
+                                "Support for mobile applications through Dioxus Mobile. Optimized for touch interactions and mobile performance."
                             }
+                            div { class: "mt-2 text-xs text-primary/80 font-medium", "Feature: mobile" }
                         }
+                    }
+                    div { class: "mt-4 p-3 bg-primary/5 rounded-lg text-sm text-text-secondary",
+                        span { class: "text-primary font-medium", "Default Behavior: " }
+                        "If no specific feature is enabled, Dioxus Motion defaults to web support. For cross-platform applications, "
+                        "it's recommended to explicitly specify the features you need for each target platform."
                     }
                 }
             }
 
             // Guide sections
             section { class: "space-y-6",
-                h2 { class: "text-2xl font-semibold text-text-primary", "Guides" }
+                h2 { class: "text-2xl font-semibold text-text-primary", "Documentation Guides" }
+                p { class: "text-text-secondary mb-4",
+                    "Explore our comprehensive guides to master Dioxus Motion. Each guide builds on the previous one, "
+                    "taking you from basic concepts to advanced techniques."
+                }
+
                 div { class: "grid md:grid-cols-2 gap-6",
                     // Page Transitions Card
                     Link {
@@ -385,13 +514,17 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
                                     "→"
                                 }
                             }
-                            p { class: "text-text-secondary leading-relaxed",
+                            p { class: "text-text-secondary leading-relaxed mb-3",
                                 "Learn how to create smooth page transitions and routing animations in your Dioxus app."
+                            }
+                            div { class: "flex items-center text-xs text-primary/80",
+                                span { class: "mr-2 px-2 py-0.5 bg-primary/10 rounded", "Beginner-Friendly" }
+                                span { "5 min read" }
                             }
                         }
                     }
 
-                    // Animations Card
+                    // Basic Animation Guide Card
                     Link {
                         to: Route::BasicAnimationGuide {},
                         class: "group relative overflow-hidden rounded-xl bg-dark-200/50 backdrop-blur-sm
@@ -400,14 +533,71 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
                         div { class: "p-6",
                             div { class: "flex items-center justify-between mb-4",
                                 h3 { class: "text-xl font-semibold text-text-primary",
-                                    "Interactive Animation Guide"
+                                    "Basic Animation Guide"
                                 }
                                 span { class: "text-primary transform transition-transform group-hover:translate-x-1",
                                     "→"
                                 }
                             }
-                            p { class: "text-text-secondary leading-relaxed",
-                                "Learn animation basics with interactive examples, from simple tweens to custom types."
+                            p { class: "text-text-secondary leading-relaxed mb-3",
+                                "Start your animation journey with the fundamentals. Learn how to create simple animations with tweens and springs."
+                            }
+                            div { class: "flex items-center text-xs text-primary/80",
+                                span { class: "mr-2 px-2 py-0.5 bg-primary/10 rounded", "Beginner" }
+                                span { "10 min read" }
+                            }
+                        }
+                    }
+                }
+
+                // Advanced guides
+                div { class: "grid md:grid-cols-2 gap-6 mt-6",
+                    // Intermediate Guide Card
+                    Link {
+                        to: Route::IntermediateAnimationGuide {},
+                        class: "group relative overflow-hidden rounded-xl bg-dark-200/50 backdrop-blur-sm
+                               border border-primary/10 transition-all duration-300 hover:border-primary/20
+                               hover:shadow-lg hover:shadow-primary/10",
+                        div { class: "p-6",
+                            div { class: "flex items-center justify-between mb-4",
+                                h3 { class: "text-xl font-semibold text-text-primary",
+                                    "Intermediate Animation Guide"
+                                }
+                                span { class: "text-primary transform transition-transform group-hover:translate-x-1",
+                                    "→"
+                                }
+                            }
+                            p { class: "text-text-secondary leading-relaxed mb-3",
+                                "Take your animations to the next level with loops, delays, and sequences. Create more complex and engaging animations."
+                            }
+                            div { class: "flex items-center text-xs text-primary/80",
+                                span { class: "mr-2 px-2 py-0.5 bg-primary/10 rounded", "Intermediate" }
+                                span { "15 min read" }
+                            }
+                        }
+                    }
+
+                    // Complex Guide Card
+                    Link {
+                        to: Route::ComplexAnimationGuide {},
+                        class: "group relative overflow-hidden rounded-xl bg-dark-200/50 backdrop-blur-sm
+                               border border-primary/10 transition-all duration-300 hover:border-primary/20
+                               hover:shadow-lg hover:shadow-primary/10",
+                        div { class: "p-6",
+                            div { class: "flex items-center justify-between mb-4",
+                                h3 { class: "text-xl font-semibold text-text-primary",
+                                    "Custom Animation Guide"
+                                }
+                                span { class: "text-primary transform transition-transform group-hover:translate-x-1",
+                                    "→"
+                                }
+                            }
+                            p { class: "text-text-secondary leading-relaxed mb-3",
+                                "Master advanced techniques by creating custom animatable types. Perfect for complex UI elements and creative animations."
+                            }
+                            div { class: "flex items-center text-xs text-primary/80",
+                                span { class: "mr-2 px-2 py-0.5 bg-primary/10 rounded", "Advanced" }
+                                span { "20 min read" }
                             }
                         }
                     }

@@ -3,6 +3,7 @@ use dioxus_motion::{prelude::*, KeyframeAnimation};
 use easer::functions::Easing;
 
 use crate::components::code_block::CodeBlock;
+use crate::components::guide_navigation::GuideNavigation;
 
 #[component]
 pub fn IntermediateAnimationGuide() -> Element {
@@ -12,7 +13,35 @@ pub fn IntermediateAnimationGuide() -> Element {
             section { class: "space-y-6",
                 h2 { class: "text-2xl font-semibold text-text-primary", "Intermediate Animation Guide" }
                 p { class: "text-text-secondary",
-                    "Learn advanced animation techniques including loops, delays, and sequences. These features allow you to create more complex and engaging animations."
+                    "Take your animations to the next level with loops, delays, and sequences. This guide shows you how to create more engaging and complex animations."
+                }
+
+                // Quick reference card
+                div { class: "mt-6 p-4 bg-primary/5 rounded-lg border border-primary/10",
+                    h3 { class: "text-lg font-medium text-primary mb-2", "What You'll Learn" }
+                    div { class: "grid grid-cols-1 md:grid-cols-3 gap-4",
+                        // Feature 1
+                        div { class: "p-3 bg-dark-200/50 rounded-lg",
+                            p { class: "font-medium text-text-primary mb-1", "Loop Animations" }
+                            p { class: "text-sm text-text-secondary",
+                                "Create repeating animations with different loop modes"
+                            }
+                        }
+                        // Feature 2
+                        div { class: "p-3 bg-dark-200/50 rounded-lg",
+                            p { class: "font-medium text-text-primary mb-1", "Delayed Animations" }
+                            p { class: "text-sm text-text-secondary",
+                                "Add timing delays for staggered effects"
+                            }
+                        }
+                        // Feature 3
+                        div { class: "p-3 bg-dark-200/50 rounded-lg",
+                            p { class: "font-medium text-text-primary mb-1", "Sequences & Keyframes" }
+                            p { class: "text-sm text-text-secondary",
+                                "Chain multiple animations together"
+                            }
+                        }
+                    }
                 }
             }
 
@@ -28,6 +57,8 @@ pub fn IntermediateAnimationGuide() -> Element {
             // Step 4: Advanced Animations
             StepFour {}
 
+            // Navigation links
+            GuideNavigation {}
         }
     }
 }
@@ -83,8 +114,12 @@ fn StepOne() -> Element {
         );
     };
 
-    let reset = move |_| {
+    // Simplify by using a single reset function
+    let reset_all = move |_| {
+        // Create a default tween config
         let config = AnimationConfig::new(AnimationMode::Tween(Tween::default()));
+
+        // Reset all values one by one
         infinite_value.animate_to(0.0, config.clone());
         times_value.animate_to(0.0, config.clone());
         alternate_value.animate_to(0.0, config.clone());
@@ -201,7 +236,7 @@ value.animate_to(
                         }
                         button {
                             class: "px-4 py-2 bg-dark-200 hover:bg-dark-300 rounded-lg text-text-secondary transition-colors",
-                            onclick: reset,
+                            onclick: reset_all,
                             "Reset All"
                         }
                     }
@@ -344,8 +379,12 @@ fn StepThree() -> Element {
         keyframe_value.animate_keyframes(keyframes);
     };
 
+    // Simplify with a single reset function
     let reset = move |_| {
+        // Create a default spring config
         let config = AnimationConfig::new(AnimationMode::Spring(Spring::default()));
+
+        // Reset both values
         sequence_value.animate_to(0.0, config.clone());
         keyframe_value.animate_to(0.0, config);
     };
@@ -533,8 +572,9 @@ fn StepFour() -> Element {
         keyframe_color.animate_keyframes(color_keyframes);
     };
 
+    // Simplify with a single reset function that handles one value at a time
     let reset = move |_| {
-        // Stop all animations with a quick spring animation back to initial state
+        // Create a spring config
         let config = AnimationConfig::new(AnimationMode::Spring(Spring {
             stiffness: 200.0,
             damping: 20.0,
@@ -542,14 +582,28 @@ fn StepFour() -> Element {
             velocity: 0.0,
         }));
 
-        // Reset transform animations
-        sequence_transform.animate_to(Transform::identity(), config.clone());
-        keyframe_transform.animate_to(Transform::identity(), config.clone());
-
-        // Reset color animations
+        // Initial color
         let initial_color = Color::from_rgba(59, 130, 246, 255); // Blue
+
+        // Reset sequence transform
+        sequence_transform.animate_to(Transform::identity(), config.clone());
+
+        // Reset sequence color
         sequence_color.animate_to(initial_color, config.clone());
-        keyframe_color.animate_to(initial_color, config);
+
+        // Create a new config for the next animations
+        let config2 = AnimationConfig::new(AnimationMode::Spring(Spring {
+            stiffness: 200.0,
+            damping: 20.0,
+            mass: 1.0,
+            velocity: 0.0,
+        }));
+
+        // Reset keyframe transform
+        keyframe_transform.animate_to(Transform::identity(), config2.clone());
+
+        // Reset keyframe color
+        keyframe_color.animate_to(initial_color, config2);
     };
 
     rsx! {
