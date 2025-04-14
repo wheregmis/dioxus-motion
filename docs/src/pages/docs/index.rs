@@ -120,13 +120,6 @@ fn DocLayout(title: &'static str, description: &'static str, children: Element) 
 /// ```
 pub fn Docs() -> Element {
     rsx! {
-        div {
-            class: "bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-6 mx-4",
-            p {
-                class: "text-yellow-500 text-sm",
-                "⚠️ Documentation is currently under construction. Some sections may be incomplete or subject to change."
-            }
-        }
         DocLayout {
             title: "Documentation",
             description: "Learn how to use Dioxus Motion to create beautiful animations in your applications.",
