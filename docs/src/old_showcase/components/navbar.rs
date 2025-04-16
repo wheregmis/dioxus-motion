@@ -38,7 +38,7 @@ pub fn Navbar() -> Element {
                 div { class: "flex justify-between items-center h-28",
                     // Logo
                     div { class: "flex items-center space-x-4",
-                        div { class: "text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent",
+                        div { class: "text-3xl font-bold bg-linear-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent",
                             "Dioxus Motion"
                         }
                     }

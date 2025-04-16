@@ -168,7 +168,7 @@ pub fn InteractiveCube() -> Element {
             style: "width: {CONTAINER_SIZE}px; height: {CONTAINER_SIZE}px; perspective: {PERSPECTIVE}px",
             // Enhanced glow background
             div {
-                class: "absolute inset-0 bg-gradient-to-r from-blue-500/30 to-purple-500/30 blur-3xl -z-10 transition-all duration-300",
+                class: "absolute inset-0 bg-linear-to-r from-blue-500/30 to-purple-500/30 blur-3xl -z-10 transition-all duration-300",
                 style: "opacity: {glow.get_value()}; transform: scale({1.0 + glow.get_value() * 0.2})",
             }
 
@@ -187,37 +187,37 @@ pub fn InteractiveCube() -> Element {
                 style: "transform: translateY(-{hover_lift.get_value()}px) rotateX({rotation_x.get_value()}deg) rotateY({rotation_y.get_value()}deg) rotateZ({rotation_z.get_value()}deg) scale({scale.get_value()})",
                 // Front face with enhanced gradient
                 div {
-                    class: "absolute w-full h-full flex items-center justify-center text-2xl font-bold text-white bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg transform translate-z-[100px] opacity-90 hover:opacity-100 transition-all duration-300",
+                    class: "absolute w-full h-full flex items-center justify-center text-2xl font-bold text-white bg-linear-to-br from-blue-500 to-blue-600 shadow-lg transform translate-z-[100px] opacity-90 hover:opacity-100 transition-all duration-300",
                     style: "box-shadow: 0 0 30px rgba(59, 130, 246, 0.5)",
                     "Front"
                 }
                 // Back face
                 div {
-                    class: "absolute w-full h-full flex items-center justify-center text-2xl font-bold text-white bg-gradient-to-br from-purple-500 to-purple-600 shadow-lg transform -translate-z-[100px] rotate-y-180 opacity-90 hover:opacity-100 transition-all duration-300",
+                    class: "absolute w-full h-full flex items-center justify-center text-2xl font-bold text-white bg-linear-to-br from-purple-500 to-purple-600 shadow-lg transform -translate-z-[100px] rotate-y-180 opacity-90 hover:opacity-100 transition-all duration-300",
                     style: "box-shadow: 0 0 30px rgba(147, 51, 234, 0.5)",
                     "Back"
                 }
                 // Right face
                 div {
-                    class: "absolute w-full h-full flex items-center justify-center text-2xl font-bold text-white bg-gradient-to-br from-pink-500 to-pink-600 shadow-lg transform translate-x-[100px] rotate-y-90 opacity-90 hover:opacity-100 transition-all duration-300",
+                    class: "absolute w-full h-full flex items-center justify-center text-2xl font-bold text-white bg-linear-to-br from-pink-500 to-pink-600 shadow-lg transform translate-x-[100px] rotate-y-90 opacity-90 hover:opacity-100 transition-all duration-300",
                     style: "box-shadow: 0 0 30px rgba(236, 72, 153, 0.5)",
                     "Right"
                 }
                 // Left face
                 div {
-                    class: "absolute w-full h-full flex items-center justify-center text-2xl font-bold text-white bg-gradient-to-br from-green-500 to-green-600 shadow-lg transform -translate-x-[100px] -rotate-y-90 opacity-90 hover:opacity-100 transition-all duration-300",
+                    class: "absolute w-full h-full flex items-center justify-center text-2xl font-bold text-white bg-linear-to-br from-green-500 to-green-600 shadow-lg transform -translate-x-[100px] -rotate-y-90 opacity-90 hover:opacity-100 transition-all duration-300",
                     style: "box-shadow: 0 0 30px rgba(34, 197, 94, 0.5)",
                     "Left"
                 }
                 // Top face
                 div {
-                    class: "absolute w-full h-full flex items-center justify-center text-2xl font-bold text-white bg-gradient-to-br from-yellow-400 to-yellow-500 shadow-lg transform translate-y-[-100px] rotate-x-90 opacity-90 hover:opacity-100 transition-all duration-300",
+                    class: "absolute w-full h-full flex items-center justify-center text-2xl font-bold text-white bg-linear-to-br from-yellow-400 to-yellow-500 shadow-lg transform translate-y-[-100px] rotate-x-90 opacity-90 hover:opacity-100 transition-all duration-300",
                     style: "box-shadow: 0 0 30px rgba(234, 179, 8, 0.5)",
                     "Top"
                 }
                 // Bottom face
                 div {
-                    class: "absolute w-full h-full flex items-center justify-center text-2xl font-bold text-white bg-gradient-to-br from-red-500 to-red-600 shadow-lg transform translate-y-[100px] -rotate-x-90 opacity-90 hover:opacity-100 transition-all duration-300",
+                    class: "absolute w-full h-full flex items-center justify-center text-2xl font-bold text-white bg-linear-to-br from-red-500 to-red-600 shadow-lg transform translate-y-[100px] -rotate-x-90 opacity-90 hover:opacity-100 transition-all duration-300",
                     style: "box-shadow: 0 0 30px rgba(239, 68, 68, 0.5)",
                     "Bottom"
                 }

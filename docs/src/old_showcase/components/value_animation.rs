@@ -32,7 +32,7 @@ pub fn ValueAnimationShowcase() -> Element {
 
     rsx! {
         div { class: "h-[400px] flex items-center justify-center",
-            div { class: "flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg",
+            div { class: "flex flex-col items-center justify-center p-6 bg-linear-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg",
                 // Counter with smaller font
                 div { class: "text-4xl font-bold text-white mb-3", "{value.get_value() as i32}%" }
 

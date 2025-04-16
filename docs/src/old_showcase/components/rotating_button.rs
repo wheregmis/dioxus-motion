@@ -66,7 +66,7 @@ pub fn RotatingButton() -> Element {
 
     rsx! {
         button {
-            class: "relative px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500
+            class: "relative px-8 py-4 bg-linear-to-r from-purple-500 to-pink-500
                    text-white rounded-xl font-bold text-lg overflow-hidden
                    transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/20",
             style: "transform: scale({scale.get_value()}) rotate({rotation.get_value()}deg)",

@@ -23,14 +23,14 @@ pub fn BasicAnimationGuide() -> Element {
                         // Key concept 1
                         div { class: "p-3 bg-dark-200/50 rounded-lg",
                             p { class: "font-medium text-text-primary mb-1", "1. Create a motion value" }
-                            code { class: "text-sm text-primary/90 bg-primary/10 px-1 py-0.5 rounded",
+                            code { class: "text-sm text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm",
                                 "let mut value = use_motion(0.0f32);"
                             }
                         }
                         // Key concept 2
                         div { class: "p-3 bg-dark-200/50 rounded-lg",
                             p { class: "font-medium text-text-primary mb-1", "2. Animate the value" }
-                            code { class: "text-sm text-primary/90 bg-primary/10 px-1 py-0.5 rounded",
+                            code { class: "text-sm text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm",
                                 "value.animate_to(100.0, config);"
                             }
                         }
@@ -161,7 +161,7 @@ value.animate_to(
                     }
                     li {
                         span { class: "font-medium", "Reading values: " }
-                        "Use ", code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded", "value.get_value()" }, " to access the current value at any time."
+                        "Use ", code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm", "value.get_value()" }, " to access the current value at any time."
                     }
                 }
             }

@@ -31,13 +31,13 @@ pub fn ProgressBar(title: &'static str) -> Element {
             div { class: "relative w-full h-4 bg-gray-100 rounded-full overflow-hidden",
                 // Progress fill
                 div {
-                    class: "absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-purple-600
+                    class: "absolute top-0 left-0 h-full bg-linear-to-r from-blue-500 to-purple-600
                            rounded-full transition-all duration-300 ease-out",
                     style: "width: {progress.get_value()}%",
                 }
                 // Shimmer effect
                 div {
-                    class: "absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent
+                    class: "absolute top-0 left-0 w-full h-full bg-linear-to-r from-transparent
                            via-white/30 to-transparent animate-shimmer",
                     style: "background-size: 200% 100%",
                 }

@@ -47,7 +47,7 @@ fn DocLayout(title: &'static str, description: &'static str, children: Element) 
 
                 // Main content with three columns
                 div {
-                    class: "w-full px-4 sm:px-6 lg:px-8 py-8 flex-grow", // Added flex-grow
+                    class: "w-full px-4 sm:px-6 lg:px-8 py-8 grow", // Added grow
                     div { class: "flex gap-8 w-full",
                         // Left sidebar - Sections
                         div { class: "hidden lg:block flex-1",
@@ -84,7 +84,7 @@ fn DocLayout(title: &'static str, description: &'static str, children: Element) 
                         }
 
                         // Main content
-                        div { class: "flex-[4] min-w-0",
+                        div { class: "flex-4 min-w-0",
                             AnimatedOutlet::<Route> {}
                         }
 
@@ -336,7 +336,7 @@ pub fn DocsLanding() -> Element {
                     "Here's a simple example of how to use Dioxus Motion to animate a value:"
                 }
 
-                div { class: "bg-dark-200/50 backdrop-blur-sm rounded-xl p-6 border border-primary/10",
+                div { class: "bg-dark-200/50 backdrop-blur-xs rounded-xl p-6 border border-primary/10",
                     CodeBlock {
                         code: r#"use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
@@ -361,7 +361,7 @@ fn AnimatedButton() -> Element {
 
     rsx! {
         button {
-            class: "px-4 py-2 bg-blue-500 text-white rounded",
+            class: "px-4 py-2 bg-blue-500 text-white rounded-sm",
             style: "transform: scale({scale.get_value()})",
             onmouseenter: hover,
             onmouseleave: unhover,
@@ -393,7 +393,7 @@ fn AnimatedButton() -> Element {
                         "For basic animations without page transitions, use this configuration. This setup is perfect for "
                         "when you want to animate UI elements but don't need route transitions."
                     }
-                    div { class: "bg-dark-200/50 backdrop-blur-sm rounded-xl p-6 border border-primary/10",
+                    div { class: "bg-dark-200/50 backdrop-blur-xs rounded-xl p-6 border border-primary/10",
                         CodeBlock {
                             code: r#"[dependencies]
 dioxus-motion = { version = "0.3.0", optional = true, default-features = false }
@@ -417,10 +417,10 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop"]"#.to_string(),
                 div { class: "space-y-4",
                     h3 { class: "text-lg font-semibold text-text-primary", "With Page Transitions" }
                     p { class: "text-text-secondary mb-3",
-                        "To enable page transitions, add the ", code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded", "transitions" }, " feature to your configuration. "
+                        "To enable page transitions, add the ", code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm", "transitions" }, " feature to your configuration. "
                         "This allows you to create smooth animations between route changes in your application."
                     }
-                    div { class: "bg-dark-200/50 backdrop-blur-sm rounded-xl p-6 border border-primary/10",
+                    div { class: "bg-dark-200/50 backdrop-blur-xs rounded-xl p-6 border border-primary/10",
                         CodeBlock {
                             code: r#"[dependencies]
 dioxus-motion = { version = "0.3.0", optional = true, default-features = false }
@@ -440,9 +440,9 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
                     div { class: "mt-3 p-3 bg-dark-200/80 rounded-lg text-sm text-text-secondary",
                         span { class: "text-primary font-medium", "Note: " }
                         "After enabling the transitions feature, you'll need to add the ",
-                        code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded", "MotionTransitions" }, " derive macro to your Route enum "
-                        "and replace the standard ", code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded", "Outlet" }, " with ",
-                        code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded", "AnimatedOutlet" }, ". See the Page Transitions guide for details."
+                        code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm", "MotionTransitions" }, " derive macro to your Route enum "
+                        "and replace the standard ", code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm", "Outlet" }, " with ",
+                        code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm", "AnimatedOutlet" }, ". See the Page Transitions guide for details."
                     }
                 }
 
@@ -453,21 +453,21 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
                         "Dioxus Motion works across all platforms supported by Dioxus. Here's a breakdown of the platform-specific features:"
                     }
                     div { class: "grid grid-cols-1 md:grid-cols-3 gap-4",
-                        div { class: "p-4 rounded-lg bg-dark-200/50 backdrop-blur-sm border border-primary/10",
+                        div { class: "p-4 rounded-lg bg-dark-200/50 backdrop-blur-xs border border-primary/10",
                             h4 { class: "font-semibold text-text-primary mb-2", "Web" }
                             p { class: "text-text-secondary text-sm",
                                 "Optimized for web applications using WebAssembly. Leverages requestAnimationFrame for smooth animations."
                             }
                             div { class: "mt-2 text-xs text-primary/80 font-medium", "Feature: web" }
                         }
-                        div { class: "p-4 rounded-lg bg-dark-200/50 backdrop-blur-sm border border-primary/10",
+                        div { class: "p-4 rounded-lg bg-dark-200/50 backdrop-blur-xs border border-primary/10",
                             h4 { class: "font-semibold text-text-primary mb-2", "Desktop" }
                             p { class: "text-text-secondary text-sm",
                                 "Works with desktop applications built with Dioxus Desktop. Uses the same animation engine as the web version."
                             }
                             div { class: "mt-2 text-xs text-primary/80 font-medium", "Feature: desktop" }
                         }
-                        div { class: "p-4 rounded-lg bg-dark-200/50 backdrop-blur-sm border border-primary/10",
+                        div { class: "p-4 rounded-lg bg-dark-200/50 backdrop-blur-xs border border-primary/10",
                             h4 { class: "font-semibold text-text-primary mb-2", "Mobile" }
                             p { class: "text-text-secondary text-sm",
                                 "Support for mobile applications through Dioxus Mobile. Optimized for touch interactions and mobile performance."
@@ -495,7 +495,7 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
                     // Page Transitions Card
                     Link {
                         to: Route::PageTransition {},
-                        class: "group relative overflow-hidden rounded-xl bg-dark-200/50 backdrop-blur-sm
+                        class: "group relative overflow-hidden rounded-xl bg-dark-200/50 backdrop-blur-xs
                                border border-primary/10 transition-all duration-300 hover:border-primary/20
                                hover:shadow-lg hover:shadow-primary/10",
                         div { class: "p-6",
@@ -511,7 +511,7 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
                                 "Learn how to create smooth page transitions and routing animations in your Dioxus app."
                             }
                             div { class: "flex items-center text-xs text-primary/80",
-                                span { class: "mr-2 px-2 py-0.5 bg-primary/10 rounded", "Beginner-Friendly" }
+                                span { class: "mr-2 px-2 py-0.5 bg-primary/10 rounded-sm", "Beginner-Friendly" }
                                 span { "5 min read" }
                             }
                         }
@@ -520,7 +520,7 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
                     // Basic Animation Guide Card
                     Link {
                         to: Route::BasicAnimationGuide {},
-                        class: "group relative overflow-hidden rounded-xl bg-dark-200/50 backdrop-blur-sm
+                        class: "group relative overflow-hidden rounded-xl bg-dark-200/50 backdrop-blur-xs
                                border border-primary/10 transition-all duration-300 hover:border-primary/20
                                hover:shadow-lg hover:shadow-primary/10",
                         div { class: "p-6",
@@ -536,7 +536,7 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
                                 "Start your animation journey with the fundamentals. Learn how to create simple animations with tweens and springs."
                             }
                             div { class: "flex items-center text-xs text-primary/80",
-                                span { class: "mr-2 px-2 py-0.5 bg-primary/10 rounded", "Beginner" }
+                                span { class: "mr-2 px-2 py-0.5 bg-primary/10 rounded-sm", "Beginner" }
                                 span { "10 min read" }
                             }
                         }
@@ -548,7 +548,7 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
                     // Intermediate Guide Card
                     Link {
                         to: Route::IntermediateAnimationGuide {},
-                        class: "group relative overflow-hidden rounded-xl bg-dark-200/50 backdrop-blur-sm
+                        class: "group relative overflow-hidden rounded-xl bg-dark-200/50 backdrop-blur-xs
                                border border-primary/10 transition-all duration-300 hover:border-primary/20
                                hover:shadow-lg hover:shadow-primary/10",
                         div { class: "p-6",
@@ -564,7 +564,7 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
                                 "Take your animations to the next level with loops, delays, and sequences. Create more complex and engaging animations."
                             }
                             div { class: "flex items-center text-xs text-primary/80",
-                                span { class: "mr-2 px-2 py-0.5 bg-primary/10 rounded", "Intermediate" }
+                                span { class: "mr-2 px-2 py-0.5 bg-primary/10 rounded-sm", "Intermediate" }
                                 span { "15 min read" }
                             }
                         }
@@ -573,7 +573,7 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
                     // Complex Guide Card
                     Link {
                         to: Route::ComplexAnimationGuide {},
-                        class: "group relative overflow-hidden rounded-xl bg-dark-200/50 backdrop-blur-sm
+                        class: "group relative overflow-hidden rounded-xl bg-dark-200/50 backdrop-blur-xs
                                border border-primary/10 transition-all duration-300 hover:border-primary/20
                                hover:shadow-lg hover:shadow-primary/10",
                         div { class: "p-6",
@@ -589,7 +589,7 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
                                 "Master advanced techniques by creating custom animatable types. Perfect for complex UI elements and creative animations."
                             }
                             div { class: "flex items-center text-xs text-primary/80",
-                                span { class: "mr-2 px-2 py-0.5 bg-primary/10 rounded", "Advanced" }
+                                span { class: "mr-2 px-2 py-0.5 bg-primary/10 rounded-sm", "Advanced" }
                                 span { "20 min read" }
                             }
                         }

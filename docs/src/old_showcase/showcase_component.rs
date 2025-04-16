@@ -11,7 +11,7 @@ use dioxus::prelude::*;
 pub fn ShowcaseGallery() -> Element {
     rsx! {
         div { class: "flex flex-col min-h-screen relative bg-gradient-dark",
-            div { class: "flex-grow mt-16",
+            div { class: "grow mt-16",
                 div { class: "container-lg mx-auto px-8 py-12 pt-20",
                     // div {
                     //     h2 { class: "text-xl font-display font-bold text-text-primary",
@@ -39,13 +39,13 @@ fn ShowcaseCard(title: String, url: String, component: Element) -> Element {
     rsx! {
         div {
             class: "group relative flex flex-col items-start justify-between h-[400px]",
-            class: "rounded-xl border border-surface-light/10 backdrop-blur-sm",
+            class: "rounded-xl border border-surface-light/10 backdrop-blur-xs",
             class: "bg-surface/30 hover:bg-surface-light/10",
             class: "transition-all duration-500 ease-out",
             // Gradient glow effect on hover
             div {
                 class: "absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100",
-                class: "bg-gradient-to-r from-primary/20 to-accent-purple/20",
+                class: "bg-linear-to-r from-primary/20 to-accent-purple/20",
                 class: "transition-opacity duration-500 ease-out -z-10",
             }
             // Title section
@@ -56,7 +56,7 @@ fn ShowcaseCard(title: String, url: String, component: Element) -> Element {
             }
             // Component showcase area
             div {
-                class: "flex-grow w-full flex items-center justify-center p-4 overflow-hidden",
+                class: "grow w-full flex items-center justify-center p-4 overflow-hidden",
                 class: "group-hover:scale-105 transition-transform duration-500 ease-out",
                 style: "max-height: 280px;",
                 {component}

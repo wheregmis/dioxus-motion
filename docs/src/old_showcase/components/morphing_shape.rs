@@ -118,8 +118,8 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
     rsx! {
         div { class: "w-32 h-32 relative transition-all duration-300",
             div {
-                class: "absolute inset-0 rounded-lg shadow-lg backdrop-blur-sm",
-                class: "absolute inset-0 bg-gradient-to-r from-pink-500 to-orange-500
+                class: "absolute inset-0 rounded-lg shadow-lg backdrop-blur-xs",
+                class: "absolute inset-0 bg-linear-to-r from-pink-500 to-orange-500
                        hover:from-purple-500 hover:to-blue-500 rounded-lg",
                 style: "clip-path: {current_config.path};
                        transform: rotate({transform.get_value().rotation}deg)

@@ -299,10 +299,10 @@ pub fn SwingingCube() -> Element {
                         feGaussianBlur {
                             "in": "SourceGraphic",
                             std_deviation: "6.0",
-                            result: "blur",
+                            result: "blur-sm",
                         }
                         feColorMatrix {
-                            "in": "blur",
+                            "in": "blur-sm",
                             r#type: "matrix",
                             values: "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -7",
                         }

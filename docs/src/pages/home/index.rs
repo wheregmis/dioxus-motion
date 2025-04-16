@@ -69,7 +69,7 @@ pub fn Home() -> Element {
                                 TransformAnimationShowcase {}
                                 div { class: "text-center",
                                     span { class: "inline-block text-lg font-medium bg-clip-text text-transparent
-                                               bg-gradient-to-r from-text-secondary/70 to-text-secondary/40
+                                               bg-linear-to-r from-text-secondary/70 to-text-secondary/40
                                                tracking-wide transform -rotate-12",
                                         "From Simple"
                                     }
@@ -86,7 +86,7 @@ pub fn Home() -> Element {
                                 AnimatedFlower {}
                                 div { class: "text-center",
                                     span { class: "inline-block text-lg font-medium bg-clip-text text-transparent
-                                               bg-gradient-to-r from-text-secondary/70 to-text-secondary/40
+                                               bg-linear-to-r from-text-secondary/70 to-text-secondary/40
                                                tracking-wide",
                                         ""
                                     }
@@ -101,7 +101,7 @@ pub fn Home() -> Element {
                                 SwingingCube {}
                                 div { class: "text-center",
                                     span { class: "inline-block text-lg font-medium bg-clip-text text-transparent
-                                               bg-gradient-to-r from-text-secondary/70 to-text-secondary/40
+                                               bg-linear-to-r from-text-secondary/70 to-text-secondary/40
                                                tracking-wide transform rotate-12",
                                         "To Advanced"
                                     }
@@ -128,7 +128,7 @@ pub fn Home() -> Element {
                         div { class: "flex flex-col sm:flex-row justify-center gap-4",
                             Link {
                                 to: Route::DocsLanding {},
-                                class: "px-8 py-3 bg-primary/90 backdrop-blur-sm text-dark-50 rounded-xl
+                                class: "px-8 py-3 bg-primary/90 backdrop-blur-xs text-dark-50 rounded-xl
                                        font-semibold transition-all duration-300 hover:scale-105
                                        shadow-lg shadow-primary/20 hover:shadow-primary/30",
                                 "Get Started →"
@@ -136,7 +136,7 @@ pub fn Home() -> Element {
                             a {
                                 href: "https://github.com/wheregmis/dioxus-motion",
                                 target: "_blank",
-                                class: "px-8 py-3 bg-dark-200/50 backdrop-blur-sm text-white/90 rounded-xl
+                                class: "px-8 py-3 bg-dark-200/50 backdrop-blur-xs text-white/90 rounded-xl
                                        font-semibold transition-all duration-300 hover:scale-105
                                        border border-white/10 hover:border-white/20",
                                 "Explore Examples"
@@ -215,7 +215,7 @@ fn FeatureCard(title: &'static str, description: &'static str, icon: &'static st
 
     rsx! {
         div {
-            class: "p-6 rounded-xl bg-dark-200/50 backdrop-blur-sm
+            class: "p-6 rounded-xl bg-dark-200/50 backdrop-blur-xs
                     border border-primary/10 transition-all duration-300
                     hover:border-primary/20",
             style: "transform: translateY({card_y.get_value()}px) scale({card_scale.get_value()})",

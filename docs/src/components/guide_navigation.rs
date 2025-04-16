@@ -86,7 +86,7 @@ pub fn GuideNavigation() -> Element {
                         Link {
                             to: prev.route.clone(),
                             class: "flex items-center justify-center sm:justify-start gap-2 w-full px-4 py-3
-                                   bg-dark-200/50 backdrop-blur-sm rounded-lg
+                                   bg-dark-200/50 backdrop-blur-xs rounded-lg
                                    border border-primary/10 hover:border-primary/20
                                    text-text-secondary hover:text-text-primary
                                    transition-all duration-300 group",
@@ -117,7 +117,7 @@ pub fn GuideNavigation() -> Element {
                         Link {
                             to: next.route.clone(),
                             class: "flex items-center justify-center sm:justify-end gap-2 w-full px-4 py-3
-                                   bg-dark-200/50 backdrop-blur-sm rounded-lg
+                                   bg-dark-200/50 backdrop-blur-xs rounded-lg
                                    border border-primary/10 hover:border-primary/20
                                    text-text-secondary hover:text-text-primary
                                    transition-all duration-300 group",
