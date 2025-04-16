@@ -64,7 +64,7 @@ pub fn derive_route_transitions(input: TokenStream) -> TokenStream {
             Fields::Named(fields) => {
                 let field_names: Vec<_> = fields.named.iter().map(|f| &f.ident).collect();
                 quote! {
-                    Self::#variant_ident { #(ref #field_names,)* } => {
+                    Self::#variant_ident { #(#field_names,)* } => {
                         rsx! { #component_name { #(#field_names: #field_names.clone(),)* } }
                     }
                 }
