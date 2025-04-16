@@ -45,7 +45,7 @@ pub fn Card3DFlip() -> Element {
             div {
                 class: "relative w-64 h-64 cursor-pointer",
                 style: "transform-style: preserve-3d;
-                        transform: rotateY({transform.get_value().rotation}deg) 
+                        transform: rotateY({transform.get_value().rotation}deg)
                                  scale({transform.get_value().scale});",
                 onclick: animate_flip,
 

@@ -188,8 +188,10 @@ fn highlight_token(token: &str, in_string: bool) -> String {
     if clean_token.starts_with("Route::") {
         let parts: Vec<&str> = clean_token.split("::").collect();
         if parts.len() >= 2 {
-            return format!("<span class='text-green-300'>Route::</span><span class='text-orange-400'>{}</span>", 
-                         parts[1..].join("::"));
+            return format!(
+                "<span class='text-green-300'>Route::</span><span class='text-orange-400'>{}</span>",
+                parts[1..].join("::")
+            );
         }
     }
 

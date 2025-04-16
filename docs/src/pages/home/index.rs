@@ -129,7 +129,7 @@ pub fn Home() -> Element {
                             Link {
                                 to: Route::DocsLanding {},
                                 class: "px-8 py-3 bg-primary/90 backdrop-blur-sm text-dark-50 rounded-xl
-                                       font-semibold transition-all duration-300 hover:scale-105 
+                                       font-semibold transition-all duration-300 hover:scale-105
                                        shadow-lg shadow-primary/20 hover:shadow-primary/30",
                                 "Get Started →"
                             }
@@ -137,7 +137,7 @@ pub fn Home() -> Element {
                                 href: "https://github.com/wheregmis/dioxus-motion",
                                 target: "_blank",
                                 class: "px-8 py-3 bg-dark-200/50 backdrop-blur-sm text-white/90 rounded-xl
-                                       font-semibold transition-all duration-300 hover:scale-105 
+                                       font-semibold transition-all duration-300 hover:scale-105
                                        border border-white/10 hover:border-white/20",
                                 "Explore Examples"
                             }

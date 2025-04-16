@@ -222,7 +222,7 @@ pub fn AnimatedFlower() -> Element {
                                     d: "M 0 0 C 5 -3, 8 0, 5 5 C 8 0, 5 -3, 0 0",
                                     fill: "url(#leaf_gradient)",
                                     transform: "translate(0 {25.0 + leaf_transform.get_value().translate_y + (i as f32 * 5.0)})
-                                                                                                                                                                                                          rotate({-20.0 + (i as f32 * 15.0) + stem_sway.get_value()}) 
+                                                                                                                                                                                                          rotate({-20.0 + (i as f32 * 15.0) + stem_sway.get_value()})
                                                                                                                                                                                                           scale({leaf_transform.get_value().scale})",
                                     opacity: "0.95",
                                     style: "filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2))",
@@ -265,7 +265,7 @@ pub fn AnimatedFlower() -> Element {
                                     d: "M 0 -1 C 3 -6, 6 -8, 0 -14 C -6 -8, -3 -6, 0 -1",
                                     fill: "hsl({hue}, 85%, 75%)",
                                     transform: "translate({transform_value.translate_x} {transform_value.translate_y})
-                                                                                                                                                                                                          rotate({(base_angle + transform_value.rotate) * 180.0 / PI}) 
+                                                                                                                                                                                                          rotate({(base_angle + transform_value.rotate) * 180.0 / PI})
                                                                                                                                                                                                           scale({transform_value.scale})",
                                     opacity: "0.9",
                                     style: "filter: drop-shadow(0 2px 3px rgba(0,0,0,0.15))",

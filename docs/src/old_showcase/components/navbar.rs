@@ -26,7 +26,7 @@ pub fn Navbar() -> Element {
         nav {
             class: "fixed top-0 left-0 right-0 backdrop-blur-md
                     shadow-lg shadow-black/5 dark:shadow-white/5
-                    border-b border-gray-200/20 
+                    border-b border-gray-200/20
                     transition-all duration-300 z-50
                     hover:shadow-xl",
             style: "transform: translate({}px, {}px) scale({}) rotate({}deg); transform-style: preserve-3d; will-change: transform;",

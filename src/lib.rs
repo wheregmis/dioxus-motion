@@ -62,7 +62,7 @@ pub mod prelude {
     #[cfg(feature = "transitions")]
     pub use crate::transitions::utils::TransitionVariant;
     pub use crate::{
-        use_motion, AnimationManager, AnimationSequence, Duration, Time, TimeProvider,
+        AnimationManager, AnimationSequence, Duration, Time, TimeProvider, use_motion,
     };
 }
 
@@ -680,13 +680,13 @@ impl<T: Animatable> AnimationManager<T> for Signal<Motion<T>> {
 ///
 /// fn app() -> Element {
 ///     let mut value = use_motion(0.0f32);
-///     
+///
 ///     // Animate to 100 with spring physics
 ///     value.animate_to(
 ///         100.0,
 ///         AnimationConfig::new(AnimationMode::Spring(Spring::default()))
 ///     );
-///     
+///
 ///     rsx! {
 ///         div {
 ///             style: "transform: translateY({value.get_value()}px)",

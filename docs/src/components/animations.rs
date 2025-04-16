@@ -379,7 +379,7 @@ rsx! {
                 title: "2. Spring Animation".to_string(),
                 description: "Physics-based animations that create natural motion. Great for interactive elements that need organic movement.".to_string(),
                 code: r#"
-                
+
 #[component]
 fn TransformAnimation() -> Element {
     let mut transform = use_motion(Transform::new(0.0, 0.0, 1.0, 0.0));
@@ -525,13 +525,13 @@ let onclick = move |_| {
                 velocity: 10.0,
             }))
         );
-    
+
     // Animate scale independently
     scale.animate_to(
         1.2,
         AnimationConfig::new(AnimationMode::Spring(Spring::default()))
     );
-    
+
     // Start the sequence animation
     value.animate_sequence(sequence);
     count += 1;
