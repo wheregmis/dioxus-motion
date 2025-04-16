@@ -1,7 +1,7 @@
 use crate::components::footer::Footer;
 use crate::old_showcase::components::{
-    AnimatedFlower, AnimatedMenuItem, BouncingText, Card3DFlip, InteractiveCube, MorphingShape,
-    PathAnimation, ProgressBar, PulseEffect, RotatingButton, SwingingCube,
+    AnimatedCounter, AnimatedFlower, AnimatedMenuItem, BouncingText, Card3DFlip, InteractiveCube,
+    MorphingShape, PathAnimation, ProgressBar, PulseEffect, RotatingButton, SwingingCube,
     TransformAnimationShowcase, TypewriterEffect, ValueAnimationShowcase,
 };
 
@@ -190,6 +190,11 @@ fn showcase_items() -> Vec<(&'static str, Element, &'static str)> {
                 text: "Hello, Dioxus Motion"
             }),
             "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/typewriter_effect.rs",
+        ),
+        (
+            "Counter Animation",
+            rsx!(AnimatedCounter {}),
+            "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/animated_counter.rs",
         ),
     ]
 }
