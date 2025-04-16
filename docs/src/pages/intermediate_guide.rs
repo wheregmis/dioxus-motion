@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_motion::{prelude::*, KeyframeAnimation};
+use dioxus_motion::{KeyframeAnimation, prelude::*};
 use easer::functions::Easing;
 
 use crate::components::code_block::CodeBlock;

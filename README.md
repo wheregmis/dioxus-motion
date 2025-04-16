@@ -7,6 +7,7 @@
 A lightweight, cross-platform animation library for Dioxus, designed to bring smooth, flexible animations to your Rust web, desktop, and mobile applications.
 
 ## ⚠️ Important Note
+
 This repository follows Dioxus's main branch for the latest features and improvements. For production use, we recommend using the stable version from [crates.io](https://crates.io/crates/dioxus-motion) instead of directly depending on the repository.
 
 ```toml
@@ -22,6 +23,7 @@ dioxus-motion = { git = "https://github.com/wheregmis/dioxus-motion.git", branch
 <img src="example.gif" width="100%" height="400" />
 
 Visit our [Example Website](https://wheregmis.github.io/dioxus-motion/) to see these animations in action:
+
 ## 🚀 Page Transitions
 
 ```rust
@@ -50,7 +52,9 @@ enum Route {
     PageNotFound { route: Vec<String> },
 }
 ```
+
 And replace all your `Outlet::<Route> {}` with `AnimatedOutlet::<Route> {}` and place the layout containing OutletRouter on top with something like this
+
 ```rust
 #[component]
 fn NavBar() -> Element {
@@ -63,7 +67,9 @@ fn NavBar() -> Element {
     }
 }
 ```
+
 Each route can have its own transition effect:
+
 - `Fade`: Smooth opacity transition
 - `ZoomIn`: Scale and fade combination
 - `SlideLeft`: Horizontal slide animation
@@ -78,7 +84,7 @@ use dioxus_motion::prelude::*;
 #[component]
 fn PulseEffect() -> Element {
     let scale = use_motion(1.0f32);
-    
+
     use_effect(move || {
         scale.animate_to(
             1.2,
@@ -135,10 +141,11 @@ let sequence = AnimationSequence::new()
 
 // Start the sequence
 scale.animate_sequence(sequence);
-// Each step in the sequence can have its own timing, easing, and spring physics configuration. Sequences can also be looped or chained with other animations. 
+// Each step in the sequence can have its own timing, easing, and spring physics configuration. Sequences can also be looped or chained with other animations.
 ```
 
 ## ✨ Features
+
 - **Cross-Platform Support**: Works on web, desktop, and mobile
 - **Flexible Animation Configuration**
 - **Custom Easing Functions**
@@ -187,20 +194,26 @@ Choose the right feature for your platform:
 - `default`: Web support (if no feature specified)
 
 ## 🚀 Quick Start
+
 ## 🔄 Migration Guide (v0.3.0)
-- No breaking changes to the existing APIs. Just minor exports might change so just import prelude::* if anything breaks on import
+
+- No breaking changes to the existing APIs. Just minor exports might change so just import prelude::\* if anything breaks on import
+
 ```rust
 use dioxus_motion::prelude::*;
 ```
+
 ## 🔄 Migration Guide (v0.2.0)
 
 ### Breaking Changes
-- Combined `use_value_animation` and `use_transform_animation`  into `use_motion`
+
+- Combined `use_value_animation` and `use_transform_animation` into `use_motion`
 - New animation configuration API
 - Updated spring physics parameters
 - Changed transform property names
 
 ### New Animation API
+
 ```rust
 use dioxus_motion::prelude::*;
 
@@ -232,10 +245,12 @@ transform.animate_to(
     }))
 );
 ```
-### If you were using transform.get_style(), that function is removed to make the library more generic so i recommend building something like
+
+### If you were using transform.get_style(), that function is removed to make the library more generic so I recommend building something like
+
 ```rust
     let transform = use_motion(Transform::default());
-    
+
     let transform_style = use_memo(move || {
         format!(
             "transform: translate({}px, {}px) scale({}) rotate({}deg);",
@@ -257,29 +272,36 @@ transform.animate_to(
 ```
 
 ## 🆕 New Features
+
 ### Loop Modes
+
 ```rust
 .with_loop(LoopMode::Infinite)
 .with_loop(LoopMode::Times(3))
 ```
+
 ### Animation Delays
+
 ```rust
 .with_delay(Duration::from_secs(1))
 ```
 
 ### On Complete
+
 ```rust
 .with_on_complete(|| println!("Animation complete!"))
 ```
 
 ## 🎓 Advanced Guide: Extending Animations
 
-### Implementing the Animatable Trait 
-[Cube Component Example](https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/cube_animation.rs) 
+### Implementing the Animatable Trait
+
+[Cube Component Example](https://github.com/wheregmis/dioxus-motion/blob/main/example_projects/src/components/cube_animation.rs)
 
 The `Animatable` trait allows you to animate any custom type.
 
 Defination of Animatable Trait
+
 ```rust
 pub trait Animatable: Copy + 'static {
     fn zero() -> Self;
@@ -292,8 +314,11 @@ pub trait Animatable: Copy + 'static {
 }
 
 ```
+
 Here's how to implement it:
+
 ### Custom Position Type
+
 ```rust
 #[derive(Debug, Copy, Clone)]
 struct Position {
@@ -343,8 +368,10 @@ impl Animatable for Position {
     }
 }
 ```
+
 ### Best Practices
-- Zero State: Implement zero() as your type's neutral state 
+
+- Zero State: Implement zero() as your type's neutral state
 - Epsilon: Choose a small value (~0.001) for animation completion checks
 - Magnitude: Return the square root of sum of squares for vector types
 - Scale: Multiply all components by the factor
@@ -352,7 +379,9 @@ impl Animatable for Position {
 - Interpolate: Use linear interpolation for smooth transitions
 
 ### Common Patterns
+
 #### Circular Values (e.g., angles)
+
 ```rust
 fn interpolate(&self, target: &Self, t: f32) -> Self {
     let mut diff = target.angle - self.angle;
@@ -362,7 +391,9 @@ fn interpolate(&self, target: &Self, t: f32) -> Self {
     Self { angle: self.angle + diff * t }
 }
 ```
+
 #### Normalized Values (e.g., colors)
+
 ```rust
 fn scale(&self, factor: f32) -> Self {
     Self {
@@ -374,6 +405,7 @@ fn scale(&self, factor: f32) -> Self {
 ## 🌈 Supported Easing Functions
 
 Leverages the `easer` crate, supporting:
+
 - Linear
 - Quadratic
 - Cubic
@@ -395,6 +427,7 @@ MIT License
 ## 🐞 Reporting Issues
 
 Please report issues on the GitHub repository with:
+
 - Detailed description
 - Minimal reproducible example
 - Platform and feature configuration used

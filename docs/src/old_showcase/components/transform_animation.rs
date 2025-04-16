@@ -69,7 +69,7 @@ pub fn TransformAnimationShowcase() -> Element {
                 onmouseleave: animate_reset,
                 // Main card - reduced from w-64/h-64 to w-48/h-48
                 div {
-                    class: "w-36 h-36 bg-gradient-to-tr from-emerald-400 to-cyan-400 rounded-xl shadow-xl",
+                    class: "w-36 h-36 bg-linear-to-tr from-emerald-400 to-cyan-400 rounded-xl shadow-xl",
                     style: "{transform_style.read()}",
                     div { class: "h-full w-full flex flex-col items-center justify-center text-white",
                         span { class: "text-xl font-bold mb-1", "Hover Me!" }
@@ -78,7 +78,7 @@ pub fn TransformAnimationShowcase() -> Element {
                 }
                 // Glow effect - scaled proportionally
                 div {
-                    class: "absolute inset-0 bg-gradient-to-tr from-emerald-400/30 to-cyan-400/30
+                    class: "absolute inset-0 bg-linear-to-tr from-emerald-400/30 to-cyan-400/30
                             rounded-2xl blur-lg -z-10",
                     style: "{glow_style.read()}",
                 }

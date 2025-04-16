@@ -69,7 +69,7 @@ pub fn NavBar() -> Element {
                     div { class: "flex items-center justify-between h-full",
                         // Left side - Logo and navigation
                         div { class: "flex items-center space-x-3",
-                            div { class: "flex items-center gap-8 px-6 py-2 bg-dark-200/50 backdrop-blur-sm
+                            div { class: "flex items-center gap-8 px-6 py-2 bg-dark-200/50 backdrop-blur-xs
                                        border border-primary/10 rounded-full shadow-lg shadow-primary/5
                                        rust-accent",
                                 // Rocket logo
@@ -107,7 +107,7 @@ pub fn NavBar() -> Element {
                             // GitHub link
                             a {
                                 class: "hidden sm:flex items-center px-4 py-2 rounded-lg
-                                       bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
+                                       bg-dark-200/50 backdrop-blur-xs hover:bg-dark-200/70
                                        text-text-secondary hover:text-text-primary
                                        border border-primary/10 transition-all duration-300
                                        rust-accent",
@@ -124,7 +124,7 @@ pub fn NavBar() -> Element {
                             // Crates.io badge
                             a {
                                 class: "hidden sm:flex items-center px-4 py-2 rounded-lg
-                                       bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
+                                       bg-dark-200/50 backdrop-blur-xs hover:bg-dark-200/70
                                        text-text-secondary hover:text-text-primary
                                        border border-primary/10 transition-all duration-300
                                        rust-accent",
@@ -163,7 +163,7 @@ pub fn NavBar() -> Element {
 
                                         a {
                                             class: "flex items-center px-6 py-3 rounded-xl
-                                                                                                                                                                                                                                                                                                                                                                                                   bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
+                                                                                                                                                                                                                                                                                                                                                                                                   bg-dark-200/50 backdrop-blur-xs hover:bg-dark-200/70
                                                                                                                                                                                                                                                                                                                                                                                                    text-text-secondary hover:text-text-primary
                                                                                                                                                                                                                                                                                                                                                                                                    border border-primary/10 transition-all duration-300
                                                                                                                                                                                                                                                                                                                                                                                                    rust-accent",
@@ -178,7 +178,7 @@ pub fn NavBar() -> Element {
                                         }
                                         a {
                                             class: "flex items-center px-6 py-3 rounded-xl
-                                                                                                                                                                                                                                                                                                                                                                                                   bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/70
+                                                                                                                                                                                                                                                                                                                                                                                                   bg-dark-200/50 backdrop-blur-xs hover:bg-dark-200/70
                                                                                                                                                                                                                                                                                                                                                                                                    text-text-secondary hover:text-text-primary
                                                                                                                                                                                                                                                                                                                                                                                                    border border-primary/10 transition-all duration-300
                                                                                                                                                                                                                                                                                                                                                                                                    rust-accent",
@@ -196,7 +196,7 @@ pub fn NavBar() -> Element {
                             }
                             // Close menu when clicking outside
                             div {
-                                class: "fixed inset-0 z-30 bg-black/20 backdrop-blur-sm",
+                                class: "fixed inset-0 z-30 bg-black/20 backdrop-blur-xs",
                                 onclick: move |_| is_menu_open.set(false),
                             }
                         }

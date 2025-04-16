@@ -7,7 +7,7 @@ use easer::functions::Easing;
 fn AnimationStep(title: String, description: String, code: String, children: Element) -> Element {
     rsx! {
         div {
-            class: "flex flex-col lg:flex-row gap-6 p-6 bg-dark-200/50 backdrop-blur-sm rounded-xl border border-primary/10",
+            class: "flex flex-col lg:flex-row gap-6 p-6 bg-dark-200/50 backdrop-blur-xs rounded-xl border border-primary/10",
             // Left side - Code (85%)
             div {
                 class: "lg:w-[85%] min-w-0", // Changed to explicit 85% width on larger screens
@@ -301,7 +301,7 @@ pub fn Animations() -> Element {
 
                 // Animation Types Overview
                 div { class: "grid grid-cols-1 md:grid-cols-2 gap-4 mt-6",
-                    div { class: "p-4 rounded-lg bg-dark-200/50 backdrop-blur-sm border border-primary/10",
+                    div { class: "p-4 rounded-lg bg-dark-200/50 backdrop-blur-xs border border-primary/10",
                         h3 { class: "font-semibold text-text-primary mb-2", "Core Animation Types" }
                         ul { class: "list-disc list-inside text-text-secondary space-y-1",
                             li {
@@ -314,7 +314,7 @@ pub fn Animations() -> Element {
                             }
                         }
                     }
-                    div { class: "p-4 rounded-lg bg-dark-200/50 backdrop-blur-sm border border-primary/10",
+                    div { class: "p-4 rounded-lg bg-dark-200/50 backdrop-blur-xs border border-primary/10",
                         h3 { class: "font-semibold text-text-primary mb-2", "Advanced Features" }
                         ul { class: "list-disc list-inside text-text-secondary space-y-1",
                             li {
@@ -379,7 +379,7 @@ rsx! {
                 title: "2. Spring Animation".to_string(),
                 description: "Physics-based animations that create natural motion. Great for interactive elements that need organic movement.".to_string(),
                 code: r#"
-                
+
 #[component]
 fn TransformAnimation() -> Element {
     let mut transform = use_motion(Transform::new(0.0, 0.0, 1.0, 0.0));
@@ -525,13 +525,13 @@ let onclick = move |_| {
                 velocity: 10.0,
             }))
         );
-    
+
     // Animate scale independently
     scale.animate_to(
         1.2,
         AnimationConfig::new(AnimationMode::Spring(Spring::default()))
     );
-    
+
     // Start the sequence animation
     value.animate_sequence(sequence);
     count += 1;
@@ -588,7 +588,7 @@ value.animate_to(
             section { class: "space-y-6",
                 h2 { class: "text-2xl font-semibold text-text-primary", "Best Practices" }
                 div { class: "grid grid-cols-1 md:grid-cols-2 gap-4",
-                    div { class: "p-4 rounded-lg bg-dark-200/50 backdrop-blur-sm border border-primary/10",
+                    div { class: "p-4 rounded-lg bg-dark-200/50 backdrop-blur-xs border border-primary/10",
                         h3 { class: "font-semibold text-text-primary mb-2", "Performance" }
                         ul { class: "list-disc list-inside text-text-secondary space-y-1",
                             li { "Use spring animations for natural motion" }
@@ -597,7 +597,7 @@ value.animate_to(
                             li { "Use transform instead of position for better performance" }
                         }
                     }
-                    div { class: "p-4 rounded-lg bg-dark-200/50 backdrop-blur-sm border border-primary/10",
+                    div { class: "p-4 rounded-lg bg-dark-200/50 backdrop-blur-xs border border-primary/10",
                         h3 { class: "font-semibold text-text-primary mb-2", "UX Guidelines" }
                         ul { class: "list-disc list-inside text-text-secondary space-y-1",
                             li { "Maintain consistent animation durations" }

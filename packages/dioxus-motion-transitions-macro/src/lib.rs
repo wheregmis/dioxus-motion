@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse_macro_input, Attribute, Data, DataEnum, DeriveInput, Fields, Meta};
+use syn::{Attribute, Data, DataEnum, DeriveInput, Fields, Meta, parse_macro_input};
 
 fn get_transition_from_attrs(attrs: &[Attribute]) -> Option<String> {
     attrs
@@ -64,7 +64,7 @@ pub fn derive_route_transitions(input: TokenStream) -> TokenStream {
             Fields::Named(fields) => {
                 let field_names: Vec<_> = fields.named.iter().map(|f| &f.ident).collect();
                 quote! {
-                    Self::#variant_ident { #(ref #field_names,)* } => {
+                    Self::#variant_ident { #(#field_names,)* } => {
                         rsx! { #component_name { #(#field_names: #field_names.clone(),)* } }
                     }
                 }

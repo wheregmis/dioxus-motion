@@ -26,7 +26,7 @@ pub fn Navbar() -> Element {
         nav {
             class: "fixed top-0 left-0 right-0 backdrop-blur-md
                     shadow-lg shadow-black/5 dark:shadow-white/5
-                    border-b border-gray-200/20 
+                    border-b border-gray-200/20
                     transition-all duration-300 z-50
                     hover:shadow-xl",
             style: "transform: translate({}px, {}px) scale({}) rotate({}deg); transform-style: preserve-3d; will-change: transform;",
@@ -38,7 +38,7 @@ pub fn Navbar() -> Element {
                 div { class: "flex justify-between items-center h-28",
                     // Logo
                     div { class: "flex items-center space-x-4",
-                        div { class: "text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent",
+                        div { class: "text-3xl font-bold bg-linear-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent",
                             "Dioxus Motion"
                         }
                     }

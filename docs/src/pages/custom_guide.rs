@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_motion::{prelude::*, KeyframeAnimation};
+use dioxus_motion::{KeyframeAnimation, prelude::*};
 use easer::functions::Easing;
 
 use crate::components::code_block::CodeBlock;
@@ -217,14 +217,14 @@ petal.animate_to(
                 // Live demo
                 div { class: "p-4 bg-dark-200/30 rounded-lg space-y-4",
                     h3 { class: "font-medium", "Live Demo" }
-                    
+
                     // Visual representation
                     div { class: "relative h-32 w-32 mx-auto",
                         div {
                             class: "absolute w-16 h-16 bg-primary/50 rounded-lg",
                             style: "
-                                transform: translate({petal.get_value().translate_x}px, {petal.get_value().translate_y}px) 
-                                rotate({petal.get_value().rotate}deg) 
+                                transform: translate({petal.get_value().translate_x}px, {petal.get_value().translate_y}px)
+                                rotate({petal.get_value().rotate}deg)
                                 scale({petal.get_value().scale})
                             "
                         }
@@ -387,14 +387,14 @@ petal.animate_keyframes(keyframes);"#.to_string(),
                 // Live demo
                 div { class: "p-4 bg-dark-200/30 rounded-lg space-y-4",
                     h3 { class: "font-medium", "Live Demo" }
-                    
+
                     // Visual representation
                     div { class: "relative h-32 w-32 mx-auto",
                         div {
                             class: "absolute w-16 h-16 bg-primary/50 rounded-lg",
                             style: "
-                                transform: translate({petal.get_value().translate_x}px, {petal.get_value().translate_y}px) 
-                                rotate({petal.get_value().rotate}deg) 
+                                transform: translate({petal.get_value().translate_x}px, {petal.get_value().translate_y}px)
+                                rotate({petal.get_value().rotate}deg)
                                 scale({petal.get_value().scale})
                             "
                         }

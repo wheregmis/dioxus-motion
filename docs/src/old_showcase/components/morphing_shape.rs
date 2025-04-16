@@ -21,7 +21,7 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
             path: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)", // Diamond
             rotation: 0.0,
             scale: 1.0,
-            color_from: "blue-200",  // Ice blue to aqua for diamond's crystalline look
+            color_from: "blue-200", // Ice blue to aqua for diamond's crystalline look
             color_to: "cyan-200",
         },
         ShapeConfig {
@@ -35,7 +35,7 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
             path: "circle(50% at 50% 50%)", // Circle
             rotation: 360.0,
             scale: 0.9,
-            color_from: "rose-200",  // Soft pinks for smooth circular form
+            color_from: "rose-200", // Soft pinks for smooth circular form
             color_to: "pink-200",
         },
         ShapeConfig {
@@ -63,7 +63,7 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
             path: "polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)", // Star
             rotation: 135.0,
             scale: 1.25,
-            color_from: "sky-200",   // Sky and sea colors for star
+            color_from: "sky-200", // Sky and sea colors for star
             color_to: "indigo-200",
         },
     ];
@@ -118,11 +118,11 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
     rsx! {
         div { class: "w-32 h-32 relative transition-all duration-300",
             div {
-                class: "absolute inset-0 rounded-lg shadow-lg backdrop-blur-sm",
-                class: "absolute inset-0 bg-gradient-to-r from-pink-500 to-orange-500
+                class: "absolute inset-0 rounded-lg shadow-lg backdrop-blur-xs",
+                class: "absolute inset-0 bg-linear-to-r from-pink-500 to-orange-500
                        hover:from-purple-500 hover:to-blue-500 rounded-lg",
                 style: "clip-path: {current_config.path};
-                       transform: rotate({transform.get_value().rotation}deg) 
+                       transform: rotate({transform.get_value().rotation}deg)
                                 scale({transform.get_value().scale * scale_pulse.get_value()});
                        transition: clip-path 0.8s cubic-bezier(0.4, 0, 0.2, 1);
                        filter: brightness(1.2) contrast(1.1) saturate(1.2);",

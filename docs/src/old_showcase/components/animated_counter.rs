@@ -28,14 +28,14 @@ pub fn AnimatedCounter() -> Element {
     };
 
     rsx! {
-        div { class: "flex flex-col items-center gap-6 p-8 rounded-2xl backdrop-blur-sm",
+        div { class: "flex flex-col items-center gap-6 p-8 rounded-2xl backdrop-blur-xs",
             div {
-                class: "relative text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-500",
+                class: "relative text-5xl font-bold text-transparent bg-clip-text bg-linear-to-r from-blue-500 to-purple-500",
                 style: "transform: translateY({value.get_value()}px) scale({scale.get_value()})",
                 "Count: {count}"
             }
             button {
-                class: "px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300",
+                class: "px-6 py-3 bg-linear-to-r from-blue-500 to-purple-500 text-white rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300",
                 onclick,
                 "Increment"
             }

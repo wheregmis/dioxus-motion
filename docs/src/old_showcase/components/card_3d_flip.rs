@@ -45,12 +45,12 @@ pub fn Card3DFlip() -> Element {
             div {
                 class: "relative w-64 h-64 cursor-pointer",
                 style: "transform-style: preserve-3d;
-                        transform: rotateY({transform.get_value().rotation}deg) 
+                        transform: rotateY({transform.get_value().rotation}deg)
                                  scale({transform.get_value().scale});",
                 onclick: animate_flip,
 
                 // Front
-                div { class: "absolute w-full h-full bg-gradient-to-br from-cyan-400
+                div { class: "absolute w-full h-full bg-linear-to-br from-cyan-400
                            to-blue-500 rounded-xl p-6 text-white backface-hidden",
                     div { class: "flex items-center justify-center h-full text-xl font-bold",
                         "Front Side"
@@ -59,7 +59,7 @@ pub fn Card3DFlip() -> Element {
 
                 // Back
                 div {
-                    class: "absolute w-full h-full bg-gradient-to-br from-purple-400
+                    class: "absolute w-full h-full bg-linear-to-br from-purple-400
                            to-pink-500 rounded-xl p-6 text-white backface-hidden",
                     style: "transform: rotateY(180deg);",
                     div { class: "flex items-center justify-center h-full text-xl font-bold",

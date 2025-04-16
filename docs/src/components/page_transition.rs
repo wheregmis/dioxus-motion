@@ -24,7 +24,7 @@ use dioxus::prelude::*;
 /// ```
 fn TransitionCard(name: &'static str, description: &'static str, example: &'static str) -> Element {
     rsx! {
-        div { class: "p-6 rounded-xl bg-dark-200/50 backdrop-blur-sm
+        div { class: "p-6 rounded-xl bg-dark-200/50 backdrop-blur-xs
                     border border-primary/10 transition-all duration-300
                     hover:border-primary/20 hover:shadow-lg hover:shadow-primary/10",
             span { class: "block font-semibold text-text-primary mb-2", {name} }
@@ -120,7 +120,7 @@ pub fn PageTransition() -> Element {
             // Quick Start
             section { class: "space-y-6",
                 h2 { class: "text-2xl font-semibold text-text-primary", "Implementation Steps" }
-                div { class: "bg-dark-200/50 backdrop-blur-sm rounded-xl p-6 border border-primary/10",
+                div { class: "bg-dark-200/50 backdrop-blur-xs rounded-xl p-6 border border-primary/10",
                     // Enable transitions feature
                     div { class: "mb-6",
                         h3 { class: "text-lg font-medium text-text-primary mb-2", "1. Enable Transitions Feature" }
@@ -285,7 +285,7 @@ fn NavBar() -> Element {
             // Example with Nested Routes
             section { class: "space-y-6",
                 h2 { class: "text-2xl font-semibold text-text-primary", "Example with Nested Routes" }
-                div { class: "bg-dark-200/50 backdrop-blur-sm rounded-xl p-6 border border-primary/10",
+                div { class: "bg-dark-200/50 backdrop-blur-xs rounded-xl p-6 border border-primary/10",
                     CodeBlock {
                         code: r#"#[derive(Routable, Clone, Debug, PartialEq, MotionTransitions)]
 #[rustfmt::skip]
@@ -334,9 +334,9 @@ enum Route {
                             "If your transitions aren't working at all, check the following:"
                         }
                         ul { class: "list-disc list-inside text-text-secondary space-y-1 text-sm",
-                            li { "Verify that you've enabled the ", code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded", "transitions" }, " feature in your Cargo.toml" }
-                            li { "Ensure you've added the ", code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded", "MotionTransitions" }, " derive to your Route enum" }
-                            li { "Confirm you're using ", code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded", "AnimatedOutlet" }, " instead of the standard Outlet" }
+                            li { "Verify that you've enabled the ", code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm", "transitions" }, " feature in your Cargo.toml" }
+                            li { "Ensure you've added the ", code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm", "MotionTransitions" }, " derive to your Route enum" }
+                            li { "Confirm you're using ", code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm", "AnimatedOutlet" }, " instead of the standard Outlet" }
                             li { "Check that you've specified transition attributes for your routes" }
                         }
                     }
