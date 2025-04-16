@@ -26,10 +26,6 @@ pub fn ValueAnimationShowcase() -> Element {
         );
     };
 
-    use_drop(move || {
-        value.stop();
-    });
-
     rsx! {
         div { class: "h-[400px] flex items-center justify-center",
             div { class: "flex flex-col items-center justify-center p-6 bg-linear-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg",

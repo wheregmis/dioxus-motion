@@ -653,6 +653,7 @@ impl<T: Animatable> AnimationManager<T> for Signal<Motion<T>> {
         self.write().reset();
     }
 
+    #[track_caller]
     fn stop(&mut self) {
         self.write().stop();
     }

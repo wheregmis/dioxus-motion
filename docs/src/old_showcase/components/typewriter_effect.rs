@@ -30,11 +30,6 @@ pub fn TypewriterEffect(text: &'static str) -> Element {
         );
     });
 
-    use_drop(move || {
-        char_count.stop();
-        cursor_opacity.stop();
-    });
-
     let visible_text = text
         .chars()
         .take(char_count.get_value() as usize)

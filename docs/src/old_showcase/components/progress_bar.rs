@@ -17,8 +17,6 @@ pub fn ProgressBar(title: &'static str) -> Element {
         );
     });
 
-    use_drop(move || progress.stop());
-
     rsx! {
         div { class: "w-full p-6  rounded-xl shadow-lg",
             // Title and percentage display
