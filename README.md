@@ -246,7 +246,7 @@ transform.animate_to(
 );
 ```
 
-### If you were using transform.get_style(), that function is removed to make the library more generic so i recommend building something like
+### If you were using transform.get_style(), that function is removed to make the library more generic so I recommend building something like
 
 ```rust
     let transform = use_motion(Transform::default());
