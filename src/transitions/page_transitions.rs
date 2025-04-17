@@ -172,26 +172,22 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
             style: "position: relative; overflow-visible;",
             div {
                 class: "route-content from",
-                style: "
-                    transform: translate3d({from_transform.get_value().x}%, {from_transform.get_value().y}%, 0)
-                             scale({from_transform.get_value().scale});
-                    opacity: {from_opacity.get_value()};
-                    will-change: transform, opacity;
-                       backface-visibility: hidden;
-                    -webkit-backface-visibility: hidden;
-                ",
+                style: "transform: translate3d({from_transform.get_value().x}px, {from_transform.get_value().y}px, 0;) \
+                       -webkit-transform: translate3d({from_transform.get_value().x}px, {from_transform.get_value().y}px, 0); \
+                       opacity: {from_opacity.get_value()}; \
+                       -webkit-backface-visibility: hidden; \
+                       backface-visibility: hidden; \
+                       will-change: transform, opacity;",
                 {from.render(from.get_layout_depth() + 1)}
             }
             div {
                 class: "route-content to",
-                style: "
-                    transform: translate3d({to_transform.get_value().x}%, {to_transform.get_value().y}%, 0)
-                             scale({to_transform.get_value().scale});
-                    opacity: {to_opacity.get_value()};
-                    will-change: transform, opacity;
-                    backface-visibility: hidden;
-                    -webkit-backface-visibility: hidden;
-                ",
+                style: "transform: translate3d({to_transform.get_value().x}px, {to_transform.get_value().y}px, 0); \
+                       -webkit-transform: translate3d({to_transform.get_value().x}px, {to_transform.get_value().y}px, 0); \
+                       opacity: {to_opacity.get_value()}; \
+                       -webkit-backface-visibility: hidden; \
+                       backface-visibility: hidden; \
+                       will-change: transform, opacity;",
                 Outlet::<R> {}
             }
         }
