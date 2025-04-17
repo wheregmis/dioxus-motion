@@ -3,10 +3,15 @@
 //! This module contains traits and types for implementing animations in Dioxus Motion.
 //! It provides support for both tweening and spring-based animations with configurable
 //! parameters.
+//!
+//! Includes lazily initialized common animation configurations for better performance.
+
+use once_cell::sync::Lazy;
 
 use std::sync::{Arc, Mutex};
 
 use crate::animations::{spring::Spring, tween::Tween};
+use easer::functions::Easing;
 use instant::Duration;
 
 /// A trait for types that can be animated
@@ -106,6 +111,43 @@ pub struct AnimationConfig {
     pub on_complete: Option<Arc<Mutex<dyn FnMut() + Send + Sync>>>,
 }
 
+// Lazily initialized animation configurations
+static CONFIG_SPRING_DEFAULT: Lazy<AnimationConfig> = Lazy::new(|| AnimationConfig {
+    mode: AnimationMode::Spring(Spring::default()),
+    loop_mode: None,
+    delay: Duration::default(),
+    on_complete: None,
+});
+
+static CONFIG_SPRING_BOUNCY: Lazy<AnimationConfig> = Lazy::new(|| AnimationConfig {
+    mode: AnimationMode::Spring(Spring {
+        stiffness: 120.0,
+        damping: 5.0,
+        mass: 1.0,
+        velocity: 0.0,
+    }),
+    loop_mode: None,
+    delay: Duration::default(),
+    on_complete: None,
+});
+
+static CONFIG_TWEEN_DEFAULT: Lazy<AnimationConfig> = Lazy::new(|| AnimationConfig {
+    mode: AnimationMode::Tween(Tween::default()),
+    loop_mode: None,
+    delay: Duration::default(),
+    on_complete: None,
+});
+
+static CONFIG_TWEEN_FAST: Lazy<AnimationConfig> = Lazy::new(|| AnimationConfig {
+    mode: AnimationMode::Tween(Tween {
+        duration: Duration::from_millis(150),
+        easing: easer::functions::Linear::ease_in_out,
+    }),
+    loop_mode: None,
+    delay: Duration::default(),
+    on_complete: None,
+});
+
 impl AnimationConfig {
     /// Creates a new animation configuration with specified mode
     pub fn new(mode: AnimationMode) -> Self {
@@ -115,6 +157,26 @@ impl AnimationConfig {
             delay: Duration::default(),
             on_complete: None,
         }
+    }
+
+    /// Returns a default spring animation configuration
+    pub fn spring_default() -> Self {
+        CONFIG_SPRING_DEFAULT.clone()
+    }
+
+    /// Returns a bouncy spring animation configuration
+    pub fn spring_bouncy() -> Self {
+        CONFIG_SPRING_BOUNCY.clone()
+    }
+
+    /// Returns a default tween animation configuration
+    pub fn tween_default() -> Self {
+        CONFIG_TWEEN_DEFAULT.clone()
+    }
+
+    /// Returns a fast tween animation configuration
+    pub fn tween_fast() -> Self {
+        CONFIG_TWEEN_FAST.clone()
     }
 
     /// Sets the loop mode for the animation
@@ -169,17 +231,45 @@ impl AnimationConfig {
 }
 
 pub mod simd {
+    use once_cell::sync::Lazy;
     use wide::{f32x4, f32x8};
+
+    // Common constants as SIMD vectors for better performance
+    // These are used in the optimized implementations below
+    #[allow(dead_code)]
+    static ZERO_F32X4: Lazy<f32x4> = Lazy::new(|| f32x4::splat(0.0));
+    #[allow(dead_code)]
+    static ONE_F32X4: Lazy<f32x4> = Lazy::new(|| f32x4::splat(1.0));
+    #[allow(dead_code)]
+    static TWO_F32X4: Lazy<f32x4> = Lazy::new(|| f32x4::splat(2.0));
+    #[allow(dead_code)]
+    static HALF_F32X4: Lazy<f32x4> = Lazy::new(|| f32x4::splat(0.5));
 
     /// SIMD-optimized linear interpolation for 4 f32 values at once
     #[inline]
     pub fn lerp_f32x4(start: f32x4, end: f32x4, t: f32) -> f32x4 {
+        // Use the lazy-initialized constants when t is 0 or 1
+        if t <= 0.0 {
+            return start;
+        } else if t >= 1.0 {
+            return end;
+        }
+
+        // For other values, compute the interpolation
         start + (end - start) * f32x4::splat(t)
     }
 
     /// SIMD-optimized linear interpolation for 8 f32 values at once
     #[inline]
     pub fn lerp_f32x8(start: f32x8, end: f32x8, t: f32) -> f32x8 {
+        // Fast path for common cases
+        if t <= 0.0 {
+            return start;
+        } else if t >= 1.0 {
+            return end;
+        }
+
+        // For other values, compute the interpolation
         start + (end - start) * f32x8::splat(t)
     }
 

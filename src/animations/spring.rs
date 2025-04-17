@@ -2,6 +2,10 @@
 //!
 //! Provides a physical spring model for smooth, natural-looking animations.
 //! Based on Hooke's law with damping for realistic motion.
+//!
+//! Includes lazily initialized common spring presets for better performance.
+
+use once_cell::sync::Lazy;
 
 /// Configuration for spring-based animations
 ///
@@ -57,6 +61,57 @@ pub enum SpringState {
     Active,
     /// Spring has settled to its target position
     Completed,
+}
+
+// Lazily initialized spring presets
+static SPRING_BOUNCY: Lazy<Spring> = Lazy::new(|| Spring {
+    stiffness: 120.0,
+    damping: 5.0,
+    mass: 1.0,
+    velocity: 0.0,
+});
+
+static SPRING_STIFF: Lazy<Spring> = Lazy::new(|| Spring {
+    stiffness: 200.0,
+    damping: 20.0,
+    mass: 1.0,
+    velocity: 0.0,
+});
+
+static SPRING_GENTLE: Lazy<Spring> = Lazy::new(|| Spring {
+    stiffness: 50.0,
+    damping: 10.0,
+    mass: 2.0,
+    velocity: 0.0,
+});
+
+static SPRING_WOBBLY: Lazy<Spring> = Lazy::new(|| Spring {
+    stiffness: 180.0,
+    damping: 4.0,
+    mass: 1.0,
+    velocity: 0.0,
+});
+
+impl Spring {
+    /// Creates a spring with a bouncy configuration
+    pub fn bouncy() -> Self {
+        *SPRING_BOUNCY
+    }
+
+    /// Creates a spring with a stiff configuration (minimal bounce)
+    pub fn stiff() -> Self {
+        *SPRING_STIFF
+    }
+
+    /// Creates a spring with a gentle configuration (slow movement)
+    pub fn gentle() -> Self {
+        *SPRING_GENTLE
+    }
+
+    /// Creates a spring with a wobbly configuration (lots of oscillation)
+    pub fn wobbly() -> Self {
+        *SPRING_WOBBLY
+    }
 }
 
 #[cfg(test)]

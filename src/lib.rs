@@ -32,6 +32,7 @@
 #![deny(clippy::option_if_let_else)] // Prefer map/and_then
 #![deny(clippy::option_if_let_else)] // Prefer map/and_then
 
+use once_cell::sync::Lazy;
 use std::{cell::RefCell, sync::Arc};
 
 pub use animations::{
@@ -97,7 +98,7 @@ impl<T: Animatable> Motion<T> {
             running: false,
             elapsed: Duration::default(),
             current_loop: 0,
-            config: Arc::new(AnimationConfig::default()),
+            config: DEFAULT_CONFIG.clone(),
             sequence: None,
             reverse: false,
             delay_elapsed: Duration::default(),
@@ -406,6 +407,7 @@ impl<T: Animatable> Motion<T> {
 
     // SIMD-optimized spring update for Transform type
     #[inline]
+    #[allow(clippy::too_many_arguments)]
     fn update_spring_simd(
         &mut self,
         current: &Transform,
@@ -950,8 +952,12 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
     state
 }
 
-// Reuse allocations for common operations
+// Reuse allocations for common operations - lazily initialized
 thread_local! {
     static TRANSFORM_BUFFER: RefCell<Vec<Transform>> = RefCell::new(Vec::with_capacity(32));
     static SPRING_BUFFER: RefCell<Vec<SpringState>> = RefCell::new(Vec::with_capacity(16));
 }
+
+// Lazily initialized static resources for Motion implementation
+static DEFAULT_CONFIG: Lazy<Arc<AnimationConfig>> =
+    Lazy::new(|| Arc::new(AnimationConfig::default()));
