@@ -320,8 +320,17 @@ impl<T: Animatable> Motion<T> {
         }
     }
 
-    #[cfg(feature = "web")]
     fn update_spring(&mut self, spring: Spring, dt: f32) -> SpringState {
+        // Choose the appropriate implementation based on platform
+        #[cfg(feature = "web")]
+        return self.update_spring_web(spring, dt);
+
+        #[cfg(not(feature = "web"))]
+        return self.update_spring_desktop(spring, dt);
+    }
+
+    #[inline]
+    fn update_spring_web(&mut self, spring: Spring, dt: f32) -> SpringState {
         const VELOCITY_THRESHOLD: f32 = 0.001;
         const POSITION_THRESHOLD: f32 = 0.001;
 
@@ -335,6 +344,29 @@ impl<T: Animatable> Motion<T> {
         let steps = ((dt / FIXED_DT) as usize).max(1);
         let step_dt = dt / steps as f32;
 
+        // Try to use SIMD for Transform type which is the most common use case
+        // Clone the values to avoid borrowing issues
+        if let Some(current) = self.current.as_transform() {
+            if let Some(target) = self.target.as_transform() {
+                if let Some(velocity) = self.velocity.as_transform() {
+                    let current_clone = *current;
+                    let target_clone = *target;
+                    let velocity_clone = *velocity;
+                    return self.update_spring_simd(
+                        &current_clone,
+                        &target_clone,
+                        &velocity_clone,
+                        stiffness,
+                        damping,
+                        mass_inv,
+                        steps,
+                        step_dt,
+                    );
+                }
+            }
+        }
+
+        // Fallback to scalar implementation for other types
         for _ in 0..steps {
             let delta = self.target.sub(&self.current);
 
@@ -360,8 +392,29 @@ impl<T: Animatable> Motion<T> {
         self.check_spring_completion()
     }
 
-    #[cfg(not(feature = "web"))]
-    fn update_spring(&mut self, spring: Spring, dt: f32) -> SpringState {
+    #[inline]
+    fn update_spring_desktop(&mut self, spring: Spring, dt: f32) -> SpringState {
+        // Try to use SIMD for Transform type which is the most common use case
+        // Clone the values to avoid borrowing issues
+        if let Some(current) = self.current.as_transform() {
+            if let Some(target) = self.target.as_transform() {
+                if let Some(velocity) = self.velocity.as_transform() {
+                    let current_clone = *current;
+                    let target_clone = *target;
+                    let velocity_clone = *velocity;
+                    // For desktop, we use a more accurate RK4 integration with SIMD
+                    return self.update_spring_rk4_simd(
+                        &current_clone,
+                        &target_clone,
+                        &velocity_clone,
+                        spring,
+                        dt,
+                    );
+                }
+            }
+        }
+
+        // Fallback to scalar RK4 implementation for other types
         // RK4 integration for better accuracy
         let stiffness = spring.stiffness;
         let damping = spring.damping;
@@ -386,7 +439,7 @@ impl<T: Animatable> Motion<T> {
             }
         };
 
-        let mut state = State {
+        let state = State {
             pos: self.current.clone(),
             vel: self.velocity.clone(),
         };
@@ -424,6 +477,172 @@ impl<T: Animatable> Motion<T> {
                 .add(&k4.vel))
             .scale(dt * SIXTH),
         );
+
+        self.check_spring_completion()
+    }
+
+    // SIMD-optimized spring update for Transform type
+    #[inline]
+    fn update_spring_simd(
+        &mut self,
+        current: &Transform,
+        target: &Transform,
+        velocity: &Transform,
+        stiffness: f32,
+        damping: f32,
+        mass_inv: f32,
+        steps: usize,
+        step_dt: f32,
+    ) -> SpringState {
+        use crate::animations::utils::simd;
+        use wide::f32x4;
+
+        const VELOCITY_THRESHOLD: f32 = 0.001;
+        const POSITION_THRESHOLD: f32 = 0.001;
+
+        // Pack the transform components into SIMD vectors
+        let mut current_vec = f32x4::from([current.x, current.y, current.scale, current.rotation]);
+        let target_vec = f32x4::from([target.x, target.y, target.scale, target.rotation]);
+        let mut velocity_vec =
+            f32x4::from([velocity.x, velocity.y, velocity.scale, velocity.rotation]);
+
+        for _ in 0..steps {
+            let delta_vec = target_vec - current_vec;
+
+            // Early exit if movement is negligible
+            if simd::magnitude_f32x4(delta_vec) < POSITION_THRESHOLD
+                && simd::magnitude_f32x4(velocity_vec) < VELOCITY_THRESHOLD
+            {
+                // Update the actual Transform values
+                let result_array = target_vec.to_array();
+                self.current = T::from_transform(&Transform::new(
+                    result_array[0],
+                    result_array[1],
+                    result_array[2],
+                    result_array[3],
+                ));
+                self.velocity = T::zero();
+                return SpringState::Completed;
+            }
+
+            // Calculate forces using SIMD
+            let force_vec = delta_vec * f32x4::splat(stiffness);
+            let damping_force_vec = velocity_vec * f32x4::splat(damping);
+
+            // Update velocity and position using SIMD
+            velocity_vec =
+                velocity_vec + (force_vec - damping_force_vec) * f32x4::splat(mass_inv * step_dt);
+            current_vec = current_vec + velocity_vec * f32x4::splat(step_dt);
+        }
+
+        // Update the actual Transform values
+        let current_array = current_vec.to_array();
+        let velocity_array = velocity_vec.to_array();
+
+        self.current = T::from_transform(&Transform::new(
+            current_array[0],
+            current_array[1],
+            current_array[2],
+            current_array[3],
+        ));
+
+        self.velocity = T::from_transform(&Transform::new(
+            velocity_array[0],
+            velocity_array[1],
+            velocity_array[2],
+            velocity_array[3],
+        ));
+
+        self.check_spring_completion()
+    }
+
+    // SIMD-optimized RK4 spring update for Transform type
+    #[inline]
+    fn update_spring_rk4_simd(
+        &mut self,
+        current: &Transform,
+        target: &Transform,
+        velocity: &Transform,
+        spring: Spring,
+        dt: f32,
+    ) -> SpringState {
+        use crate::animations::utils::simd;
+        use wide::f32x4;
+
+        let stiffness = spring.stiffness;
+        let damping = spring.damping;
+        let mass_inv = 1.0 / spring.mass;
+
+        // Pack the transform components into SIMD vectors
+        let pos_vec = f32x4::from([current.x, current.y, current.scale, current.rotation]);
+        let target_vec = f32x4::from([target.x, target.y, target.scale, target.rotation]);
+        let vel_vec = f32x4::from([velocity.x, velocity.y, velocity.scale, velocity.rotation]);
+
+        // RK4 integration using SIMD
+        // k1 = f(y, t)
+        let delta_k1 = target_vec - pos_vec;
+        let force_k1 = delta_k1 * f32x4::splat(stiffness);
+        let damping_force_k1 = vel_vec * f32x4::splat(damping);
+        let acc_k1 = (force_k1 - damping_force_k1) * f32x4::splat(mass_inv);
+        let k1_pos = vel_vec;
+        let k1_vel = acc_k1;
+
+        // k2 = f(y + h/2 * k1, t + h/2)
+        let pos_k2 = pos_vec + k1_pos * f32x4::splat(dt * 0.5);
+        let vel_k2 = vel_vec + k1_vel * f32x4::splat(dt * 0.5);
+        let delta_k2 = target_vec - pos_k2;
+        let force_k2 = delta_k2 * f32x4::splat(stiffness);
+        let damping_force_k2 = vel_k2 * f32x4::splat(damping);
+        let acc_k2 = (force_k2 - damping_force_k2) * f32x4::splat(mass_inv);
+        let k2_pos = vel_k2;
+        let k2_vel = acc_k2;
+
+        // k3 = f(y + h/2 * k2, t + h/2)
+        let pos_k3 = pos_vec + k2_pos * f32x4::splat(dt * 0.5);
+        let vel_k3 = vel_vec + k2_vel * f32x4::splat(dt * 0.5);
+        let delta_k3 = target_vec - pos_k3;
+        let force_k3 = delta_k3 * f32x4::splat(stiffness);
+        let damping_force_k3 = vel_k3 * f32x4::splat(damping);
+        let acc_k3 = (force_k3 - damping_force_k3) * f32x4::splat(mass_inv);
+        let k3_pos = vel_k3;
+        let k3_vel = acc_k3;
+
+        // k4 = f(y + h * k3, t + h)
+        let pos_k4 = pos_vec + k3_pos * f32x4::splat(dt);
+        let vel_k4 = vel_vec + k3_vel * f32x4::splat(dt);
+        let delta_k4 = target_vec - pos_k4;
+        let force_k4 = delta_k4 * f32x4::splat(stiffness);
+        let damping_force_k4 = vel_k4 * f32x4::splat(damping);
+        let acc_k4 = (force_k4 - damping_force_k4) * f32x4::splat(mass_inv);
+        let k4_pos = vel_k4;
+        let k4_vel = acc_k4;
+
+        // y(t+h) = y(t) + h/6 * (k1 + 2*k2 + 2*k3 + k4)
+        const SIXTH: f32 = 1.0 / 6.0;
+        let new_pos = pos_vec
+            + (k1_pos + k2_pos * f32x4::splat(2.0) + k3_pos * f32x4::splat(2.0) + k4_pos)
+                * f32x4::splat(dt * SIXTH);
+        let new_vel = vel_vec
+            + (k1_vel + k2_vel * f32x4::splat(2.0) + k3_vel * f32x4::splat(2.0) + k4_vel)
+                * f32x4::splat(dt * SIXTH);
+
+        // Update the actual Transform values
+        let pos_array = new_pos.to_array();
+        let vel_array = new_vel.to_array();
+
+        self.current = T::from_transform(&Transform::new(
+            pos_array[0],
+            pos_array[1],
+            pos_array[2],
+            pos_array[3],
+        ));
+
+        self.velocity = T::from_transform(&Transform::new(
+            vel_array[0],
+            vel_array[1],
+            vel_array[2],
+            vel_array[3],
+        ));
 
         self.check_spring_completion()
     }
@@ -472,14 +691,71 @@ impl<T: Animatable> Motion<T> {
         // Cache easing result and avoid unnecessary parameters
         let eased_progress = (tween.easing)(progress, 0.0, 1.0, 1.0);
 
-        // Fast path for common cases
-        match eased_progress {
-            0.0 => self.current = self.initial,
-            1.0 => self.current = self.target,
-            _ => self.current = self.initial.interpolate(&self.target, eased_progress),
+        // Try to use SIMD for Transform type which is the most common use case
+        // Clone the values to avoid borrowing issues
+        if let (Some(initial), Some(target)) =
+            (self.initial.as_transform(), self.target.as_transform())
+        {
+            let initial_clone = *initial;
+            let target_clone = *target;
+            self.update_tween_simd(&initial_clone, &target_clone, eased_progress);
+        } else {
+            // Fast path for common cases
+            match eased_progress {
+                0.0 => self.current = self.initial,
+                1.0 => self.current = self.target,
+                _ => self.current = self.initial.interpolate(&self.target, eased_progress),
+            }
         }
 
         progress >= 1.0
+    }
+
+    // SIMD-optimized tween update for Transform type
+    #[inline]
+    fn update_tween_simd(&mut self, initial: &Transform, target: &Transform, t: f32) -> bool {
+        use crate::animations::utils::simd;
+        use wide::f32x4;
+
+        // Fast path for common cases
+        if t <= 0.0 {
+            self.current = self.initial;
+            return false;
+        } else if t >= 1.0 {
+            self.current = self.target;
+            return true;
+        }
+
+        // Special handling for rotation to ensure shortest path
+        let mut rotation_diff = target.rotation - initial.rotation;
+        if rotation_diff > std::f32::consts::PI {
+            rotation_diff -= 2.0 * std::f32::consts::PI;
+        } else if rotation_diff < -std::f32::consts::PI {
+            rotation_diff += 2.0 * std::f32::consts::PI;
+        }
+
+        // Pack the transform components into SIMD vectors
+        let initial_vec = f32x4::from([initial.x, initial.y, initial.scale, initial.rotation]);
+        let target_vec = f32x4::from([
+            target.x,
+            target.y,
+            target.scale,
+            initial.rotation + rotation_diff,
+        ]);
+
+        // Use SIMD lerp function
+        let result = simd::lerp_f32x4(initial_vec, target_vec, t);
+        let result_array = result.to_array();
+
+        // Update the current value
+        self.current = T::from_transform(&Transform::new(
+            result_array[0],
+            result_array[1],
+            result_array[2],
+            result_array[3],
+        ));
+
+        t >= 1.0
     }
 
     fn handle_completion(&mut self) -> bool {
