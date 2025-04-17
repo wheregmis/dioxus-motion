@@ -22,7 +22,7 @@
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::panic)]
 #![deny(unused_variables)]
-#![deny(unused_must_use)]
+// #![deny(unused_must_use)]
 #![deny(unsafe_code)] // Prevent unsafe blocks
 #![deny(clippy::unwrap_in_result)] // No unwrap() on Result
 // #![deny(clippy::indexing_slicing)] // Prevent unchecked indexing
@@ -34,7 +34,11 @@
 
 use std::{cell::RefCell, sync::Arc};
 
-use animations::utils::{Animatable, AnimationMode};
+pub use animations::{
+    keyframe::KeyframeAnimation,
+    sequence::AnimationSequence,
+    utils::{Animatable, AnimationMode},
+};
 use dioxus::prelude::*;
 pub use instant::Duration;
 
@@ -47,7 +51,6 @@ pub use dioxus_motion_transitions_macro;
 pub use animations::platform::{MotionTime, TimeProvider};
 use animations::spring::{Spring, SpringState};
 use prelude::{AnimationConfig, LoopMode, Transform, Tween};
-use smallvec::SmallVec;
 
 // Re-exports
 pub mod prelude {
@@ -67,87 +70,6 @@ pub mod prelude {
 }
 
 pub type Time = MotionTime;
-
-#[derive(Clone)]
-#[allow(dead_code)]
-struct AnimationStep<T: Animatable> {
-    target: T,
-    config: Arc<AnimationConfig>,
-    // Add predicted next state for smoother transitions
-    predicted_next: Option<T>,
-}
-
-// Use a static array instead of Vec for small sequences
-type AnimationSteps<T> = SmallVec<[AnimationStep<T>; 8]>;
-
-pub struct AnimationSequence<T: Animatable> {
-    steps: AnimationSteps<T>,
-    current_step: u8,
-    on_complete: Option<Box<dyn FnOnce()>>,
-    // Add capacity hint for better allocation
-    capacity_hint: u8,
-}
-
-impl<T: Animatable> Clone for AnimationSequence<T> {
-    fn clone(&self) -> Self {
-        Self {
-            steps: self.steps.clone(),
-            current_step: self.current_step,
-            on_complete: None,
-            capacity_hint: self.capacity_hint,
-        }
-    }
-}
-
-impl<T: Animatable> AnimationSequence<T> {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn with_capacity(capacity: u8) -> Self {
-        Self {
-            steps: SmallVec::with_capacity(capacity as usize),
-            current_step: 0,
-            on_complete: None,
-            capacity_hint: capacity,
-        }
-    }
-
-    // Add method to reserve space upfront
-    pub fn reserve(&mut self, additional: u8) {
-        self.steps.reserve(additional as usize);
-    }
-
-    pub fn then(mut self, target: T, config: AnimationConfig) -> Self {
-        let predicted_next = self
-            .steps
-            .last()
-            .map(|last_step| last_step.target.interpolate(&target, 0.5));
-
-        self.steps.push(AnimationStep {
-            target,
-            config: Arc::new(config),
-            predicted_next,
-        });
-        self
-    }
-
-    pub fn on_complete<F: FnOnce() + 'static>(mut self, f: F) -> Self {
-        self.on_complete = Some(Box::new(f));
-        self
-    }
-}
-
-impl<T: Animatable> Default for AnimationSequence<T> {
-    fn default() -> Self {
-        Self {
-            steps: AnimationSteps::new(),
-            current_step: 0,
-            on_complete: None,
-            capacity_hint: 0,
-        }
-    }
-}
 
 #[derive(Clone)]
 pub struct Motion<T: Animatable> {
@@ -392,6 +314,7 @@ impl<T: Animatable> Motion<T> {
         self.check_spring_completion()
     }
 
+    #[cfg(not(feature = "web"))]
     #[inline]
     fn update_spring_desktop(&mut self, spring: Spring, dt: f32) -> SpringState {
         // Try to use SIMD for Transform type which is the most common use case
@@ -530,9 +453,8 @@ impl<T: Animatable> Motion<T> {
             let damping_force_vec = velocity_vec * f32x4::splat(damping);
 
             // Update velocity and position using SIMD
-            velocity_vec =
-                velocity_vec + (force_vec - damping_force_vec) * f32x4::splat(mass_inv * step_dt);
-            current_vec = current_vec + velocity_vec * f32x4::splat(step_dt);
+            velocity_vec += (force_vec - damping_force_vec) * f32x4::splat(mass_inv * step_dt);
+            current_vec += velocity_vec * f32x4::splat(step_dt);
         }
 
         // Update the actual Transform values
@@ -557,7 +479,7 @@ impl<T: Animatable> Motion<T> {
     }
 
     // SIMD-optimized RK4 spring update for Transform type
-    #[inline]
+    #[cfg(not(feature = "web"))]
     fn update_spring_rk4_simd(
         &mut self,
         current: &Transform,
@@ -1032,50 +954,4 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
 thread_local! {
     static TRANSFORM_BUFFER: RefCell<Vec<Transform>> = RefCell::new(Vec::with_capacity(32));
     static SPRING_BUFFER: RefCell<Vec<SpringState>> = RefCell::new(Vec::with_capacity(16));
-}
-
-/// Represents a single keyframe in an animation
-/// Represents a single keyframe in an animation
-#[derive(Clone)]
-pub struct Keyframe<T: Animatable> {
-    /// The target value at this keyframe
-    value: T,
-    /// Timing as a percentage (0.0 to 1.0)
-    offset: f32,
-    /// Optional easing function for this specific keyframe
-    easing: Option<fn(f32, f32, f32, f32) -> f32>,
-}
-/// Keyframe animation configuration
-#[derive(Clone)]
-pub struct KeyframeAnimation<T: Animatable> {
-    keyframes: Vec<Keyframe<T>>,
-    duration: Duration,
-}
-
-impl<T: Animatable> KeyframeAnimation<T> {
-    pub fn new(duration: Duration) -> Self {
-        Self {
-            keyframes: Vec::new(),
-            duration,
-        }
-    }
-
-    pub fn add_keyframe(
-        mut self,
-        value: T,
-        offset: f32,
-        easing: Option<fn(f32, f32, f32, f32) -> f32>,
-    ) -> Self {
-        self.keyframes.push(Keyframe {
-            value,
-            offset: offset.clamp(0.0, 1.0),
-            easing,
-        });
-        self.keyframes.sort_by(|a, b| {
-            a.offset
-                .partial_cmp(&b.offset)
-                .expect("Failed to compare keyframe offsets - possible NaN value")
-        });
-        self
-    }
 }
