@@ -32,11 +32,6 @@ pub fn PulseEffect(color: &'static str, size: &'static str) -> Element {
         );
     });
 
-    use_drop(move || {
-        scale.stop();
-        opacity.stop();
-    });
-
     rsx! {
         div { class: "relative flex items-center justify-center",
             // Main circle

@@ -57,10 +57,6 @@ pub fn TransformAnimationShowcase() -> Element {
         )
     });
 
-    use_drop(move || {
-        transform.stop();
-    });
-
     rsx! {
         div { class: "h-[400px] flex items-center justify-center p-4",
             div {

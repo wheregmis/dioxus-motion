@@ -36,10 +36,6 @@ pub fn Card3DFlip() -> Element {
         is_flipped.toggle();
     };
 
-    use_drop(move || {
-        transform.stop();
-    });
-
     rsx! {
         div { class: "perspective-1000",
             div {

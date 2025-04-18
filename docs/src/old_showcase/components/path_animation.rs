@@ -18,11 +18,6 @@ pub fn PathAnimation(path: &'static str, duration: f32) -> Element {
         );
     });
 
-    use_drop(move || {
-        mounted.set(false);
-        dash_offset.stop();
-    });
-
     rsx! {
         div { class: "w-full h-48 flex items-center justify-center rounded-xl",
             svg { class: "w-full h-full", view_box: "0 0 200 200",

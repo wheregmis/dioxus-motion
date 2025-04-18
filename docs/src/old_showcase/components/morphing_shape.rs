@@ -108,11 +108,6 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
         });
     });
 
-    use_drop(move || {
-        transform.stop();
-        scale_pulse.stop();
-    });
-
     let current_config = &shape_configs[*current_shape.read()];
 
     rsx! {

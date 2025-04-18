@@ -24,10 +24,6 @@ fn BouncingLetter(letter: char, delay: f32) -> Element {
         );
     });
 
-    use_drop(move || {
-        transform.stop();
-    });
-
     rsx! {
         span {
             class: "text-4xl font-bold text-indigo-600 inline-block origin-bottom
