@@ -2,6 +2,10 @@
 //!
 //! Provides time-based animation with customizable easing functions.
 //! Supports duration and interpolation control for smooth animations.
+//!
+//! Includes lazily initialized common tween presets for better performance.
+
+use once_cell::sync::Lazy;
 
 use easer::functions::{Easing, Linear};
 pub use instant::Duration;
@@ -34,6 +38,27 @@ impl Default for Tween {
     }
 }
 
+// Lazily initialized tween presets
+static TWEEN_FAST: Lazy<Tween> = Lazy::new(|| Tween {
+    duration: Duration::from_millis(150),
+    easing: Linear::ease_in_out,
+});
+
+static TWEEN_NORMAL: Lazy<Tween> = Lazy::new(|| Tween {
+    duration: Duration::from_millis(300),
+    easing: Linear::ease_in_out,
+});
+
+static TWEEN_SLOW: Lazy<Tween> = Lazy::new(|| Tween {
+    duration: Duration::from_millis(600),
+    easing: Linear::ease_in_out,
+});
+
+static TWEEN_VERY_SLOW: Lazy<Tween> = Lazy::new(|| Tween {
+    duration: Duration::from_secs(1),
+    easing: Linear::ease_in_out,
+});
+
 impl Tween {
     /// Creates a new tween with specified duration and linear easing
     pub fn new(duration: Duration) -> Self {
@@ -50,6 +75,26 @@ impl Tween {
     pub fn with_easing(mut self, easing: fn(f32, f32, f32, f32) -> f32) -> Self {
         self.easing = easing;
         self
+    }
+
+    /// Returns a fast tween preset (150ms)
+    pub fn fast() -> Self {
+        *TWEEN_FAST
+    }
+
+    /// Returns a normal tween preset (300ms)
+    pub fn normal() -> Self {
+        *TWEEN_NORMAL
+    }
+
+    /// Returns a slow tween preset (600ms)
+    pub fn slow() -> Self {
+        *TWEEN_SLOW
+    }
+
+    /// Returns a very slow tween preset (1s)
+    pub fn very_slow() -> Self {
+        *TWEEN_VERY_SLOW
     }
 }
 

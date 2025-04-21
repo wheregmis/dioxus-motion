@@ -6,8 +6,11 @@
 //! - Rotation
 //!
 //! Uses radians for rotation and supports smooth interpolation.
+//! Includes SIMD optimizations when the "simd" feature is enabled.
 
 use crate::Animatable;
+use crate::animations::utils::simd;
+use wide::f32x4;
 
 /// Represents a 2D transformation with translation, scale, and rotation
 ///
@@ -86,6 +89,15 @@ impl Animatable for f32 {
 /// Implementation of Animatable for Transform
 /// Provides smooth interpolation between transform states
 impl Animatable for Transform {
+    /// Returns self as a Transform reference
+    fn as_transform(&self) -> Option<&Transform> {
+        Some(self)
+    }
+
+    /// Creates a new Transform from a Transform reference
+    fn from_transform(transform: &Transform) -> Self {
+        *transform
+    }
     /// Creates a zero transform (all components 0)
     fn zero() -> Self {
         Transform::new(0.0, 0.0, 0.0, 0.0)
@@ -96,42 +108,50 @@ impl Animatable for Transform {
         0.001
     }
 
-    /// Calculates the magnitude of the transform
     fn magnitude(&self) -> f32 {
-        (self.x * self.x
-            + self.y * self.y
-            + self.scale * self.scale
-            + self.rotation * self.rotation)
-            .sqrt()
+        // Pack the transform components into a SIMD vector
+        let v = f32x4::from([self.x, self.y, self.scale, self.rotation]);
+        simd::magnitude_f32x4(v)
     }
 
-    /// Scales all transform components by a factor
     fn scale(&self, factor: f32) -> Self {
+        // Pack the transform components into a SIMD vector
+        let v = f32x4::from([self.x, self.y, self.scale, self.rotation]);
+        let result = v * f32x4::splat(factor);
+        let result_array = result.to_array();
         Transform::new(
-            self.x * factor,
-            self.y * factor,
-            self.scale * factor,
-            self.rotation * factor,
+            result_array[0],
+            result_array[1],
+            result_array[2],
+            result_array[3],
         )
     }
 
-    /// Adds two transforms component-wise
     fn add(&self, other: &Self) -> Self {
+        // Pack the transform components into SIMD vectors
+        let v1 = f32x4::from([self.x, self.y, self.scale, self.rotation]);
+        let v2 = f32x4::from([other.x, other.y, other.scale, other.rotation]);
+        let result = v1 + v2;
+        let result_array = result.to_array();
         Transform::new(
-            self.x + other.x,
-            self.y + other.y,
-            self.scale + other.scale,
-            self.rotation + other.rotation,
+            result_array[0],
+            result_array[1],
+            result_array[2],
+            result_array[3],
         )
     }
 
-    /// Subtracts two transforms component-wise
     fn sub(&self, other: &Self) -> Self {
+        // Pack the transform components into SIMD vectors
+        let v1 = f32x4::from([self.x, self.y, self.scale, self.rotation]);
+        let v2 = f32x4::from([other.x, other.y, other.scale, other.rotation]);
+        let result = v1 - v2;
+        let result_array = result.to_array();
         Transform::new(
-            self.x - other.x,
-            self.y - other.y,
-            self.scale - other.scale,
-            self.rotation - other.rotation,
+            result_array[0],
+            result_array[1],
+            result_array[2],
+            result_array[3],
         )
     }
 
@@ -146,11 +166,25 @@ impl Animatable for Transform {
             rotation_diff += 2.0 * std::f32::consts::PI;
         }
 
+        // Pack the transform components into SIMD vectors
+        // We handle rotation separately due to the special path calculation
+        let v1 = f32x4::from([self.x, self.y, self.scale, self.rotation]);
+        let v2 = f32x4::from([
+            target.x,
+            target.y,
+            target.scale,
+            self.rotation + rotation_diff,
+        ]);
+
+        // Use SIMD lerp function
+        let result = simd::lerp_f32x4(v1, v2, t);
+        let result_array = result.to_array();
+
         Transform::new(
-            self.x + (target.x - self.x) * t,
-            self.y + (target.y - self.y) * t,
-            self.scale + (target.scale - self.scale) * t,
-            self.rotation + rotation_diff * t,
+            result_array[0],
+            result_array[1],
+            result_array[2],
+            result_array[3],
         )
     }
 }

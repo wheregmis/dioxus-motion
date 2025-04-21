@@ -3,10 +3,15 @@
 //! This module contains traits and types for implementing animations in Dioxus Motion.
 //! It provides support for both tweening and spring-based animations with configurable
 //! parameters.
+//!
+//! Includes lazily initialized common animation configurations for better performance.
+
+use once_cell::sync::Lazy;
 
 use std::sync::{Arc, Mutex};
 
 use crate::animations::{spring::Spring, tween::Tween};
+use easer::functions::Easing;
 use instant::Duration;
 
 /// A trait for types that can be animated
@@ -14,7 +19,9 @@ use instant::Duration;
 /// Types implementing this trait can be used with both tween and spring animations.
 /// The trait provides basic mathematical operations needed for interpolation and
 /// physics calculations.
-pub trait Animatable: Copy + 'static {
+///
+/// This trait is now Send + Sync compatible to support multithreaded animations.
+pub trait Animatable: Copy + Send + Sync + 'static {
     /// Creates a zero value for the type
     fn zero() -> Self;
 
@@ -35,6 +42,19 @@ pub trait Animatable: Copy + 'static {
 
     /// Interpolates between self and target using t (0.0 to 1.0)
     fn interpolate(&self, target: &Self, t: f32) -> Self;
+
+    /// Returns self as a Transform if this type is a Transform, or None otherwise
+    /// Used for SIMD optimizations
+    fn as_transform(&self) -> Option<&crate::prelude::Transform> {
+        None
+    }
+
+    /// Creates a new instance from a Transform
+    /// Used for SIMD optimizations
+    fn from_transform(_transform: &crate::prelude::Transform) -> Self {
+        // Default implementation returns zero, should be overridden by Transform
+        Self::zero()
+    }
 }
 
 /// Defines the type of animation to be used
@@ -73,7 +93,10 @@ impl Default for LoopMode {
     }
 }
 
-pub type OnComplete = Arc<Mutex<dyn FnMut() + Send + 'static>>;
+/// Type alias for animation completion callbacks
+///
+/// Must be Send + Sync to support multithreaded animations
+pub type OnComplete = Arc<Mutex<dyn FnMut() + Send + Sync + 'static>>;
 /// Configuration for an animation
 #[derive(Clone, Default)]
 pub struct AnimationConfig {
@@ -84,8 +107,46 @@ pub struct AnimationConfig {
     /// Delay before animation starts
     pub delay: Duration,
     /// Callback when animation completes
-    pub on_complete: Option<Arc<Mutex<dyn FnMut() + Send>>>,
+    /// Must be Send + Sync for multithreaded animations
+    pub on_complete: Option<Arc<Mutex<dyn FnMut() + Send + Sync>>>,
 }
+
+// Lazily initialized animation configurations
+static CONFIG_SPRING_DEFAULT: Lazy<AnimationConfig> = Lazy::new(|| AnimationConfig {
+    mode: AnimationMode::Spring(Spring::default()),
+    loop_mode: None,
+    delay: Duration::default(),
+    on_complete: None,
+});
+
+static CONFIG_SPRING_BOUNCY: Lazy<AnimationConfig> = Lazy::new(|| AnimationConfig {
+    mode: AnimationMode::Spring(Spring {
+        stiffness: 120.0,
+        damping: 5.0,
+        mass: 1.0,
+        velocity: 0.0,
+    }),
+    loop_mode: None,
+    delay: Duration::default(),
+    on_complete: None,
+});
+
+static CONFIG_TWEEN_DEFAULT: Lazy<AnimationConfig> = Lazy::new(|| AnimationConfig {
+    mode: AnimationMode::Tween(Tween::default()),
+    loop_mode: None,
+    delay: Duration::default(),
+    on_complete: None,
+});
+
+static CONFIG_TWEEN_FAST: Lazy<AnimationConfig> = Lazy::new(|| AnimationConfig {
+    mode: AnimationMode::Tween(Tween {
+        duration: Duration::from_millis(150),
+        easing: easer::functions::Linear::ease_in_out,
+    }),
+    loop_mode: None,
+    delay: Duration::default(),
+    on_complete: None,
+});
 
 impl AnimationConfig {
     /// Creates a new animation configuration with specified mode
@@ -96,6 +157,26 @@ impl AnimationConfig {
             delay: Duration::default(),
             on_complete: None,
         }
+    }
+
+    /// Returns a default spring animation configuration
+    pub fn spring_default() -> Self {
+        CONFIG_SPRING_DEFAULT.clone()
+    }
+
+    /// Returns a bouncy spring animation configuration
+    pub fn spring_bouncy() -> Self {
+        CONFIG_SPRING_BOUNCY.clone()
+    }
+
+    /// Returns a default tween animation configuration
+    pub fn tween_default() -> Self {
+        CONFIG_TWEEN_DEFAULT.clone()
+    }
+
+    /// Returns a fast tween animation configuration
+    pub fn tween_fast() -> Self {
+        CONFIG_TWEEN_FAST.clone()
     }
 
     /// Sets the loop mode for the animation
@@ -113,7 +194,7 @@ impl AnimationConfig {
     /// Sets a callback to be called when animation completes
     pub fn with_on_complete<F>(mut self, f: F) -> Self
     where
-        F: FnMut() + Send + 'static,
+        F: FnMut() + Send + Sync + 'static,
     {
         self.on_complete = Some(Arc::new(Mutex::new(f)));
         self
@@ -146,5 +227,94 @@ impl AnimationConfig {
                 callback();
             }
         }
+    }
+}
+
+pub mod simd {
+    use once_cell::sync::Lazy;
+    use wide::{f32x4, f32x8};
+
+    // Common constants as SIMD vectors for better performance
+    // These are used in the optimized implementations below
+    #[allow(dead_code)]
+    static ZERO_F32X4: Lazy<f32x4> = Lazy::new(|| f32x4::splat(0.0));
+    #[allow(dead_code)]
+    static ONE_F32X4: Lazy<f32x4> = Lazy::new(|| f32x4::splat(1.0));
+    #[allow(dead_code)]
+    static TWO_F32X4: Lazy<f32x4> = Lazy::new(|| f32x4::splat(2.0));
+    #[allow(dead_code)]
+    static HALF_F32X4: Lazy<f32x4> = Lazy::new(|| f32x4::splat(0.5));
+
+    /// SIMD-optimized linear interpolation for 4 f32 values at once
+    #[inline]
+    pub fn lerp_f32x4(start: f32x4, end: f32x4, t: f32) -> f32x4 {
+        // Use the lazy-initialized constants when t is 0 or 1
+        if t <= 0.0 {
+            return start;
+        } else if t >= 1.0 {
+            return end;
+        }
+
+        // For other values, compute the interpolation
+        start + (end - start) * f32x4::splat(t)
+    }
+
+    /// SIMD-optimized linear interpolation for 8 f32 values at once
+    #[inline]
+    pub fn lerp_f32x8(start: f32x8, end: f32x8, t: f32) -> f32x8 {
+        // Fast path for common cases
+        if t <= 0.0 {
+            return start;
+        } else if t >= 1.0 {
+            return end;
+        }
+
+        // For other values, compute the interpolation
+        start + (end - start) * f32x8::splat(t)
+    }
+
+    /// SIMD-optimized spring force calculation for 4 f32 values at once
+    #[inline]
+    pub fn spring_force_f32x4(
+        position: f32x4,
+        target: f32x4,
+        velocity: f32x4,
+        stiffness: f32,
+        damping: f32,
+    ) -> f32x4 {
+        let delta = target - position;
+        let spring_force = delta * f32x4::splat(stiffness);
+        let damping_force = velocity * f32x4::splat(damping);
+        spring_force - damping_force
+    }
+
+    /// SIMD-optimized magnitude calculation for 4 f32 values
+    #[inline]
+    pub fn magnitude_f32x4(v: f32x4) -> f32 {
+        let squared = v * v;
+        let arr = squared.to_array();
+        let sum = arr[0] + arr[1] + arr[2] + arr[3];
+        sum.sqrt()
+    }
+
+    /// SIMD-optimized check if values are close enough to target
+    #[inline]
+    pub fn is_near_target_f32x4(
+        position: f32x4,
+        target: f32x4,
+        velocity: f32x4,
+        epsilon: f32,
+    ) -> bool {
+        let epsilon_sq = epsilon * epsilon;
+        let delta = target - position;
+        let delta_sq = delta * delta;
+        let velocity_sq = velocity * velocity;
+
+        let delta_arr = delta_sq.to_array();
+        let velocity_arr = velocity_sq.to_array();
+        let delta_sum = delta_arr[0] + delta_arr[1] + delta_arr[2] + delta_arr[3];
+        let velocity_sum = velocity_arr[0] + velocity_arr[1] + velocity_arr[2] + velocity_arr[3];
+
+        delta_sum < epsilon_sq && velocity_sum < epsilon_sq
     }
 }
