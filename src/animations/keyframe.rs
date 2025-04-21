@@ -1,13 +1,7 @@
-use std::cell::RefCell;
-
 use super::utils::Animatable;
 use easer::functions::Easing;
 pub use instant::Duration;
 
-// Lazily initialized buffer for keyframes to avoid allocations
-thread_local! {
-    static KEYFRAME_BUFFER: RefCell<Vec<u8>> = RefCell::new(Vec::with_capacity(16));
-}
 /// Type alias for easing function to reduce complexity
 pub type EasingFunction = fn(f32, f32, f32, f32) -> f32;
 
