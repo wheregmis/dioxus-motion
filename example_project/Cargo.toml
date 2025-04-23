@@ -1,0 +1,17 @@
+[package]
+name = "motion-dashboard"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dioxus = { git = "https://github.com/DioxusLabs/dioxus.git", branch = "main", features = [
+    "router",
+] }
+dioxus-motion = { path = "..", default-features = false, optional = true }
+rand = "0.9.1"
+chrono = "0.4.31"
+
+[features]
+default = ["web"]
+web = ["dioxus/web", "dioxus-motion/web"]
+desktop = ["dioxus/desktop", "dioxus-motion/desktop"]

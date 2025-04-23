@@ -39,6 +39,7 @@ use dioxus::prelude::*;
 pub use instant::Duration;
 
 pub mod animations;
+// Motion module with modular components
 pub mod motion;
 pub mod transitions;
 
@@ -58,7 +59,7 @@ pub mod prelude {
     };
     #[cfg(feature = "transitions")]
     pub use crate::dioxus_motion_transitions_macro::MotionTransitions;
-    pub use crate::motion::motion;
+    pub use crate::motion::elements as motion;
     pub use crate::motion::{AnimationTarget, TransitionConfig, TransitionType, Variants};
     #[cfg(feature = "transitions")]
     pub use crate::transitions::page_transitions::{AnimatableRoute, AnimatedOutlet};
