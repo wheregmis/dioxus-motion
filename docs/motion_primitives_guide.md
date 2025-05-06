@@ -248,41 +248,6 @@ fn StaggeredList() -> Element {
 }
 ```
 
-## Advanced Techniques
-
-### Drag and Drop
-
-The `dioxus-motion` library supports drag and drop functionality, allowing you to create interactive interfaces where elements can be dragged and reordered.
-
-```rust
-#[component]
-fn DraggableItem() -> Element {
-    let mut is_dragging = use_signal(|| false);
-    
-    let handle_drag_start = move |_| {
-        is_dragging.set(true);
-    };
-    
-    let handle_drag_end = move |_| {
-        is_dragging.set(false);
-    };
-    
-    rsx! {
-        motion::div {
-            class: if is_dragging() {
-                "p-4 bg-blue-100 rounded shadow-lg scale-105 z-10"
-            } else {
-                "p-4 bg-gray-100 rounded"
-            },
-            onmousedown: handle_drag_start,
-            onmouseup: handle_drag_end,
-            
-            "Drag Me"
-        }
-    }
-}
-```
-
 ## Performance Considerations
 
 - Use `scale` instead of changing width/height for smoother animations
