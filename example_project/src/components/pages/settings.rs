@@ -195,6 +195,13 @@ pub fn SettingsPage() -> Element {
                         class: "px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
                         while_hover: Some(AnimationTarget::new().scale(1.02)),
                         while_tap: Some(AnimationTarget::new().scale(0.98)),
+                        onclick: move |_| {
+                            theme.set("system".to_string());
+                            notifications.set("all".to_string());
+                            enable_animations.set(true);
+                            data_sync.set(true);
+                            email_frequency.set("daily".to_string());
+                        },
 
                         "Reset to Defaults"
                     }
