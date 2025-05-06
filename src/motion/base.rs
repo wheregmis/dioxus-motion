@@ -57,8 +57,8 @@ pub struct MotionComponentProps {
     #[props(default)]
     pub onclick: Option<EventHandler<MouseEvent>>,
 
-    // Global attributes extension
-    #[props(extends = GlobalAttributes, extends = button)]
+    // Global attributes extension with element-specific attributes
+    #[props(extends = GlobalAttributes, extends = button, extends = img, extends = a, extends = input)]
     pub attributes: Vec<Attribute>,
 
     // Children

@@ -2640,7 +2640,6 @@ dependencies = [
  "chrono",
  "dioxus",
  "dioxus-motion",
- "rand 0.9.1",
 ]
 
 [[package]]

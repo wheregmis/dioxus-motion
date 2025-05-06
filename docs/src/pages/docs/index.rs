@@ -79,6 +79,12 @@ fn DocLayout(title: &'static str, description: &'static str, children: Element) 
                                         label: "Complex Animation Guide",
                                     }
 
+                                    SectionLink {
+                                        to: Route::MotionPrimitivesGuide {},
+                                        icon: "🧩",
+                                        label: "Motion Primitives Guide",
+                                    }
+
                                 }
                             }
                         }
@@ -538,6 +544,34 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
                             div { class: "flex items-center text-xs text-primary/80",
                                 span { class: "mr-2 px-2 py-0.5 bg-primary/10 rounded-sm", "Beginner" }
                                 span { "10 min read" }
+                            }
+                        }
+                    }
+                }
+
+                // Motion Primitives Guide Card
+                div { class: "grid md:grid-cols-2 gap-6 mt-6",
+                    // Motion Primitives Guide Card
+                    Link {
+                        to: Route::MotionPrimitivesGuide {},
+                        class: "group relative overflow-hidden rounded-xl bg-dark-200/50 backdrop-blur-xs
+                               border border-primary/10 transition-all duration-300 hover:border-primary/20
+                               hover:shadow-lg hover:shadow-primary/10",
+                        div { class: "p-6",
+                            div { class: "flex items-center justify-between mb-4",
+                                h3 { class: "text-xl font-semibold text-text-primary",
+                                    "Motion Primitives Guide"
+                                }
+                                span { class: "text-primary transform transition-transform group-hover:translate-x-1",
+                                    "→"
+                                }
+                            }
+                            p { class: "text-text-secondary leading-relaxed mb-3",
+                                "Learn how to use motion primitives to create fluid, interactive animations with minimal code."
+                            }
+                            div { class: "flex items-center text-xs text-primary/80",
+                                span { class: "mr-2 px-2 py-0.5 bg-primary/10 rounded-sm", "Beginner-Friendly" }
+                                span { "8 min read" }
                             }
                         }
                     }

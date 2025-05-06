@@ -7,7 +7,6 @@ edition = "2021"
 dioxus = { git = "https://github.com/DioxusLabs/dioxus.git", branch = "main", features = [
 ] }
 dioxus-motion = { path = "..", default-features = false, optional = true }
-rand = "0.9.1"
 chrono = "0.4.31"
 
 [features]

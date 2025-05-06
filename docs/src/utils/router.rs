@@ -10,6 +10,7 @@ use crate::pages::blog::index::Blog;
 use crate::pages::complex_guide::ComplexAnimationGuide;
 use crate::pages::docs::index::Docs;
 use crate::pages::docs::index::DocsLanding;
+use crate::pages::docs::motion_primitives::MotionPrimitivesGuide;
 use crate::pages::home::index::Home;
 use crate::pages::intermediate_guide::IntermediateAnimationGuide;
 
@@ -48,6 +49,10 @@ pub enum Route {
             #[route("/complex_guide")]
             #[transition(SlideLeft)]
             ComplexAnimationGuide {},
+
+            #[route("/motion_primitives")]
+            #[transition(SlideLeft)]
+            MotionPrimitivesGuide {},
 
 
             // // At "/blog/:name", we want to show a specific blog post, using the name slug
