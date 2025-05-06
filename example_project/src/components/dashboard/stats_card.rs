@@ -32,6 +32,11 @@ pub fn DashboardStatsCard() -> Element {
                     .delay(0.1),
             ),
             while_hover: Some(AnimationTarget::new().scale(1.02)),
+            
+            // Global attributes for accessibility and testing
+            role: "region",
+            aria_label: "Revenue statistics",
+            "data-testid": "stats-card-revenue",
 
             h3 { class: "text-lg font-semibold text-gray-800 dark:text-white mb-2", "Revenue" }
             div { class: "text-3xl font-bold text-gray-900 dark:text-white", "$48,271" }
