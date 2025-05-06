@@ -24,23 +24,23 @@ fn main() {
 
 fn app() -> Element {
     // State for sidebar collapse
-    let mut sidebar_collapsed = use_signal(|| false);
+    let sidebar_collapsed = use_signal(|| false);
 
     // State for active section
-    let mut active_section = use_signal(|| "dashboard".to_string());
+    let active_section = use_signal(|| "dashboard".to_string());
 
     rsx! {
         // Include Tailwind CSS stylesheet
         {include_tailwind_stylesheet()}
-        
+
         div { class: "flex h-screen bg-gray-100 dark:bg-gray-900",
             // Sidebar component
-            Sidebar { sidebar_collapsed: sidebar_collapsed, active_section: active_section }
+            Sidebar { sidebar_collapsed, active_section }
 
             // Main content area
             div { class: "flex-1 flex flex-col overflow-hidden",
                 // Header component
-                Header { active_section: active_section }
+                Header { active_section }
 
                 // Content area with components
                 div { class: "flex-1 overflow-y-auto p-6",
