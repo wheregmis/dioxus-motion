@@ -49,6 +49,11 @@ pub fn DashboardStatsCard() -> Element {
                     .delay(0.2),
             ),
             while_hover: Some(AnimationTarget::new().scale(1.02)),
+            
+            // Global attributes for accessibility and testing
+            role: "region",
+            aria_label: "Active projects statistics",
+            "data-testid": "stats-card-projects",
 
             h3 { class: "text-lg font-semibold text-gray-800 dark:text-white mb-2", "Active Projects" }
             div { class: "text-3xl font-bold text-gray-900 dark:text-white", "16" }
