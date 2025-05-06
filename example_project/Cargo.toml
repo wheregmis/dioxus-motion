@@ -11,9 +11,5 @@ chrono = "0.4.31"
 
 [features]
 default = ["web"]
-web = ["dioxus/web", "dioxus-motion/web", "dioxus-motion/transitions"]
-desktop = [
-    "dioxus/desktop",
-    "dioxus-motion/desktop",
-    "dioxus-motion/transitions",
-]
+web = ["dioxus/web", "dioxus-motion/web"]
+desktop = ["dioxus/desktop", "dioxus-motion/desktop"]

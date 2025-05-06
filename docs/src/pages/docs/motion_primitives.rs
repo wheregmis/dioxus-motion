@@ -14,6 +14,19 @@ pub fn MotionPrimitivesGuide() -> Element {
                     "Learn how to use the motion primitives in the dioxus-motion library to create fluid, interactive animations in your Dioxus applications."
                 }
 
+                // Warning box
+                div { class: "mt-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg",
+                    div { class: "flex items-start",
+                        span { class: "text-amber-500 text-xl mr-3", "⚠️" }
+                        div {
+                            h3 { class: "font-medium text-amber-600 dark:text-amber-400 mb-1", "Experimental Feature" }
+                            p { class: "text-sm text-text-secondary",
+                                "This guide covers experimental features that are still under development. The API may change in future releases. Use with caution in production applications."
+                            }
+                        }
+                    }
+                }
+
                 // Quick reference card
                 div { class: "mt-6 p-4 bg-primary/5 rounded-lg border border-primary/10",
                     h3 { class: "text-lg font-medium text-primary mb-2", "Quick Reference" }
@@ -403,6 +416,18 @@ fn FadeInHeading() -> Element {
 
                 p { class: "text-text-secondary",
                     "The dioxus-motion library provides a powerful set of primitives for creating fluid, interactive animations in your Dioxus applications. By combining these primitives with Dioxus's reactive programming model, you can create rich, engaging user experiences with minimal code."
+                }
+
+                div { class: "mt-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg",
+                    div { class: "flex items-start",
+                        span { class: "text-blue-500 text-xl mr-3", "ℹ️" }
+                        div {
+                            h3 { class: "font-medium text-blue-600 dark:text-blue-400 mb-1", "Experimental Status" }
+                            p { class: "text-sm text-text-secondary",
+                                "Remember that the dioxus-motion library is currently experimental. We welcome your feedback and contributions to help improve and stabilize the API. Please report any issues or suggestions on the GitHub repository."
+                            }
+                        }
+                    }
                 }
 
                 div { class: "mt-4 p-4 bg-primary/5 rounded-lg border border-primary/10",

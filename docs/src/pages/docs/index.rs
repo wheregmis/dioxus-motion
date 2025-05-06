@@ -569,9 +569,10 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
                             p { class: "text-text-secondary leading-relaxed mb-3",
                                 "Learn how to use motion primitives to create fluid, interactive animations with minimal code."
                             }
-                            div { class: "flex items-center text-xs text-primary/80",
-                                span { class: "mr-2 px-2 py-0.5 bg-primary/10 rounded-sm", "Beginner-Friendly" }
-                                span { "8 min read" }
+                            div { class: "flex items-center text-xs mb-2",
+                                span { class: "mr-2 px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-sm", "Experimental" }
+                                span { class: "mr-2 px-2 py-0.5 bg-primary/10 text-primary/80 rounded-sm", "Beginner-Friendly" }
+                                span { class: "text-primary/80", "8 min read" }
                             }
                         }
                     }
