@@ -119,8 +119,10 @@ pub fn AnalyticsPage() -> Element {
             // Action button
             div { class: "flex justify-center mt-8",
                 motion::a {
-                    class: "inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
-                    href: "#",
+                    class: "inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors",
+                    href: "/analytics/detailed-report",
+                    role: "button",
+                    aria_label: "View detailed analytics report",
                     initial: Some(AnimationTarget::new().opacity(0.0).y(10.0)),
                     animate: Some(AnimationTarget::new().opacity(1.0).y(0.0)),
                     transition: Some(
@@ -131,6 +133,7 @@ pub fn AnalyticsPage() -> Element {
                     ),
                     while_hover: Some(AnimationTarget::new().scale(1.05)),
                     while_tap: Some(AnimationTarget::new().scale(0.95)),
+                    while_focus: Some(AnimationTarget::new().scale(1.05)),
 
                     "View Detailed Analytics Report"
                 }
