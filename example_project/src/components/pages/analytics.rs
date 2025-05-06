@@ -22,7 +22,7 @@ pub fn AnalyticsPage() -> Element {
                     TransitionConfig::new(TransitionType::Spring)
                         .stiffness(100.0)
                         .damping(15.0)
-                        .delay(0.1)
+                        .delay(0.1),
                 ),
                 "Track your performance metrics and user engagement statistics in real-time."
             }
@@ -36,7 +36,7 @@ pub fn AnalyticsPage() -> Element {
                     TransitionConfig::new(TransitionType::Spring)
                         .stiffness(100.0)
                         .damping(15.0)
-                        .delay(0.2)
+                        .delay(0.2),
                 ),
 
                 img {
@@ -56,10 +56,12 @@ pub fn AnalyticsPage() -> Element {
                     TransitionConfig::new(TransitionType::Spring)
                         .stiffness(100.0)
                         .damping(15.0)
-                        .delay(0.3)
+                        .delay(0.3),
                 ),
 
-                h3 { class: "text-lg font-semibold text-gray-800 dark:text-white mb-4", "Key Metrics" }
+                h3 { class: "text-lg font-semibold text-gray-800 dark:text-white mb-4",
+                    "Key Metrics"
+                }
 
                 // Metrics grid
                 div { class: "grid grid-cols-1 md:grid-cols-3 gap-4",
@@ -72,12 +74,18 @@ pub fn AnalyticsPage() -> Element {
                             TransitionConfig::new(TransitionType::Spring)
                                 .stiffness(100.0)
                                 .damping(15.0)
-                                .delay(0.4)
+                                .delay(0.4),
                         ),
 
-                        div { class: "text-sm text-blue-600 dark:text-blue-300 font-medium", "User Engagement" }
-                        div { class: "text-2xl font-bold text-gray-800 dark:text-white mt-1", "78%" }
-                        div { class: "text-xs text-green-600 dark:text-green-400 mt-1", "+12% from last month" }
+                        div { class: "text-sm text-blue-600 dark:text-blue-300 font-medium",
+                            "User Engagement"
+                        }
+                        div { class: "text-2xl font-bold text-gray-800 dark:text-white mt-1",
+                            "78%"
+                        }
+                        div { class: "text-xs text-green-600 dark:text-green-400 mt-1",
+                            "+12% from last month"
+                        }
                     }
 
                     // Metric card 2
@@ -89,12 +97,18 @@ pub fn AnalyticsPage() -> Element {
                             TransitionConfig::new(TransitionType::Spring)
                                 .stiffness(100.0)
                                 .damping(15.0)
-                                .delay(0.5)
+                                .delay(0.5),
                         ),
 
-                        div { class: "text-sm text-purple-600 dark:text-purple-300 font-medium", "Conversion Rate" }
-                        div { class: "text-2xl font-bold text-gray-800 dark:text-white mt-1", "12.5%" }
-                        div { class: "text-xs text-green-600 dark:text-green-400 mt-1", "+2.3% from last month" }
+                        div { class: "text-sm text-purple-600 dark:text-purple-300 font-medium",
+                            "Conversion Rate"
+                        }
+                        div { class: "text-2xl font-bold text-gray-800 dark:text-white mt-1",
+                            "12.5%"
+                        }
+                        div { class: "text-xs text-green-600 dark:text-green-400 mt-1",
+                            "+2.3% from last month"
+                        }
                     }
 
                     // Metric card 3
@@ -106,12 +120,18 @@ pub fn AnalyticsPage() -> Element {
                             TransitionConfig::new(TransitionType::Spring)
                                 .stiffness(100.0)
                                 .damping(15.0)
-                                .delay(0.6)
+                                .delay(0.6),
                         ),
 
-                        div { class: "text-sm text-amber-600 dark:text-amber-300 font-medium", "Avg. Session Duration" }
-                        div { class: "text-2xl font-bold text-gray-800 dark:text-white mt-1", "3m 42s" }
-                        div { class: "text-xs text-red-600 dark:text-red-400 mt-1", "-18s from last month" }
+                        div { class: "text-sm text-amber-600 dark:text-amber-300 font-medium",
+                            "Avg. Session Duration"
+                        }
+                        div { class: "text-2xl font-bold text-gray-800 dark:text-white mt-1",
+                            "3m 42s"
+                        }
+                        div { class: "text-xs text-red-600 dark:text-red-400 mt-1",
+                            "-18s from last month"
+                        }
                     }
                 }
             }
@@ -129,11 +149,10 @@ pub fn AnalyticsPage() -> Element {
                         TransitionConfig::new(TransitionType::Spring)
                             .stiffness(100.0)
                             .damping(15.0)
-                            .delay(0.7)
+                            .delay(0.7),
                     ),
                     while_hover: Some(AnimationTarget::new().scale(1.05)),
                     while_tap: Some(AnimationTarget::new().scale(0.95)),
-                    while_focus: Some(AnimationTarget::new().scale(1.05)),
 
                     "View Detailed Analytics Report"
                 }
