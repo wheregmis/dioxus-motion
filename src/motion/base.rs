@@ -1,6 +1,6 @@
-use dioxus::prelude::*;
 use super::animation::{AnimationTarget, TransitionConfig, Variants};
 use super::state::{MotionState, apply_animation_target, generate_style_string};
+use dioxus::prelude::*;
 
 /// Common motion props for all components
 #[derive(Props, Clone, PartialEq)]
@@ -8,54 +8,58 @@ pub struct MotionComponentProps {
     // Common motion props
     #[props(default)]
     pub initial: Option<AnimationTarget>,
-    
+
     #[props(default)]
     pub animate: Option<AnimationTarget>,
-    
+
     #[props(default)]
     pub while_hover: Option<AnimationTarget>,
-    
+
     #[props(default)]
     pub while_tap: Option<AnimationTarget>,
-    
+
     #[props(default)]
     pub while_in_view: Option<AnimationTarget>,
-    
+
     #[props(default)]
     pub exit: Option<AnimationTarget>,
-    
+
     #[props(default)]
     pub variants: Option<Variants>,
-    
+
     #[props(default)]
     pub initial_variant: Option<String>,
-    
+
     #[props(default)]
     pub animate_variant: Option<String>,
-    
+
     #[props(default)]
     pub transition: Option<TransitionConfig>,
 
     // Configuration props
     #[props(default = false)]
     pub layout: bool,
-    
+
     #[props(default)]
     pub layout_id: Option<String>,
 
     // HTML element specific props
     #[props(default)]
     pub id: Option<String>,
-    
+
     #[props(default)]
     pub class: Option<String>,
-    
+
     #[props(default)]
     pub style: Option<String>,
 
     // Event handlers
     #[props(default)]
     pub onclick: Option<EventHandler<MouseEvent>>,
+
+    // Global attributes extension
+    #[props(extends = GlobalAttributes, extends = button)]
+    pub attributes: Vec<Attribute>,
 
     // Children
     pub children: Element,
@@ -130,7 +134,7 @@ pub fn setup_motion_component(props: &MotionComponentProps) -> MotionSetupResult
     let transition = props.transition.clone();
 
     // Create a signal for the state to use in the effect
-    let mut state_signal = use_signal(|| state.clone());
+    let state_signal = use_signal(|| state.clone());
 
     // Create a signal to track the previous variant
     let prev_variant = use_signal(|| None::<String>);
@@ -174,11 +178,7 @@ pub fn setup_motion_component(props: &MotionComponentProps) -> MotionSetupResult
 
                         // Update the state
                         state_signal_clone.with_mut(|state_value| {
-                            apply_animation_target(
-                                target,
-                                state_value,
-                                transition_clone.as_ref(),
-                            );
+                            apply_animation_target(target, state_value, transition_clone.as_ref());
                         });
                     }
                 }
@@ -277,20 +277,12 @@ pub fn setup_motion_component(props: &MotionComponentProps) -> MotionSetupResult
             } else {
                 // If not hovering, reset to animate target or default
                 if let Some(animate_target) = &animate {
-                    apply_animation_target(
-                        animate_target,
-                        &mut state_clone,
-                        transition.as_ref(),
-                    );
+                    apply_animation_target(animate_target, &mut state_clone, transition.as_ref());
                 } else {
                     // If no animate target is provided, reset to default values
                     // Explicitly reset all transform properties to ensure hover effects are removed
                     let default_target = AnimationTarget::default_reset();
-                    apply_animation_target(
-                        &default_target,
-                        &mut state_clone,
-                        transition.as_ref(),
-                    );
+                    apply_animation_target(&default_target, &mut state_clone, transition.as_ref());
 
                     // Debug output to verify transform reset
                     println!("Reset transform to default values on mouse up");

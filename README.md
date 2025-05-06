@@ -152,6 +152,28 @@ scale.animate_sequence(sequence);
 - **Modular Feature Setup**
 - **Simple, Intuitive API**
 - **Page Transitions**
+- **Global Attributes Support**: Easily extend components with HTML global attributes
+
+### Global Attributes Example
+
+```rust
+// Using motion div with global attributes
+motion::div {
+    // Motion-specific props
+    initial: Some(AnimationTarget::new().opacity(0.0).y(20.0)),
+    animate: Some(AnimationTarget::new().opacity(1.0).y(0.0)),
+
+    // Global attributes
+    role: "region",
+    aria_label: "Example card",
+    "data-testid": "motion-card",
+    tabindex: 0,
+
+    "Content goes here"
+}
+```
+
+All motion components now support global HTML attributes like `role`, `aria-*`, `data-*`, and more, making them more accessible and easier to use with testing libraries.
 
 ## 🛠 Installation
 

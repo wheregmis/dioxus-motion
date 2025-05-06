@@ -2,7 +2,6 @@ use easer::functions::Easing;
 use std::collections::HashMap;
 
 use crate::Duration;
-use crate::animations::transform::Transform;
 use crate::animations::utils::{AnimationConfig, AnimationMode};
 use crate::animations::{spring::Spring, tween::Tween};
 
@@ -72,7 +71,7 @@ impl AnimationTarget {
         self.transition = Some(config);
         self
     }
-    
+
     /// Create a default target with all properties explicitly set
     pub fn default_reset() -> Self {
         Self::new()

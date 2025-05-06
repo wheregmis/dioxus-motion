@@ -1,5 +1,5 @@
-use dioxus::prelude::*;
 use super::base::{MotionComponentProps, setup_motion_component};
+use dioxus::prelude::*;
 
 /// Trait for HTML elements that can be animated
 pub trait MotionElement {
@@ -14,7 +14,7 @@ impl MotionElement for DivElement {
     #[component]
     fn create(props: MotionComponentProps) -> Element {
         let setup_result = setup_motion_component(&props);
-        
+
         rsx! {
             div {
                 id: props.id.clone(),
@@ -30,6 +30,7 @@ impl MotionElement for DivElement {
                 onmouseleave: setup_result.on_mouse_leave,
                 onmousedown: setup_result.on_mouse_down,
                 onmouseup: setup_result.on_mouse_up,
+                ..props.attributes,
                 {props.children}
             }
         }
@@ -43,7 +44,7 @@ impl MotionElement for SpanElement {
     #[component]
     fn create(props: MotionComponentProps) -> Element {
         let setup_result = setup_motion_component(&props);
-        
+
         rsx! {
             span {
                 id: props.id.clone(),
@@ -59,6 +60,7 @@ impl MotionElement for SpanElement {
                 onmouseleave: setup_result.on_mouse_leave,
                 onmousedown: setup_result.on_mouse_down,
                 onmouseup: setup_result.on_mouse_up,
+                ..props.attributes,
                 {props.children}
             }
         }
@@ -72,7 +74,7 @@ impl MotionElement for ButtonElement {
     #[component]
     fn create(props: MotionComponentProps) -> Element {
         let setup_result = setup_motion_component(&props);
-        
+
         rsx! {
             button {
                 id: props.id.clone(),
@@ -88,6 +90,7 @@ impl MotionElement for ButtonElement {
                 onmouseleave: setup_result.on_mouse_leave,
                 onmousedown: setup_result.on_mouse_down,
                 onmouseup: setup_result.on_mouse_up,
+                ..props.attributes,
                 {props.children}
             }
         }

@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 dioxus = { git = "https://github.com/DioxusLabs/dioxus.git", branch = "main", features = [
-    "router",
 ] }
 dioxus-motion = { path = "..", default-features = false, optional = true }
 rand = "0.9.1"

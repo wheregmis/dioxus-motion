@@ -1041,6 +1041,7 @@ version = "0.3.1"
 dependencies = [
  "dioxus",
  "dioxus-motion-transitions-macro",
+ "dioxus-web",
  "easer",
  "futures-channel",
  "futures-util",
@@ -1048,6 +1049,7 @@ dependencies = [
  "smallvec",
  "spin_sleep",
  "tokio",
+ "uuid",
  "wasm-bindgen",
  "web-sys",
  "wide",
@@ -4530,6 +4532,11 @@ name = "uuid"
 version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "458f7a779bf54acc9f347480ac654f68407d3aab21269a6e3c9f922acd9e2da9"
+dependencies = [
+ "getrandom 0.3.2",
+ "js-sys",
+ "wasm-bindgen",
+]
 
 [[package]]
 name = "version-compare"

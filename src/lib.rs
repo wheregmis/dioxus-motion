@@ -30,7 +30,6 @@
 // #![deny(clippy::arithmetic_side_effects)] // Check for integer overflow
 #![deny(clippy::modulo_arithmetic)] // Check modulo operations
 #![deny(clippy::option_if_let_else)] // Prefer map/and_then
-#![deny(clippy::option_if_let_else)] // Prefer map/and_then
 
 use std::{cell::RefCell, sync::Arc};
 

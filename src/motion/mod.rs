@@ -1,8 +1,8 @@
 // Re-export all motion components and types
 mod animation;
-mod state;
-mod components;
 mod base;
+mod components;
+mod state;
 
 // Re-export animation types
 pub use animation::{AnimationTarget, TransitionConfig, TransitionType, Variants};
