@@ -1,7 +1,14 @@
 use crate::components::code_block::CodeBlock;
 use dioxus::prelude::*;
+use dioxus_motion::AnimationManager;
+use dioxus_motion::core::spring::Spring;
+use dioxus_motion::prelude::LoopMode;
+use dioxus_motion::prelude::motion;
+use dioxus_motion::prelude::tween::Tween;
+use dioxus_motion::prelude::utils::Animatable;
+use dioxus_motion::prelude::{AnimationConfig, AnimationMode, Duration};
+use dioxus_motion::use_motion;
 use dioxus_motion::{AnimationTarget, TransitionConfig, TransitionType};
-use dioxus_motion::{animations::utils::Animatable, animations::utils::LoopMode, prelude::*};
 use easer::functions::Easing;
 
 #[component]

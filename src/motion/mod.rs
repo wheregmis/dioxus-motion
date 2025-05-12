@@ -9,7 +9,7 @@ mod components;
 mod state;
 
 // Re-export animation types
-// pub use animation::{AnimationTarget, TransitionConfig, TransitionType, Variants};
+// pub use core::{AnimationTarget, TransitionConfig, TransitionType, Variants};
 
 // Re-export motion components
 pub use components::{

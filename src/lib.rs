@@ -54,11 +54,11 @@
 
 use std::{cell::RefCell, sync::Arc};
 
-use animations::utils::{Animatable, AnimationMode};
+use core::utils::{Animatable, AnimationMode};
 use dioxus::prelude::*;
 pub use instant::Duration;
 
-pub mod animations;
+pub mod core;
 // Motion module with modular components
 pub mod motion;
 pub mod transitions;
@@ -66,27 +66,36 @@ pub mod transitions;
 #[cfg(feature = "transitions")]
 pub use dioxus_motion_transitions_macro;
 
-pub use animations::platform::{MotionTime, TimeProvider};
-use animations::spring::{Spring, SpringState};
-use prelude::{AnimationConfig, LoopMode, Transform, Tween};
+pub use core::platform::{MotionTime, TimeProvider};
+use core::spring::{Spring, SpringState};
+use prelude::{AnimationConfig, LoopMode};
 use smallvec::SmallVec;
 
 // Re-exports
 pub mod prelude {
-    pub use crate::animations::utils::{AnimationConfig, AnimationMode, LoopMode};
-    pub use crate::animations::{
-        colors::Color, spring::Spring, transform::Transform, tween::Tween,
+    // Core animation types
+    pub use crate::core::colors;
+    pub use crate::core::colors::Color;
+    pub use crate::core::spring;
+    pub use crate::core::spring::Spring;
+    pub use crate::core::transform;
+    pub use crate::core::transform::Transform;
+    pub use crate::core::transition::{
+        AnimationTarget, EasingFunction, PageTransitionConfig, TransitionConfig, TransitionType,
+        TransitionVariant, Variants,
     };
+    pub use crate::core::tween;
+    pub use crate::core::tween::Tween;
+    pub use crate::core::utils::{Animatable, AnimationConfig, AnimationMode, LoopMode};
+    pub use crate::core::{platform, utils};
     #[cfg(feature = "transitions")]
     pub use crate::dioxus_motion_transitions_macro::MotionTransitions;
     pub use crate::motion::elements as motion;
     #[cfg(feature = "transitions")]
     pub use crate::transitions::page_transitions::{AnimatableRoute, AnimatedOutlet};
-    #[cfg(feature = "transitions")]
-    pub use crate::transitions::utils::TransitionVariant;
-    // Grid layout components have been removed
     pub use crate::{
-        AnimationManager, AnimationSequence, Duration, Time, TimeProvider, use_motion,
+        AnimationManager, AnimationSequence, Duration, KeyframeAnimation, Time, TimeProvider,
+        use_motion,
     };
 }
 
@@ -847,4 +856,6 @@ impl<T: Animatable> KeyframeAnimation<T> {
     }
 }
 
-pub use animations::transition::{AnimationTarget, TransitionConfig, TransitionType, Variants};
+use crate::core::transform::Transform;
+use crate::core::tween::Tween;
+pub use core::transition::{AnimationTarget, TransitionConfig, TransitionType, Variants};

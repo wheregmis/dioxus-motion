@@ -6,7 +6,7 @@
 
 use std::sync::{Arc, Mutex};
 
-use crate::animations::{spring::Spring, tween::Tween};
+use crate::core::{spring::Spring, tween::Tween};
 use instant::Duration;
 
 /// A trait for types that can be animated
@@ -146,5 +146,28 @@ impl AnimationConfig {
                 callback();
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    #[test]
+    fn test_animatable_f32() {
+        assert_eq!(f32::zero(), 0.0);
+        assert_eq!(f32::epsilon(), 0.001);
+        assert_eq!(1.0f32.magnitude(), 1.0);
+        assert_eq!(2.0f32.scale(2.0), 4.0);
+        assert_eq!(2.0f32.add(&3.0), 5.0);
+        assert_eq!(5.0f32.sub(&3.0), 2.0);
+        assert_eq!(2.0f32.interpolate(&4.0, 0.5), 3.0);
+    }
+
+    #[test]
+    fn test_loop_mode_default() {
+        let mode = LoopMode::default();
+        assert_eq!(mode, LoopMode::None);
     }
 }

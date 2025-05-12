@@ -3,7 +3,7 @@
 //! Provides RGBA color representation and animation interpolation.
 //! Supports both normalized (0.0-1.0) and byte (0-255) color values.
 
-use crate::animations::utils::Animatable;
+use crate::core::utils::Animatable;
 
 /// Represents an RGBA color with normalized components
 ///

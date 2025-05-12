@@ -2,7 +2,7 @@
 //!
 //! Defines motion props and setup logic for Dioxus motion components.
 use super::state::{MotionState, apply_animation_target, generate_style_string};
-use crate::animations::transition::{AnimationTarget, TransitionConfig, Variants};
+use crate::core::transition::{AnimationTarget, TransitionConfig, Variants};
 use dioxus::prelude::*;
 
 /// Common motion props for all components

@@ -1,4 +1,6 @@
 use dioxus::prelude::*;
+use dioxus_motion::core::spring::Spring;
+use dioxus_motion::prelude::transform::Transform;
 use dioxus_motion::prelude::*;
 
 #[derive(PartialEq, Copy, Clone)]

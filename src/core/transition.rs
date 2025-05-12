@@ -4,8 +4,8 @@
 //! These types are used by both core animation logic and Dioxus-specific glue code.
 
 use crate::Duration;
-use crate::animations::utils::{AnimationConfig, AnimationMode};
-use crate::animations::{spring::Spring, tween::Tween};
+use crate::core::utils::{AnimationConfig, AnimationMode};
+use crate::core::{spring::Spring, tween::Tween};
 use easer::functions::{Back, Bounce, Circ, Cubic, Easing, Elastic, Linear};
 use std::collections::HashMap;
 
@@ -273,3 +273,90 @@ pub enum TransitionType {
 
 /// Variants map for motion components
 pub type Variants = HashMap<String, AnimationTarget>;
+
+/// Variants for page/route transitions (used for enter/exit animations)
+pub enum TransitionVariant {
+    SlideLeft,
+    SlideRight,
+    SlideUp,
+    SlideDown,
+    Fade,
+    // Scale transitions
+    ScaleUp,
+    ScaleDown,
+    // Flip transitions
+    FlipHorizontal,
+    FlipVertical,
+    // Rotate transitions
+    RotateLeft,
+    RotateRight,
+    // Combinations
+    SlideUpFade,
+    SlideDownFade,
+    ScaleUpFade,
+    // Bounce effects
+    BounceIn,
+    BounceOut,
+    // Additional combined transitions
+    ScaleDownFade,
+    RotateLeftFade,
+    RotateRightFade,
+    FlipHorizontalFade,
+    FlipVerticalFade,
+    // Zoom transitions
+    ZoomIn,
+    ZoomOut,
+    // Diagonal slides
+    SlideDiagonalUpLeft,
+    SlideDiagonalUpRight,
+    SlideDiagonalDownLeft,
+    SlideDiagonalDownRight,
+    // Spiral transitions
+    SpiralIn,
+    SpiralOut,
+    // Elastic transitions
+    ElasticIn,
+    ElasticOut,
+    // Swing transitions
+    SwingIn,
+    SwingOut,
+    SlideLeftFade,
+    SlideRightFade,
+    ScaleRotateFade,
+    SlideFadeRotate,
+    ScaleFadeFlip,
+    RotateScaleSlide,
+}
+
+/// Configuration for page/route transitions (enter/exit transforms)
+#[derive(Clone)]
+pub struct PageTransitionConfig {
+    // For the page that's leaving (FROM)
+    pub exit_start: crate::core::transform::Transform, // Starting position of exiting page
+    pub exit_end: crate::core::transform::Transform,   // Final position of exiting page
+
+    // For the page that's entering (TO)
+    pub enter_start: crate::core::transform::Transform, // Starting position of entering page
+    pub enter_end: crate::core::transform::Transform,   // Final position of entering page
+}
+
+impl TransitionVariant {
+    pub fn get_config(&self) -> PageTransitionConfig {
+        let identity = crate::core::transform::Transform::identity();
+        match self {
+            TransitionVariant::SlideLeft => PageTransitionConfig {
+                exit_start: identity,
+                exit_end: crate::core::transform::Transform::new(-100.0, 0.0, 1.0, 0.0),
+                enter_start: crate::core::transform::Transform::new(100.0, 0.0, 1.0, 0.0),
+                enter_end: identity,
+            },
+            // ... (copy all other match arms from transitions/utils.rs)
+            _ => PageTransitionConfig {
+                exit_start: identity,
+                exit_end: identity,
+                enter_start: identity,
+                enter_end: identity,
+            },
+        }
+    }
+}

@@ -2,10 +2,8 @@
 //!
 //! Defines motion state and logic for applying animation targets to Dioxus state.
 
-use crate::animations::transform::Transform;
-use crate::animations::transition::{
-    AnimationTarget, EasingFunction, TransitionConfig, TransitionType,
-};
+use crate::core::transform::Transform;
+use crate::core::transition::{AnimationTarget, EasingFunction, TransitionConfig, TransitionType};
 use dioxus::prelude::*;
 
 /// Motion component state

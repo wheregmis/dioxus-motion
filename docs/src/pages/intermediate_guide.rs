@@ -1,5 +1,12 @@
 use dioxus::prelude::*;
-use dioxus_motion::{KeyframeAnimation, prelude::*};
+use dioxus_motion::AnimationManager;
+use dioxus_motion::KeyframeAnimation;
+use dioxus_motion::prelude::tween::Tween;
+use dioxus_motion::prelude::{
+    AnimationConfig, AnimationMode, AnimationSequence, Duration, LoopMode,
+};
+use dioxus_motion::prelude::{colors::Color, spring::Spring, transform::Transform};
+use dioxus_motion::use_motion;
 use easer::functions::Easing;
 
 use crate::components::code_block::CodeBlock;

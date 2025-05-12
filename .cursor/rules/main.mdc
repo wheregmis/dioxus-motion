@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Always remember, we are building library. So instead of creating user focused example or docs and patching things there, we need to fix it from library level. Before adding any feature, check if we have already the implementation for it. Also keep calling context7 tool if you have limited knowledge

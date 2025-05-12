@@ -1,3 +1,4 @@
+//! Core module providing all shared animation, transition, and utility types for Dioxus Motion.
 pub mod colors;
 pub mod platform;
 pub mod spring;

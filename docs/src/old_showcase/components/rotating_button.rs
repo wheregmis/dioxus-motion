@@ -1,4 +1,6 @@
 use dioxus::prelude::*;
+use dioxus_motion::prelude::spring::Spring;
+use dioxus_motion::prelude::tween::Tween;
 use dioxus_motion::prelude::*;
 use easer::functions::Easing;
 

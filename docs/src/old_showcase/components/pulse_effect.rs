@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use dioxus_motion::core::spring::Spring;
 use dioxus_motion::prelude::*;
 
 #[component]
