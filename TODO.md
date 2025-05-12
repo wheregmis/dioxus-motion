@@ -15,6 +15,7 @@
 - [ ] Add proper support for SVG elements in motion primitives
 - [ ] Add missing methods to `AnimationTarget` (stroke_dashoffset, shadow)
 - [ ] Add missing methods to `TransitionConfig` (repeat)
+- [x] Fix duration not being properly respected in animations
 
 ## Documentation Updates
 - [x] Update library documentation in `src/lib.rs` to use motion primitives
