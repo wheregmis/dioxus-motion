@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_motion::prelude::*;
+use dioxus_motion::{prelude::*, AnimationTarget, TransitionConfig, TransitionType};
 
 #[component]
 pub fn SettingsPage() -> Element {
@@ -41,7 +41,7 @@ pub fn SettingsPage() -> Element {
                     TransitionConfig::new(TransitionType::Spring)
                         .stiffness(100.0)
                         .damping(15.0)
-                        .delay(0.1)
+                        .delay(0.1),
                 ),
                 "Settings"
             }
@@ -54,7 +54,7 @@ pub fn SettingsPage() -> Element {
                     TransitionConfig::new(TransitionType::Spring)
                         .stiffness(100.0)
                         .damping(15.0)
-                        .delay(0.2)
+                        .delay(0.2),
                 ),
                 "Customize your dashboard experience and preferences."
             }
@@ -68,12 +68,14 @@ pub fn SettingsPage() -> Element {
                     TransitionConfig::new(TransitionType::Spring)
                         .stiffness(100.0)
                         .damping(15.0)
-                        .delay(0.3)
+                        .delay(0.3),
                 ),
 
                 // Form header
                 div { class: "border-b border-gray-200 dark:border-gray-700 px-6 py-4",
-                    h3 { class: "text-lg font-medium text-gray-800 dark:text-white", "Preferences" }
+                    h3 { class: "text-lg font-medium text-gray-800 dark:text-white",
+                        "Preferences"
+                    }
                 }
 
                 // Form content
@@ -147,13 +149,19 @@ pub fn SettingsPage() -> Element {
 
                     // Toggle switches section
                     div { class: "space-y-4 pt-4",
-                        h4 { class: "text-sm font-medium text-gray-700 dark:text-gray-300", "Additional Settings" }
+                        h4 { class: "text-sm font-medium text-gray-700 dark:text-gray-300",
+                            "Additional Settings"
+                        }
 
                         // Animations toggle
                         div { class: "flex items-center justify-between",
                             div { class: "flex flex-col",
-                                span { class: "text-sm font-medium text-gray-700 dark:text-gray-300", "Enable Animations" }
-                                span { class: "text-xs text-gray-500 dark:text-gray-400", "Smoother transitions between pages" }
+                                span { class: "text-sm font-medium text-gray-700 dark:text-gray-300",
+                                    "Enable Animations"
+                                }
+                                span { class: "text-xs text-gray-500 dark:text-gray-400",
+                                    "Smoother transitions between pages"
+                                }
                             }
 
                             // Toggle switch
@@ -171,8 +179,12 @@ pub fn SettingsPage() -> Element {
                         // Data sync toggle
                         div { class: "flex items-center justify-between",
                             div { class: "flex flex-col",
-                                span { class: "text-sm font-medium text-gray-700 dark:text-gray-300", "Data Synchronization" }
-                                span { class: "text-xs text-gray-500 dark:text-gray-400", "Keep data in sync across devices" }
+                                span { class: "text-sm font-medium text-gray-700 dark:text-gray-300",
+                                    "Data Synchronization"
+                                }
+                                span { class: "text-xs text-gray-500 dark:text-gray-400",
+                                    "Keep data in sync across devices"
+                                }
                             }
 
                             // Toggle switch

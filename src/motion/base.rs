@@ -1,5 +1,8 @@
-use super::animation::{AnimationTarget, TransitionConfig, Variants};
+//! Dioxus Motion base module
+//!
+//! Defines motion props and setup logic for Dioxus motion components.
 use super::state::{MotionState, apply_animation_target, generate_style_string};
+use crate::animations::transition::{AnimationTarget, TransitionConfig, Variants};
 use dioxus::prelude::*;
 
 /// Common motion props for all components
@@ -36,12 +39,7 @@ pub struct MotionComponentProps {
     #[props(default)]
     pub transition: Option<TransitionConfig>,
 
-    // Configuration props
-    #[props(default = false)]
-    pub layout: bool,
-
-    #[props(default)]
-    pub layout_id: Option<String>,
+    // Configuration props removed
 
     // HTML element specific props
     #[props(default)]
@@ -67,7 +65,6 @@ pub struct MotionComponentProps {
 
 /// Result of setting up a motion component
 pub struct MotionSetupResult {
-    pub state: MotionState,
     pub combined_style: String,
     pub on_mouse_enter: EventHandler<MouseEvent>,
     pub on_mouse_leave: EventHandler<MouseEvent>,
@@ -149,7 +146,6 @@ pub fn setup_motion_component(props: &MotionComponentProps) -> MotionSetupResult
         if let Some(variant_name) = &animate_variant_init {
             if let Some(variants_map) = variants_init.as_ref() {
                 if let Some(target) = variants_map.get(variant_name) {
-                    println!("Applying initial variant: {}", variant_name);
                     state_signal_init.with_mut(|state_value| {
                         apply_animation_target(target, state_value, transition_init.as_ref());
                     });
@@ -174,8 +170,6 @@ pub fn setup_motion_component(props: &MotionComponentProps) -> MotionSetupResult
                 // Get the animation target based on the variant
                 if let Some(variants_map) = variants_clone.as_ref() {
                     if let Some(target) = variants_map.get(variant_name) {
-                        println!("Applying variant change: {}", variant_name);
-
                         // Update the state
                         state_signal_clone.with_mut(|state_value| {
                             apply_animation_target(target, state_value, transition_clone.as_ref());
@@ -193,11 +187,6 @@ pub fn setup_motion_component(props: &MotionComponentProps) -> MotionSetupResult
         let transition = props.transition.clone();
 
         move |_| {
-            println!(
-                "Setting is_hovering to true at {:?}",
-                std::panic::Location::caller()
-            );
-
             state_clone.is_hovering.set(true);
 
             if let Some(hover_target) = &while_hover {
@@ -212,11 +201,6 @@ pub fn setup_motion_component(props: &MotionComponentProps) -> MotionSetupResult
         let transition = props.transition.clone();
 
         move |_| {
-            println!(
-                "Setting is_hovering to false at {:?}",
-                std::panic::Location::caller()
-            );
-
             state_clone.is_hovering.set(false);
 
             // Always reset to the animate target when mouse leaves
@@ -228,9 +212,6 @@ pub fn setup_motion_component(props: &MotionComponentProps) -> MotionSetupResult
                 let default_target = AnimationTarget::default_reset();
                 apply_animation_target(&default_target, &mut state_clone, transition.as_ref());
             }
-
-            // Debug output to verify transform reset
-            println!("Reset transform to default values on mouse leave");
         }
     };
 
@@ -241,11 +222,6 @@ pub fn setup_motion_component(props: &MotionComponentProps) -> MotionSetupResult
         let transition = props.transition.clone();
 
         move |_| {
-            println!(
-                "Setting is_tapping to true at {:?}",
-                std::panic::Location::caller()
-            );
-
             state_clone.is_tapping.set(true);
 
             if let Some(tap_target) = &while_tap {
@@ -261,11 +237,6 @@ pub fn setup_motion_component(props: &MotionComponentProps) -> MotionSetupResult
         let transition = props.transition.clone();
 
         move |_| {
-            println!(
-                "Setting is_tapping to false at {:?}",
-                std::panic::Location::caller()
-            );
-
             let is_hovering = *state_clone.is_hovering.read();
             state_clone.is_tapping.set(false);
 
@@ -283,9 +254,6 @@ pub fn setup_motion_component(props: &MotionComponentProps) -> MotionSetupResult
                     // Explicitly reset all transform properties to ensure hover effects are removed
                     let default_target = AnimationTarget::default_reset();
                     apply_animation_target(&default_target, &mut state_clone, transition.as_ref());
-
-                    // Debug output to verify transform reset
-                    println!("Reset transform to default values on mouse up");
                 }
             }
         }
@@ -295,7 +263,6 @@ pub fn setup_motion_component(props: &MotionComponentProps) -> MotionSetupResult
     let combined_style = generate_style_string(&state, props.style.as_deref());
 
     MotionSetupResult {
-        state,
         combined_style,
         on_mouse_enter: EventHandler::new(on_mouse_enter),
         on_mouse_leave: EventHandler::new(on_mouse_leave),

@@ -1,6 +1,10 @@
-use dioxus::prelude::*;
+//! Dioxus Motion state module
+//!
+//! Defines motion state and logic for applying animation targets to Dioxus state.
+
 use crate::animations::transform::Transform;
-use super::animation::{AnimationTarget, TransitionConfig};
+use crate::animations::transition::{AnimationTarget, TransitionConfig};
+use dioxus::prelude::*;
 
 /// Motion component state
 #[derive(Clone)]
@@ -39,11 +43,6 @@ pub fn apply_animation_target(
     // Apply opacity animation if specified
     if let Some(opacity) = target.opacity {
         // Set directly without reading
-        println!(
-            "Setting opacity to {} at {:?}",
-            opacity,
-            std::panic::Location::caller()
-        );
         state.opacity.set(opacity);
     }
 
@@ -76,22 +75,12 @@ pub fn apply_animation_target(
 
     if transform_changed {
         // Set directly without reading again
-        println!(
-            "Setting transform to {:?} at {:?}",
-            new_transform,
-            std::panic::Location::caller()
-        );
         state.transform.set(new_transform);
     }
 
     // Apply background color animation if specified
     if let Some(bg_color) = &target.background_color {
         // Set directly without reading
-        println!(
-            "Setting background color to {} at {:?}",
-            bg_color,
-            std::panic::Location::caller()
-        );
         state.background_color.set(bg_color.clone());
     }
 }

@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_motion::prelude::*;
+use dioxus_motion::{prelude::*, AnimationTarget, TransitionConfig, TransitionType};
 
 #[component]
 pub fn AnalyticsPage() -> Element {

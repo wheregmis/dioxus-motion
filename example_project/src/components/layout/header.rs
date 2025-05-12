@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_motion::prelude::*;
+use dioxus_motion::{prelude::*, AnimationTarget, TransitionConfig, TransitionType};
 
 #[component]
 pub fn Header(active_section: Signal<String>) -> Element {
@@ -19,7 +19,7 @@ pub fn Header(active_section: Signal<String>) -> Element {
                         TransitionConfig::new(TransitionType::Spring)
                             .stiffness(100.0)
                             .damping(15.0)
-                            .delay(0.1)
+                            .delay(0.1),
                     ),
 
                     if active_section() == "dashboard" {

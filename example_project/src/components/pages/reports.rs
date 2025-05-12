@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_motion::prelude::*;
+use dioxus_motion::{prelude::*, AnimationTarget, TransitionConfig, TransitionType};
 
 #[component]
 pub fn ReportsPage() -> Element {
@@ -60,36 +60,33 @@ pub fn ReportsPage() -> Element {
                         div { class: "flex items-center",
                             div { class: "bg-blue-100 dark:bg-blue-800 p-2 rounded-lg mr-3",
                                 // Icon placeholder
-                                div { class: "text-blue-600 dark:text-blue-300 text-xl", "📊" }
+                                div { class: "text-blue-600 dark:text-blue-300 text-xl",
+                                    "📊"
+                                }
                             }
-                            motion::h3 {
-                                class: "text-lg font-semibold text-gray-800 dark:text-white",
+                            motion::h3 { class: "text-lg font-semibold text-gray-800 dark:text-white",
                                 "Monthly Sales Report"
                             }
                         }
                     }
 
                     // Report content
-                    motion::div {
-                        class: "p-4",
-                        motion::p {
-                            class: "text-gray-600 dark:text-gray-300 text-sm mb-4",
+                    motion::div { class: "p-4",
+                        motion::p { class: "text-gray-600 dark:text-gray-300 text-sm mb-4",
                             "Detailed analysis of sales performance for the current month with breakdowns by product category and region."
                         }
 
                         // Report metadata
                         div { class: "flex justify-between items-center text-xs text-gray-500 dark:text-gray-400",
                             div { "PDF • 2.4 MB" }
-                            motion::div {
-                                class: "text-blue-600 dark:text-blue-400 font-medium",
+                            motion::div { class: "text-blue-600 dark:text-blue-400 font-medium",
                                 "Last updated: Today"
                             }
                         }
                     }
 
                     // Report footer with action button
-                    motion::div {
-                        class: "bg-gray-50 dark:bg-gray-800 p-4 border-t border-gray-200 dark:border-gray-700",
+                    motion::div { class: "bg-gray-50 dark:bg-gray-800 p-4 border-t border-gray-200 dark:border-gray-700",
                         motion::button {
                             class: "w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
                             while_hover: Some(AnimationTarget::new().scale(1.02)),
@@ -118,36 +115,33 @@ pub fn ReportsPage() -> Element {
                         div { class: "flex items-center",
                             div { class: "bg-purple-100 dark:bg-purple-800 p-2 rounded-lg mr-3",
                                 // Icon placeholder
-                                div { class: "text-purple-600 dark:text-purple-300 text-xl", "👥" }
+                                div { class: "text-purple-600 dark:text-purple-300 text-xl",
+                                    "👥"
+                                }
                             }
-                            motion::h3 {
-                                class: "text-lg font-semibold text-gray-800 dark:text-white",
+                            motion::h3 { class: "text-lg font-semibold text-gray-800 dark:text-white",
                                 "User Engagement Report"
                             }
                         }
                     }
 
                     // Report content
-                    motion::div {
-                        class: "p-4",
-                        motion::p {
-                            class: "text-gray-600 dark:text-gray-300 text-sm mb-4",
+                    motion::div { class: "p-4",
+                        motion::p { class: "text-gray-600 dark:text-gray-300 text-sm mb-4",
                             "Analysis of user engagement metrics across all platforms with insights on user behavior and retention rates."
                         }
 
                         // Report metadata
                         div { class: "flex justify-between items-center text-xs text-gray-500 dark:text-gray-400",
                             div { "PDF • 3.1 MB" }
-                            motion::div {
-                                class: "text-purple-600 dark:text-purple-400 font-medium",
+                            motion::div { class: "text-purple-600 dark:text-purple-400 font-medium",
                                 "Last updated: Yesterday"
                             }
                         }
                     }
 
                     // Report footer with action button
-                    motion::div {
-                        class: "bg-gray-50 dark:bg-gray-800 p-4 border-t border-gray-200 dark:border-gray-700",
+                    motion::div { class: "bg-gray-50 dark:bg-gray-800 p-4 border-t border-gray-200 dark:border-gray-700",
                         motion::button {
                             class: "w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
                             while_hover: Some(AnimationTarget::new().scale(1.02)),
@@ -176,36 +170,33 @@ pub fn ReportsPage() -> Element {
                         div { class: "flex items-center",
                             div { class: "bg-green-100 dark:bg-green-800 p-2 rounded-lg mr-3",
                                 // Icon placeholder
-                                div { class: "text-green-600 dark:text-green-300 text-xl", "📈" }
+                                div { class: "text-green-600 dark:text-green-300 text-xl",
+                                    "📈"
+                                }
                             }
-                            motion::h3 {
-                                class: "text-lg font-semibold text-gray-800 dark:text-white",
+                            motion::h3 { class: "text-lg font-semibold text-gray-800 dark:text-white",
                                 "Growth Forecast"
                             }
                         }
                     }
 
                     // Report content
-                    motion::div {
-                        class: "p-4",
-                        motion::p {
-                            class: "text-gray-600 dark:text-gray-300 text-sm mb-4",
+                    motion::div { class: "p-4",
+                        motion::p { class: "text-gray-600 dark:text-gray-300 text-sm mb-4",
                             "Quarterly growth projections based on current trends and market analysis with actionable recommendations."
                         }
 
                         // Report metadata
                         div { class: "flex justify-between items-center text-xs text-gray-500 dark:text-gray-400",
                             div { "PDF • 1.8 MB" }
-                            motion::div {
-                                class: "text-green-600 dark:text-green-400 font-medium",
+                            motion::div { class: "text-green-600 dark:text-green-400 font-medium",
                                 "Last updated: 3 days ago"
                             }
                         }
                     }
 
                     // Report footer with action button
-                    motion::div {
-                        class: "bg-gray-50 dark:bg-gray-800 p-4 border-t border-gray-200 dark:border-gray-700",
+                    motion::div { class: "bg-gray-50 dark:bg-gray-800 p-4 border-t border-gray-200 dark:border-gray-700",
                         motion::button {
                             class: "w-full py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2",
                             while_hover: Some(AnimationTarget::new().scale(1.02)),

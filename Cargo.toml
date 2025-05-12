@@ -13,6 +13,9 @@ categories = ["graphics", "gui"]
 
 [dependencies]
 easer = "0.3.0"
+futures = { version = "0.3.30", default-features = false, features = [
+    "executor",
+] }
 futures-util = { version = "0.3.31", default-features = false }
 instant = { version = "0.1.13", optional = true }
 wasm-bindgen = { version = "0.2.100", optional = true, default-features = false }

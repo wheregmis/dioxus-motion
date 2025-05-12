@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_motion::prelude::*;
+use dioxus_motion::{prelude::*, AnimationTarget, TransitionConfig, TransitionType};
 
 #[component]
 pub fn DashboardRecentActivity() -> Element {
@@ -96,15 +96,12 @@ pub fn DashboardRecentActivity() -> Element {
                                         key: "{index}",
                                         class: class_name,
                                         onmouseenter: move |_| handle_drag_over(index),
-                                    
                                         div { class: "flex items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-md",
-                                    
                                             // Drag handle
                                             div {
                                                 class: "cursor-move mr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200",
                                                 onmousedown: move |_| handle_drag_start(index),
                                                 onmouseup: move |_| handle_drag_end(),
-                                    
                                                 div { class: "flex flex-col items-center",
                                                     div { class: "flex space-x-1 mb-0.5",
                                                         div { class: "w-1 h-1 rounded-full bg-current" }
@@ -120,13 +117,11 @@ pub fn DashboardRecentActivity() -> Element {
                                                     }
                                                 }
                                             }
-                                    
                                             // Content
                                             div { class: "flex-1",
                                                 div { class: "font-medium text-gray-800 dark:text-white", "{title}" }
                                                 div { class: "text-sm text-gray-600 dark:text-gray-300", "{desc}" }
                                             }
-                                    
                                             // Time
                                             div { class: "text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap", "{time}" }
                                         }

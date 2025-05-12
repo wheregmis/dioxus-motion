@@ -1,17 +1,23 @@
-// Re-export all motion components and types
-mod animation;
+//!
+//! Dioxus Motion module
+//!
+//! Contains Dioxus-specific motion components, props, state, and glue code.
+//! Re-exports motion-enabled HTML elements and ergonomic aliases.
+
 mod base;
 mod components;
 mod state;
 
 // Re-export animation types
-pub use animation::{AnimationTarget, TransitionConfig, TransitionType, Variants};
+// pub use animation::{AnimationTarget, TransitionConfig, TransitionType, Variants};
 
 // Re-export motion components
 pub use components::{
     A, Article, Aside, Button, Div, Footer, H1, H2, H3, H4, H5, H6, Header, Img, Li, Main, Nav, Ol,
     P, Section, Span, Ul,
 };
+
+// Grid layout components have been removed
 
 // Lowercase aliases for compatibility with existing code
 pub mod elements {

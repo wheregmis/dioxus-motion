@@ -59,11 +59,11 @@ pub mod prelude {
     #[cfg(feature = "transitions")]
     pub use crate::dioxus_motion_transitions_macro::MotionTransitions;
     pub use crate::motion::elements as motion;
-    pub use crate::motion::{AnimationTarget, TransitionConfig, TransitionType, Variants};
     #[cfg(feature = "transitions")]
     pub use crate::transitions::page_transitions::{AnimatableRoute, AnimatedOutlet};
     #[cfg(feature = "transitions")]
     pub use crate::transitions::utils::TransitionVariant;
+    // Grid layout components have been removed
     pub use crate::{
         AnimationManager, AnimationSequence, Duration, Time, TimeProvider, use_motion,
     };
@@ -806,3 +806,5 @@ impl<T: Animatable> KeyframeAnimation<T> {
         self
     }
 }
+
+pub use animations::transition::{AnimationTarget, TransitionConfig, TransitionType, Variants};
