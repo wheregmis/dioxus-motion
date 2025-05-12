@@ -87,6 +87,6 @@ members = [
     "packages/dioxus-motion-transitions-macro",
     ".",
     "docs",
-    "example_project",
+    "expense_tracker",
 ]
 resolver = "3"

@@ -57,13 +57,25 @@ pub fn NavBar() -> Element {
                                        border border-primary/10 rounded-full shadow-lg shadow-primary/5
                                        rust-accent",
                                 // Rocket logo
-                                span { class: "text-2xl performance-pulse", "🚀" }
+                                motion::div {
+                                    class: "inline-block text-2xl performance-pulse",
+                                    initial: Some(AnimationTarget::new().scale(0.8).y(-20.0).opacity(0.0)),
+                                    animate: Some(AnimationTarget::new().scale(1.0).y(0.0).opacity(1.0)),
+                                    while_hover: Some(AnimationTarget::new().scale(1.15)),
+                                    transition: Some(
+                                        TransitionConfig::default()
+                                            .type_(TransitionType::Spring)
+                                            .stiffness(300.0)
+                                            .damping(18.0),
+                                    ),
+                                    span { "🚀" }
+                                }
 
                                 // Logo/Home link
                                 Link {
                                     to: Route::Home {},
                                     class: "text-lg font-semibold text-text-primary hover:text-primary transition-colors",
-                                    "Dioxus Motion"
+                                    motion::span { "Dioxus Motion" }
                                 }
 
                                 // Navigation links - Desktop
@@ -74,9 +86,16 @@ pub fn NavBar() -> Element {
                             }
 
                             // Mobile menu button
-                            button {
-                                class: "md:hidden p-2 rounded-lg transition-colors duration-300
-                                       hover:bg-primary/10",
+                            motion::span {
+                                class: "md:hidden p-2 rounded-lg transition-colors duration-300 hover:bg-primary/10 cursor-pointer",
+                                while_tap: Some(AnimationTarget::new().scale(0.85)),
+                                while_hover: Some(AnimationTarget::new().scale(1.1)),
+                                transition: Some(
+                                    TransitionConfig::default()
+                                        .type_(TransitionType::Spring)
+                                        .stiffness(300.0)
+                                        .damping(18.0),
+                                ),
                                 onclick: move |_| is_menu_open.toggle(),
                                 if is_menu_open() {
                                     span { class: "text-xl", "✕" }
@@ -89,35 +108,41 @@ pub fn NavBar() -> Element {
                         // Right side - Theme toggle and GitHub
                         div { class: "flex items-center space-x-4",
                             // GitHub link
-                            a {
-                                class: "hidden sm:flex items-center px-4 py-2 rounded-lg
-                                       bg-dark-200/50 backdrop-blur-xs hover:bg-dark-200/70
-                                       text-text-secondary hover:text-text-primary
-                                       border border-primary/10 transition-all duration-300
-                                       rust-accent",
+                            motion::a {
+                                class: "hidden sm:flex items-center px-4 py-2 rounded-lg bg-dark-200/50 backdrop-blur-xs hover:bg-dark-200/70 text-text-secondary hover:text-text-primary border border-primary/10 transition-all duration-300 rust-accent",
                                 href: "https://github.com/wheregmis/dioxus-motion",
                                 target: "_blank",
                                 rel: "noopener",
+                                while_hover: Some(AnimationTarget::new().scale(1.05)),
+                                while_tap: Some(AnimationTarget::new().scale(0.95)),
+                                transition: Some(
+                                    TransitionConfig::default()
+                                        .type_(TransitionType::Spring)
+                                        .stiffness(300.0)
+                                        .damping(20.0),
+                                ),
                                 "GitHub"
-                                span { class: "ml-2 px-2 py-1 text-xs rounded-full
-                                           bg-primary/10 text-primary",
+                                motion::span { class: "ml-2 px-2 py-1 text-xs rounded-full bg-primary/10 text-primary",
                                     "★ Star"
                                 }
                             }
 
                             // Crates.io badge
-                            a {
-                                class: "hidden sm:flex items-center px-4 py-2 rounded-lg
-                                       bg-dark-200/50 backdrop-blur-xs hover:bg-dark-200/70
-                                       text-text-secondary hover:text-text-primary
-                                       border border-primary/10 transition-all duration-300
-                                       rust-accent",
+                            motion::a {
+                                class: "hidden sm:flex items-center px-4 py-2 rounded-lg bg-dark-200/50 backdrop-blur-xs hover:bg-dark-200/70 text-text-secondary hover:text-text-primary border border-primary/10 transition-all duration-300 rust-accent",
                                 href: "https://crates.io/crates/dioxus-motion",
                                 target: "_blank",
                                 rel: "noopener",
+                                while_hover: Some(AnimationTarget::new().scale(1.05)),
+                                while_tap: Some(AnimationTarget::new().scale(0.95)),
+                                transition: Some(
+                                    TransitionConfig::default()
+                                        .type_(TransitionType::Spring)
+                                        .stiffness(300.0)
+                                        .damping(20.0),
+                                ),
                                 "Crates.io"
-                                span { class: "ml-2 px-2 py-1 text-xs rounded-full
-                                           bg-primary/10 text-primary",
+                                motion::span { class: "ml-2 px-2 py-1 text-xs rounded-full bg-primary/10 text-primary",
                                     "0.3.1"
                                 }
                             }
@@ -182,7 +207,7 @@ pub fn NavBar() -> Element {
                                             ),
 
                                             "GitHub"
-                                            span { class: "ml-2 px-2 py-1 text-xs rounded-full bg-primary/10 text-primary",
+                                            motion::span { class: "ml-2 px-2 py-1 text-xs rounded-full bg-primary/10 text-primary",
                                                 "★ Star"
                                             }
                                         }
@@ -204,7 +229,7 @@ pub fn NavBar() -> Element {
                                             ),
 
                                             "Crates.io"
-                                            span { class: "ml-2 px-2 py-1 text-xs rounded-full bg-primary/10 text-primary",
+                                            motion::span { class: "ml-2 px-2 py-1 text-xs rounded-full bg-primary/10 text-primary",
                                                 "0.3.1"
                                             }
                                         }
@@ -260,7 +285,6 @@ pub fn NavBar() -> Element {
 fn NavLink(to: Route, children: Element) -> Element {
     let current_route = use_route::<Route>();
     let is_active = current_route == to;
-
     rsx! {
         Link {
             to,
@@ -272,14 +296,11 @@ fn NavLink(to: Route, children: Element) -> Element {
                     base_classes.to_string()
                 }
             },
-            span { class: "relative z-10", {children} }
-
+            motion::span { class: "relative z-10", {children} }
             // Animated underline with motion primitives
             motion::div {
                 class: "absolute -bottom-1 left-0 h-[2px] bg-primary group-hover:w-full transition-all duration-300",
                 style: if is_active { "width: 100%" } else { "width: 0%" },
-
-                // Animation properties
                 initial: Some(AnimationTarget::new().opacity(1.0)),
                 animate: Some(AnimationTarget::new().opacity(1.0)),
                 while_hover: Some(AnimationTarget::new().scale(1.0)),

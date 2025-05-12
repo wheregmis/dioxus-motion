@@ -1,3 +1,4 @@
 target
 example_projects/target
 router_test/
+expense_tracker/*

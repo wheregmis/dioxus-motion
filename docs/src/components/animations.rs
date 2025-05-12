@@ -276,7 +276,11 @@ fn SequenceAnimation() -> Element {
 #[component]
 pub fn Animations() -> Element {
     rsx! {
-        div { class: "space-y-12",
+        motion::div {
+            class: "space-y-12",
+            initial: Some(AnimationTarget::new().opacity(0.0).y(20.0)),
+            animate: Some(AnimationTarget::new().opacity(1.0).y(0.0)),
+            transition: Some(TransitionConfig::default().type_(TransitionType::Spring).stiffness(80.0).damping(18.0)),
             // Introduction
             section { class: "space-y-6",
                 h2 { class: "text-2xl font-semibold text-text-primary", "Interactive Animation Guide" }

@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use dioxus_motion::prelude::*;
 
 #[component]
 /// Renders a consistent footer component used across all pages.
@@ -22,18 +23,25 @@ use dioxus::prelude::*;
 /// ```
 pub fn Footer() -> Element {
     rsx! {
-        footer { class: "relative z-10 border-t border-primary/10 mt-auto py-8",
+        motion::footer {
+            class: "relative z-10 border-t border-primary/10 mt-auto py-8",
+            initial: Some(AnimationTarget::new().opacity(0.0).y(30.0)),
+            animate: Some(AnimationTarget::new().opacity(1.0).y(0.0)),
+            transition: Some(TransitionConfig::default().type_(TransitionType::Spring).stiffness(80.0).damping(18.0)),
             div { class: "container mx-auto px-4",
                 div { class: "flex flex-col items-center justify-center space-y-4 text-center",
                     // Made with love
                     p { class: "text-text-secondary",
                         "Made with "
-                        span { class: "text-red-500 animate-pulse", "♥" }
+                        motion::span { class: "text-red-500 animate-pulse", "♥" }
                         " using "
-                        a {
+                        motion::a {
                             href: "https://dioxuslabs.com",
                             target: "_blank",
                             class: "text-primary hover:text-primary/80 transition-colors",
+                            while_hover: Some(AnimationTarget::new().scale(1.08)),
+                            while_tap: Some(AnimationTarget::new().scale(0.96)),
+                            transition: Some(TransitionConfig::default().type_(TransitionType::Spring).stiffness(200.0).damping(18.0)),
                             "Dioxus"
                         }
                     }
@@ -43,24 +51,33 @@ pub fn Footer() -> Element {
                     }
                     // Links
                     div { class: "flex items-center space-x-4 text-sm text-text-secondary",
-                        a {
+                        motion::a {
                             href: "https://github.com/wheregmis/dioxus-motion",
                             target: "_blank",
                             class: "hover:text-text-primary transition-colors",
+                            while_hover: Some(AnimationTarget::new().scale(1.08)),
+                            while_tap: Some(AnimationTarget::new().scale(0.96)),
+                            transition: Some(TransitionConfig::default().type_(TransitionType::Spring).stiffness(200.0).damping(18.0)),
                             "GitHub"
                         }
-                        span { "·" }
-                        a {
+                        motion::span { "·" }
+                        motion::a {
                             href: "https://crates.io/crates/dioxus-motion",
                             target: "_blank",
                             class: "hover:text-text-primary transition-colors",
+                            while_hover: Some(AnimationTarget::new().scale(1.08)),
+                            while_tap: Some(AnimationTarget::new().scale(0.96)),
+                            transition: Some(TransitionConfig::default().type_(TransitionType::Spring).stiffness(200.0).damping(18.0)),
                             "Crates.io"
                         }
-                        span { "·" }
-                        a {
+                        motion::span { "·" }
+                        motion::a {
                             href: "https://docs.rs/dioxus-motion",
                             target: "_blank",
                             class: "hover:text-text-primary transition-colors",
+                            while_hover: Some(AnimationTarget::new().scale(1.08)),
+                            while_tap: Some(AnimationTarget::new().scale(0.96)),
+                            transition: Some(TransitionConfig::default().type_(TransitionType::Spring).stiffness(200.0).damping(18.0)),
                             "Documentation"
                         }
                     }
