@@ -4,19 +4,24 @@ use easer::functions::Easing;
 
 #[component]
 pub fn PathAnimation(path: &'static str, duration: f32) -> Element {
+    // Use motion hook for the dash offset animation
     let mut dash_offset = use_motion(1000.0f32);
-    let mut mounted = use_signal(|| true);
 
+    // Start the animation on mount
     use_effect(move || {
+        // Animate the dash offset from 1000 to 0
         dash_offset.animate_to(
             0.0,
             AnimationConfig::new(AnimationMode::Tween(Tween {
                 duration: Duration::from_secs_f32(duration),
-                easing: easer::functions::Cubic::ease_in_out,
+                easing: easer::functions::Linear::ease_in_out,
             }))
-            .with_loop(LoopMode::Infinite),
+            .with_loop(LoopMode::Infinite), // Make it loop infinitely
         );
     });
+
+    // Get the current dash offset value
+    let current_offset = use_memo(move || dash_offset.get_value());
 
     rsx! {
         div { class: "w-full h-48 flex items-center justify-center rounded-xl",
@@ -27,8 +32,7 @@ pub fn PathAnimation(path: &'static str, duration: f32) -> Element {
                     stroke: "url(#gradient)",
                     stroke_width: "4",
                     stroke_dasharray: "1000",
-                    style: "stroke-dashoffset: {dash_offset.get_value()};
-                            transition: stroke-dashoffset 0.1s linear;",
+                    style: "stroke-dashoffset: {current_offset}",
                 }
                 defs {
                     linearGradient {

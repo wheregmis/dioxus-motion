@@ -349,28 +349,17 @@ use dioxus_motion::prelude::*;
 
 #[component]
 fn AnimatedButton() -> Element {
-    let mut scale = use_motion(1.0f32);
-
-    let hover = move |_| {
-        scale.animate_to(
-            1.2,  // Target value
-            AnimationConfig::new(AnimationMode::Spring(Spring::default()))
-        );
-    };
-
-    let unhover = move |_| {
-        scale.animate_to(
-            1.0,  // Return to original size
-            AnimationConfig::new(AnimationMode::Spring(Spring::default()))
-        );
-    };
 
     rsx! {
-        button {
+        motion::button {
             class: "px-4 py-2 bg-blue-500 text-white rounded-sm",
-            style: "transform: scale({scale.get_value()})",
-            onmouseenter: hover,
-            onmouseleave: unhover,
+            while_hover: Some(AnimationTarget::new().scale(1.2)),
+            while_tap: Some(AnimationTarget::new().scale(0.95)),
+            transition: Some(
+                TransitionConfig::new(TransitionType::Spring)
+                    .stiffness(100.0)
+                    .damping(15.0)
+            ),
             "Hover me!"
         }
     }
@@ -380,8 +369,9 @@ fn AnimatedButton() -> Element {
                 }
 
                 p { class: "text-text-secondary mt-4",
-                    "This example creates a button that scales up when hovered and returns to its original size when unhovered, "
-                    "using a spring animation for a natural, bouncy effect."
+                    "This example creates a button that scales up when hovered and scales down when pressed, "
+                    "using motion primitives with spring animation for a natural, bouncy effect. "
+                    "Motion primitives provide a declarative way to define animations without manually managing state."
                 }
             }
 

@@ -1,6 +1,7 @@
 use crate::components::code_block::CodeBlock;
 use dioxus::prelude::*;
-use dioxus_motion::{animations::utils::Animatable, prelude::*};
+use dioxus_motion::{AnimationTarget, TransitionConfig, TransitionType};
+use dioxus_motion::{animations::utils::Animatable, animations::utils::LoopMode, prelude::*};
 use easer::functions::Easing;
 
 #[component]
@@ -32,39 +33,25 @@ fn AnimationStep(title: String, description: String, code: String, children: Ele
 
 #[component]
 fn BasicValueAnimation() -> Element {
-    let mut opacity = use_motion(0.0f32);
     let mut is_visible = use_signal(|| false);
-
-    use_effect(move || {
-        if *is_visible.read() {
-            opacity.animate_to(
-                1.0,
-                AnimationConfig::new(AnimationMode::Tween(Tween {
-                    duration: std::time::Duration::from_millis(500),
-                    easing: easer::functions::Cubic::ease_in_out,
-                })),
-            );
-        } else {
-            opacity.animate_to(
-                0.0,
-                AnimationConfig::new(AnimationMode::Tween(Tween {
-                    duration: std::time::Duration::from_millis(500),
-                    easing: easer::functions::Cubic::ease_in_out,
-                })),
-            );
-        }
-    });
 
     rsx! {
         div { class: "space-y-4 w-full text-center",
             button {
                 class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
                 onclick: move |_| is_visible.toggle(),
-                if *is_visible.read() { "Hide" } else { "Show" }
+                if is_visible() { "Hide" } else { "Show" }
             }
-            div {
+            motion::div {
                 class: "w-32 h-32 mx-auto bg-primary rounded-lg",
-                style: "opacity: {opacity.get_value()}"
+
+                // Animation properties
+                animate: Some(AnimationTarget::new().opacity(if is_visible() { 1.0 } else { 0.0 })),
+                transition: Some(
+                    TransitionConfig::default()
+                        .type_(TransitionType::Tween)
+                        .duration(0.5)
+                ),
             }
         }
     }
@@ -72,53 +59,32 @@ fn BasicValueAnimation() -> Element {
 
 #[component]
 fn TransformAnimation() -> Element {
-    let mut transform = use_motion(Transform::new(0.0, 0.0, 1.0, 0.0));
     let mut is_animated = use_signal(|| false);
-
-    use_effect(move || {
-        if *is_animated.read() {
-            transform.animate_to(
-                Transform::new(100.0, 50.0, 1.2, 45.0),
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 100.0,
-                    damping: 10.0,
-                    mass: 1.0,
-                    velocity: 0.0,
-                })),
-            );
-        } else {
-            transform.animate_to(
-                Transform::new(0.0, 0.0, 1.0, 0.0),
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 100.0,
-                    damping: 10.0,
-                    mass: 1.0,
-                    velocity: 0.0,
-                })),
-            );
-        }
-    });
-
-    let transform_style = use_memo(move || {
-        format!(
-            "transform: translate({}px, {}px) scale({}) rotate({}deg);",
-            transform.get_value().x,
-            transform.get_value().y,
-            transform.get_value().scale,
-            transform.get_value().rotation * 180.0 / std::f32::consts::PI
-        )
-    });
 
     rsx! {
         div { class: "space-y-4 w-full text-center",
             button {
                 class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
                 onclick: move |_| is_animated.toggle(),
-                if *is_animated.read() { "Reset" } else { "Animate" }
+                if is_animated() { "Reset" } else { "Animate" }
             }
-            div {
+            motion::div {
                 class: "w-32 h-32 mx-auto bg-primary rounded-lg",
-                style: "{transform_style}"
+
+                // Animation properties
+                animate: Some(
+                    if is_animated() {
+                        AnimationTarget::new().x(100.0).y(50.0).scale(1.2).rotate(45.0)
+                    } else {
+                        AnimationTarget::new().x(0.0).y(0.0).scale(1.0).rotate(0.0)
+                    }
+                ),
+                transition: Some(
+                    TransitionConfig::default()
+                        .type_(TransitionType::Spring)
+                        .stiffness(100.0)
+                        .damping(10.0)
+                ),
             }
         }
     }
@@ -248,39 +214,52 @@ fn CustomColorAnimation() -> Element {
 
 #[component]
 fn SequenceAnimation() -> Element {
-    let mut value = use_motion(0.0f32);
-    let mut scale = use_motion(1.0f32);
     let mut count = use_signal(|| 0);
+    let mut animate_count = use_signal(|| false);
 
-    let onclick = move |_| {
-        let sequence = AnimationSequence::new().then(
-            ((*count)() + 1) as f32 * 100.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 180.0,
-                damping: 12.0,
-                mass: 1.0,
-                velocity: 10.0,
-            })),
-        );
+    let increment = move |_| {
+        count.set(count() + 1);
 
-        scale.animate_to(
-            1.2,
-            AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-        );
-        value.animate_sequence(sequence);
-        count.set((*count)() + 1);
+        // Toggle animation state
+        animate_count.toggle();
     };
 
     rsx! {
         div { class: "space-y-4 w-full text-center",
-            div {
+            motion::div {
                 class: "text-4xl font-bold text-primary",
-                style: "transform: translateY({value.get_value()}px) scale({scale.get_value()})",
+
+                // Animation properties
+                animate: Some(
+                    if animate_count() {
+                        AnimationTarget::new().y(count() as f32 * 10.0).scale(1.2)
+                    } else {
+                        AnimationTarget::new().y(0.0).scale(1.0)
+                    }
+                ),
+                transition: Some(
+                    TransitionConfig::default()
+                        .type_(TransitionType::Spring)
+                        .stiffness(180.0)
+                        .damping(12.0)
+                ),
+
                 "Count: {count}"
             }
-            button {
-                class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
-                onclick: onclick,
+            motion::button {
+                class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary",
+
+                // Animation properties
+                while_hover: Some(AnimationTarget::new().scale(1.05)),
+                while_tap: Some(AnimationTarget::new().scale(0.95)),
+                transition: Some(
+                    TransitionConfig::default()
+                        .type_(TransitionType::Spring)
+                        .stiffness(300.0)
+                        .damping(20.0)
+                ),
+
+                onclick: increment,
                 "Increment"
             }
         }
@@ -338,39 +317,47 @@ pub fn Animations() -> Element {
             AnimationStep {
                 title: "1. Basic Tween Animation".to_string(),
                 description: "Time-based animations with precise control over duration and easing. Perfect for fade effects and smooth transitions.".to_string(),
-                code: r#"// Initialize the motion value
-let mut opacity = use_motion(0.0f32);
-
-// Option 1: Trigger on mount
-use_effect(move || {
-    opacity.animate_to(
-        1.0,
-        AnimationConfig::new(AnimationMode::Tween(Tween {
-            duration: Duration::from_millis(500),
-            easing: easer::functions::Cubic::ease_in_out,
-        })),
-    );
-});
-
-// Option 2: Trigger on state change
+                code: r#"// Option 1: Using motion primitives (recommended)
 let mut is_visible = use_signal(|| false);
+
+rsx! {
+    // Button to toggle visibility
+    button {
+        onclick: move |_| is_visible.toggle(),
+        if is_visible() { "Hide" } else { "Show" }
+    }
+
+    // Animated div with motion primitives
+    motion::div {
+        class: "my-element",
+
+        // Animation properties
+        animate: Some(AnimationTarget::new().opacity(if is_visible() { 1.0 } else { 0.0 })),
+        transition: Some(
+            TransitionConfig::default()
+                .type_(TransitionType::Tween)
+                .duration(0.5)
+        ),
+    }
+}
+
+// Option 2: Using the motion hook (for advanced use cases)
+let mut opacity = use_motion(0.0f32);
+let mut is_visible = use_signal(|| false);
+
 use_effect(move || {
-    if *is_visible.read() {
-        opacity.animate_to(1.0, /* config */);
+    if is_visible() {
+        opacity.animate_to(
+            1.0,
+            AnimationConfig::new(AnimationMode::Tween(Tween {
+                duration: Duration::from_millis(500),
+                easing: easer::functions::Cubic::ease_in_out,
+            })),
+        );
     } else {
         opacity.animate_to(0.0, /* config */);
     }
-});
-
-// Option 3: Trigger on event
-rsx! {
-    button {
-        onclick: move |_| {
-            opacity.animate_to(1.0, /* config */);
-        },
-        "Animate"
-    }
-}"#.to_string(),
+});"#.to_string(),
                 BasicValueAnimation {}
             }
 

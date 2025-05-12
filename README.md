@@ -217,12 +217,65 @@ Choose the right feature for your platform:
 
 ## 🚀 Quick Start
 
+### Motion Primitives (Recommended)
+
+```rust
+use dioxus::prelude::*;
+use dioxus_motion::prelude::*;
+
+#[component]
+fn FadeInCard() -> Element {
+    rsx! {
+        motion::div {
+            class: "p-6 bg-white rounded-lg shadow-md",
+            initial: Some(AnimationTarget::new().opacity(0.0).y(20.0)),
+            animate: Some(AnimationTarget::new().opacity(1.0).y(0.0)),
+            transition: Some(
+                TransitionConfig::default()
+                    .type_(TransitionType::Spring)
+                    .stiffness(100.0)
+                    .damping(15.0)
+            ),
+
+            h2 { "Welcome!" }
+            p { "This card fades in and slides up when it appears." }
+        }
+    }
+}
+```
+
+Motion primitives provide a declarative way to define animations without manually managing state. They're perfect for most UI animations.
+
 ## 🔄 Migration Guide (v0.3.0)
 
 - No breaking changes to the existing APIs. Just minor exports might change so just import prelude::\* if anything breaks on import
+- We recommend using motion primitives instead of the use_motion hook for most UI animations
 
 ```rust
 use dioxus_motion::prelude::*;
+
+// Recommended: Use motion primitives for UI animations
+#[component]
+fn AnimatedButton() -> Element {
+    rsx! {
+        motion::button {
+            class: "px-4 py-2 bg-blue-500 text-white rounded-md",
+            while_hover: Some(AnimationTarget::new().scale(1.1)),
+            while_tap: Some(AnimationTarget::new().scale(0.9)),
+            transition: Some(
+                TransitionConfig::default()
+                    .type_(TransitionType::Spring)
+                    .stiffness(100.0)
+                    .damping(15.0)
+            ),
+            "Click me"
+        }
+    }
+}
+
+// For advanced use cases: Use the use_motion hook
+let mut value = use_motion(0.0f32);
+value.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
 ```
 
 ## 🔄 Migration Guide (v0.2.0)

@@ -2,6 +2,95 @@ use crate::components::code_block::CodeBlock;
 use crate::components::guide_navigation::GuideNavigation;
 use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
+use dioxus_motion::{AnimationTarget, TransitionConfig, TransitionType};
+
+// Interactive examples
+#[component]
+fn FadeInHeading() -> Element {
+    rsx! {
+        motion::h1 {
+            class: "text-2xl font-bold text-text-primary",
+            initial: Some(AnimationTarget::new().opacity(0.0).y(-20.0)),
+            animate: Some(AnimationTarget::new().opacity(1.0).y(0.0)),
+            transition: Some(
+                TransitionConfig::default()
+                    .type_(TransitionType::Spring)
+                    .stiffness(100.0)
+                    .damping(15.0)
+            ),
+            "Hello, Motion!"
+        }
+    }
+}
+
+#[component]
+fn InteractiveButton() -> Element {
+    rsx! {
+        motion::button {
+            class: "px-4 py-2 bg-primary text-white rounded-md",
+            while_hover: Some(AnimationTarget::new().scale(1.05)),
+            while_tap: Some(AnimationTarget::new().scale(0.95)),
+            transition: Some(
+                TransitionConfig::default()
+                    .type_(TransitionType::Spring)
+                    .stiffness(300.0)
+                    .damping(20.0)
+            ),
+            "Hover & Click Me"
+        }
+    }
+}
+
+#[component]
+fn StaggeredCards() -> Element {
+    rsx! {
+        div { class: "grid grid-cols-1 md:grid-cols-3 gap-4",
+            // Card 1
+            motion::div {
+                class: "bg-dark-200/50 p-4 rounded-lg",
+                initial: Some(AnimationTarget::new().opacity(0.0).y(20.0)),
+                animate: Some(AnimationTarget::new().opacity(1.0).y(0.0)),
+                transition: Some(
+                    TransitionConfig::default()
+                        .type_(TransitionType::Spring)
+                        .stiffness(100.0)
+                        .damping(15.0)
+                ),
+                "Card 1"
+            }
+
+            // Card 2
+            motion::div {
+                class: "bg-dark-200/50 p-4 rounded-lg",
+                initial: Some(AnimationTarget::new().opacity(0.0).y(20.0)),
+                animate: Some(AnimationTarget::new().opacity(1.0).y(0.0)),
+                transition: Some(
+                    TransitionConfig::default()
+                        .type_(TransitionType::Spring)
+                        .stiffness(100.0)
+                        .damping(15.0)
+                        .delay(0.1)
+                ),
+                "Card 2"
+            }
+
+            // Card 3
+            motion::div {
+                class: "bg-dark-200/50 p-4 rounded-lg",
+                initial: Some(AnimationTarget::new().opacity(0.0).y(20.0)),
+                animate: Some(AnimationTarget::new().opacity(1.0).y(0.0)),
+                transition: Some(
+                    TransitionConfig::default()
+                        .type_(TransitionType::Spring)
+                        .stiffness(100.0)
+                        .damping(15.0)
+                        .delay(0.2)
+                ),
+                "Card 3"
+            }
+        }
+    }
+}
 
 #[component]
 pub fn MotionPrimitivesGuide() -> Element {

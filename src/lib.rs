@@ -11,7 +11,28 @@
 //! - Configurable animation loops
 //! - Animation sequences
 //!
-//! # Example
+//! # Examples
+//!
+//! ## Using Motion Primitives (Recommended)
+//! ```rust,no_run
+//! use dioxus::prelude::*;
+//! use dioxus_motion::prelude::*;
+//!
+//! #[component]
+//! fn AnimatedComponent() -> Element {
+//!     rsx! {
+//!         motion::div {
+//!             class: "my-component",
+//!             initial: Some(AnimationTarget::new().opacity(0.0).y(-20.0)),
+//!             animate: Some(AnimationTarget::new().opacity(1.0).y(0.0)),
+//!             transition: Some(TransitionConfig::new(TransitionType::Spring).stiffness(100.0).damping(15.0)),
+//!             "Hello, Motion!"
+//!         }
+//!     }
+//! }
+//! ```
+//!
+//! ## Using the Motion Hook (For Advanced Use Cases)
 //! ```rust,no_run
 //! use dioxus_motion::prelude::*;
 //!
@@ -676,8 +697,27 @@ impl<T: Animatable> AnimationManager<T> for Signal<Motion<T>> {
 /// it updates the state using the calculated time delta and dynamically adjusts the update interval to optimize CPU usage;
 /// when the animation is inactive, it waits longer before polling again.
 ///
-/// # Example
+/// # Examples
 ///
+/// ## Using Motion Primitives (Recommended)
+/// ```no_run
+/// use dioxus_motion::prelude::*;
+/// use dioxus::prelude::*;
+///
+/// fn app() -> Element {
+///     rsx! {
+///         motion::div {
+///             class: "my-component",
+///             initial: Some(AnimationTarget::new().y(0.0)),
+///             animate: Some(AnimationTarget::new().y(100.0)),
+///             transition: Some(TransitionConfig::new(TransitionType::Spring).stiffness(100.0).damping(15.0)),
+///             "Animated content"
+///         }
+///     }
+/// }
+/// ```
+///
+/// ## Using the Motion Hook (For Advanced Use Cases)
 /// ```no_run
 /// use dioxus_motion::prelude::*;
 /// use dioxus::prelude::*;
