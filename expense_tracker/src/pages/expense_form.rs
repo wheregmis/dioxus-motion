@@ -1,12 +1,10 @@
 use crate::Route;
-use dioxus::html::script::r#async;
 use dioxus::prelude::*;
-use dioxus_router::prelude::*;
 use std::sync::{Arc, Mutex};
 
 use crate::components::ExpenseForm;
+use crate::context::ExpenseContext;
 use crate::models::Expense;
-use crate::state::ExpenseContext;
 use crate::tailwind::include_tailwind_stylesheet;
 
 #[component]
@@ -18,6 +16,9 @@ pub fn ExpenseFormPage(id: Option<String>) -> Element {
     // State for UI
     let mut error_message = use_signal(|| None::<String>);
     let mut editing_expense = use_signal(|| None::<Expense>);
+
+    // Get the loading state
+    let loading = expense_context.lock().unwrap().loading();
 
     // Load the expense if we have an ID
     let expense_context_clone = expense_context.clone();
@@ -73,15 +74,13 @@ pub fn ExpenseFormPage(id: Option<String>) -> Element {
                 ctx.add_expense(expense).await
             };
 
-            // Always reload expenses after add/update
+            // Always reload expenses after add/update to ensure data consistency
             ctx.load_expenses().await;
 
             match result {
                 Ok(_) => {
                     tracing::info!("Expense saved successfully, navigating to Dashboard");
                     navigator.push(Route::Dashboard {});
-                    // Add a log to confirm navigation
-                    tracing::info!("Navigating to Dashboard");
                 }
                 Err(err) => {
                     tracing::error!("Error saving expense: {}", err);
@@ -151,14 +150,21 @@ pub fn ExpenseFormPage(id: Option<String>) -> Element {
                 }
 
                 // Expense form
-                {
-                    let expense_clone = editing_expense.read().clone();
-                    tracing::info!("Rendering ExpenseForm with expense: {:?}", expense_clone);
-                    rsx! {
-                        ExpenseForm {
-                            expense: expense_clone,
-                            on_save: handle_save_expense,
-                            on_cancel: handle_cancel_form,
+                if *loading.read() {
+                    div { class: "flex justify-center items-center p-8",
+                        div { class: "animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" }
+                        p { class: "ml-4 text-gray-600 dark:text-gray-300", "Loading expense data..." }
+                    }
+                } else {
+                    {
+                        let expense_clone = editing_expense.read().clone();
+                        tracing::info!("Rendering ExpenseForm with expense: {:?}", expense_clone);
+                        rsx! {
+                            ExpenseForm {
+                                expense: expense_clone,
+                                on_save: handle_save_expense,
+                                on_cancel: handle_cancel_form,
+                            }
                         }
                     }
                 }

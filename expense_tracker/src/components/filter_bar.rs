@@ -1,8 +1,8 @@
 use chrono::{Datelike, Local};
 use dioxus::prelude::*;
 
+use crate::context::FilterType;
 use crate::models::Category;
-use crate::state::FilterType;
 use crate::utils::{first_day_of_month, last_day_of_month, month_names, parse_currency};
 
 #[derive(Props, Clone, PartialEq)]
@@ -176,17 +176,13 @@ pub fn FilterBar(props: FilterBarProps) -> Element {
     };
 
     rsx! {
-        div {
-            class: "bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6 border border-gray-200 dark:border-gray-700",
+        div { class: "bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6 border border-gray-200 dark:border-gray-700",
 
-            div {
-                class: "flex flex-wrap items-center justify-between gap-4",
+            div { class: "flex flex-wrap items-center justify-between gap-4",
 
-                div {
-                    class: "flex-1 min-w-[200px]",
+                div { class: "flex-1 min-w-[200px]",
 
-                    label {
-                        class: "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1",
+                    label { class: "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1",
                         "Filter by"
                     }
 
@@ -195,34 +191,19 @@ pub fn FilterBar(props: FilterBarProps) -> Element {
                         value: "{filter_type}",
                         oninput: handle_filter_type_change,
 
-                        option {
-                            value: "none",
-                            "No filter"
-                        }
-                        option {
-                            value: "date",
-                            "Date"
-                        }
-                        option {
-                            value: "category",
-                            "Category"
-                        }
-                        option {
-                            value: "amount",
-                            "Amount"
-                        }
+                        option { value: "none", "No filter" }
+                        option { value: "date", "Date" }
+                        option { value: "category", "Category" }
+                        option { value: "amount", "Amount" }
                     }
                 }
 
                 if *show_date_filter.read() {
-                    div {
-                        class: "flex flex-wrap gap-4 flex-1 min-w-[300px]",
+                    div { class: "flex flex-wrap gap-4 flex-1 min-w-[300px]",
 
-                        div {
-                            class: "w-1/2 min-w-[120px]",
+                        div { class: "w-1/2 min-w-[120px]",
 
-                            label {
-                                class: "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1",
+                            label { class: "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1",
                                 "Year"
                             }
 
@@ -232,19 +213,14 @@ pub fn FilterBar(props: FilterBarProps) -> Element {
                                 oninput: handle_year_change,
 
                                 for year in (current_year - 5)..=(current_year) {
-                                    option {
-                                        value: "{year}",
-                                        "{year}"
-                                    }
+                                    option { value: "{year}", "{year}" }
                                 }
                             }
                         }
 
-                        div {
-                            class: "w-1/2 min-w-[120px]",
+                        div { class: "w-1/2 min-w-[120px]",
 
-                            label {
-                                class: "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1",
+                            label { class: "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1",
                                 "Month"
                             }
 
@@ -253,11 +229,8 @@ pub fn FilterBar(props: FilterBarProps) -> Element {
                                 value: "{selected_month}",
                                 oninput: handle_month_change,
 
-                                for (i, month) in month_names().iter().enumerate() {
-                                    option {
-                                        value: "{i + 1}",
-                                        "{month}"
-                                    }
+                                for (i , month) in month_names().iter().enumerate() {
+                                    option { value: "{i + 1}", "{month}" }
                                 }
                             }
                         }
@@ -265,11 +238,9 @@ pub fn FilterBar(props: FilterBarProps) -> Element {
                 }
 
                 if *show_category_filter.read() {
-                    div {
-                        class: "flex-1 min-w-[200px]",
+                    div { class: "flex-1 min-w-[200px]",
 
-                        label {
-                            class: "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1",
+                        label { class: "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1",
                             "Category"
                         }
 
@@ -279,24 +250,18 @@ pub fn FilterBar(props: FilterBarProps) -> Element {
                             oninput: handle_category_change,
 
                             for cat in Category::all() {
-                                option {
-                                    value: "{cat.display_name()}",
-                                    "{cat.display_name()}"
-                                }
+                                option { value: "{cat.display_name()}", "{cat.display_name()}" }
                             }
                         }
                     }
                 }
 
                 if *show_amount_filter.read() {
-                    div {
-                        class: "flex flex-wrap gap-4 flex-1 min-w-[300px]",
+                    div { class: "flex flex-wrap gap-4 flex-1 min-w-[300px]",
 
-                        div {
-                            class: "w-1/2 min-w-[120px]",
+                        div { class: "w-1/2 min-w-[120px]",
 
-                            label {
-                                class: "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1",
+                            label { class: "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1",
                                 "Min Amount"
                             }
 
@@ -309,11 +274,9 @@ pub fn FilterBar(props: FilterBarProps) -> Element {
                             }
                         }
 
-                        div {
-                            class: "w-1/2 min-w-[120px]",
+                        div { class: "w-1/2 min-w-[120px]",
 
-                            label {
-                                class: "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1",
+                            label { class: "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1",
                                 "Max Amount"
                             }
 
@@ -344,7 +307,7 @@ pub fn FilterBar(props: FilterBarProps) -> Element {
                                 stroke_linecap: "round",
                                 stroke_linejoin: "round",
                                 stroke_width: "2",
-                                d: "M6 18L18 6M6 6l12 12"
+                                d: "M6 18L18 6M6 6l12 12",
                             }
                         }
 

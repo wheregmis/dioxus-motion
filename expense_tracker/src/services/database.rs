@@ -6,32 +6,59 @@ use thiserror::Error;
 
 use crate::models::{Category, Expense};
 
-/// Database error type
-#[derive(Error, Debug)]
+/// Error type for database operations
+#[derive(Error, Debug, PartialEq, Clone)]
 pub enum DatabaseError {
+    /// SQLite database errors
     #[error("SQLite error: {0}")]
-    Sqlite(#[from] rusqlite::Error),
+    Sqlite(String),
 
+    /// File system I/O errors
     #[error("IO error: {0}")]
-    Io(#[from] std::io::Error),
+    Io(String),
 
+    /// JSON serialization/deserialization errors
     #[error("Serialization error: {0}")]
-    Serialization(#[from] serde_json::Error),
+    Serialization(String),
+}
+
+impl From<rusqlite::Error> for DatabaseError {
+    fn from(err: rusqlite::Error) -> Self {
+        DatabaseError::Sqlite(err.to_string())
+    }
+}
+
+impl From<std::io::Error> for DatabaseError {
+    fn from(err: std::io::Error) -> Self {
+        DatabaseError::Io(err.to_string())
+    }
+}
+
+impl From<serde_json::Error> for DatabaseError {
+    fn from(err: serde_json::Error) -> Self {
+        DatabaseError::Serialization(err.to_string())
+    }
 }
 
 /// Result type for database operations
 pub type DatabaseResult<T> = Result<T, DatabaseError>;
 
 /// Database connection wrapper
+/// Database service for expense tracker
+///
+/// This struct provides a low-level interface to the SQLite database
+/// used to store expense data. It handles raw database operations
+/// and serialization/deserialization of expense objects.
 #[derive(Debug)]
 pub struct Database {
+    /// The SQLite connection
     conn: Connection,
 }
 
 impl PartialEq for Database {
     fn eq(&self, _other: &Self) -> bool {
         // Databases are considered equal for the example
-        // This is a simplification
+        // This is a simplification for testing purposes
         true
     }
 }
@@ -187,7 +214,7 @@ impl Database {
         match expense {
             Ok(expense) => Ok(Some(expense)),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-            Err(e) => Err(DatabaseError::Sqlite(e)),
+            Err(e) => Err(DatabaseError::Sqlite(e.to_string())),
         }
     }
 

@@ -2,9 +2,9 @@ use crate::Route;
 use dioxus::prelude::*;
 
 use crate::components::primitives::{Button, ButtonVariant};
-use crate::components::{ExpenseChart, ExpenseList, FilterBar, SummaryView};
+use crate::components::{ChartPlaceholder, ExpenseList, FilterBar, SummaryView};
+use crate::context::{ExpenseContext, FilterType};
 use crate::models::Expense;
-use crate::state::{ExpenseContext, FilterType};
 use crate::tailwind::include_tailwind_stylesheet;
 use std::sync::{Arc, Mutex};
 
@@ -17,6 +17,19 @@ pub fn DashboardPage() -> Element {
     // State for UI
     let mut error_message = use_signal(|| None::<String>);
     let mut show_chart = use_signal(|| false);
+
+    // Get the loading state
+    let loading = expense_context.lock().unwrap().loading();
+
+    // Load expenses when the component mounts
+    let expense_context_for_load = expense_context.clone();
+    use_effect(move || {
+        let ctx = expense_context_for_load.clone();
+        spawn(async move {
+            let mut locked_ctx = ctx.lock().unwrap();
+            locked_ctx.load_expenses().await;
+        });
+    });
 
     // Handle editing an expense
     let handle_edit_expense = move |expense: Expense| {
@@ -210,10 +223,10 @@ pub fn DashboardPage() -> Element {
                 if *show_chart.read() {
                     div { class: "mb-6",
 
-                        ExpenseChart {
-                            total_amount,
-                            category_totals: category_totals.clone(),
-                            on_category_click: handle_category_click.clone(),
+                        // Use the ChartPlaceholder component
+                        ChartPlaceholder {
+                            title: Some("Expense Overview".to_string()),
+                            class: None,
                         }
                     }
                 }
@@ -221,23 +234,29 @@ pub fn DashboardPage() -> Element {
                 // Main content grid
                 div { class: "grid grid-cols-1 lg:grid-cols-3 gap-6",
 
-                    // Expense list
-                    div { class: "lg:col-span-2",
-
-                        ExpenseList {
-                            expenses: filtered_expenses.read().clone(),
-                            on_edit: handle_edit_expense,
-                            on_delete: handle_delete_expense,
+                    // Display loading indicator or content
+                    if *loading.read() {
+                        div { class: "col-span-full flex justify-center items-center p-8",
+                            div { class: "animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" }
+                            p { class: "ml-4 text-gray-600", "Loading expenses..." }
                         }
-                    }
+                    } else {
+                        // Expense list
+                        div { class: "lg:col-span-2",
+                            ExpenseList {
+                                expenses: filtered_expenses.read().clone(),
+                                on_edit: handle_edit_expense,
+                                on_delete: handle_delete_expense,
+                            }
+                        }
 
-                    // Summary view
-                    div { class: "lg:col-span-1",
-
-                        SummaryView {
-                            total_amount,
-                            category_totals,
-                            on_category_click: handle_category_click,
+                        // Summary view
+                        div { class: "lg:col-span-1",
+                            SummaryView {
+                                total_amount,
+                                category_totals,
+                                on_category_click: handle_category_click,
+                            }
                         }
                     }
                 }

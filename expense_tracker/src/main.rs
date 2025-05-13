@@ -3,15 +3,16 @@ use tailwind::include_tailwind_stylesheet;
 use tracing::Level;
 
 mod components;
+mod context;
 mod models;
 mod pages;
+mod repositories;
 mod services;
-mod state;
 mod tailwind;
 mod utils;
 
+use context::ExpenseContextProvider;
 use pages::{DashboardPage, ExpenseFormPage, NotFoundPage};
-use state::ExpenseContextProvider;
 
 fn main() {
     // Initialize logger

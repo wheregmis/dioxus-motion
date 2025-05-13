@@ -1826,6 +1826,7 @@ dependencies = [
  "dioxus-primitives",
  "dioxus-router",
  "dirs 5.0.1",
+ "fastrand",
  "log",
  "rand 0.9.1",
  "rusqlite",

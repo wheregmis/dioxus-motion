@@ -28,6 +28,8 @@ pub fn ExpenseItem(props: ExpenseItemProps) -> Element {
         props.on_delete.call(id_clone.clone());
     };
 
+    // Handle toggling the action menu (used in UI component below)
+    #[allow(unused_variables)]
     let toggle_actions = move |_: MouseEvent| {
         let current = *show_actions.read();
         show_actions.set(!current);

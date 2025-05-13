@@ -1,66 +1,74 @@
-use chrono::{Datelike, NaiveDate};
+use chrono::{Datelike, Local, NaiveDate};
 use dioxus::prelude::*;
 use std::path::PathBuf;
+use thiserror::Error;
 
 use crate::models::{Category, Expense};
-use crate::services::{ExpenseService, ExpenseServiceError};
+use crate::services::{Database, DatabaseError};
 use crate::utils::{first_day_of_current_month, last_day_of_current_month};
 
 /// Filter type for expenses
 #[derive(Clone, Debug, PartialEq)]
 pub enum FilterType {
+    /// No filter applied - show all expenses
     None,
+    /// Filter by date range
     DateRange(NaiveDate, NaiveDate),
+    /// Filter by category
     Category(Category),
+    /// Filter by amount range
     AmountRange(f64, f64),
 }
 
-/// Error type for expense state
-#[derive(Clone, Debug, PartialEq)]
-pub enum ExpenseStateError {
-    ServiceError(String),
+/// Error type for expense repository
+#[derive(Error, Debug, Clone, PartialEq)]
+pub enum ExpenseRepositoryError {
+    /// Error from the database layer
+    #[error("Database error: {0}")]
     DatabaseError(String),
+
+    /// Error in the expense validation logic
+    #[error("Invalid expense data: {0}")]
     ValidationError(String),
 }
 
-impl std::fmt::Display for ExpenseStateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ExpenseStateError::ServiceError(msg) => write!(f, "Service error: {}", msg),
-            ExpenseStateError::DatabaseError(msg) => write!(f, "Database error: {}", msg),
-            ExpenseStateError::ValidationError(msg) => write!(f, "Validation error: {}", msg),
-        }
+impl From<DatabaseError> for ExpenseRepositoryError {
+    fn from(err: DatabaseError) -> Self {
+        ExpenseRepositoryError::DatabaseError(err.to_string())
     }
 }
 
-impl From<ExpenseServiceError> for ExpenseStateError {
-    fn from(err: ExpenseServiceError) -> Self {
-        match err {
-            ExpenseServiceError::DatabaseError(msg) => ExpenseStateError::DatabaseError(msg),
-            ExpenseServiceError::ValidationError(msg) => ExpenseStateError::ValidationError(msg),
-        }
-    }
-}
+/// Result type for expense repository operations
+pub type ExpenseRepositoryResult<T> = Result<T, ExpenseRepositoryError>;
 
-/// The expense state
+/// Unified expense repository with reactive state
+///
+/// This repository serves as the main data access layer for the application,
+/// combining database operations with reactive state management through Signals.
+/// It handles CRUD operations on expenses, filtering, and validation.
 #[derive(Debug)]
-pub struct ExpenseState {
-    service: ExpenseService,
+pub struct ExpenseRepository {
+    /// Underlying database connection
+    database: Database,
+    /// Signal containing all expenses
     expenses: Signal<Vec<Expense>>,
+    /// Signal containing filtered expenses based on the current filter
     filtered_expenses: Signal<Vec<Expense>>,
+    /// Current filter being applied
     current_filter: Signal<FilterType>,
-    error: Signal<Option<ExpenseStateError>>,
+    /// Current error state, if any
+    error: Signal<Option<ExpenseRepositoryError>>,
+    /// Loading state indicator
     loading: Signal<bool>,
 }
 
-impl ExpenseState {
-    /// Creates a new expense state with a database at the specified path
-    pub fn new(db_path: PathBuf) -> Result<Self, ExpenseStateError> {
-        let service = ExpenseService::new(db_path)
-            .map_err(|e: ExpenseServiceError| -> ExpenseStateError { e.into() })?;
+impl ExpenseRepository {
+    /// Creates a new expense repository with a database at the specified path
+    pub fn new(db_path: PathBuf) -> ExpenseRepositoryResult<Self> {
+        let database = Database::new(db_path)?;
 
         Ok(Self {
-            service,
+            database,
             expenses: Signal::new(Vec::new()),
             filtered_expenses: Signal::new(Vec::new()),
             current_filter: Signal::new(FilterType::None),
@@ -69,13 +77,12 @@ impl ExpenseState {
         })
     }
 
-    /// Creates a new expense state with an in-memory database (for testing)
-    pub fn new_in_memory() -> Result<Self, ExpenseStateError> {
-        let service = ExpenseService::new_in_memory()
-            .map_err(|e: ExpenseServiceError| -> ExpenseStateError { e.into() })?;
+    /// Creates a new expense repository with an in-memory database (for testing)
+    pub fn new_in_memory() -> ExpenseRepositoryResult<Self> {
+        let database = Database::new_in_memory()?;
 
         Ok(Self {
-            service,
+            database,
             expenses: Signal::new(Vec::new()),
             filtered_expenses: Signal::new(Vec::new()),
             current_filter: Signal::new(FilterType::None),
@@ -89,14 +96,13 @@ impl ExpenseState {
         self.loading.set(true);
         self.error.set(None);
 
-        match self.service.get_all_expenses() {
+        match self.get_all_expenses() {
             Ok(expenses) => {
-                self.expenses.set(expenses.clone());
+                self.expenses.set(expenses);
                 self.apply_filter();
             }
             Err(err) => {
-                let error: ExpenseStateError = err.into();
-                self.error.set(Some(error));
+                self.error.set(Some(err));
             }
         }
 
@@ -104,11 +110,11 @@ impl ExpenseState {
     }
 
     /// Adds a new expense
-    pub async fn add_expense(&mut self, expense: Expense) -> Result<(), ExpenseStateError> {
+    pub async fn add_expense(&mut self, expense: Expense) -> ExpenseRepositoryResult<()> {
         self.loading.set(true);
         self.error.set(None);
 
-        match self.service.add_expense(expense.clone()) {
+        match self.validate_and_add_expense(expense.clone()) {
             Ok(_) => {
                 // Update the local state
                 let mut expenses = self.expenses.read().clone();
@@ -119,19 +125,18 @@ impl ExpenseState {
                 Ok(())
             }
             Err(err) => {
-                let error: ExpenseStateError = err.into();
-                self.error.set(Some(error.clone()));
-                Err(error)
+                self.error.set(Some(err.clone()));
+                Err(err)
             }
         }
     }
 
     /// Updates an existing expense
-    pub async fn update_expense(&mut self, expense: Expense) -> Result<(), ExpenseStateError> {
+    pub async fn update_expense(&mut self, expense: Expense) -> ExpenseRepositoryResult<()> {
         self.loading.set(true);
         self.error.set(None);
 
-        match self.service.update_expense(expense.clone()) {
+        match self.validate_and_update_expense(expense.clone()) {
             Ok(_) => {
                 // Update the local state
                 let mut expenses = self.expenses.read().clone();
@@ -144,19 +149,18 @@ impl ExpenseState {
                 Ok(())
             }
             Err(err) => {
-                let error: ExpenseStateError = err.into();
-                self.error.set(Some(error.clone()));
-                Err(error)
+                self.error.set(Some(err.clone()));
+                Err(err)
             }
         }
     }
 
     /// Deletes an expense
-    pub async fn delete_expense(&mut self, id: &str) -> Result<(), ExpenseStateError> {
+    pub async fn delete_expense(&mut self, id: &str) -> ExpenseRepositoryResult<()> {
         self.loading.set(true);
         self.error.set(None);
 
-        match self.service.delete_expense(id) {
+        match self.database.delete_expense(id) {
             Ok(_) => {
                 // Update the local state
                 let mut expenses = self.expenses.read().clone();
@@ -166,10 +170,50 @@ impl ExpenseState {
                 Ok(())
             }
             Err(err) => {
-                let error: ExpenseStateError = err.into();
+                let error = ExpenseRepositoryError::from(err);
                 self.error.set(Some(error.clone()));
                 Err(error)
             }
+        }
+    }
+
+    /// Gets an expense by ID (first from local state, then from database if needed)
+    pub async fn get_expense(&self, id: &str) -> ExpenseRepositoryResult<Option<Expense>> {
+        // Since we're using signals, we can modify them even with an immutable reference
+        let mut loading = self.loading;
+        let mut error = self.error;
+
+        loading.set(true);
+
+        // First try to find the expense in the local state
+        let local_expenses = self.expenses.read().clone();
+        if let Some(expense) = local_expenses.iter().find(|e| e.id == id) {
+            loading.set(false);
+            return Ok(Some(expense.clone()));
+        }
+
+        // If not found in local state, query the database
+        let result = match self.database.get_expense(id) {
+            Ok(expense) => Ok(expense),
+            Err(err) => Err(ExpenseRepositoryError::from(err)),
+        };
+
+        loading.set(false);
+
+        if let Err(ref err) = result {
+            error.set(Some(err.clone()));
+        } else {
+            error.set(None);
+        }
+
+        result
+    }
+
+    /// Gets all expenses
+    fn get_all_expenses(&self) -> ExpenseRepositoryResult<Vec<Expense>> {
+        match self.database.get_all_expenses() {
+            Ok(expenses) => Ok(expenses),
+            Err(err) => Err(ExpenseRepositoryError::from(err)),
         }
     }
 
@@ -208,6 +252,12 @@ impl ExpenseState {
     }
 
     /// Applies the current filter to the expenses
+    ///
+    /// This method updates the filtered_expenses signal based on the current filter.
+    /// It supports filtering by:
+    /// - Date range (expenses between two dates)
+    /// - Category (expenses in a specific category)
+    /// - Amount range (expenses within a min/max amount range)
     fn apply_filter(&mut self) {
         let expenses = self.expenses.read().clone();
         let filter = self.current_filter.read().clone();
@@ -221,6 +271,7 @@ impl ExpenseState {
             FilterType::Category(category) => expenses
                 .into_iter()
                 .filter(|e| match (&category, &e.category) {
+                    // Special handling for "Other" category
                     (Category::Other(_), Category::Other(_)) => true,
                     _ => e.category == category,
                 })
@@ -288,7 +339,7 @@ impl ExpenseState {
     }
 
     /// Gets the error signal
-    pub fn error(&self) -> Signal<Option<ExpenseStateError>> {
+    pub fn error(&self) -> Signal<Option<ExpenseRepositoryError>> {
         self.error
     }
 
@@ -297,48 +348,62 @@ impl ExpenseState {
         self.loading
     }
 
-    /// Gets an expense by ID
-    pub async fn get_expense(&self, id: &str) -> Result<Option<Expense>, ExpenseStateError> {
-        // Since we're using signals, we can modify them even with an immutable reference
-        let mut loading = self.loading;
-        let mut error = self.error;
+    // Private methods
 
-        tracing::info!("ExpenseState.get_expense called with ID: {}", id);
-        loading.set(true);
+    /// Validates and adds a new expense
+    fn validate_and_add_expense(&self, expense: Expense) -> ExpenseRepositoryResult<()> {
+        self.validate_expense(&expense)?;
+        self.database.add_expense(&expense)?;
+        Ok(())
+    }
 
-        // First try to find the expense in the local state
-        let local_expenses = self.expenses.read().clone();
-        if let Some(expense) = local_expenses.iter().find(|e| e.id == id) {
-            tracing::info!("Found expense in local state: {}", expense.title);
-            loading.set(false);
-            return Ok(Some(expense.clone()));
+    /// Validates and updates an existing expense
+    fn validate_and_update_expense(&self, expense: Expense) -> ExpenseRepositoryResult<()> {
+        self.validate_expense(&expense)?;
+
+        // Check if the expense exists
+        if self.database.get_expense(&expense.id)?.is_none() {
+            return Err(ExpenseRepositoryError::ValidationError(format!(
+                "Expense with ID {} does not exist",
+                expense.id
+            )));
         }
 
-        tracing::info!("Expense not found in local state, querying service");
-        let result: Result<Option<Expense>, ExpenseStateError> = match self.service.get_expense(id)
-        {
-            Ok(expense) => {
-                if let Some(ref e) = expense {
-                    tracing::info!("Service returned expense: {}", e.title);
-                } else {
-                    tracing::warn!("Service did not find expense with ID: {}", id);
-                }
-                Ok(expense)
-            }
-            Err(err) => {
-                tracing::error!("Service error getting expense: {}", err);
-                Err(err.into())
-            }
-        };
+        self.database.update_expense(&expense)?;
+        Ok(())
+    }
 
-        loading.set(false);
-
-        if let Err(ref err) = result {
-            error.set(Some(err.clone()));
-        } else {
-            error.set(None);
+    /// Validates an expense
+    fn validate_expense(&self, expense: &Expense) -> ExpenseRepositoryResult<()> {
+        // Validate title
+        if expense.title.trim().is_empty() {
+            return Err(ExpenseRepositoryError::ValidationError(
+                "Expense title cannot be empty".to_string(),
+            ));
         }
 
-        result
+        // Validate amount
+        if expense.amount <= 0.0 {
+            return Err(ExpenseRepositoryError::ValidationError(
+                "Expense amount must be greater than zero".to_string(),
+            ));
+        }
+
+        // Validate date (not in the future for new expenses)
+        let today = Local::now().date_naive();
+        if expense.date > today {
+            // For existing expenses (that we're updating), we'll allow future dates
+            // This allows for correcting errors in existing data
+            if self.database.get_expense(&expense.id)?.is_some() {
+                // Existing expense - allowing future date
+                tracing::warn!("Allowing future date for existing expense: {}", expense.id);
+            } else {
+                return Err(ExpenseRepositoryError::ValidationError(
+                    "Expense date cannot be in the future".to_string(),
+                ));
+            }
+        }
+
+        Ok(())
     }
 }

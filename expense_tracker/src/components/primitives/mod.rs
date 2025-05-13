@@ -1,5 +1,6 @@
 mod button;
 mod card;
 
-pub use button::{Button, ButtonProps, ButtonSize, ButtonVariant};
-pub use card::{Card, CardBody, CardFooter, CardHeader, CardProps};
+// Only export what's actually used in the application
+pub use button::{Button, ButtonVariant};
+pub use card::{Card, CardBody};
