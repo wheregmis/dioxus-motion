@@ -56,30 +56,37 @@ impl Category {
         }
     }
 
-    /// Returns the category from a string representation
-    pub fn from_string(s: &str) -> Self {
+    /// Returns a canonical value for the category (for use in select value attributes)
+    pub fn as_value(&self) -> String {
+        match self {
+            Self::Food => "food".to_string(),
+            Self::Transportation => "transportation".to_string(),
+            Self::Housing => "housing".to_string(),
+            Self::Utilities => "utilities".to_string(),
+            Self::Entertainment => "entertainment".to_string(),
+            Self::Healthcare => "healthcare".to_string(),
+            Self::Shopping => "shopping".to_string(),
+            Self::Education => "education".to_string(),
+            Self::Travel => "travel".to_string(),
+            Self::Other(name) => format!("other:{}", name),
+        }
+    }
+
+    /// Returns the category from a canonical value
+    pub fn from_value(s: &str) -> Self {
         match s {
-            "Food" => Self::Food,
-            "Transportation" => Self::Transportation,
-            "Housing" => Self::Housing,
-            "Utilities" => Self::Utilities,
-            "Entertainment" => Self::Entertainment,
-            "Healthcare" => Self::Healthcare,
-            "Shopping" => Self::Shopping,
-            "Education" => Self::Education,
-            "Travel" => Self::Travel,
-            s if s.starts_with("Other") => {
-                if s == "Other" {
-                    Self::Other("".to_string())
-                } else {
-                    // Extract the custom category name from "Other (name)"
-                    let name = s
-                        .strip_prefix("Other (")
-                        .and_then(|s| s.strip_suffix(")"))
-                        .unwrap_or("")
-                        .to_string();
-                    Self::Other(name)
-                }
+            "food" => Self::Food,
+            "transportation" => Self::Transportation,
+            "housing" => Self::Housing,
+            "utilities" => Self::Utilities,
+            "entertainment" => Self::Entertainment,
+            "healthcare" => Self::Healthcare,
+            "shopping" => Self::Shopping,
+            "education" => Self::Education,
+            "travel" => Self::Travel,
+            s if s.starts_with("other:") => {
+                let name = s.strip_prefix("other:").unwrap_or("").to_string();
+                Self::Other(name)
             }
             _ => Self::Other("".to_string()),
         }

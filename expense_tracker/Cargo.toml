@@ -11,19 +11,17 @@ dioxus = { git = "https://github.com/DioxusLabs/dioxus.git", branch = "main", fe
 dioxus-desktop = { git = "https://github.com/DioxusLabs/dioxus.git", branch = "main" }
 dioxus-motion = { path = "..", default-features = false, optional = true }
 chrono = { version = "0.4.31", features = ["serde"] }
-rusqlite = { version = "0.30.0", features = ["bundled", "chrono"] }
+rusqlite = { version = "0.35.0", features = ["bundled", "chrono"] }
 thiserror = "2.0.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 uuid = { version = "1.6.1", features = ["v4", "serde"] }
 rand = "0.9.1"
-log = "0.4"
 tracing = "0.1"
 dioxus-logger = { git = "https://github.com/DioxusLabs/dioxus.git", branch = "main" }
 console_error_panic_hook = "0.1"
-dioxus-router = { git = "https://github.com/DioxusLabs/dioxus.git", branch = "main" }
-charming = "0.3.1"
-dirs = "5.0.1"
+charming = "0.4.0"
+dirs = "6.0.0"
 dioxus-primitives = { git = "https://github.com/DioxusLabs/components.git", branch = "main" }
 fastrand = "2.3.0"
 

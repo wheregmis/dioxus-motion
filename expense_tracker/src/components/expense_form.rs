@@ -160,7 +160,7 @@ pub fn ExpenseForm(props: ExpenseFormProps) -> Element {
 
     let handle_category_change = {
         move |evt: Event<FormData>| {
-            category.set(Category::from_string(&evt.value()));
+            category.set(Category::from_value(&evt.value()));
         }
     };
 
@@ -238,12 +238,12 @@ pub fn ExpenseForm(props: ExpenseFormProps) -> Element {
                     }
                     select {
                         class: "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white",
-                        value: "{category.read().display_name()}",
+                        value: category.read().as_value(),
                         oninput: handle_category_change,
 
                         for cat in Category::all() {
                             option {
-                                value: "{cat.display_name()}",
+                                value: cat.as_value(),
                                 selected: *category.read() == cat,
                                 "{cat.display_name()}"
                             }

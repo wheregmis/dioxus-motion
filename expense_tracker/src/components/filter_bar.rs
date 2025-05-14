@@ -130,7 +130,7 @@ pub fn FilterBar(props: FilterBarProps) -> Element {
     };
 
     let handle_category_change = move |evt: Event<FormData>| {
-        let category = Category::from_string(&evt.value());
+        let category = Category::from_value(&evt.value());
         selected_category.set(category.clone());
         props.on_filter_change.call(FilterType::Category(category));
     };
@@ -174,6 +174,36 @@ pub fn FilterBar(props: FilterBarProps) -> Element {
         FilterType::Category(_) => "category",
         FilterType::AmountRange(_, _) => "amount",
     };
+
+    // Clone current_filter for use in use_effect to avoid moving props.current_filter
+    let current_filter = props.current_filter.clone();
+    use_effect(move || match &current_filter {
+        FilterType::DateRange(start_date, _) => {
+            selected_year.set(start_date.year());
+            selected_month.set(start_date.month());
+            show_date_filter.set(true);
+            show_category_filter.set(false);
+            show_amount_filter.set(false);
+        }
+        FilterType::Category(category) => {
+            selected_category.set(category.clone());
+            show_date_filter.set(false);
+            show_category_filter.set(true);
+            show_amount_filter.set(false);
+        }
+        FilterType::AmountRange(min, max) => {
+            min_amount.set(format!("{:.2}", min));
+            max_amount.set(format!("{:.2}", max));
+            show_date_filter.set(false);
+            show_category_filter.set(false);
+            show_amount_filter.set(true);
+        }
+        FilterType::None => {
+            show_date_filter.set(false);
+            show_category_filter.set(false);
+            show_amount_filter.set(false);
+        }
+    });
 
     rsx! {
         div { class: "bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6 border border-gray-200 dark:border-gray-700",
@@ -246,11 +276,15 @@ pub fn FilterBar(props: FilterBarProps) -> Element {
 
                         select {
                             class: "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white",
-                            value: "{selected_category.read().display_name()}",
+                            value: selected_category.read().as_value(),
                             oninput: handle_category_change,
 
                             for cat in Category::all() {
-                                option { value: "{cat.display_name()}", "{cat.display_name()}" }
+                                option {
+                                    value: cat.as_value(),
+                                    selected: *selected_category.read() == cat,
+                                    "{cat.display_name()}"
+                                }
                             }
                         }
                     }
@@ -291,7 +325,7 @@ pub fn FilterBar(props: FilterBarProps) -> Element {
                     }
                 }
 
-                if props.current_filter != FilterType::None {
+                if !matches!(&props.current_filter, FilterType::None) {
                     button {
                         class: "px-4 py-2 text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300",
                         onclick: handle_clear_filter,
