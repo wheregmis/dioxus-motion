@@ -1,3 +1,3 @@
 mod expense;
 
-pub use expense::{Category, Expense};
+pub use expense::{Budget, Category, Expense};

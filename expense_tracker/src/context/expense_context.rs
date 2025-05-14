@@ -123,6 +123,32 @@ impl ExpenseContext {
     pub async fn get_expense(&self, id: &str) -> Result<Option<Expense>, ExpenseRepositoryError> {
         self.repository.get_expense(id).await
     }
+
+    pub fn get_budgets(&self) -> std::collections::HashMap<Category, f64> {
+        Category::all()
+            .into_iter()
+            .map(|cat| {
+                let amt = self.repository.get_budget(&cat);
+                (cat, amt)
+            })
+            .collect()
+    }
+
+    pub fn get_remaining_budgets_for_month(
+        &self,
+        year: i32,
+        month: u32,
+    ) -> std::collections::HashMap<Category, f64> {
+        Category::all()
+            .into_iter()
+            .map(|cat| {
+                let amt = self
+                    .repository
+                    .get_remaining_budget_for_month(&cat, year, month);
+                (cat, amt)
+            })
+            .collect()
+    }
 }
 
 /// Provider component for the expense context

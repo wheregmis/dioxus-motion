@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 use std::path::PathBuf;
 use thiserror::Error;
 
-use crate::models::{Category, Expense};
+use crate::models::{Budget, Category, Expense};
 use crate::services::{Database, DatabaseError};
 use crate::utils::{first_day_of_current_month, last_day_of_current_month};
 
@@ -60,6 +60,7 @@ pub struct ExpenseRepository {
     error: Signal<Option<ExpenseRepositoryError>>,
     /// Loading state indicator
     loading: Signal<bool>,
+    budgets: std::collections::HashMap<Category, Budget>,
 }
 
 impl ExpenseRepository {
@@ -74,6 +75,7 @@ impl ExpenseRepository {
             current_filter: Signal::new(FilterType::None),
             error: Signal::new(None),
             loading: Signal::new(false),
+            budgets: Category::default_budgets(),
         })
     }
 
@@ -88,6 +90,7 @@ impl ExpenseRepository {
             current_filter: Signal::new(FilterType::None),
             error: Signal::new(None),
             loading: Signal::new(false),
+            budgets: Category::default_budgets(),
         })
     }
 
@@ -346,6 +349,31 @@ impl ExpenseRepository {
     /// Gets the loading signal
     pub fn loading(&self) -> Signal<bool> {
         self.loading
+    }
+
+    pub fn get_budget(&self, category: &Category) -> f64 {
+        self.budgets.get(category).map(|b| b.amount).unwrap_or(0.0)
+    }
+
+    pub fn set_budget(&mut self, category: Category, amount: f64) {
+        self.budgets.insert(category, Budget::new(amount));
+    }
+
+    pub fn get_remaining_budget_for_month(
+        &self,
+        category: &Category,
+        year: i32,
+        month: u32,
+    ) -> f64 {
+        let budget = self.get_budget(category);
+        let spent: f64 = self
+            .expenses
+            .read()
+            .iter()
+            .filter(|e| &e.category == category && e.date.year() == year && e.date.month() == month)
+            .map(|e| e.amount)
+            .sum();
+        budget - spent
     }
 
     // Private methods

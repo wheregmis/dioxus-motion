@@ -91,6 +91,22 @@ impl Category {
             _ => Self::Other("".to_string()),
         }
     }
+
+    pub fn default_budgets() -> std::collections::HashMap<Self, Budget> {
+        use Category::*;
+        let mut map = std::collections::HashMap::new();
+        map.insert(Food, Budget::new(400.0));
+        map.insert(Transportation, Budget::new(150.0));
+        map.insert(Housing, Budget::new(1200.0));
+        map.insert(Utilities, Budget::new(200.0));
+        map.insert(Entertainment, Budget::new(100.0));
+        map.insert(Healthcare, Budget::new(100.0));
+        map.insert(Shopping, Budget::new(200.0));
+        map.insert(Education, Budget::new(100.0));
+        map.insert(Travel, Budget::new(150.0));
+        map.insert(Other("".to_string()), Budget::new(100.0));
+        map
+    }
 }
 
 /// Represents an expense entry
@@ -141,5 +157,16 @@ impl Expense {
             created_at: now,
             updated_at: now,
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Budget {
+    pub amount: f64,
+}
+
+impl Budget {
+    pub fn new(amount: f64) -> Self {
+        Self { amount }
     }
 }

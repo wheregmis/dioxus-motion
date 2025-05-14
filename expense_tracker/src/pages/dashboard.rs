@@ -1,4 +1,5 @@
 use crate::Route;
+use chrono::Datelike;
 use dioxus::prelude::*;
 
 use crate::components::primitives::{Button, ButtonVariant};
@@ -96,10 +97,34 @@ pub fn DashboardPage() -> Element {
     // Get the current filter
     let current_filter = expense_context.lock().unwrap().current_filter();
 
+    // Get the current year and month
+    let now = chrono::Local::now().naive_local().date();
+    let current_year = now.year();
+    let current_month = now.month();
+    // Get budgets and remaining budgets
+    let budgets = expense_context.lock().unwrap().get_budgets();
+    let remaining_budgets = expense_context
+        .lock()
+        .unwrap()
+        .get_remaining_budgets_for_month(current_year, current_month);
+
     // Handle adding a new expense
     let handle_add_expense = move |_| {
         navigator.push(Route::ExpenseForm { id: None });
         tracing::info!("Navigating to ExpenseForm with id: None");
+    };
+
+    // Handler for budget change
+    let expense_context_clone5 = expense_context.clone();
+    let handle_budget_change = move |(category, new_budget): (crate::models::Category, f64)| {
+        let mut ctx = expense_context_clone5.lock().unwrap();
+        ctx.repository.set_budget(category, new_budget);
+    };
+
+    // Add a handler to navigate to the budget page
+    let navigator_clone = navigator.clone();
+    let handle_manage_budgets = move |_| {
+        navigator_clone.push(Route::BudgetPage {});
     };
 
     rsx! {
@@ -174,6 +199,13 @@ pub fn DashboardPage() -> Element {
                                     }
                                 }
                             }
+                        }
+
+                        Button {
+                            variant: ButtonVariant::Outline,
+                            motion: true,
+                            onclick: handle_manage_budgets,
+                            "Manage Budgets"
                         }
                     }
                 }
@@ -255,7 +287,10 @@ pub fn DashboardPage() -> Element {
                             SummaryView {
                                 total_amount,
                                 category_totals,
+                                budgets,
+                                remaining_budgets,
                                 on_category_click: handle_category_click,
+                                on_budget_change: handle_budget_change,
                             }
                         }
                     }

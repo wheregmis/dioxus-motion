@@ -1,3 +1,4 @@
+pub mod budget;
 mod dashboard;
 mod expense_form;
 mod not_found;

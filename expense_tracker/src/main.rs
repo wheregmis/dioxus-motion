@@ -12,7 +12,7 @@ mod tailwind;
 mod utils;
 
 use context::ExpenseContextProvider;
-use pages::{DashboardPage, ExpenseFormPage, NotFoundPage};
+use pages::{budget::BudgetPage, DashboardPage, ExpenseFormPage, NotFoundPage};
 
 fn main() {
     // Initialize logger
@@ -35,6 +35,8 @@ enum Route {
     ExpenseFormWithId { id: String },
     #[route("/:..route")]
     NotFound { route: Vec<String> },
+    #[route("/budget")]
+    BudgetPage {},
 }
 
 #[component]
