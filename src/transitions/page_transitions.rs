@@ -2,7 +2,7 @@ use crate::{AnimationConfig, AnimationManager, AnimationMode, Spring, use_motion
 use dioxus::prelude::*;
 use std::marker::PhantomData;
 
-use crate::core::transition::{PageTransitionConfig, TransitionVariant};
+use crate::core::transition::TransitionVariant;
 
 #[derive(Clone)]
 pub enum AnimatedRouterContext<R: Routable + PartialEq> {
