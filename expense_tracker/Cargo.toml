@@ -5,10 +5,7 @@ edition = "2021"
 description = "A desktop expense tracker application built with Dioxus"
 
 [dependencies]
-dioxus = { git = "https://github.com/DioxusLabs/dioxus.git", branch = "main", features = [
-    "router",
-] }
-dioxus-desktop = { git = "https://github.com/DioxusLabs/dioxus.git", branch = "main" }
+dioxus = { version = "0.7.0-alpha.0", features = ["router"] }
 dioxus-motion = { path = "..", default-features = false, optional = true }
 chrono = { version = "0.4.31", features = ["serde"] }
 rusqlite = { version = "0.35.0", features = ["bundled", "chrono"] }

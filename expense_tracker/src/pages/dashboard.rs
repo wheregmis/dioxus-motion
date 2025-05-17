@@ -43,19 +43,20 @@ pub fn DashboardPage() -> Element {
     let expense_context_clone = expense_context.clone();
     let handle_delete_expense = move |id: String| {
         error_message.set(None);
-
         let ctx = expense_context_clone.clone();
-        let future = async move {
-            let mut ctx = ctx.lock().unwrap();
-            match ctx.delete_expense(&id).await {
+        spawn(async move {
+            // Lock, get the future, then drop the lock before awaiting
+            let fut = {
+                let mut ctx_guard = ctx.lock().unwrap();
+                ctx_guard.delete_expense(&id).await
+            };
+            match fut {
                 Ok(_) => {}
                 Err(err) => {
                     error_message.set(Some(format!("Error: {}", err)));
                 }
             }
-        };
-
-        spawn(future);
+        });
     };
 
     // Handle filter changes

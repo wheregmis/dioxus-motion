@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
-use dioxus_motion::{AnimationTarget, TransitionConfig, TransitionType};
+use easer::functions::Easing;
 
 use crate::components::code_block::CodeBlock;
 use crate::components::guide_navigation::GuideNavigation;
@@ -22,16 +22,16 @@ pub fn BasicAnimationGuide() -> Element {
                     div { class: "grid grid-cols-1 md:grid-cols-2 gap-4",
                         // Key concept 1
                         div { class: "p-3 bg-dark-200/50 rounded-lg",
-                            p { class: "font-medium text-text-primary mb-1", "1. Use motion primitives" }
+                            p { class: "font-medium text-text-primary mb-1", "1. Create a motion value" }
                             code { class: "text-sm text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm",
-                                "motion::div"
+                                "let mut value = use_motion(0.0f32);"
                             }
                         }
                         // Key concept 2
                         div { class: "p-3 bg-dark-200/50 rounded-lg",
-                            p { class: "font-medium text-text-primary mb-1", "2. Define animation properties" }
+                            p { class: "font-medium text-text-primary mb-1", "2. Animate the value" }
                             code { class: "text-sm text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm",
-                                "initial: Some(AnimationTarget::new()...)"
+                                "value.animate_to(100.0, config);"
                             }
                         }
                     }
@@ -52,10 +52,23 @@ pub fn BasicAnimationGuide() -> Element {
 
 #[component]
 fn StepOne() -> Element {
-    let mut show_animated = use_signal(|| false);
+    let mut value = use_motion(0.0f32);
 
-    let toggle_animation = move |_| {
-        show_animated.set(!show_animated());
+    let animate = move |_| {
+        value.animate_to(
+            100.0,
+            AnimationConfig::new(AnimationMode::Tween(Tween {
+                duration: Duration::from_millis(1000),
+                easing: easer::functions::Linear::ease_in_out,
+            })),
+        );
+    };
+
+    let reset = move |_| {
+        value.animate_to(
+            0.0,
+            AnimationConfig::new(AnimationMode::Tween(Tween::default())),
+        );
     };
 
     rsx! {
@@ -64,7 +77,7 @@ fn StepOne() -> Element {
             div {
                 h2 { class: "text-xl font-semibold mb-2", "Step 1: Your First Animation" }
                 p { class: "text-text-secondary",
-                    "Let's create a simple animation that moves a progress bar from 0% to 100% using motion primitives."
+                    "Let's create a simple animation that moves a progress bar from 0% to 100%."
                 }
             }
 
@@ -76,41 +89,19 @@ fn StepOne() -> Element {
                     div { class: "bg-dark-200/50 p-3 rounded-lg",
                         CodeBlock {
                             code: r#"// 1. Import the prelude
-use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
-use dioxus_motion::{AnimationTarget, TransitionConfig, TransitionType};
 
-// 2. Create a component with motion primitives
-#[component]
-fn ProgressBar() -> Element {
-    let mut show_progress = use_signal(|| false);
+// 2. Create a motion value
+let mut value = use_motion(0.0f32);
 
-    let toggle = move |_| {
-        show_progress.set(!show_progress());
-    };
-
-    rsx! {
-        // 3. Use motion::div with animation properties
-        div { class: "relative h-16 bg-dark-200/30 rounded-lg overflow-hidden",
-            motion::div {
-                class: "absolute h-16 bg-primary/50 rounded-lg",
-                style: if show_progress() { "width: 100%" } else { "width: 0%" },
-                initial: Some(AnimationTarget::new().opacity(1.0)),
-                animate: Some(AnimationTarget::new().opacity(1.0)),
-                transition: Some(
-                    TransitionConfig::default()
-                        .type_(TransitionType::Tween)
-                        .duration(1.0)
-                ),
-            }
-        }
-
-        button {
-            onclick: toggle,
-            if show_progress() { "Reset" } else { "Animate" }
-        }
-    }
-}"#.to_string(),
+// 3. Animate the value
+value.animate_to(
+    100.0,
+    AnimationConfig::new(AnimationMode::Tween(Tween {
+        duration: Duration::from_millis(1000),
+        easing: easer::functions::Linear::ease_in_out,
+    })),
+);"#.to_string(),
                             language: "rust".to_string(),
                         }
                     }
@@ -119,10 +110,9 @@ fn ProgressBar() -> Element {
                     div { class: "mt-4 p-3 bg-primary/5 rounded-lg border border-primary/10",
                         h4 { class: "font-medium text-primary mb-2", "What's happening here?" }
                         ul { class: "list-disc list-inside text-text-secondary space-y-1 text-sm",
-                            li { "We use a motion::div component instead of a regular div" }
-                            li { "We define initial and animate states declaratively" }
-                            li { "The animation automatically runs when the animate property changes" }
-                            li { "No need to manually manage animation state or update values" }
+                            li { "We create a motion value starting at 0" }
+                            li { "We animate it to 100 over 1 second" }
+                            li { "We use a linear easing function for smooth motion" }
                         }
                     }
                 }
@@ -133,30 +123,28 @@ fn ProgressBar() -> Element {
                     div { class: "p-4 bg-dark-200/30 rounded-lg space-y-4",
                         // Animation preview
                         div { class: "relative h-16 bg-dark-200/30 rounded-lg overflow-hidden",
-                            motion::div {
+                            div {
                                 class: "absolute h-16 bg-primary/50 rounded-lg",
-                                style: if show_animated() { "width: 100%" } else { "width: 0%" },
-                                initial: Some(AnimationTarget::new().opacity(1.0)),
-                                animate: Some(AnimationTarget::new().opacity(1.0)),
-                                transition: Some(
-                                    TransitionConfig::default()
-                                        .type_(TransitionType::Tween)
-                                        .duration(1.0)
-                                ),
+                                style: "width: {value.get_value()}%"
                             }
                         }
 
                         // Value display
                         div { class: "text-sm text-text-secondary",
-                            "Current width: ", if show_animated() { "100%" } else { "0%" }
+                            "Current value: {value.get_value():.1}"
                         }
 
                         // Controls
                         div { class: "flex gap-2 mt-2",
                             button {
                                 class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
-                                onclick: toggle_animation,
-                                if show_animated() { "Reset" } else { "Animate" }
+                                onclick: animate,
+                                "Animate"
+                            }
+                            button {
+                                class: "px-4 py-2 bg-dark-200 hover:bg-dark-300 rounded-lg text-text-secondary transition-colors",
+                                onclick: reset,
+                                "Reset"
                             }
                         }
                     }
@@ -168,18 +156,12 @@ fn ProgressBar() -> Element {
                 h3 { class: "font-medium text-text-primary mb-2", "💡 Pro Tips" }
                 ul { class: "list-disc list-inside text-text-secondary space-y-2",
                     li {
-                        span { class: "font-medium", "Animation properties: " }
-                        "Use initial, animate, while_hover, while_tap, and exit to define different animation states."
+                        span { class: "font-medium", "Different value types: " }
+                        "You can animate f32, f64, Transform, Color, and custom types."
                     }
                     li {
-                        span { class: "font-medium", "Transition options: " }
-                        "Customize animations with ",
-                        code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm", "TransitionConfig" },
-                        " to control timing, easing, and physics."
-                    }
-                    li {
-                        span { class: "font-medium", "Available primitives: " }
-                        "The library provides motion versions of common HTML elements like div, button, span, etc."
+                        span { class: "font-medium", "Reading values: " }
+                        "Use ", code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm", "value.get_value()" }, " to access the current value at any time."
                     }
                 }
             }
@@ -189,20 +171,40 @@ fn ProgressBar() -> Element {
 
 #[component]
 fn StepTwo() -> Element {
-    let mut show_tween = use_signal(|| false);
-    let mut show_spring = use_signal(|| false);
+    let mut tween_value = use_motion(0.0f32);
+    let mut spring_value = use_motion(0.0f32);
 
-    let toggle_tween = move |_| {
-        show_tween.set(!show_tween());
+    let animate_tween = move |_| {
+        tween_value.animate_to(
+            100.0,
+            AnimationConfig::new(AnimationMode::Tween(Tween {
+                duration: Duration::from_millis(1000),
+                easing: easer::functions::Cubic::ease_in_out,
+            })),
+        );
     };
 
-    let toggle_spring = move |_| {
-        show_spring.set(!show_spring());
+    let animate_spring = move |_| {
+        spring_value.animate_to(
+            100.0,
+            AnimationConfig::new(AnimationMode::Spring(Spring {
+                stiffness: 100.0,
+                damping: 10.0,
+                mass: 1.0,
+                velocity: 0.0,
+            })),
+        );
     };
 
+    // Instead of using separate reset functions, let's simplify
     let reset_both = move |_| {
-        show_tween.set(false);
-        show_spring.set(false);
+        // Reset tween value
+        let tween_config = AnimationConfig::new(AnimationMode::Tween(Tween::default()));
+        tween_value.animate_to(0.0, tween_config);
+
+        // Reset spring value
+        let spring_config = AnimationConfig::new(AnimationMode::Spring(Spring::default()));
+        spring_value.animate_to(0.0, spring_config);
     };
 
     rsx! {
@@ -250,27 +252,22 @@ fn StepTwo() -> Element {
                     // Code snippet
                     div { class: "bg-dark-200/50 p-2 rounded-lg text-xs mb-3",
                         code { class: "text-primary/90",
-                            "motion::div {{\n  // Other properties...\n  transition: Some(\n    TransitionConfig::default()\n      .type_(TransitionType::Tween)\n      .duration(1.0)\n      .ease(\"cubic-bezier(0.65, 0, 0.35, 1)\")\n  )\n}}"
+                            "AnimationMode::Tween(Tween {{\n  duration: Duration::from_millis(1000),\n  easing: easer::functions::Cubic::ease_in_out\n}})"
                         }
                     }
 
                     // Preview
                     div { class: "relative h-12 bg-dark-200/30 rounded-lg overflow-hidden",
-                        motion::div {
+                        div {
                             class: "absolute h-12 bg-primary/50 rounded-lg",
-                            style: if show_tween() { "width: 100%" } else { "width: 0%" },
-                            transition: Some(
-                                TransitionConfig::default()
-                                    .type_(TransitionType::Tween)
-                                    .duration(1.0)
-                            ),
+                            style: "width: {tween_value.get_value()}%"
                         }
                     }
 
                     button {
                         class: "w-full mt-2 px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
-                        onclick: toggle_tween,
-                        if show_tween() { "Reset Tween" } else { "Run Tween" }
+                        onclick: animate_tween,
+                        "Run Tween"
                     }
                 }
 
@@ -281,28 +278,22 @@ fn StepTwo() -> Element {
                     // Code snippet
                     div { class: "bg-dark-200/50 p-2 rounded-lg text-xs mb-3",
                         code { class: "text-primary/90",
-                            "motion::div {{\n  // Other properties...\n  transition: Some(\n    TransitionConfig::default()\n      .type_(TransitionType::Spring)\n      .stiffness(100.0)  // Spring force\n      .damping(10.0)     // Bounce reduction\n  )\n}}"
+                            "AnimationMode::Spring(Spring {{\n  stiffness: 100.0,  // Spring force\n  damping: 10.0,     // Bounce reduction\n  mass: 1.0          // Weight\n}})"
                         }
                     }
 
                     // Preview
                     div { class: "relative h-12 bg-dark-200/30 rounded-lg overflow-hidden",
-                        motion::div {
+                        div {
                             class: "absolute h-12 bg-primary/50 rounded-lg",
-                            style: if show_spring() { "width: 100%" } else { "width: 0%" },
-                            transition: Some(
-                                TransitionConfig::default()
-                                    .type_(TransitionType::Spring)
-                                    .stiffness(100.0)
-                                    .damping(10.0)
-                            ),
+                            style: "width: {spring_value.get_value()}%"
                         }
                     }
 
                     button {
                         class: "w-full mt-2 px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
-                        onclick: toggle_spring,
-                        if show_spring() { "Reset Spring" } else { "Run Spring" }
+                        onclick: animate_spring,
+                        "Run Spring"
                     }
                 }
             }
@@ -334,31 +325,6 @@ fn StepTwo() -> Element {
                             li { "Draggable elements" }
                             li { "Interactive UI" }
                             li { "Natural-feeling animations" }
-                        }
-                    }
-                }
-
-                // Motion primitives vs use_motion hook
-                div { class: "mt-4 border-t border-primary/10 pt-4",
-                    h3 { class: "font-medium text-primary mb-2", "Motion Primitives vs use_motion Hook" }
-                    div { class: "grid grid-cols-1 md:grid-cols-2 gap-4 text-sm",
-                        div {
-                            p { class: "font-medium text-text-primary", "Use Motion Primitives for:" }
-                            ul { class: "list-disc list-inside text-text-secondary mt-1 space-y-1",
-                                li { "Most UI animations" }
-                                li { "Declarative, simple animations" }
-                                li { "Hover and tap interactions" }
-                                li { "When you want less boilerplate" }
-                            }
-                        }
-                        div {
-                            p { class: "font-medium text-text-primary", "Use use_motion Hook for:" }
-                            ul { class: "list-disc list-inside text-text-secondary mt-1 space-y-1",
-                                li { "Complex animation sequences" }
-                                li { "Custom animation logic" }
-                                li { "When you need direct control" }
-                                li { "Advanced use cases" }
-                            }
                         }
                     }
                 }

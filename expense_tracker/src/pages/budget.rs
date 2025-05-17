@@ -1,11 +1,14 @@
-use crate::context::ExpenseContext;
+use crate::components::primitives::ButtonVariant;
 use crate::models::Category;
+use crate::Route;
+use crate::{components::primitives::Button, context::ExpenseContext};
 use dioxus::prelude::*;
 use std::sync::{Arc, Mutex};
 
 #[component]
 pub fn BudgetPage() -> Element {
     let expense_context = use_context::<Arc<Mutex<ExpenseContext>>>();
+    let navigator = use_navigator();
     let budgets = expense_context.lock().unwrap().get_budgets();
     let mut editing = use_signal(|| None::<Category>);
     let mut input_value = use_signal(String::new);
@@ -68,6 +71,18 @@ pub fn BudgetPage() -> Element {
 
     rsx! {
         div { class: "max-w-2xl mx-auto p-8 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 mt-8",
+            div { class: "mb-4 flex justify-end",
+                Button {
+                    variant: ButtonVariant::Outline,
+                    motion: true,
+                    onclick: Some(
+                        EventHandler::new(move |_: MouseEvent| {
+                            navigator.push(Route::Dashboard {});
+                        }),
+                    ),
+                    "Back to Dashboard"
+                }
+            }
             h2 { class: "text-2xl font-bold mb-6 text-gray-800 dark:text-white", "Manage Budgets" }
             table { class: "w-full text-left border-collapse",
                 thead {
