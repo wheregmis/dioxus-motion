@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use dioxus_motion::prelude::spring::Spring;
 use dioxus_motion::{KeyframeAnimation, prelude::*};
 use easer::functions::Easing;
 
@@ -59,7 +60,7 @@ impl std::ops::Add for PetalTransform {
     }
 }
 
-impl dioxus_motion::animations::utils::Animatable for PetalTransform {
+impl dioxus_motion::prelude::utils::Animatable for PetalTransform {
     fn zero() -> Self {
         Self::zero()
     }
@@ -203,7 +204,7 @@ impl std::ops::Add for PetalTransform {
     }
 }
 
-impl dioxus_motion::animations::utils::Animatable for PetalTransform {
+impl dioxus_motion::prelude::utils::Animatable for PetalTransform {
     fn zero() -> Self {
         Self::zero()
     }

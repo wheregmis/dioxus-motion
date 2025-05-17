@@ -1,9 +1,0 @@
-{
-  "scripts": {
-    "css": "tailwindcss -i input.css -o ./assets/main.css"
-  },
-  "dependencies": {
-    "@tailwindcss/cli": "^4.1.4",
-    "tailwindcss": "^4.1.4"
-  }
-}

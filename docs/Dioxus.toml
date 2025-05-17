@@ -1,4 +1,6 @@
 [application]
+tailwind_input = "input.css"
+tailwind_output = "assets/main.css"
 
 [web.app]
 
@@ -6,7 +8,7 @@
 # HTML title tag content
 title = "Dioxus Motion 🚀"
 
-base_path = "dioxus-motion"
+# base_path = "dioxus-motion"
 
 # include `assets` in web platform
 [web.resource]
@@ -22,4 +24,3 @@ script = []
 # Javascript code file
 # serve: [dev-server] only
 script = []
-

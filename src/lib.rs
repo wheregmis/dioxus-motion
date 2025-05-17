@@ -11,7 +11,28 @@
 //! - Configurable animation loops
 //! - Animation sequences
 //!
-//! # Example
+//! # Examples
+//!
+//! ## Using Motion Primitives (Recommended)
+//! ```rust,no_run
+//! use dioxus::prelude::*;
+//! use dioxus_motion::prelude::*;
+//!
+//! #[component]
+//! fn AnimatedComponent() -> Element {
+//!     rsx! {
+//!         motion::div {
+//!             class: "my-component",
+//!             initial: Some(AnimationTarget::new().opacity(0.0).y(-20.0)),
+//!             animate: Some(AnimationTarget::new().opacity(1.0).y(0.0)),
+//!             transition: Some(TransitionConfig::new(TransitionType::Spring).stiffness(100.0).damping(15.0)),
+//!             "Hello, Motion!"
+//!         }
+//!     }
+//! }
+//! ```
+//!
+//! ## Using the Motion Hook (For Advanced Use Cases)
 //! ```rust,no_run
 //! use dioxus_motion::prelude::*;
 //!
@@ -30,39 +51,51 @@
 // #![deny(clippy::arithmetic_side_effects)] // Check for integer overflow
 #![deny(clippy::modulo_arithmetic)] // Check modulo operations
 #![deny(clippy::option_if_let_else)] // Prefer map/and_then
-#![deny(clippy::option_if_let_else)] // Prefer map/and_then
 
 use std::{cell::RefCell, sync::Arc};
 
-use animations::utils::{Animatable, AnimationMode};
+use core::utils::{Animatable, AnimationMode};
 use dioxus::prelude::*;
 pub use instant::Duration;
 
-pub mod animations;
+pub mod core;
+// Motion module with modular components
+pub mod motion;
 pub mod transitions;
 
 #[cfg(feature = "transitions")]
 pub use dioxus_motion_transitions_macro;
 
-pub use animations::platform::{MotionTime, TimeProvider};
-use animations::spring::{Spring, SpringState};
-use prelude::{AnimationConfig, LoopMode, Transform, Tween};
+pub use core::platform::{MotionTime, TimeProvider};
+use core::spring::{Spring, SpringState};
+use prelude::{AnimationConfig, LoopMode};
 use smallvec::SmallVec;
 
 // Re-exports
 pub mod prelude {
-    pub use crate::animations::utils::{AnimationConfig, AnimationMode, LoopMode};
-    pub use crate::animations::{
-        colors::Color, spring::Spring, transform::Transform, tween::Tween,
+    // Core animation types
+    pub use crate::core::colors;
+    pub use crate::core::colors::Color;
+    pub use crate::core::spring;
+    pub use crate::core::spring::Spring;
+    pub use crate::core::transform;
+    pub use crate::core::transform::Transform;
+    pub use crate::core::transition::{
+        AnimationTarget, EasingFunction, PageTransitionConfig, TransitionConfig, TransitionType,
+        TransitionVariant, Variants,
     };
+    pub use crate::core::tween;
+    pub use crate::core::tween::Tween;
+    pub use crate::core::utils::{Animatable, AnimationConfig, AnimationMode, LoopMode};
+    pub use crate::core::{platform, utils};
     #[cfg(feature = "transitions")]
     pub use crate::dioxus_motion_transitions_macro::MotionTransitions;
+    pub use crate::motion::elements as motion;
     #[cfg(feature = "transitions")]
     pub use crate::transitions::page_transitions::{AnimatableRoute, AnimatedOutlet};
-    #[cfg(feature = "transitions")]
-    pub use crate::transitions::utils::TransitionVariant;
     pub use crate::{
-        AnimationManager, AnimationSequence, Duration, Time, TimeProvider, use_motion,
+        AnimationManager, AnimationSequence, Duration, KeyframeAnimation, Time, TimeProvider,
+        use_motion,
     };
 }
 
@@ -673,8 +706,27 @@ impl<T: Animatable> AnimationManager<T> for Signal<Motion<T>> {
 /// it updates the state using the calculated time delta and dynamically adjusts the update interval to optimize CPU usage;
 /// when the animation is inactive, it waits longer before polling again.
 ///
-/// # Example
+/// # Examples
 ///
+/// ## Using Motion Primitives (Recommended)
+/// ```no_run
+/// use dioxus_motion::prelude::*;
+/// use dioxus::prelude::*;
+///
+/// fn app() -> Element {
+///     rsx! {
+///         motion::div {
+///             class: "my-component",
+///             initial: Some(AnimationTarget::new().y(0.0)),
+///             animate: Some(AnimationTarget::new().y(100.0)),
+///             transition: Some(TransitionConfig::new(TransitionType::Spring).stiffness(100.0).damping(15.0)),
+///             "Animated content"
+///         }
+///     }
+/// }
+/// ```
+///
+/// ## Using the Motion Hook (For Advanced Use Cases)
 /// ```no_run
 /// use dioxus_motion::prelude::*;
 /// use dioxus::prelude::*;
@@ -803,3 +855,7 @@ impl<T: Animatable> KeyframeAnimation<T> {
         self
     }
 }
+
+use crate::core::transform::Transform;
+use crate::core::tween::Tween;
+pub use core::transition::{AnimationTarget, TransitionConfig, TransitionType, Variants};

@@ -4,7 +4,6 @@ pub mod components;
 pub mod old_showcase;
 pub mod pages;
 pub mod utils;
-
 use docs::utils::router::Route;
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");

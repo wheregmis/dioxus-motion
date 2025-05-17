@@ -79,6 +79,12 @@ fn DocLayout(title: &'static str, description: &'static str, children: Element) 
                                         label: "Complex Animation Guide",
                                     }
 
+                                    SectionLink {
+                                        to: Route::MotionPrimitivesGuide {},
+                                        icon: "🧩",
+                                        label: "Motion Primitives Guide",
+                                    }
+
                                 }
                             }
                         }
@@ -343,28 +349,16 @@ use dioxus_motion::prelude::*;
 
 #[component]
 fn AnimatedButton() -> Element {
-    let mut scale = use_motion(1.0f32);
-
-    let hover = move |_| {
-        scale.animate_to(
-            1.2,  // Target value
-            AnimationConfig::new(AnimationMode::Spring(Spring::default()))
-        );
-    };
-
-    let unhover = move |_| {
-        scale.animate_to(
-            1.0,  // Return to original size
-            AnimationConfig::new(AnimationMode::Spring(Spring::default()))
-        );
-    };
-
     rsx! {
-        button {
+        motion::button {
             class: "px-4 py-2 bg-blue-500 text-white rounded-sm",
-            style: "transform: scale({scale.get_value()})",
-            onmouseenter: hover,
-            onmouseleave: unhover,
+            while_hover: Some(AnimationTarget::new().scale(1.2)),
+            while_tap: Some(AnimationTarget::new().scale(0.95)),
+            transition: Some(
+                TransitionConfig::new(TransitionType::Spring)
+                    .stiffness(100.0)
+                    .damping(15.0)
+            ),
             "Hover me!"
         }
     }
@@ -374,8 +368,9 @@ fn AnimatedButton() -> Element {
                 }
 
                 p { class: "text-text-secondary mt-4",
-                    "This example creates a button that scales up when hovered and returns to its original size when unhovered, "
-                    "using a spring animation for a natural, bouncy effect."
+                    "This example creates a button that scales up when hovered and scales down when pressed, "
+                    "using motion primitives with spring animation for a natural, bouncy effect. "
+                    "Motion primitives provide a declarative way to define animations without manually managing state."
                 }
             }
 
@@ -538,6 +533,35 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
                             div { class: "flex items-center text-xs text-primary/80",
                                 span { class: "mr-2 px-2 py-0.5 bg-primary/10 rounded-sm", "Beginner" }
                                 span { "10 min read" }
+                            }
+                        }
+                    }
+                }
+
+                // Motion Primitives Guide Card
+                div { class: "grid md:grid-cols-2 gap-6 mt-6",
+                    // Motion Primitives Guide Card
+                    Link {
+                        to: Route::MotionPrimitivesGuide {},
+                        class: "group relative overflow-hidden rounded-xl bg-dark-200/50 backdrop-blur-xs
+                               border border-primary/10 transition-all duration-300 hover:border-primary/20
+                               hover:shadow-lg hover:shadow-primary/10",
+                        div { class: "p-6",
+                            div { class: "flex items-center justify-between mb-4",
+                                h3 { class: "text-xl font-semibold text-text-primary",
+                                    "Motion Primitives Guide"
+                                }
+                                span { class: "text-primary transform transition-transform group-hover:translate-x-1",
+                                    "→"
+                                }
+                            }
+                            p { class: "text-text-secondary leading-relaxed mb-3",
+                                "Learn how to use motion primitives to create fluid, interactive animations with minimal code."
+                            }
+                            div { class: "flex items-center text-xs mb-2",
+                                span { class: "mr-2 px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-sm", "Experimental" }
+                                span { class: "mr-2 px-2 py-0.5 bg-primary/10 text-primary/80 rounded-sm", "Beginner-Friendly" }
+                                span { class: "text-primary/80", "8 min read" }
                             }
                         }
                     }

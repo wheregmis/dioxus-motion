@@ -1,6 +1,7 @@
 use crate::components::code_block::CodeBlock;
 use crate::components::guide_navigation::GuideNavigation;
 use dioxus::prelude::*;
+use dioxus_motion::prelude::*;
 
 #[component]
 /// Renders a card component showcasing a transition effect.
@@ -24,12 +25,14 @@ use dioxus::prelude::*;
 /// ```
 fn TransitionCard(name: &'static str, description: &'static str, example: &'static str) -> Element {
     rsx! {
-        div { class: "p-6 rounded-xl bg-dark-200/50 backdrop-blur-xs
-                    border border-primary/10 transition-all duration-300
-                    hover:border-primary/20 hover:shadow-lg hover:shadow-primary/10",
-            span { class: "block font-semibold text-text-primary mb-2", {name} }
-            p { class: "text-sm text-text-secondary mb-2", {description} }
-            p { class: "text-xs text-text-muted italic", {example} }
+        motion::div {
+            class: "p-6 rounded-xl bg-dark-200/50 backdrop-blur-xs border border-primary/10 transition-all duration-300 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/10",
+            while_hover: Some(AnimationTarget::new().scale(1.04)),
+            while_tap: Some(AnimationTarget::new().scale(0.97)),
+            transition: Some(TransitionConfig::default().type_(TransitionType::Spring).stiffness(200.0).damping(18.0)),
+            motion::span { class: "block font-semibold text-text-primary mb-2", {name} }
+            motion::p { class: "text-sm text-text-secondary mb-2", {description} }
+            motion::p { class: "text-xs text-text-muted italic", {example} }
         }
     }
 }
@@ -51,9 +54,15 @@ fn TransitionCard(name: &'static str, description: &'static str, example: &'stat
 /// ```
 pub fn PageTransition() -> Element {
     rsx! {
-        div { class: "space-y-12",
+        motion::div { class: "space-y-12",
+            initial: Some(AnimationTarget::new().opacity(0.0).y(20.0)),
+            animate: Some(AnimationTarget::new().opacity(1.0).y(0.0)),
+            transition: Some(TransitionConfig::default().type_(TransitionType::Spring).stiffness(80.0).damping(18.0)),
             // Introduction
-            section { class: "space-y-6",
+            motion::section { class: "space-y-6",
+                initial: Some(AnimationTarget::new().opacity(0.0).y(10.0)),
+                animate: Some(AnimationTarget::new().opacity(1.0).y(0.0)),
+                transition: Some(TransitionConfig::default().type_(TransitionType::Spring).stiffness(80.0).damping(18.0)),
                 h2 { class: "text-2xl font-semibold text-text-primary", "Page Transitions" }
                 p { class: "text-text-secondary leading-relaxed",
                     "Page transitions are a powerful way to enhance the user experience in your Dioxus application. "
@@ -81,7 +90,10 @@ pub fn PageTransition() -> Element {
             }
 
             // How It Works
-            section { class: "space-y-6",
+            motion::section { class: "space-y-6",
+                initial: Some(AnimationTarget::new().opacity(0.0).y(10.0)),
+                animate: Some(AnimationTarget::new().opacity(1.0).y(0.0)),
+                transition: Some(TransitionConfig::default().type_(TransitionType::Spring).stiffness(80.0).damping(18.0)),
                 h2 { class: "text-2xl font-semibold text-text-primary", "How It Works" }
                 p { class: "text-text-secondary",
                     "Dioxus Motion's page transitions work by intercepting route changes and applying animations during the transition. "
@@ -118,7 +130,10 @@ pub fn PageTransition() -> Element {
             }
 
             // Quick Start
-            section { class: "space-y-6",
+            motion::section { class: "space-y-6",
+                initial: Some(AnimationTarget::new().opacity(0.0).y(10.0)),
+                animate: Some(AnimationTarget::new().opacity(1.0).y(0.0)),
+                transition: Some(TransitionConfig::default().type_(TransitionType::Spring).stiffness(80.0).damping(18.0)),
                 h2 { class: "text-2xl font-semibold text-text-primary", "Implementation Steps" }
                 div { class: "bg-dark-200/50 backdrop-blur-xs rounded-xl p-6 border border-primary/10",
                     // Enable transitions feature
@@ -200,7 +215,10 @@ fn NavBar() -> Element {
             }
 
             // Available Transitions
-            section { class: "space-y-6",
+            motion::section { class: "space-y-6",
+                initial: Some(AnimationTarget::new().opacity(0.0).y(10.0)),
+                animate: Some(AnimationTarget::new().opacity(1.0).y(0.0)),
+                transition: Some(TransitionConfig::default().type_(TransitionType::Spring).stiffness(80.0).damping(18.0)),
                 h2 { class: "text-2xl font-semibold text-text-primary", "Available Transitions" }
                 div { class: "grid grid-cols-1 sm:grid-cols-2 gap-4",
                     TransitionCard {
@@ -237,7 +255,10 @@ fn NavBar() -> Element {
             }
 
             // Best Practices
-            section { class: "space-y-6",
+            motion::section { class: "space-y-6",
+                initial: Some(AnimationTarget::new().opacity(0.0).y(10.0)),
+                animate: Some(AnimationTarget::new().opacity(1.0).y(0.0)),
+                transition: Some(TransitionConfig::default().type_(TransitionType::Spring).stiffness(80.0).damping(18.0)),
                 h2 { class: "text-2xl font-semibold text-text-primary", "Best Practices" }
                 p { class: "text-text-secondary mb-4",
                     "Follow these guidelines to create effective and performant page transitions in your Dioxus application."
@@ -283,7 +304,10 @@ fn NavBar() -> Element {
             }
 
             // Example with Nested Routes
-            section { class: "space-y-6",
+            motion::section { class: "space-y-6",
+                initial: Some(AnimationTarget::new().opacity(0.0).y(10.0)),
+                animate: Some(AnimationTarget::new().opacity(1.0).y(0.0)),
+                transition: Some(TransitionConfig::default().type_(TransitionType::Spring).stiffness(80.0).damping(18.0)),
                 h2 { class: "text-2xl font-semibold text-text-primary", "Example with Nested Routes" }
                 div { class: "bg-dark-200/50 backdrop-blur-xs rounded-xl p-6 border border-primary/10",
                     CodeBlock {
@@ -320,7 +344,10 @@ enum Route {
             }
 
             // Troubleshooting
-            section { class: "space-y-6",
+            motion::section { class: "space-y-6",
+                initial: Some(AnimationTarget::new().opacity(0.0).y(10.0)),
+                animate: Some(AnimationTarget::new().opacity(1.0).y(0.0)),
+                transition: Some(TransitionConfig::default().type_(TransitionType::Spring).stiffness(80.0).damping(18.0)),
                 h2 { class: "text-2xl font-semibold text-text-primary", "Troubleshooting" }
                 p { class: "text-text-secondary mb-4",
                     "If you encounter issues with your page transitions, here are some common problems and their solutions."

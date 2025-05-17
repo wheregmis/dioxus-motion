@@ -74,14 +74,11 @@ pub fn GuideNavigation() -> Element {
 
     rsx! {
         // Navigation container
-        nav {
-            class: "mt-12 pt-6 border-t border-primary/10",
-            div {
-                class: "flex flex-col sm:flex-row justify-between items-center gap-4",
+        nav { class: "mt-12 pt-6 border-t border-primary/10",
+            div { class: "flex flex-col sm:flex-row justify-between items-center gap-4",
 
                 // Previous link
-                div {
-                    class: "w-full sm:w-auto",
+                div { class: "w-full sm:w-auto",
                     if let Some(prev) = prev_section {
                         Link {
                             to: prev.route.clone(),
@@ -92,14 +89,12 @@ pub fn GuideNavigation() -> Element {
                                    transition-all duration-300 group",
 
                             // Arrow icon
-                            span {
-                                class: "text-primary transform transition-transform group-hover:-translate-x-1",
+                            span { class: "text-primary transform transition-transform group-hover:-translate-x-1",
                                 "←"
                             }
 
                             // Label
-                            div {
-                                class: "flex flex-col",
+                            div { class: "flex flex-col",
                                 span { class: "text-xs text-text-muted", "Previous" }
                                 span { class: "text-sm font-medium", {prev.title} }
                             }
@@ -111,8 +106,7 @@ pub fn GuideNavigation() -> Element {
                 }
 
                 // Next link
-                div {
-                    class: "w-full sm:w-auto",
+                div { class: "w-full sm:w-auto",
                     if let Some(next) = next_section {
                         Link {
                             to: next.route.clone(),
@@ -123,15 +117,13 @@ pub fn GuideNavigation() -> Element {
                                    transition-all duration-300 group",
 
                             // Label
-                            div {
-                                class: "flex flex-col items-end",
+                            div { class: "flex flex-col items-end",
                                 span { class: "text-xs text-text-muted", "Next" }
                                 span { class: "text-sm font-medium", {next.title} }
                             }
 
                             // Arrow icon
-                            span {
-                                class: "text-primary transform transition-transform group-hover:translate-x-1",
+                            span { class: "text-primary transform transition-transform group-hover:translate-x-1",
                                 "→"
                             }
                         }

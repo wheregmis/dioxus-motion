@@ -1,5 +1,9 @@
 use dioxus::prelude::*;
+use dioxus_motion::core::spring::Spring;
+use dioxus_motion::prelude::tween::Tween;
 use dioxus_motion::prelude::*;
+use dioxus_motion::prelude::{AnimationConfig, AnimationMode, Duration, LoopMode};
+use dioxus_motion::use_motion;
 
 use crate::components::footer::Footer;
 use crate::old_showcase::components::{AnimatedFlower, SwingingCube, TransformAnimationShowcase};

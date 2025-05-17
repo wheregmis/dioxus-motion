@@ -47,9 +47,15 @@ impl Tween {
     ///
     /// # Arguments
     /// * `easing` - Function that takes (t, b, c, d) and returns interpolated value
-    pub fn with_easing(mut self, easing: fn(f32, f32, f32, f32) -> f32) -> Self {
+    pub fn easing(mut self, easing: fn(f32, f32, f32, f32) -> f32) -> Self {
         self.easing = easing;
         self
+    }
+
+    /// Deprecated: use `.easing(...)` instead.
+    #[deprecated(note = "Use .easing(...) instead for consistency with other builder methods.")]
+    pub fn with_easing(self, easing: fn(f32, f32, f32, f32) -> f32) -> Self {
+        self.easing(easing)
     }
 }
 
