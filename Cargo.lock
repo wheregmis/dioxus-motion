@@ -1012,7 +1012,9 @@ dependencies = [
  "instant",
  "smallvec",
  "spin_sleep",
+ "thiserror 2.0.12",
  "tokio",
+ "tracing",
  "wasm-bindgen",
  "web-sys",
 ]

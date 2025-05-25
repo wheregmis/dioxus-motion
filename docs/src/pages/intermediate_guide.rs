@@ -372,9 +372,10 @@ fn StepThree() -> Element {
     let start_keyframes = move |_| {
         let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
             .add_keyframe(0.0, 0.0, Some(easer::functions::Cubic::ease_in))
-            .add_keyframe(100.0, 0.3, Some(easer::functions::Elastic::ease_out))
-            .add_keyframe(50.0, 0.7, Some(easer::functions::Bounce::ease_out))
-            .add_keyframe(0.0, 1.0, Some(easer::functions::Back::ease_in_out));
+            .and_then(|kf| kf.add_keyframe(100.0, 0.3, Some(easer::functions::Elastic::ease_out)))
+            .and_then(|kf| kf.add_keyframe(50.0, 0.7, Some(easer::functions::Bounce::ease_out)))
+            .and_then(|kf| kf.add_keyframe(0.0, 1.0, Some(easer::functions::Back::ease_in_out)))
+            .unwrap();
 
         keyframe_value.animate_keyframes(keyframes);
     };
@@ -412,9 +413,10 @@ value.animate_sequence(sequence);
 // Keyframe animation
 let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
     .add_keyframe(0.0, 0.0, Some(easer::functions::Cubic::ease_in))
-    .add_keyframe(100.0, 0.3, Some(easer::functions::Elastic::ease_out))
-    .add_keyframe(50.0, 0.7, Some(easer::functions::Bounce::ease_out))
-    .add_keyframe(0.0, 1.0, Some(easer::functions::Back::ease_in_out));
+    .and_then(|kf| kf.add_keyframe(100.0, 0.3, Some(easer::functions::Elastic::ease_out)))
+    .and_then(|kf| kf.add_keyframe(50.0, 0.7, Some(easer::functions::Bounce::ease_out)))
+    .and_then(|kf| kf.add_keyframe(0.0, 1.0, Some(easer::functions::Back::ease_in_out)))
+    .unwrap();
 value.animate_keyframes(keyframes);"#.to_string(),
                         language: "rust".to_string(),
                     }
@@ -540,16 +542,28 @@ fn StepFour() -> Element {
                 0.0,
                 Some(easer::functions::Cubic::ease_in),
             )
-            .add_keyframe(
-                Transform::new(100.0, 50.0, 1.2, 180.0),
-                0.5,
-                Some(easer::functions::Elastic::ease_out),
-            )
-            .add_keyframe(
-                Transform::identity(),
-                1.0,
-                Some(easer::functions::Back::ease_in_out),
-            );
+            .and_then(|kf| {
+                kf.add_keyframe(
+                    Transform::new(100.0, 50.0, 1.2, 180.0),
+                    0.3,
+                    Some(easer::functions::Elastic::ease_out),
+                )
+            })
+            .and_then(|kf| {
+                kf.add_keyframe(
+                    Transform::new(50.0, 100.0, 0.8, 90.0),
+                    0.7,
+                    Some(easer::functions::Bounce::ease_out),
+                )
+            })
+            .and_then(|kf| {
+                kf.add_keyframe(
+                    Transform::identity(),
+                    1.0,
+                    Some(easer::functions::Back::ease_in_out),
+                )
+            })
+            .unwrap();
 
         let color_keyframes = KeyframeAnimation::new(Duration::from_secs(2))
             .add_keyframe(
@@ -557,16 +571,21 @@ fn StepFour() -> Element {
                 0.0,
                 Some(easer::functions::Cubic::ease_in),
             )
-            .add_keyframe(
-                Color::from_rgba(236, 72, 153, 255),
-                0.5,
-                Some(easer::functions::Cubic::ease_out),
-            )
-            .add_keyframe(
-                Color::from_rgba(59, 130, 246, 255),
-                1.0,
-                Some(easer::functions::Cubic::ease_in_out),
-            );
+            .and_then(|kf| {
+                kf.add_keyframe(
+                    Color::from_rgba(236, 72, 153, 255),
+                    0.5,
+                    Some(easer::functions::Cubic::ease_out),
+                )
+            })
+            .and_then(|kf| {
+                kf.add_keyframe(
+                    Color::from_rgba(59, 130, 246, 255),
+                    1.0,
+                    Some(easer::functions::Cubic::ease_in_out),
+                )
+            })
+            .unwrap();
 
         keyframe_transform.animate_keyframes(transform_keyframes);
         keyframe_color.animate_keyframes(color_keyframes);
@@ -744,16 +763,22 @@ let transform_keyframes = KeyframeAnimation::new(Duration::from_secs(2))
         0.0,
         Some(easer::functions::Cubic::ease_in),
     )
-    .add_keyframe(
+    .and_then(|kf| kf.add_keyframe(
         Transform::new(100.0, 50.0, 1.2, 180.0),
-        0.5,
+        0.3,
         Some(easer::functions::Elastic::ease_out),
-    )
-    .add_keyframe(
+    ))
+    .and_then(|kf| kf.add_keyframe(
+        Transform::new(50.0, 100.0, 0.8, 90.0),
+        0.7,
+        Some(easer::functions::Bounce::ease_out),
+    ))
+    .and_then(|kf| kf.add_keyframe(
         Transform::identity(),
         1.0,
         Some(easer::functions::Back::ease_in_out),
-    );
+    ))
+    .unwrap();
 
 // Color keyframes
 let color_keyframes = KeyframeAnimation::new(Duration::from_secs(2))
@@ -762,16 +787,17 @@ let color_keyframes = KeyframeAnimation::new(Duration::from_secs(2))
         0.0,
         Some(easer::functions::Cubic::ease_in),
     )
-    .add_keyframe(
+    .and_then(|kf| kf.add_keyframe(
         Color::from_rgba(236, 72, 153, 255),
         0.5,
         Some(easer::functions::Cubic::ease_out),
-    )
-    .add_keyframe(
+    ))
+    .and_then(|kf| kf.add_keyframe(
         Color::from_rgba(59, 130, 246, 255),
         1.0,
         Some(easer::functions::Cubic::ease_in_out),
-    );"#.to_string(),
+    ))
+    .unwrap();"#.to_string(),
                         language: "rust".to_string(),
                     }
                 }

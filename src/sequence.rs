@@ -80,6 +80,3 @@ impl<T: Animatable> Default for AnimationSequence<T> {
         }
     }
 }
-
-// ... existing code ...
-// Move all impls for AnimationSequence<T> and AnimationStep<T> here

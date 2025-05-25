@@ -1,11 +1,20 @@
 use crate::Duration;
 use crate::animations::utils::Animatable;
+use tracing::error;
+
+pub type EasingFn = fn(f32, f32, f32, f32) -> f32;
+
+#[derive(Debug, thiserror::Error)]
+pub enum KeyframeError {
+    #[error("Failed to compare keyframe offsets (possible NaN value)")]
+    InvalidOffset,
+}
 
 #[derive(Clone)]
 pub struct Keyframe<T: Animatable> {
     pub value: T,
     pub offset: f32,
-    pub easing: Option<fn(f32, f32, f32, f32) -> f32>,
+    pub easing: Option<EasingFn>,
 }
 
 #[derive(Clone)]
@@ -26,8 +35,8 @@ impl<T: Animatable> KeyframeAnimation<T> {
         mut self,
         value: T,
         offset: f32,
-        easing: Option<fn(f32, f32, f32, f32) -> f32>,
-    ) -> Self {
+        easing: Option<EasingFn>,
+    ) -> Result<Self, KeyframeError> {
         self.keyframes.push(Keyframe {
             value,
             offset: offset.clamp(0.0, 1.0),
@@ -36,8 +45,12 @@ impl<T: Animatable> KeyframeAnimation<T> {
         self.keyframes.sort_by(|a, b| {
             a.offset
                 .partial_cmp(&b.offset)
-                .expect("Failed to compare keyframe offsets - possible NaN value")
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
-        self
+        if self.keyframes.iter().any(|k| k.offset.is_nan()) {
+            error!("Keyframe sorting failed: InvalidOffset (NaN offset)");
+            return Err(KeyframeError::InvalidOffset);
+        }
+        Ok(self)
     }
 }

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Nested Layout fully fixed
 ### Changes:
 - Few code refactoring
+- BREAKING: `KeyframeAnimation::add_keyframe` now returns a `Result`, not `Self`. Chaining requires `.and_then(...).unwrap()` or error handling. All documentation and guides updated to reflect this.
 
 ## [0.3.1] - 2024-02-08
 - Rerelease
