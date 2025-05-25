@@ -32,9 +32,9 @@
 #![deny(clippy::option_if_let_else)] // Prefer map/and_then
 #![deny(clippy::option_if_let_else)] // Prefer map/and_then
 
-use std::{cell::RefCell, sync::Arc};
+use std::cell::RefCell;
 
-use animations::utils::{Animatable, AnimationMode};
+use animations::utils::Animatable;
 use dioxus::prelude::*;
 pub use instant::Duration;
 
@@ -49,9 +49,8 @@ pub mod transitions;
 pub use dioxus_motion_transitions_macro;
 
 pub use animations::platform::{MotionTime, TimeProvider};
-use animations::spring::{Spring, SpringState};
-use prelude::{AnimationConfig, LoopMode, Transform, Tween};
-use smallvec::SmallVec;
+use animations::spring::SpringState;
+use prelude::Transform;
 
 pub use keyframes::{Keyframe, KeyframeAnimation};
 pub use manager::AnimationManager;
