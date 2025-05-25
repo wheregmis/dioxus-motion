@@ -352,23 +352,28 @@ impl<T: Animatable> Motion<T> {
         if let Some(animation) = &self.keyframe_animation {
             let progress =
                 (self.elapsed.as_secs_f32() / animation.duration.as_secs_f32()).clamp(0.0, 1.0);
-            let (start, end) = animation
-                .keyframes
-                .windows(2)
-                .find(|w| progress >= w[0].offset && progress <= w[1].offset)
-                .map(|w| (&w[0], &w[1]))
-                .unwrap_or_else(|| {
-                    if progress <= animation.keyframes[0].offset {
-                        let first = &animation.keyframes[0];
-                        (first, first)
-                    } else {
-                        let last = animation
-                            .keyframes
-                            .last()
-                            .expect("Keyframe animation must contain at least one keyframe");
-                        (last, last)
-                    }
-                });
+            let (start, end) = if animation.keyframes.is_empty() {
+                // No keyframes, nothing to animate
+                return false;
+            } else {
+                animation
+                    .keyframes
+                    .windows(2)
+                    .find(|w| progress >= w[0].offset && progress <= w[1].offset)
+                    .map(|w| (&w[0], &w[1]))
+                    .unwrap_or_else(|| {
+                        if progress <= animation.keyframes[0].offset {
+                            let first = &animation.keyframes[0];
+                            (first, first)
+                        } else {
+                            let last = animation
+                                .keyframes
+                                .last()
+                                .expect("Keyframes vector should not be empty here");
+                            (last, last)
+                        }
+                    })
+            };
             let local_progress = if start.offset == end.offset {
                 1.0
             } else {
