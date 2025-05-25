@@ -1,4 +1,6 @@
+use dioxus::logger::tracing::error;
 use dioxus::prelude::*;
+use dioxus_motion::keyframes::KeyframeError;
 use dioxus_motion::{KeyframeAnimation, prelude::*};
 use easer::functions::Easing;
 
@@ -536,59 +538,14 @@ fn StepFour() -> Element {
     };
 
     let start_keyframes = move |_| {
-        let transform_keyframes = KeyframeAnimation::new(Duration::from_secs(2))
-            .add_keyframe(
-                Transform::identity(),
-                0.0,
-                Some(easer::functions::Cubic::ease_in),
-            )
-            .and_then(|kf| {
-                kf.add_keyframe(
-                    Transform::new(100.0, 50.0, 1.2, 180.0),
-                    0.3,
-                    Some(easer::functions::Elastic::ease_out),
-                )
-            })
-            .and_then(|kf| {
-                kf.add_keyframe(
-                    Transform::new(50.0, 100.0, 0.8, 90.0),
-                    0.7,
-                    Some(easer::functions::Bounce::ease_out),
-                )
-            })
-            .and_then(|kf| {
-                kf.add_keyframe(
-                    Transform::identity(),
-                    1.0,
-                    Some(easer::functions::Back::ease_in_out),
-                )
-            })
-            .unwrap();
-
-        let color_keyframes = KeyframeAnimation::new(Duration::from_secs(2))
-            .add_keyframe(
-                Color::from_rgba(59, 130, 246, 255),
-                0.0,
-                Some(easer::functions::Cubic::ease_in),
-            )
-            .and_then(|kf| {
-                kf.add_keyframe(
-                    Color::from_rgba(236, 72, 153, 255),
-                    0.5,
-                    Some(easer::functions::Cubic::ease_out),
-                )
-            })
-            .and_then(|kf| {
-                kf.add_keyframe(
-                    Color::from_rgba(59, 130, 246, 255),
-                    1.0,
-                    Some(easer::functions::Cubic::ease_in_out),
-                )
-            })
-            .unwrap();
-
-        keyframe_transform.animate_keyframes(transform_keyframes);
-        keyframe_color.animate_keyframes(color_keyframes);
+        match create_transform_keyframes() {
+            Ok(transform_keyframes) => keyframe_transform.animate_keyframes(transform_keyframes),
+            Err(e) => error!("Failed to create transform keyframes: {e}"),
+        }
+        match create_color_keyframes() {
+            Ok(color_keyframes) => keyframe_color.animate_keyframes(color_keyframes),
+            Err(e) => error!("Failed to create color keyframes: {e}"),
+        }
     };
 
     // Simplify with a single reset function that handles one value at a time
@@ -840,4 +797,57 @@ let color_keyframes = KeyframeAnimation::new(Duration::from_secs(2))
             }
         }
     }
+}
+
+fn create_transform_keyframes() -> Result<KeyframeAnimation<Transform>, KeyframeError> {
+    KeyframeAnimation::new(Duration::from_secs(2))
+        .add_keyframe(
+            Transform::identity(),
+            0.0,
+            Some(easer::functions::Cubic::ease_in),
+        )
+        .and_then(|kf| {
+            kf.add_keyframe(
+                Transform::new(100.0, 50.0, 1.2, 180.0),
+                0.3,
+                Some(easer::functions::Elastic::ease_out),
+            )
+        })
+        .and_then(|kf| {
+            kf.add_keyframe(
+                Transform::new(50.0, 100.0, 0.8, 90.0),
+                0.7,
+                Some(easer::functions::Bounce::ease_out),
+            )
+        })
+        .and_then(|kf| {
+            kf.add_keyframe(
+                Transform::identity(),
+                1.0,
+                Some(easer::functions::Back::ease_in_out),
+            )
+        })
+}
+
+fn create_color_keyframes() -> Result<KeyframeAnimation<Color>, KeyframeError> {
+    KeyframeAnimation::new(Duration::from_secs(2))
+        .add_keyframe(
+            Color::from_rgba(59, 130, 246, 255),
+            0.0,
+            Some(easer::functions::Cubic::ease_in),
+        )
+        .and_then(|kf| {
+            kf.add_keyframe(
+                Color::from_rgba(236, 72, 153, 255),
+                0.5,
+                Some(easer::functions::Cubic::ease_out),
+            )
+        })
+        .and_then(|kf| {
+            kf.add_keyframe(
+                Color::from_rgba(59, 130, 246, 255),
+                1.0,
+                Some(easer::functions::Cubic::ease_in_out),
+            )
+        })
 }
