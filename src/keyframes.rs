@@ -43,9 +43,13 @@ impl<T: Animatable> KeyframeAnimation<T> {
             easing,
         });
         self.keyframes.sort_by(|a, b| {
-            a.offset
-                .partial_cmp(&b.offset)
-                .unwrap_or(std::cmp::Ordering::Equal)
+            match a.offset.partial_cmp(&b.offset) {
+                Some(ordering) => ordering,
+                None => {
+                    error!("Failed to compare keyframe offsets: {} vs {}", a.offset, b.offset);
+                    std::cmp::Ordering::Equal
+                }
+            }
         });
         if self.keyframes.iter().any(|k| k.offset.is_nan()) {
             error!("Keyframe sorting failed: InvalidOffset (NaN offset)");
