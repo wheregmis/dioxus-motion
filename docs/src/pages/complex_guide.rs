@@ -414,21 +414,28 @@ fn StepThree() -> Element {
                 0.0,
                 Some(easer::functions::Cubic::ease_in),
             )
-            .add_keyframe(
-                PetalTransform::new(45.0, 1.2, 10.0, -10.0),
-                0.3,
-                Some(easer::functions::Elastic::ease_out),
-            )
-            .add_keyframe(
-                PetalTransform::new(-45.0, 1.5, -10.0, 10.0),
-                0.7,
-                Some(easer::functions::Bounce::ease_out),
-            )
-            .add_keyframe(
-                PetalTransform::zero(),
-                1.0,
-                Some(easer::functions::Back::ease_in_out),
-            );
+            .and_then(|kf| {
+                kf.add_keyframe(
+                    PetalTransform::new(45.0, 1.2, 10.0, -10.0),
+                    0.3,
+                    Some(easer::functions::Elastic::ease_out),
+                )
+            })
+            .and_then(|kf| {
+                kf.add_keyframe(
+                    PetalTransform::new(-45.0, 1.5, -10.0, 10.0),
+                    0.7,
+                    Some(easer::functions::Bounce::ease_out),
+                )
+            })
+            .and_then(|kf| {
+                kf.add_keyframe(
+                    PetalTransform::zero(),
+                    1.0,
+                    Some(easer::functions::Back::ease_in_out),
+                )
+            })
+            .unwrap();
 
         petal.animate_keyframes(keyframes);
     };
@@ -471,27 +478,11 @@ petal.animate_sequence(sequence);"#.to_string(),
                     h3 { class: "font-medium mb-2", "Keyframe Animation" }
                     CodeBlock {
                         code: r#"let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
-    .add_keyframe(
-        PetalTransform::zero(),
-        0.0,
-        Some(easer::functions::Cubic::ease_in),
-    )
-    .add_keyframe(
-        PetalTransform::new(45.0, 1.2, 10.0, -10.0),
-        0.3,
-        Some(easer::functions::Elastic::ease_out),
-    )
-    .add_keyframe(
-        PetalTransform::new(-45.0, 1.5, -10.0, 10.0),
-        0.7,
-        Some(easer::functions::Bounce::ease_out),
-    )
-    .add_keyframe(
-        PetalTransform::zero(),
-        1.0,
-        Some(easer::functions::Back::ease_in_out),
-    );
-
+    .add_keyframe(...)
+    .and_then(|kf| kf.add_keyframe(...))
+    .and_then(|kf| kf.add_keyframe(...))
+    .and_then(|kf| kf.add_keyframe(...))
+    .unwrap();
 petal.animate_keyframes(keyframes);"#.to_string(),
                         language: "rust".to_string(),
                     }

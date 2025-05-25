@@ -5,7 +5,6 @@ use easer::functions::Easing;
 #[component]
 pub fn PathAnimation(path: &'static str, duration: f32) -> Element {
     let mut dash_offset = use_motion(1000.0f32);
-    let mut mounted = use_signal(|| true);
 
     use_effect(move || {
         dash_offset.animate_to(
