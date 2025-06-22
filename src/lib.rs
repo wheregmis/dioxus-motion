@@ -31,8 +31,6 @@
 #![deny(clippy::modulo_arithmetic)] // Check modulo operations
 #![deny(clippy::option_if_let_else)] // Prefer map/and_then
 
-use std::cell::RefCell;
-
 use animations::utils::Animatable;
 use dioxus::prelude::*;
 pub use instant::Duration;
@@ -48,8 +46,6 @@ pub mod transitions;
 pub use dioxus_motion_transitions_macro;
 
 pub use animations::platform::{MotionTime, TimeProvider};
-use animations::spring::SpringState;
-use prelude::Transform;
 
 pub use keyframes::{Keyframe, KeyframeAnimation};
 pub use manager::AnimationManager;
@@ -158,10 +154,4 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
     });
 
     state
-}
-
-// Reuse allocations for common operations
-thread_local! {
-    static TRANSFORM_BUFFER: RefCell<Vec<Transform>> = RefCell::new(Vec::with_capacity(32));
-    static SPRING_BUFFER: RefCell<Vec<SpringState>> = RefCell::new(Vec::with_capacity(16));
 }
