@@ -165,86 +165,94 @@ impl<T: Animatable> Motion<T> {
         }
     }
 
-    #[cfg(feature = "web")]
     fn update_spring(&mut self, spring: Spring, dt: f32) -> SpringState {
         const VELOCITY_THRESHOLD: f32 = 0.001;
         const POSITION_THRESHOLD: f32 = 0.001;
         let stiffness = spring.stiffness;
         let damping = spring.damping;
         let mass_inv = 1.0 / spring.mass;
-        const FIXED_DT: f32 = 1.0 / 120.0;
-        let steps = ((dt / FIXED_DT) as usize).max(1);
-        let step_dt = dt / steps as f32;
-        for _ in 0..steps {
-            let delta = self.target.sub(&self.current);
-            if delta.magnitude() < POSITION_THRESHOLD
-                && self.velocity.magnitude() < VELOCITY_THRESHOLD
-            {
-                self.current = self.target;
-                self.velocity = T::zero();
-                return SpringState::Completed;
-            }
-            let force = delta.scale(stiffness);
-            let damping_force = self.velocity.scale(damping);
-            self.velocity = self
-                .velocity
-                .add(&(force.sub(&damping_force)).scale(mass_inv * step_dt));
-            self.current = self.current.add(&self.velocity.scale(step_dt));
-        }
-        self.check_spring_completion()
-    }
 
-    #[cfg(not(feature = "web"))]
-    fn update_spring(&mut self, spring: Spring, dt: f32) -> SpringState {
-        let stiffness = spring.stiffness;
-        let damping = spring.damping;
-        let mass_inv = 1.0 / spring.mass;
-        struct State<T> {
-            pos: T,
-            vel: T,
+        // Check for completion first
+        let delta = self.target.sub(&self.current);
+        if delta.magnitude() < POSITION_THRESHOLD && self.velocity.magnitude() < VELOCITY_THRESHOLD
+        {
+            self.current = self.target;
+            self.velocity = T::zero();
+            return SpringState::Completed;
         }
-        let derive = |state: &State<T>| -> State<T> {
-            let delta = self.target.sub(&state.pos);
-            let force = delta.scale(stiffness);
-            let damping_force = state.vel.scale(damping);
-            let acc = (force.sub(&damping_force)).scale(mass_inv);
-            State {
-                pos: state.vel.clone(),
-                vel: acc,
+
+        #[cfg(feature = "web")]
+        {
+            // Web: Use fixed timestep for better performance
+            const FIXED_DT: f32 = 1.0 / 120.0;
+            let steps = ((dt / FIXED_DT) as usize).max(1);
+            let step_dt = dt / steps as f32;
+
+            for _ in 0..steps {
+                let force = delta.scale(stiffness);
+                let damping_force = self.velocity.scale(damping);
+                self.velocity = self
+                    .velocity
+                    .add(&(force.sub(&damping_force)).scale(mass_inv * step_dt));
+                self.current = self.current.add(&self.velocity.scale(step_dt));
             }
-        };
-        let mut state = State {
-            pos: self.current.clone(),
-            vel: self.velocity.clone(),
-        };
-        let k1 = derive(&state);
-        let k2 = derive(&State {
-            pos: state.pos.add(&k1.pos.scale(dt * 0.5)),
-            vel: state.vel.add(&k1.vel.scale(dt * 0.5)),
-        });
-        let k3 = derive(&State {
-            pos: state.pos.add(&k2.pos.scale(dt * 0.5)),
-            vel: state.vel.add(&k2.vel.scale(dt * 0.5)),
-        });
-        let k4 = derive(&State {
-            pos: state.pos.add(&k3.pos.scale(dt)),
-            vel: state.vel.add(&k3.vel.scale(dt)),
-        });
-        const SIXTH: f32 = 1.0 / 6.0;
-        self.current = state.pos.add(
-            &(k1.pos
-                .add(&k2.pos.scale(2.0))
-                .add(&k3.pos.scale(2.0))
-                .add(&k4.pos))
-            .scale(dt * SIXTH),
-        );
-        self.velocity = state.vel.add(
-            &(k1.vel
-                .add(&k2.vel.scale(2.0))
-                .add(&k3.vel.scale(2.0))
-                .add(&k4.vel))
-            .scale(dt * SIXTH),
-        );
+        }
+
+        #[cfg(not(feature = "web"))]
+        {
+            // Native: Use RK4 for better accuracy
+            struct State<T> {
+                pos: T,
+                vel: T,
+            }
+
+            let derive = |state: &State<T>| -> State<T> {
+                let delta = self.target.sub(&state.pos);
+                let force = delta.scale(stiffness);
+                let damping_force = state.vel.scale(damping);
+                let acc = (force.sub(&damping_force)).scale(mass_inv);
+                State {
+                    pos: state.vel.clone(),
+                    vel: acc,
+                }
+            };
+
+            let mut state = State {
+                pos: self.current.clone(),
+                vel: self.velocity.clone(),
+            };
+
+            let k1 = derive(&state);
+            let k2 = derive(&State {
+                pos: state.pos.add(&k1.pos.scale(dt * 0.5)),
+                vel: state.vel.add(&k1.vel.scale(dt * 0.5)),
+            });
+            let k3 = derive(&State {
+                pos: state.pos.add(&k2.pos.scale(dt * 0.5)),
+                vel: state.vel.add(&k2.vel.scale(dt * 0.5)),
+            });
+            let k4 = derive(&State {
+                pos: state.pos.add(&k3.pos.scale(dt)),
+                vel: state.vel.add(&k3.vel.scale(dt)),
+            });
+
+            const SIXTH: f32 = 1.0 / 6.0;
+            self.current = state.pos.add(
+                &(k1.pos
+                    .add(&k2.pos.scale(2.0))
+                    .add(&k3.pos.scale(2.0))
+                    .add(&k4.pos))
+                .scale(dt * SIXTH),
+            );
+            self.velocity = state.vel.add(
+                &(k1.vel
+                    .add(&k2.vel.scale(2.0))
+                    .add(&k3.vel.scale(2.0))
+                    .add(&k4.vel))
+                .scale(dt * SIXTH),
+            );
+        }
+
         self.check_spring_completion()
     }
 

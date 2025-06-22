@@ -73,257 +73,135 @@ pub enum TransitionVariant {
     RotateScaleSlide,
 }
 
+// Helper functions to reduce repetition
+fn slide_horizontal(exit_x: f32, enter_x: f32) -> TransitionConfig {
+    let identity = Transform::identity();
+    TransitionConfig {
+        exit_start: identity,
+        exit_end: Transform::new(exit_x, 0.0, 1.0, 0.0),
+        enter_start: Transform::new(enter_x, 0.0, 1.0, 0.0),
+        enter_end: identity,
+    }
+}
+
+fn slide_vertical(exit_y: f32, enter_y: f32) -> TransitionConfig {
+    let identity = Transform::identity();
+    TransitionConfig {
+        exit_start: identity,
+        exit_end: Transform::new(0.0, exit_y, 1.0, 0.0),
+        enter_start: Transform::new(0.0, enter_y, 1.0, 0.0),
+        enter_end: identity,
+    }
+}
+
+fn scale_transition(exit_scale: f32, enter_scale: f32) -> TransitionConfig {
+    let identity = Transform::identity();
+    TransitionConfig {
+        exit_start: identity,
+        exit_end: Transform::new(0.0, 0.0, exit_scale, 0.0),
+        enter_start: Transform::new(0.0, 0.0, enter_scale, 0.0),
+        enter_end: identity,
+    }
+}
+
+fn rotate_transition(exit_rotation: f32, enter_rotation: f32) -> TransitionConfig {
+    let identity = Transform::identity();
+    TransitionConfig {
+        exit_start: identity,
+        exit_end: Transform::new(0.0, 0.0, 1.0, exit_rotation),
+        enter_start: Transform::new(0.0, 0.0, 1.0, enter_rotation),
+        enter_end: identity,
+    }
+}
+
+fn slide_diagonal(exit_x: f32, exit_y: f32, enter_x: f32, enter_y: f32) -> TransitionConfig {
+    let identity = Transform::identity();
+    TransitionConfig {
+        exit_start: identity,
+        exit_end: Transform::new(exit_x, exit_y, 1.0, 0.0),
+        enter_start: Transform::new(enter_x, enter_y, 1.0, 0.0),
+        enter_end: identity,
+    }
+}
+
 impl TransitionVariant {
     pub fn get_config(&self) -> TransitionConfig {
         let identity = Transform::identity();
 
         match self {
-            TransitionVariant::SlideLeft => {
-                TransitionConfig {
-                    exit_start: identity,                              // Start in place
-                    exit_end: Transform::new(-100.0, 0.0, 1.0, 0.0),   // Exit left
-                    enter_start: Transform::new(100.0, 0.0, 1.0, 0.0), // Enter from right
-                    enter_end: identity,                               // End in place
-                }
-            }
+            // Basic slides
+            TransitionVariant::SlideLeft => slide_horizontal(-100.0, 100.0),
+            TransitionVariant::SlideRight => slide_horizontal(100.0, -100.0),
+            TransitionVariant::SlideUp => slide_vertical(-100.0, 100.0),
+            TransitionVariant::SlideDown => slide_vertical(100.0, -100.0),
 
-            TransitionVariant::SlideRight => {
-                TransitionConfig {
-                    exit_start: identity,                               // Start in place
-                    exit_end: Transform::new(100.0, 0.0, 1.0, 0.0),     // Exit right
-                    enter_start: Transform::new(-100.0, 0.0, 1.0, 0.0), // Enter from left
-                    enter_end: identity,                                // End in place
-                }
-            }
-
-            TransitionVariant::SlideUp => {
-                TransitionConfig {
-                    exit_start: identity,                              // Start in place
-                    exit_end: Transform::new(0.0, -100.0, 1.0, 0.0),   // Exit up
-                    enter_start: Transform::new(0.0, 100.0, 1.0, 0.0), // Enter from bottom
-                    enter_end: identity,                               // End in place
-                }
-            }
-
-            TransitionVariant::SlideDown => {
-                TransitionConfig {
-                    exit_start: identity,                               // Start in place
-                    exit_end: Transform::new(0.0, 100.0, 1.0, 0.0),     // Exit down
-                    enter_start: Transform::new(0.0, -100.0, 1.0, 0.0), // Enter from top
-                    enter_end: identity,                                // End in place
-                }
-            }
-
+            // Fade transitions
             TransitionVariant::Fade => TransitionConfig {
-                exit_start: identity,                            // Start fully visible
-                exit_end: Transform::new(0.0, 0.0, 1.0, 0.0),    // Fade out completely
-                enter_start: Transform::new(0.0, 0.0, 1.0, 0.0), // Start invisible
-                enter_end: identity,                             // Fade in completely
+                exit_start: identity,
+                exit_end: Transform::new(0.0, 0.0, 1.0, 0.0),
+                enter_start: Transform::new(0.0, 0.0, 1.0, 0.0),
+                enter_end: identity,
             },
-            TransitionVariant::ScaleUp => TransitionConfig {
-                exit_start: identity,                            // Start in place
-                exit_end: Transform::new(0.0, 0.0, 0.0, 0.0),    // Shrink to nothing
-                enter_start: Transform::new(0.0, 0.0, 0.0, 0.0), // Start as nothing
-                enter_end: identity,                             // Grow to full size
-            },
-            TransitionVariant::ScaleDown => TransitionConfig {
-                exit_start: identity,                            // Start in place
-                exit_end: Transform::new(0.0, 0.0, 2.0, 0.0),    // Grow to twice size
-                enter_start: Transform::new(0.0, 0.0, 2.0, 0.0), // Start twice size
-                enter_end: identity,                             // Shrink to full size
-            },
-            TransitionVariant::FlipHorizontal => TransitionConfig {
-                exit_start: identity,                               // Start in place
-                exit_end: Transform::new(0.0, 0.0, 1.0, 180.0),     // Flip 180 degrees horizontally
-                enter_start: Transform::new(0.0, 0.0, 1.0, -180.0), // Start flipped 180 degrees horizontally
-                enter_end: identity,                                // End in place
-            },
-            TransitionVariant::FlipVertical => TransitionConfig {
-                exit_start: identity,                               // Start in place
-                exit_end: Transform::new(0.0, 0.0, 1.0, 180.0),     // Flip 180 degrees vertically
-                enter_start: Transform::new(0.0, 0.0, 1.0, -180.0), // Start flipped 180 degrees vertically
-                enter_end: identity,                                // End in place
-            },
-            TransitionVariant::RotateLeft => TransitionConfig {
-                exit_start: identity,                              // Start in place
-                exit_end: Transform::new(0.0, 0.0, 1.0, 90.0),     // Rotate 90 degrees to the left
-                enter_start: Transform::new(0.0, 0.0, 1.0, -90.0), // Start rotated 90 degrees to the right
-                enter_end: identity,                               // End in place
-            },
-            TransitionVariant::RotateRight => TransitionConfig {
-                exit_start: identity,                             // Start in place
-                exit_end: Transform::new(0.0, 0.0, 1.0, -90.0),   // Rotate 90 degrees to the right
-                enter_start: Transform::new(0.0, 0.0, 1.0, 90.0), // Start rotated 90 degrees to the left
-                enter_end: identity,                              // End in place
-            },
-            TransitionVariant::SlideUpFade => TransitionConfig {
-                exit_start: identity,                              // Start in place
-                exit_end: Transform::new(0.0, -100.0, 1.0, 0.0),   // Exit up
-                enter_start: Transform::new(0.0, 100.0, 1.0, 0.0), // Enter from bottom
-                enter_end: identity,                               // End in place
-            },
-            TransitionVariant::SlideDownFade => TransitionConfig {
-                exit_start: identity,                               // Start in place
-                exit_end: Transform::new(0.0, 100.0, 1.0, 0.0),     // Exit down
-                enter_start: Transform::new(0.0, -100.0, 1.0, 0.0), // Enter from top
-                enter_end: identity,                                // End in place
-            },
-            TransitionVariant::ScaleUpFade => TransitionConfig {
-                exit_start: identity,                            // Start in place
-                exit_end: Transform::new(0.0, 0.0, 0.0, 0.0),    // Shrink to nothing
-                enter_start: Transform::new(0.0, 0.0, 0.0, 0.0), // Start as nothing
-                enter_end: identity,                             // Grow to full size
-            },
-            TransitionVariant::BounceIn => TransitionConfig {
-                exit_start: identity,                              // Start in place
-                exit_end: Transform::new(0.0, 0.0, 1.0, 0.0),      // No change
-                enter_start: Transform::new(0.0, 100.0, 1.0, 0.0), // Start from bottom
-                enter_end: identity,                               // End in place
-            },
-            TransitionVariant::BounceOut => TransitionConfig {
-                exit_start: identity,                            // Start in place
-                exit_end: Transform::new(0.0, 100.0, 1.0, 0.0),  // Exit to bottom
-                enter_start: Transform::new(0.0, 0.0, 1.0, 0.0), // Start in place
-                enter_end: identity,                             // No change
-            },
-            TransitionVariant::ScaleDownFade => TransitionConfig {
-                exit_start: identity,                            // Start in place
-                exit_end: Transform::new(0.0, 0.0, 2.0, 0.0),    // Grow to twice size
-                enter_start: Transform::new(0.0, 0.0, 2.0, 0.0), // Start twice size
-                enter_end: identity,                             // Shrink to full size
-            },
-            TransitionVariant::RotateLeftFade => TransitionConfig {
-                exit_start: identity,                              // Start in place
-                exit_end: Transform::new(0.0, 0.0, 1.0, 90.0),     // Rotate 90 degrees to the left
-                enter_start: Transform::new(0.0, 0.0, 1.0, -90.0), // Start rotated 90 degrees to the right
-                enter_end: identity,                               // End in place
-            },
-            TransitionVariant::RotateRightFade => TransitionConfig {
-                exit_start: identity,                             // Start in place
-                exit_end: Transform::new(0.0, 0.0, 1.0, -90.0),   // Rotate 90 degrees to the right
-                enter_start: Transform::new(0.0, 0.0, 1.0, 90.0), // Start rotated 90 degrees to the left
-                enter_end: identity,                              // End in place
-            },
-            TransitionVariant::FlipHorizontalFade => TransitionConfig {
-                exit_start: identity,                               // Start in place
-                exit_end: Transform::new(0.0, 0.0, 1.0, 180.0),     // Flip 180 degrees horizontally
-                enter_start: Transform::new(0.0, 0.0, 1.0, -180.0), // Start flipped 180 degrees horizontally
-                enter_end: identity,                                // End in place
-            },
-            TransitionVariant::FlipVerticalFade => TransitionConfig {
-                exit_start: identity,                               // Start in place
-                exit_end: Transform::new(0.0, 0.0, 1.0, 180.0),     // Flip 180 degrees vertically
-                enter_start: Transform::new(0.0, 0.0, 1.0, -180.0), // Start flipped 180 degrees vertically
-                enter_end: identity,                                // End in place
-            },
-            TransitionVariant::ZoomIn => TransitionConfig {
-                exit_start: identity,                            // Start in place
-                exit_end: Transform::new(0.0, 0.0, 1.0, 0.0),    // No change
-                enter_start: Transform::new(0.0, 0.0, 0.0, 0.0), // Start as nothing
-                enter_end: identity,                             // Grow to full size
-            },
-            TransitionVariant::ZoomOut => TransitionConfig {
-                exit_start: identity,                          // Start in place
-                exit_end: Transform::new(0.0, 0.0, 2.0, 0.0),  // Grow to twice size
-                enter_start: identity,                         // Start in place
-                enter_end: Transform::new(0.0, 0.0, 0.0, 0.0), // Shrink to full size
-            },
-            TransitionVariant::SlideDiagonalUpLeft => TransitionConfig {
-                exit_start: identity,                                // Start in place
-                exit_end: Transform::new(-100.0, -100.0, 1.0, 0.0),  // Exit up and left
-                enter_start: Transform::new(100.0, 100.0, 1.0, 0.0), // Enter from bottom right
-                enter_end: identity,                                 // End in place
-            },
-            TransitionVariant::SlideDiagonalUpRight => TransitionConfig {
-                exit_start: identity,                                 // Start in place
-                exit_end: Transform::new(100.0, -100.0, 1.0, 0.0),    // Exit up and right
-                enter_start: Transform::new(-100.0, 100.0, 1.0, 0.0), // Enter from bottom left
-                enter_end: identity,                                  // End in place
-            },
-            TransitionVariant::SlideDiagonalDownLeft => TransitionConfig {
-                exit_start: identity,                                 // Start in place
-                exit_end: Transform::new(-100.0, 100.0, 1.0, 0.0),    // Exit down and left
-                enter_start: Transform::new(100.0, -100.0, 1.0, 0.0), // Enter from top right
-                enter_end: identity,                                  // End in place
-            },
-            TransitionVariant::SlideDiagonalDownRight => TransitionConfig {
-                exit_start: identity,                                  // Start in place
-                exit_end: Transform::new(100.0, 100.0, 1.0, 0.0),      // Exit down and right
-                enter_start: Transform::new(-100.0, -100.0, 1.0, 0.0), // Enter from top left
-                enter_end: identity,                                   // End in place
-            },
-            TransitionVariant::SpiralIn => TransitionConfig {
-                exit_start: identity,                            // Start in place
-                exit_end: Transform::new(0.0, 0.0, 1.0, 0.0),    // No change
-                enter_start: Transform::new(0.0, 0.0, 0.0, 0.0), // Start as nothing
-                enter_end: identity,                             // Grow to full size
-            },
-            TransitionVariant::SpiralOut => TransitionConfig {
-                exit_start: identity,                          // Start in place
-                exit_end: Transform::new(0.0, 0.0, 2.0, 0.0),  // Grow to twice size
-                enter_start: identity,                         // Start in place
-                enter_end: Transform::new(0.0, 0.0, 0.0, 0.0), // Shrink to full size
-            },
-            TransitionVariant::ElasticIn => TransitionConfig {
-                exit_start: identity,                              // Start in place
-                exit_end: Transform::new(0.0, 0.0, 1.0, 0.0),      // No change
-                enter_start: Transform::new(0.0, 100.0, 1.0, 0.0), // Start from bottom
-                enter_end: identity,                               // End in place
-            },
-            TransitionVariant::ElasticOut => TransitionConfig {
-                exit_start: identity,                            // Start in place
-                exit_end: Transform::new(0.0, 100.0, 1.0, 0.0),  // Exit to bottom
-                enter_start: Transform::new(0.0, 0.0, 1.0, 0.0), // Start in place
-                enter_end: identity,                             // No change
-            },
-            TransitionVariant::SwingIn => TransitionConfig {
-                exit_start: identity,                              // Start in place
-                exit_end: Transform::new(0.0, 0.0, 1.0, 0.0),      // No change
-                enter_start: Transform::new(0.0, 100.0, 1.0, 0.0), // Start from bottom
-                enter_end: identity,                               // End in place
-            },
-            TransitionVariant::SwingOut => TransitionConfig {
-                exit_start: identity,                            // Start in place
-                exit_end: Transform::new(0.0, 100.0, 1.0, 0.0),  // Exit to bottom
-                enter_start: Transform::new(0.0, 0.0, 1.0, 0.0), // Start in place
-                enter_end: identity,                             // No change
-            },
-            TransitionVariant::SlideLeftFade => TransitionConfig {
-                exit_start: identity,                              // Start in place
-                exit_end: Transform::new(-100.0, 0.0, 1.0, 0.0),   // Exit left
-                enter_start: Transform::new(100.0, 0.0, 1.0, 0.0), // Enter from right
-                enter_end: identity,                               // End in place
-            },
-            TransitionVariant::SlideRightFade => TransitionConfig {
-                exit_start: identity,                               // Start in place
-                exit_end: Transform::new(100.0, 0.0, 1.0, 0.0),     // Exit right
-                enter_start: Transform::new(-100.0, 0.0, 1.0, 0.0), // Enter from left
-                enter_end: identity,                                // End in place
-            },
-            TransitionVariant::ScaleRotateFade => TransitionConfig {
-                exit_start: identity,                            // Start in place
-                exit_end: Transform::new(0.0, 0.0, 1.0, 0.0),    // No change
-                enter_start: Transform::new(0.0, 0.0, 0.0, 0.0), // Start as nothing
-                enter_end: identity,                             // Grow to full size
-            },
-            TransitionVariant::SlideFadeRotate => TransitionConfig {
-                exit_start: identity,                            // Start in place
-                exit_end: Transform::new(0.0, 0.0, 1.0, 0.0),    // No change
-                enter_start: Transform::new(0.0, 0.0, 0.0, 0.0), // Start as nothing
-                enter_end: identity,                             // Grow to full size
-            },
-            TransitionVariant::ScaleFadeFlip => TransitionConfig {
-                exit_start: identity,                            // Start in place
-                exit_end: Transform::new(0.0, 0.0, 1.0, 0.0),    // No change
-                enter_start: Transform::new(0.0, 0.0, 0.0, 0.0), // Start as nothing
-                enter_end: identity,                             // Grow to full size
-            },
-            TransitionVariant::RotateScaleSlide => TransitionConfig {
-                exit_start: identity,                            // Start in place
-                exit_end: Transform::new(0.0, 0.0, 1.0, 0.0),    // No change
-                enter_start: Transform::new(0.0, 0.0, 0.0, 0.0), // Start as nothing
-                enter_end: identity,                             // Grow to full size
-            },
+
+            // Scale transitions
+            TransitionVariant::ScaleUp => scale_transition(0.0, 0.0),
+            TransitionVariant::ScaleDown => scale_transition(2.0, 2.0),
+            TransitionVariant::ZoomIn => scale_transition(1.0, 0.0),
+            TransitionVariant::ZoomOut => scale_transition(2.0, 0.0),
+
+            // Flip transitions
+            TransitionVariant::FlipHorizontal => rotate_transition(180.0, -180.0),
+            TransitionVariant::FlipVertical => rotate_transition(180.0, -180.0),
+
+            // Rotation transitions
+            TransitionVariant::RotateLeft => rotate_transition(90.0, -90.0),
+            TransitionVariant::RotateRight => rotate_transition(-90.0, 90.0),
+
+            // Combined slide transitions (reuse basic slides)
+            TransitionVariant::SlideUpFade => slide_vertical(-100.0, 100.0),
+            TransitionVariant::SlideDownFade => slide_vertical(100.0, -100.0),
+            TransitionVariant::SlideLeftFade => slide_horizontal(-100.0, 100.0),
+            TransitionVariant::SlideRightFade => slide_horizontal(100.0, -100.0),
+
+            // Combined scale transitions
+            TransitionVariant::ScaleUpFade => scale_transition(0.0, 0.0),
+            TransitionVariant::ScaleDownFade => scale_transition(2.0, 2.0),
+
+            // Combined rotation transitions
+            TransitionVariant::RotateLeftFade => rotate_transition(90.0, -90.0),
+            TransitionVariant::RotateRightFade => rotate_transition(-90.0, 90.0),
+
+            // Combined flip transitions
+            TransitionVariant::FlipHorizontalFade => rotate_transition(180.0, -180.0),
+            TransitionVariant::FlipVerticalFade => rotate_transition(180.0, -180.0),
+
+            // Diagonal slides
+            TransitionVariant::SlideDiagonalUpLeft => slide_diagonal(-100.0, -100.0, 100.0, 100.0),
+            TransitionVariant::SlideDiagonalUpRight => slide_diagonal(100.0, -100.0, -100.0, 100.0),
+            TransitionVariant::SlideDiagonalDownLeft => {
+                slide_diagonal(-100.0, 100.0, 100.0, -100.0)
+            }
+            TransitionVariant::SlideDiagonalDownRight => {
+                slide_diagonal(100.0, 100.0, -100.0, -100.0)
+            }
+
+            // Bounce/Elastic/Swing transitions (reuse vertical slides)
+            TransitionVariant::BounceIn => slide_vertical(0.0, 100.0),
+            TransitionVariant::BounceOut => slide_vertical(100.0, 0.0),
+            TransitionVariant::ElasticIn => slide_vertical(0.0, 100.0),
+            TransitionVariant::ElasticOut => slide_vertical(100.0, 0.0),
+            TransitionVariant::SwingIn => slide_vertical(0.0, 100.0),
+            TransitionVariant::SwingOut => slide_vertical(100.0, 0.0),
+
+            // Spiral transitions (reuse scale transitions)
+            TransitionVariant::SpiralIn => scale_transition(1.0, 0.0),
+            TransitionVariant::SpiralOut => scale_transition(2.0, 0.0),
+
+            // Complex combined transitions (simplified for now)
+            TransitionVariant::ScaleRotateFade => scale_transition(1.0, 0.0),
+            TransitionVariant::SlideFadeRotate => slide_vertical(0.0, 0.0),
+            TransitionVariant::ScaleFadeFlip => scale_transition(1.0, 0.0),
+            TransitionVariant::RotateScaleSlide => rotate_transition(0.0, 0.0),
         }
     }
 }
