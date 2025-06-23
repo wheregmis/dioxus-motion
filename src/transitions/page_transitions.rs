@@ -135,8 +135,8 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
         let spring = Spring {
             stiffness: 160.0, // Reduced from 180.0 for less aggressive movement
             damping: 25.0,    // Increased from 12.0 for faster settling
-            mass: 1.5,        // Slightly increased for more "weight"
-            velocity: 10.0,   // Keep at 0 for predictable start
+            mass: 1.0,        // Reduced for a lighter feel
+            velocity: 0.0,    // Set to 0 for a predictable start
         };
 
         // Animate FROM route
@@ -173,6 +173,7 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
             div {
                 class: "route-content from",
                 style: "
+                    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
                     transform: translate3d({from_transform.get_value().x}%, {from_transform.get_value().y}%, 0)
                              scale({from_transform.get_value().scale});
                     opacity: {from_opacity.get_value()};
