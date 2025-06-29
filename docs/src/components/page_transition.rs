@@ -236,6 +236,176 @@ fn NavBar() -> Element {
                 }
             }
 
+            // Configurable Animation Context
+            section { class: "space-y-6",
+                h2 { class: "text-2xl font-semibold text-text-primary", "Configurable Animation Context" }
+                p { class: "text-text-secondary",
+                    "Dioxus Motion allows you to customize the spring physics used in transitions through Dioxus's context system. "
+                    "This provides fine-grained control over animation behavior without modifying individual transition definitions."
+                }
+
+                div { class: "bg-dark-200/50 backdrop-blur-xs rounded-xl p-6 border border-primary/10 mb-6",
+                    h3 { class: "text-lg font-medium text-text-primary mb-4", "Basic Context Setup" }
+                    p { class: "text-text-secondary mb-4",
+                        "Provide custom spring configuration to all page transitions using a context provider:"
+                    }
+                    CodeBlock {
+                        code: r#"use dioxus::prelude::*;
+use dioxus_motion::prelude::*;
+
+fn main() {
+    dioxus::launch(|| {
+        rsx! {
+            head {
+                link { rel: "stylesheet", href: MAIN_CSS }
+            }
+            App {}
+        }
+    });
+}
+
+#[component]
+fn App() -> Element {
+    // Define custom spring configuration
+    let spring = use_signal(|| Spring {
+        stiffness: 200.0,  // Higher = faster, snappier
+        damping: 30.0,     // Higher = less bounce
+        mass: 0.8,         // Lower = more responsive
+        velocity: 0.0,     // Initial velocity
+    });
+
+    // Provide spring context to all child components
+    use_context_provider(|| spring);
+
+    rsx! {
+        Router::<Route> {}
+    }
+}"#.to_string(),
+                        language: "rust".to_string(),
+                    }
+                }
+
+                div { class: "grid grid-cols-1 md:grid-cols-2 gap-6",
+                    // Spring Parameters
+                    div { class: "space-y-4",
+                        h3 { class: "text-lg font-medium text-text-primary mb-3", "Spring Parameters" }
+                        div { class: "space-y-3",
+                            div { class: "p-3 bg-dark-100/30 rounded-lg",
+                                h4 { class: "font-medium text-primary text-sm", "Stiffness (default: 160.0)" }
+                                p { class: "text-xs text-text-secondary mt-1",
+                                    "Controls how quickly the animation reaches its target. Higher values = faster, more aggressive motion."
+                                }
+                            }
+                            div { class: "p-3 bg-dark-100/30 rounded-lg",
+                                h4 { class: "font-medium text-primary text-sm", "Damping (default: 25.0)" }
+                                p { class: "text-xs text-text-secondary mt-1",
+                                    "Controls oscillation and bounce. Higher values = smoother, less bouncy motion."
+                                }
+                            }
+                            div { class: "p-3 bg-dark-100/30 rounded-lg",
+                                h4 { class: "font-medium text-primary text-sm", "Mass (default: 1.0)" }
+                                p { class: "text-xs text-text-secondary mt-1",
+                                    "Controls inertia. Higher values = more sluggish, weighty motion."
+                                }
+                            }
+                            div { class: "p-3 bg-dark-100/30 rounded-lg",
+                                h4 { class: "font-medium text-primary text-sm", "Velocity (default: 0.0)" }
+                                p { class: "text-xs text-text-secondary mt-1",
+                                    "Initial velocity. Can create pre-existing motion effects."
+                                }
+                            }
+                        }
+                    }
+
+                    // Preset Configurations
+                    div { class: "space-y-4",
+                        h3 { class: "text-lg font-medium text-text-primary mb-3", "Common Configurations" }
+                        div { class: "space-y-3",
+                            div { class: "p-3 bg-dark-100/30 rounded-lg",
+                                h4 { class: "font-medium text-green-400 text-sm", "Bouncy (Fun & Playful)" }
+                                div { class: "text-xs text-text-secondary mt-1 font-mono",
+                                    "stiffness: 180.0, damping: 15.0"
+                                }
+                            }
+                            div { class: "p-3 bg-dark-100/30 rounded-lg",
+                                h4 { class: "font-medium text-blue-400 text-sm", "Smooth (Professional)" }
+                                div { class: "text-xs text-text-secondary mt-1 font-mono",
+                                    "stiffness: 140.0, damping: 35.0"
+                                }
+                            }
+                            div { class: "p-3 bg-dark-100/30 rounded-lg",
+                                h4 { class: "font-medium text-orange-400 text-sm", "Fast (Snappy)" }
+                                div { class: "text-xs text-text-secondary mt-1 font-mono",
+                                    "stiffness: 220.0, damping: 20.0, mass: 0.8"
+                                }
+                            }
+                            div { class: "p-3 bg-dark-100/30 rounded-lg",
+                                h4 { class: "font-medium text-purple-400 text-sm", "Gentle (Subtle)" }
+                                div { class: "text-xs text-text-secondary mt-1 font-mono",
+                                    "stiffness: 120.0, damping: 30.0, mass: 1.3"
+                                }
+                            }
+                        }
+                    }
+                }
+
+                div { class: "bg-dark-200/50 backdrop-blur-xs rounded-xl p-6 border border-primary/10 mt-6",
+                    h3 { class: "text-lg font-medium text-text-primary mb-4", "Multiple Animation Contexts" }
+                    p { class: "text-text-secondary mb-4",
+                        "You can provide different spring configurations for different parts of your application:"
+                    }
+                    CodeBlock {
+                        code: r#"#[component]
+fn AdminSection() -> Element {
+    // Faster, more aggressive animations for admin interfaces
+    let admin_spring = use_signal(|| Spring {
+        stiffness: 220.0,
+        damping: 20.0,
+        mass: 0.8,
+        velocity: 0.0,
+    });
+
+    use_context_provider(|| admin_spring);
+
+    rsx! {
+        AnimatedOutlet::<AdminRoute> {}
+    }
+}
+
+#[component]
+fn UserSection() -> Element {
+    // Gentler animations for user-facing content
+    let user_spring = use_signal(|| Spring {
+        stiffness: 140.0,
+        damping: 35.0,
+        mass: 1.0,
+        velocity: 0.0,
+    });
+
+    use_context_provider(|| user_spring);
+
+    rsx! {
+        AnimatedOutlet::<UserRoute> {}
+    }
+}"#.to_string(),
+                        language: "rust".to_string(),
+                    }
+                }
+
+                div { class: "mt-6 p-4 bg-blue-900/20 rounded-lg border border-blue-500/20",
+                    div { class: "flex items-start space-x-3",
+                        div { class: "text-blue-400 text-lg", "💡" }
+                        div {
+                            h4 { class: "font-medium text-blue-300 mb-1", "Pro Tip: Context Fallback" }
+                            p { class: "text-sm text-blue-200/80",
+                                "If no spring context is provided, Dioxus Motion automatically falls back to sensible defaults. "
+                                "This means transitions work out-of-the-box while still allowing customization when needed."
+                            }
+                        }
+                    }
+                }
+            }
+
             // Best Practices
             section { class: "space-y-6",
                 h2 { class: "text-2xl font-semibold text-text-primary", "Best Practices" }
