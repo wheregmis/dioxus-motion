@@ -131,29 +131,31 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     let mut from_opacity = use_motion(1.0f32);
     let mut to_opacity = use_motion(0.0f32);
 
-    use_effect(move || {
-        let spring = Spring {
-            stiffness: 160.0, // Reduced from 180.0 for less aggressive movement
-            damping: 25.0,    // Increased from 12.0 for faster settling
-            mass: 1.0,        // Reduced for a lighter feel
-            velocity: 0.0,    // Set to 0 for a predictable start
-        };
+    let spring = try_use_context::<Signal<Spring>>().unwrap_or_else(|| {
+        use_signal(|| Spring {
+            stiffness: 160.0,
+            damping: 25.0,
+            mass: 1.0,
+            velocity: 0.0,
+        })
+    });
 
+    use_effect(move || {
         // Animate FROM route
         from_transform.animate_to(
             config.exit_end,
-            AnimationConfig::new(AnimationMode::Spring(spring)),
+            AnimationConfig::new(AnimationMode::Spring(spring())),
         );
 
         // Animate TO route
         to_transform.animate_to(
             config.enter_end,
-            AnimationConfig::new(AnimationMode::Spring(spring)),
+            AnimationConfig::new(AnimationMode::Spring(spring())),
         );
 
         // Fade out old route
-        from_opacity.animate_to(0.0, AnimationConfig::new(AnimationMode::Spring(spring)));
-        to_opacity.animate_to(1.0, AnimationConfig::new(AnimationMode::Spring(spring)));
+        from_opacity.animate_to(0.0, AnimationConfig::new(AnimationMode::Spring(spring())));
+        to_opacity.animate_to(1.0, AnimationConfig::new(AnimationMode::Spring(spring())));
     });
 
     use_effect(move || {

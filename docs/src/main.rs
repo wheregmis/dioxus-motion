@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use dioxus_motion::prelude::*;
 
 pub mod components;
 pub mod old_showcase;
@@ -36,6 +37,15 @@ const MAIN_CSS: Asset = asset!("/assets/main.css");
 /// ```
 fn main() {
     dioxus::launch(|| {
+        let spring = use_signal(|| Spring {
+            stiffness: 220.0,
+            damping: 30.0,
+            mass: 1.0,
+            velocity: 0.0,
+        });
+
+        use_context_provider(|| spring);
+
         rsx! {
             head {
                 link {
