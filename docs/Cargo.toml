@@ -12,6 +12,7 @@ dioxus = { version = "0.7.0-alpha.1", features = [
 ] }
 dioxus-motion = { path = "../", default-features = false, optional = true }
 easer = { version = "0.3.0", default-features = false }
+wide = "0.7.33"
 
 [features]
 default = ["web"]

@@ -148,7 +148,18 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
                 // Only check if running first, then write to the signal
                 if (*state.peek()).is_running() {
                     _running_frames += 1;
-                    (*state.write()).update(dt);
+                    let prev_value = (*state.peek()).get_value();
+                    let updated = (*state.write()).update(dt);
+                    let new_value = (*state.peek()).get_value();
+                    // Only trigger a re-render if the value changed significantly
+                    if (new_value.sub(&prev_value)).magnitude() > T::epsilon() || updated {
+                        // State has changed enough, continue
+                    } else {
+                        // Skip this frame's update to avoid unnecessary re-render
+                        let delay = calculate_delay(dt, _running_frames);
+                        Time::delay(delay).await;
+                        continue;
+                    }
 
                     let delay = calculate_delay(dt, _running_frames);
                     Time::delay(delay).await;

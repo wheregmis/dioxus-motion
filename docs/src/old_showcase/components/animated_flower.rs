@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_motion::{animations::core::Animatable, prelude::*};
 use std::f32::consts::PI;
+use wide::f32x4;
 
 #[derive(Debug, Clone, Copy)]
 pub struct PetalTransform {
@@ -66,12 +67,19 @@ impl Animatable for PetalTransform {
     }
 
     fn interpolate(&self, target: &Self, t: f32) -> Self {
-        Self::new(
-            self.rotate + (target.rotate - self.rotate) * t,
-            self.scale + (target.scale - self.scale) * t,
-            self.translate_x + (target.translate_x - self.translate_x) * t,
-            self.translate_y + (target.translate_y - self.translate_y) * t,
-        )
+        let a = [self.rotate, self.scale, self.translate_x, self.translate_y];
+        let b = [
+            target.rotate,
+            target.scale,
+            target.translate_x,
+            target.translate_y,
+        ];
+        let va = f32x4::new(a);
+        let vb = f32x4::new(b);
+        let vt = f32x4::splat(t);
+        let result = va + (vb - va) * vt;
+        let out = result.to_array();
+        PetalTransform::new(out[0], out[1], out[2], out[3])
     }
 }
 

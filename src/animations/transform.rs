@@ -8,6 +8,7 @@
 //! Uses radians for rotation and supports smooth interpolation.
 
 use crate::Animatable;
+use wide::f32x4;
 
 /// Represents a 2D transformation with translation, scale, and rotation
 ///
@@ -138,20 +139,25 @@ impl Animatable for Transform {
     /// Interpolates between two transforms
     /// Handles rotation specially to ensure shortest path
     fn interpolate(&self, target: &Self, t: f32) -> Self {
-        // Special handling for rotation to ensure shortest path
+        // SIMD for x, y, scale; handle rotation separately for shortest path
+        let a = [self.x, self.y, self.scale, 0.0];
+        let b = [target.x, target.y, target.scale, 0.0];
+        let va = f32x4::new(a);
+        let vb = f32x4::new(b);
+        let vt = f32x4::splat(t.clamp(0.0, 1.0));
+        let result = va + (vb - va) * vt;
+        let out = result.to_array();
+
+        // Rotation: shortest path
         let mut rotation_diff = target.rotation - self.rotation;
         if rotation_diff > std::f32::consts::PI {
             rotation_diff -= 2.0 * std::f32::consts::PI;
         } else if rotation_diff < -std::f32::consts::PI {
             rotation_diff += 2.0 * std::f32::consts::PI;
         }
+        let rotation = self.rotation + rotation_diff * t;
 
-        Transform::new(
-            self.x + (target.x - self.x) * t,
-            self.y + (target.y - self.y) * t,
-            self.scale + (target.scale - self.scale) * t,
-            self.rotation + rotation_diff * t,
-        )
+        Transform::new(out[0], out[1], out[2], rotation)
     }
 }
 
