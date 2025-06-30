@@ -70,6 +70,30 @@ pub mod prelude {
 
 pub type Time = MotionTime;
 
+/// Helper function to calculate the appropriate delay for the animation loop
+fn calculate_delay(dt: f32, _running_frames: u32) -> Duration {
+    #[cfg(feature = "web")]
+    {
+        match dt {
+            x if x < 0.008 => Duration::from_millis(8),  // ~120fps
+            x if x < 0.016 => Duration::from_millis(16), // ~60fps
+            _ => Duration::from_millis(32),              // ~30fps
+        }
+    }
+    #[cfg(not(feature = "web"))]
+    {
+        if _running_frames <= 200 {
+            Duration::from_micros(8333) // ~120fps
+        } else {
+            match dt {
+                x if x < 0.005 => Duration::from_millis(8),  // ~120fps
+                x if x < 0.011 => Duration::from_millis(16), // ~60fps
+                _ => Duration::from_millis(33),              // ~30fps
+            }
+        }
+    }
+}
+
 /// Creates an animation manager that continuously updates a motion state.
 ///
 /// This function initializes a motion state with the provided initial value and spawns an asynchronous loop
@@ -125,25 +149,7 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
                     _running_frames += 1;
                     (*state.write()).update(dt);
 
-                    #[cfg(feature = "web")]
-                    // Adaptive frame rate
-                    let delay = match dt {
-                        x if x < 0.008 => Duration::from_millis(8),  // ~120fps
-                        x if x < 0.016 => Duration::from_millis(16), // ~60fps
-                        _ => Duration::from_millis(32),              // ~30fps
-                    };
-
-                    #[cfg(not(feature = "web"))]
-                    let delay = match _running_frames {
-                        // Higher frame rate for the first ~200 frames for smooth starts
-                        0..=200 => Duration::from_micros(8333), // ~120fps
-                        _ => match dt {
-                            x if x < 0.005 => Duration::from_millis(8),  // ~120fps
-                            x if x < 0.011 => Duration::from_millis(16), // ~60fps
-                            _ => Duration::from_millis(33),              // ~30fps
-                        },
-                    };
-
+                    let delay = calculate_delay(dt, _running_frames);
                     Time::delay(delay).await;
                 } else {
                     _running_frames = 0;
