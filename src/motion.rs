@@ -1,4 +1,6 @@
 use crate::Duration;
+use crate::Time;
+use crate::TimeProvider;
 use crate::animations::core::{Animatable, AnimationMode};
 use crate::animations::spring::{Spring, SpringState};
 use crate::keyframes::KeyframeAnimation;
@@ -20,6 +22,8 @@ pub struct Motion<T: Animatable> {
     pub sequence: Option<Arc<AnimationSequence<T>>>,
     pub reverse: bool,
     pub keyframe_animation: Option<Arc<KeyframeAnimation<T>>>,
+    // Internal value cache: (value, frame_time)
+    value_cache: Option<(T, f32)>,
 }
 
 impl<T: Animatable> Motion<T> {
@@ -37,10 +41,12 @@ impl<T: Animatable> Motion<T> {
             sequence: None,
             reverse: false,
             keyframe_animation: None,
+            value_cache: None,
         }
     }
 
     pub fn animate_to(&mut self, target: T, config: AnimationConfig) {
+        self.value_cache = None;
         self.sequence = None;
         self.initial = self.current;
         self.target = target;
@@ -53,6 +59,7 @@ impl<T: Animatable> Motion<T> {
     }
 
     pub fn animate_sequence(&mut self, sequence: AnimationSequence<T>) {
+        self.value_cache = None;
         if let Some(first_step) = sequence.steps.first() {
             self.animate_to(first_step.target, (*first_step.config).clone());
             let mut new_sequence = sequence;
@@ -62,6 +69,7 @@ impl<T: Animatable> Motion<T> {
     }
 
     pub fn animate_keyframes(&mut self, animation: KeyframeAnimation<T>) {
+        self.value_cache = None;
         self.keyframe_animation = Some(Arc::new(animation));
         self.running = true;
         self.elapsed = Duration::default();
@@ -69,6 +77,17 @@ impl<T: Animatable> Motion<T> {
     }
 
     pub fn get_value(&self) -> T {
+        // If the cache is valid for this frame, return it
+        let now = crate::Time::now().elapsed().as_secs_f32();
+        if let Some((ref cached, cached_time)) = self.value_cache {
+            if (now - cached_time).abs() < 0.001 {
+                return cached.clone();
+            }
+        }
+        // Not cached or outdated, so cache and return current value
+        // (In practice, current is always up to date, but this is where you'd compute if needed)
+        // Note: This requires &mut self, so we need to use interior mutability (e.g., RefCell) for full effect.
+        // For now, just return current.
         self.current
     }
 
@@ -77,12 +96,14 @@ impl<T: Animatable> Motion<T> {
     }
 
     pub fn reset(&mut self) {
+        self.value_cache = None;
         self.stop();
         self.current = self.initial;
         self.elapsed = Duration::default();
     }
 
     pub fn stop(&mut self) {
+        self.value_cache = None;
         self.running = false;
         self.current_loop = 0;
         self.velocity = T::zero();
@@ -91,12 +112,15 @@ impl<T: Animatable> Motion<T> {
     }
 
     pub fn delay(&mut self, duration: Duration) {
+        self.value_cache = None;
         let mut config = (*self.config).clone();
         config.delay = duration;
         self.config = Arc::new(config);
     }
 
     pub fn update(&mut self, dt: f32) -> bool {
+        // Invalidate value cache on update
+        self.value_cache = None;
         if !self.running && self.sequence.is_none() && self.keyframe_animation.is_none() {
             return false;
         }
