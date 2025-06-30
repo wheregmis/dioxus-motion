@@ -171,17 +171,17 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     rsx! {
         div {
             class: "route-container",
-            style: "position: relative; overflow-visible;",
+            style: "position: relative; overflow-visible; perspective: 1000px;",
             div {
                 class: "route-content from",
                 style: "
-                    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
                     transform: translate3d({from_transform.get_value().x}%, {from_transform.get_value().y}%, 0)
                              scale({from_transform.get_value().scale});
                     opacity: {from_opacity.get_value()};
                     will-change: transform, opacity;
-                       backface-visibility: hidden;
+                    backface-visibility: hidden;
                     -webkit-backface-visibility: hidden;
+                    contain: layout style;
                 ",
                 {from.render(from.get_layout_depth() + 1)}
             }
