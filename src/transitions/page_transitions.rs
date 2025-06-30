@@ -8,7 +8,7 @@ use crate::{
     use_motion,
 };
 
-use super::utils::TransitionVariant;
+use super::config::TransitionVariant;
 
 #[derive(Clone)]
 pub enum AnimatedRouterContext<R: Routable + PartialEq> {

@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_motion::{animations::utils::Animatable, prelude::*};
+use dioxus_motion::{animations::core::Animatable, prelude::*};
 use std::f32::consts::PI;
 
 #[derive(Debug, Clone, Copy)]

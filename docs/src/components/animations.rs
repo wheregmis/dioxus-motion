@@ -1,6 +1,6 @@
 use crate::components::code_block::CodeBlock;
 use dioxus::prelude::*;
-use dioxus_motion::{animations::utils::Animatable, prelude::*};
+use dioxus_motion::{animations::core::Animatable, prelude::*};
 use easer::functions::Easing;
 
 #[component]

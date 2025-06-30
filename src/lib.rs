@@ -31,7 +31,7 @@
 #![deny(clippy::modulo_arithmetic)] // Check modulo operations
 #![deny(clippy::option_if_let_else)] // Prefer map/and_then
 
-use animations::utils::Animatable;
+use animations::core::Animatable;
 use dioxus::prelude::*;
 pub use instant::Duration;
 
@@ -40,6 +40,7 @@ pub mod keyframes;
 pub mod manager;
 pub mod motion;
 pub mod sequence;
+#[cfg(feature = "transitions")]
 pub mod transitions;
 
 #[cfg(feature = "transitions")]
@@ -54,7 +55,7 @@ use motion::Motion;
 
 // Re-exports
 pub mod prelude {
-    pub use crate::animations::utils::{AnimationConfig, AnimationMode, LoopMode};
+    pub use crate::animations::core::{AnimationConfig, AnimationMode, LoopMode};
     pub use crate::animations::{
         colors::Color, spring::Spring, transform::Transform, tween::Tween,
     };
@@ -62,9 +63,9 @@ pub mod prelude {
     pub use crate::dioxus_motion_transitions_macro::MotionTransitions;
     pub use crate::sequence::AnimationSequence;
     #[cfg(feature = "transitions")]
-    pub use crate::transitions::page_transitions::{AnimatableRoute, AnimatedOutlet};
+    pub use crate::transitions::config::TransitionVariant;
     #[cfg(feature = "transitions")]
-    pub use crate::transitions::utils::TransitionVariant;
+    pub use crate::transitions::page_transitions::{AnimatableRoute, AnimatedOutlet};
     pub use crate::{AnimationManager, Duration, Time, TimeProvider, use_motion};
 }
 

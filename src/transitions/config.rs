@@ -1,3 +1,7 @@
+//! Transition configuration and variant definitions for Dioxus Motion
+//!
+//! This module defines the configuration structures and enums for page transitions.
+
 use crate::prelude::Transform;
 
 #[derive(Clone)]

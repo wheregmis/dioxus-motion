@@ -1,6 +1,6 @@
 use crate::Duration;
+use crate::animations::core::{Animatable, AnimationMode};
 use crate::animations::spring::{Spring, SpringState};
-use crate::animations::utils::{Animatable, AnimationMode};
 use crate::keyframes::KeyframeAnimation;
 use crate::prelude::{AnimationConfig, LoopMode, Tween};
 use crate::sequence::AnimationSequence;

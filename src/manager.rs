@@ -1,5 +1,5 @@
 use crate::Duration;
-use crate::animations::utils::Animatable;
+use crate::animations::core::Animatable;
 use crate::keyframes::KeyframeAnimation;
 use crate::motion::Motion;
 use crate::prelude::AnimationConfig;

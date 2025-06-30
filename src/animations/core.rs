@@ -1,8 +1,7 @@
-//! Animation module providing core animation functionality
+//! Core animation types and traits for Dioxus Motion
 //!
-//! This module contains traits and types for implementing animations in Dioxus Motion.
-//! It provides support for both tweening and spring-based animations with configurable
-//! parameters.
+//! This module contains the fundamental traits and types for implementing animations in Dioxus Motion.
+//! It provides support for both tweening and spring-based animations with configurable parameters.
 
 use std::sync::{Arc, Mutex};
 
