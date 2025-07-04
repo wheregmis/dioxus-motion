@@ -77,7 +77,7 @@ impl Animatable for Color {
 
     /// Minimum difference between color components
     fn epsilon() -> f32 {
-        0.00001 // Increased precision for smoother transitions
+        0.0001 // Increased precision for smoother transitions
     }
 
     /// Calculates color vector magnitude

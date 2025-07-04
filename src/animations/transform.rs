@@ -94,7 +94,7 @@ impl Animatable for Transform {
 
     /// Minimum meaningful difference between transforms
     fn epsilon() -> f32 {
-        0.001
+        0.01
     }
 
     /// Calculates the magnitude of the transform

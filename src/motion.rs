@@ -1,5 +1,4 @@
 use crate::Duration;
-use crate::Time;
 use crate::TimeProvider;
 use crate::animations::core::{Animatable, AnimationMode};
 use crate::animations::spring::{Spring, SpringState};
@@ -118,6 +117,12 @@ impl<T: Animatable> Motion<T> {
         self.config = Arc::new(config);
     }
 
+    /// Gets the effective epsilon threshold for this animation
+    /// Uses the configured epsilon if present, otherwise falls back to the type's default
+    pub fn get_epsilon(&self) -> f32 {
+        self.config.epsilon.unwrap_or_else(T::epsilon)
+    }
+
     pub fn update(&mut self, dt: f32) -> bool {
         // Invalidate value cache on update
         self.value_cache = None;
@@ -193,15 +198,14 @@ impl<T: Animatable> Motion<T> {
 // --- Private helper functions for Motion<T> ---
 
 fn update_spring<T: Animatable>(motion: &mut Motion<T>, spring: Spring, dt: f32) -> SpringState {
-    const VELOCITY_THRESHOLD: f32 = 0.001;
-    const POSITION_THRESHOLD: f32 = 0.001;
+    let epsilon = motion.get_epsilon();
     let stiffness = spring.stiffness;
     let damping = spring.damping;
     let mass_inv = 1.0 / spring.mass;
 
     // Check for completion first
     let delta = motion.target.sub(&motion.current);
-    if delta.magnitude() < POSITION_THRESHOLD && motion.velocity.magnitude() < VELOCITY_THRESHOLD {
+    if delta.magnitude() < epsilon && motion.velocity.magnitude() < epsilon {
         motion.current = motion.target;
         motion.velocity = T::zero();
         return SpringState::Completed;
@@ -283,12 +287,12 @@ fn update_spring<T: Animatable>(motion: &mut Motion<T>, spring: Spring, dt: f32)
 }
 
 fn check_spring_completion<T: Animatable>(motion: &mut Motion<T>) -> SpringState {
-    const EPSILON: f32 = 0.001;
-    const EPSILON_SQ: f32 = EPSILON * EPSILON;
+    let epsilon = motion.get_epsilon();
+    let epsilon_sq = epsilon * epsilon;
     let velocity_sq = motion.velocity.magnitude().powi(2);
     let delta = motion.target.sub(&motion.current);
     let delta_sq = delta.magnitude().powi(2);
-    if velocity_sq < EPSILON_SQ && delta_sq < EPSILON_SQ {
+    if velocity_sq < epsilon_sq && delta_sq < epsilon_sq {
         motion.current = motion.target;
         motion.velocity = T::zero();
         SpringState::Completed

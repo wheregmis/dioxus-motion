@@ -16,7 +16,16 @@
 //! use dioxus_motion::prelude::*;
 //!
 //! let mut value = use_motion(0.0f32);
+//!
+//! // Basic animation with default epsilon
 //! value.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
+//!
+//! // Animation with custom epsilon for fine-tuned performance
+//! value.animate_to(
+//!     100.0,
+//!     AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+//!         .with_epsilon(0.01) // Custom threshold for completion detection
+//! );
 //! ```
 
 #![deny(clippy::unwrap_used)]
@@ -151,8 +160,9 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
                     let prev_value = (*state.peek()).get_value();
                     let updated = (*state.write()).update(dt);
                     let new_value = (*state.peek()).get_value();
+                    let epsilon = (*state.peek()).get_epsilon();
                     // Only trigger a re-render if the value changed significantly
-                    if (new_value.sub(&prev_value)).magnitude() > T::epsilon() || updated {
+                    if (new_value.sub(&prev_value)).magnitude() > epsilon || updated {
                         // State has changed enough, continue
                     } else {
                         // Skip this frame's update to avoid unnecessary re-render
