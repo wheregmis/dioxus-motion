@@ -203,7 +203,7 @@ impl std::ops::Add for PetalTransform {
     }
 }
 
-impl dioxus_motion::animations::utils::Animatable for PetalTransform {
+impl dioxus_motion::animations::core::Animatable for PetalTransform {
     fn zero() -> Self {
         Self::zero()
     }
