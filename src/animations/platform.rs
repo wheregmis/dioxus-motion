@@ -50,37 +50,37 @@ impl TimeProvider for MotionTime {
         let (sender, receiver) = futures_channel::oneshot::channel::<()>();
 
         if let Some(window) = window() {
-            let performance = window.performance().expect("Performance API not available");
-            let start_time = performance.now();
-
-            let cb = Closure::once(move || {
-                let current_time = performance.now();
-                let elapsed = current_time - start_time;
-
-                // Only complete if we've waited the full duration
-                if elapsed >= _duration.as_millis() as f64 {
-                    let _ = sender.send(());
-                }
-            });
-
-            // Cache the callback reference
-            let cb_ref = cb.as_ref().unchecked_ref();
-
             // Choose timing method based on duration
-            if _duration.as_millis() < RAF_THRESHOLD_MS as u128 {
+            if _duration.as_millis() <= RAF_THRESHOLD_MS as u128 {
+                // For frame-based timing, use requestAnimationFrame
+                // This is ideal for animation frames (typically 16ms at 60fps)
+                let cb = Closure::once(move || {
+                    let _ = sender.send(());
+                });
+
                 window
-                    .request_animation_frame(cb_ref)
+                    .request_animation_frame(cb.as_ref().unchecked_ref())
                     .expect("Failed to request animation frame");
+
+                cb.forget();
             } else {
+                // For longer delays, use setTimeout which is more appropriate
+                let cb = Closure::once(move || {
+                    let _ = sender.send(());
+                });
+
                 window
                     .set_timeout_with_callback_and_timeout_and_arguments_0(
-                        cb_ref,
+                        cb.as_ref().unchecked_ref(),
                         _duration.as_millis() as i32,
                     )
                     .expect("Failed to set timeout");
-            }
 
-            cb.forget();
+                cb.forget();
+            }
+        } else {
+            // Fallback: complete immediately if no window
+            let _ = sender.send(());
         }
 
         receiver.map(|_| ())

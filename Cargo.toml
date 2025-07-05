@@ -19,6 +19,7 @@ wasm-bindgen = { version = "0.2.100", optional = true, default-features = false 
 web-sys = { version = "0.3.77", optional = true, default-features = false, features = [
     "Window",
     "Performance",
+    "Navigator",
 ] }
 futures-channel = { version = "0.3.31", default-features = false }
 # For desktop platforms
