@@ -1,6 +1,7 @@
 use crate::Duration;
+use crate::TimeProvider;
+use crate::animations::core::{Animatable, AnimationMode};
 use crate::animations::spring::{Spring, SpringState};
-use crate::animations::utils::{Animatable, AnimationMode};
 use crate::keyframes::KeyframeAnimation;
 use crate::prelude::{AnimationConfig, LoopMode, Tween};
 use crate::sequence::AnimationSequence;
@@ -20,6 +21,8 @@ pub struct Motion<T: Animatable> {
     pub sequence: Option<Arc<AnimationSequence<T>>>,
     pub reverse: bool,
     pub keyframe_animation: Option<Arc<KeyframeAnimation<T>>>,
+    // Internal value cache: (value, frame_time)
+    value_cache: Option<(T, f32)>,
 }
 
 impl<T: Animatable> Motion<T> {
@@ -37,10 +40,12 @@ impl<T: Animatable> Motion<T> {
             sequence: None,
             reverse: false,
             keyframe_animation: None,
+            value_cache: None,
         }
     }
 
     pub fn animate_to(&mut self, target: T, config: AnimationConfig) {
+        self.value_cache = None;
         self.sequence = None;
         self.initial = self.current;
         self.target = target;
@@ -53,6 +58,7 @@ impl<T: Animatable> Motion<T> {
     }
 
     pub fn animate_sequence(&mut self, sequence: AnimationSequence<T>) {
+        self.value_cache = None;
         if let Some(first_step) = sequence.steps.first() {
             self.animate_to(first_step.target, (*first_step.config).clone());
             let mut new_sequence = sequence;
@@ -62,6 +68,7 @@ impl<T: Animatable> Motion<T> {
     }
 
     pub fn animate_keyframes(&mut self, animation: KeyframeAnimation<T>) {
+        self.value_cache = None;
         self.keyframe_animation = Some(Arc::new(animation));
         self.running = true;
         self.elapsed = Duration::default();
@@ -69,6 +76,17 @@ impl<T: Animatable> Motion<T> {
     }
 
     pub fn get_value(&self) -> T {
+        // If the cache is valid for this frame, return it
+        let now = crate::Time::now().elapsed().as_secs_f32();
+        if let Some((ref cached, cached_time)) = self.value_cache {
+            if (now - cached_time).abs() < 0.001 {
+                return *cached;
+            }
+        }
+        // Not cached or outdated, so cache and return current value
+        // (In practice, current is always up to date, but this is where you'd compute if needed)
+        // Note: This requires &mut self, so we need to use interior mutability (e.g., RefCell) for full effect.
+        // For now, just return current.
         self.current
     }
 
@@ -77,12 +95,14 @@ impl<T: Animatable> Motion<T> {
     }
 
     pub fn reset(&mut self) {
+        self.value_cache = None;
         self.stop();
         self.current = self.initial;
         self.elapsed = Duration::default();
     }
 
     pub fn stop(&mut self) {
+        self.value_cache = None;
         self.running = false;
         self.current_loop = 0;
         self.velocity = T::zero();
@@ -91,12 +111,21 @@ impl<T: Animatable> Motion<T> {
     }
 
     pub fn delay(&mut self, duration: Duration) {
+        self.value_cache = None;
         let mut config = (*self.config).clone();
         config.delay = duration;
         self.config = Arc::new(config);
     }
 
+    /// Gets the effective epsilon threshold for this animation
+    /// Uses the configured epsilon if present, otherwise falls back to the type's default
+    pub fn get_epsilon(&self) -> f32 {
+        self.config.epsilon.unwrap_or_else(T::epsilon)
+    }
+
     pub fn update(&mut self, dt: f32) -> bool {
+        // Invalidate value cache on update
+        self.value_cache = None;
         if !self.running && self.sequence.is_none() && self.keyframe_animation.is_none() {
             return false;
         }
@@ -136,7 +165,7 @@ impl<T: Animatable> Motion<T> {
 
         // Keyframe animation support
         if let Some(_animation) = &self.keyframe_animation {
-            return self.update_keyframes(dt);
+            return update_keyframes(self, dt);
         }
 
         // Skip updates for imperceptible changes
@@ -152,253 +181,252 @@ impl<T: Animatable> Motion<T> {
 
         let completed = match self.config.mode {
             AnimationMode::Spring(spring) => {
-                let spring_result = self.update_spring(spring, dt);
+                let spring_result = update_spring(self, spring, dt);
                 matches!(spring_result, SpringState::Completed)
             }
-            AnimationMode::Tween(tween) => self.update_tween(tween, dt),
+            AnimationMode::Tween(tween) => update_tween(self, tween, dt),
         };
 
         if completed {
-            self.handle_completion()
+            handle_completion(self)
         } else {
             true
         }
     }
+}
 
-    fn update_spring(&mut self, spring: Spring, dt: f32) -> SpringState {
-        const VELOCITY_THRESHOLD: f32 = 0.001;
-        const POSITION_THRESHOLD: f32 = 0.001;
-        let stiffness = spring.stiffness;
-        let damping = spring.damping;
-        let mass_inv = 1.0 / spring.mass;
+// --- Private helper functions for Motion<T> ---
 
-        // Check for completion first
-        let delta = self.target.sub(&self.current);
-        if delta.magnitude() < POSITION_THRESHOLD && self.velocity.magnitude() < VELOCITY_THRESHOLD
-        {
-            self.current = self.target;
-            self.velocity = T::zero();
-            return SpringState::Completed;
-        }
+fn update_spring<T: Animatable>(motion: &mut Motion<T>, spring: Spring, dt: f32) -> SpringState {
+    let epsilon = motion.get_epsilon();
+    let stiffness = spring.stiffness;
+    let damping = spring.damping;
+    let mass_inv = 1.0 / spring.mass;
 
-        #[cfg(feature = "web")]
-        {
-            // Web: Use fixed timestep for better performance
-            const FIXED_DT: f32 = 1.0 / 120.0;
-            let steps = ((dt / FIXED_DT) as usize).max(1);
-            let step_dt = dt / steps as f32;
-
-            for _ in 0..steps {
-                let force = delta.scale(stiffness);
-                let damping_force = self.velocity.scale(damping);
-                self.velocity = self
-                    .velocity
-                    .add(&(force.sub(&damping_force)).scale(mass_inv * step_dt));
-                self.current = self.current.add(&self.velocity.scale(step_dt));
-            }
-        }
-
-        #[cfg(not(feature = "web"))]
-        {
-            // Native: Use RK4 for better accuracy
-            struct State<T> {
-                pos: T,
-                vel: T,
-            }
-
-            let derive = |state: &State<T>| -> State<T> {
-                let delta = self.target.sub(&state.pos);
-                let force = delta.scale(stiffness);
-                let damping_force = state.vel.scale(damping);
-                let acc = (force.sub(&damping_force)).scale(mass_inv);
-                State {
-                    pos: state.vel.clone(),
-                    vel: acc,
-                }
-            };
-
-            let mut state = State {
-                pos: self.current.clone(),
-                vel: self.velocity.clone(),
-            };
-
-            let k1 = derive(&state);
-            let k2 = derive(&State {
-                pos: state.pos.add(&k1.pos.scale(dt * 0.5)),
-                vel: state.vel.add(&k1.vel.scale(dt * 0.5)),
-            });
-            let k3 = derive(&State {
-                pos: state.pos.add(&k2.pos.scale(dt * 0.5)),
-                vel: state.vel.add(&k2.vel.scale(dt * 0.5)),
-            });
-            let k4 = derive(&State {
-                pos: state.pos.add(&k3.pos.scale(dt)),
-                vel: state.vel.add(&k3.vel.scale(dt)),
-            });
-
-            const SIXTH: f32 = 1.0 / 6.0;
-            self.current = state.pos.add(
-                &(k1.pos
-                    .add(&k2.pos.scale(2.0))
-                    .add(&k3.pos.scale(2.0))
-                    .add(&k4.pos))
-                .scale(dt * SIXTH),
-            );
-            self.velocity = state.vel.add(
-                &(k1.vel
-                    .add(&k2.vel.scale(2.0))
-                    .add(&k3.vel.scale(2.0))
-                    .add(&k4.vel))
-                .scale(dt * SIXTH),
-            );
-        }
-
-        self.check_spring_completion()
+    // Check for completion first
+    let delta = motion.target.sub(&motion.current);
+    if delta.magnitude() < epsilon && motion.velocity.magnitude() < epsilon {
+        motion.current = motion.target;
+        motion.velocity = T::zero();
+        return SpringState::Completed;
     }
 
-    #[inline(always)]
-    fn check_spring_completion(&mut self) -> SpringState {
-        const EPSILON: f32 = 0.001;
-        const EPSILON_SQ: f32 = EPSILON * EPSILON;
-        let velocity_sq = self.velocity.magnitude().powi(2);
-        let delta = self.target.sub(&self.current);
-        let delta_sq = delta.magnitude().powi(2);
-        if velocity_sq < EPSILON_SQ && delta_sq < EPSILON_SQ {
-            self.current = self.target;
-            self.velocity = T::zero();
-            SpringState::Completed
-        } else {
-            SpringState::Active
+    #[cfg(feature = "web")]
+    {
+        // Web: Use fixed timestep for better performance
+        const FIXED_DT: f32 = 1.0 / 120.0;
+        let steps = ((dt / FIXED_DT) as usize).max(1);
+        let step_dt = dt / steps as f32;
+
+        for _ in 0..steps {
+            let force = delta.scale(stiffness);
+            let damping_force = motion.velocity.scale(damping);
+            motion.velocity = motion
+                .velocity
+                .add(&(force.sub(&damping_force)).scale(mass_inv * step_dt));
+            motion.current = motion.current.add(&motion.velocity.scale(step_dt));
         }
     }
 
-    fn update_tween(&mut self, tween: Tween, dt: f32) -> bool {
-        let elapsed_secs = self.elapsed.as_secs_f32() + dt;
-        self.elapsed = Duration::from_secs_f32(elapsed_secs);
-        let duration_secs = tween.duration.as_secs_f32();
-        let progress = if duration_secs == 0.0 {
-            1.0
-        } else {
-            (elapsed_secs * (1.0 / duration_secs)).min(1.0)
-        };
-        if progress <= 0.0 {
-            self.current = self.initial;
-            return false;
-        } else if progress >= 1.0 {
-            self.current = self.target;
-            return true;
+    #[cfg(not(feature = "web"))]
+    {
+        // Native: Use RK4 for better accuracy
+        struct State<T> {
+            pos: T,
+            vel: T,
         }
-        let eased_progress = (tween.easing)(progress, 0.0, 1.0, 1.0);
-        match eased_progress {
-            0.0 => self.current = self.initial,
-            1.0 => self.current = self.target,
-            _ => self.current = self.initial.interpolate(&self.target, eased_progress),
-        }
-        progress >= 1.0
-    }
 
-    fn handle_completion(&mut self) -> bool {
-        let should_continue = match self.config.loop_mode.unwrap_or(LoopMode::None) {
-            LoopMode::None => {
-                self.running = false;
-                false
-            }
-            LoopMode::Infinite => {
-                self.current = self.initial;
-                self.elapsed = Duration::default();
-                self.velocity = T::zero();
-                true
-            }
-            LoopMode::Times(count) => {
-                self.current_loop += 1;
-                if self.current_loop >= count {
-                    self.stop();
-                    false
-                } else {
-                    self.current = self.initial;
-                    self.elapsed = Duration::default();
-                    self.velocity = T::zero();
-                    true
-                }
-            }
-            LoopMode::Alternate => {
-                self.reverse = !self.reverse;
-                if self.reverse {
-                    std::mem::swap(&mut self.initial, &mut self.target);
-                }
-                self.elapsed = Duration::default();
-                self.velocity = T::zero();
-                true
-            }
-            LoopMode::AlternateTimes(count) => {
-                self.current_loop += 1;
-                if self.current_loop >= count * 2 {
-                    self.stop();
-                    false
-                } else {
-                    self.reverse = !self.reverse;
-                    if self.reverse {
-                        std::mem::swap(&mut self.initial, &mut self.target);
-                    }
-                    self.elapsed = Duration::default();
-                    self.velocity = T::zero();
-                    true
-                }
+        let derive = |state: &State<T>| -> State<T> {
+            let delta = motion.target.sub(&state.pos);
+            let force = delta.scale(stiffness);
+            let damping_force = state.vel.scale(damping);
+            let acc = (force.sub(&damping_force)).scale(mass_inv);
+            State {
+                pos: state.vel,
+                vel: acc,
             }
         };
-        if !should_continue {
-            if let Some(ref f) = self.config.on_complete {
-                if let Ok(mut guard) = f.lock() {
-                    guard();
-                }
-            }
-        }
-        should_continue
+
+        let mut state = State {
+            pos: motion.current,
+            vel: motion.velocity,
+        };
+
+        let k1 = derive(&state);
+        let k2 = derive(&State {
+            pos: state.pos.add(&k1.pos.scale(dt * 0.5)),
+            vel: state.vel.add(&k1.vel.scale(dt * 0.5)),
+        });
+        let k3 = derive(&State {
+            pos: state.pos.add(&k2.pos.scale(dt * 0.5)),
+            vel: state.vel.add(&k2.vel.scale(dt * 0.5)),
+        });
+        let k4 = derive(&State {
+            pos: state.pos.add(&k3.pos.scale(dt)),
+            vel: state.vel.add(&k3.vel.scale(dt)),
+        });
+
+        const SIXTH: f32 = 1.0 / 6.0;
+        motion.current = state.pos.add(
+            &(k1.pos
+                .add(&k2.pos.scale(2.0))
+                .add(&k3.pos.scale(2.0))
+                .add(&k4.pos))
+            .scale(dt * SIXTH),
+        );
+        motion.velocity = state.vel.add(
+            &(k1.vel
+                .add(&k2.vel.scale(2.0))
+                .add(&k3.vel.scale(2.0))
+                .add(&k4.vel))
+            .scale(dt * SIXTH),
+        );
     }
 
-    fn update_keyframes(&mut self, dt: f32) -> bool {
-        if let Some(animation) = &self.keyframe_animation {
-            let progress =
-                (self.elapsed.as_secs_f32() / animation.duration.as_secs_f32()).clamp(0.0, 1.0);
-            let (start, end) = if animation.keyframes.is_empty() {
-                // No keyframes, nothing to animate
-                return false;
-            } else {
-                animation
-                    .keyframes
-                    .windows(2)
-                    .find(|w| progress >= w[0].offset && progress <= w[1].offset)
-                    .map(|w| (&w[0], &w[1]))
-                    .unwrap_or_else(|| {
-                        if progress <= animation.keyframes[0].offset {
-                            let first = &animation.keyframes[0];
-                            (first, first)
-                        } else {
-                            let last = animation
-                                .keyframes
-                                .last()
-                                .expect("Keyframes vector should not be empty here");
-                            (last, last)
-                        }
-                    })
-            };
-            let local_progress = if start.offset == end.offset {
-                1.0
-            } else {
-                (progress - start.offset) / (end.offset - start.offset)
-            };
-            let eased_progress = end
-                .easing
-                .map_or(local_progress, |ease| (ease)(local_progress, 0.0, 1.0, 1.0));
-            self.current = start.value.interpolate(&end.value, eased_progress);
-            self.elapsed += Duration::from_secs_f32(dt);
-            if progress >= 1.0 {
-                self.handle_completion()
-            } else {
-                true
-            }
-        } else {
+    check_spring_completion(motion)
+}
+
+fn check_spring_completion<T: Animatable>(motion: &mut Motion<T>) -> SpringState {
+    let epsilon = motion.get_epsilon();
+    let epsilon_sq = epsilon * epsilon;
+    let velocity_sq = motion.velocity.magnitude().powi(2);
+    let delta = motion.target.sub(&motion.current);
+    let delta_sq = delta.magnitude().powi(2);
+    if velocity_sq < epsilon_sq && delta_sq < epsilon_sq {
+        motion.current = motion.target;
+        motion.velocity = T::zero();
+        SpringState::Completed
+    } else {
+        SpringState::Active
+    }
+}
+
+fn update_tween<T: Animatable>(motion: &mut Motion<T>, tween: Tween, dt: f32) -> bool {
+    let elapsed_secs = motion.elapsed.as_secs_f32() + dt;
+    motion.elapsed = Duration::from_secs_f32(elapsed_secs);
+    let duration_secs = tween.duration.as_secs_f32();
+    let progress = if duration_secs == 0.0 {
+        1.0
+    } else {
+        (elapsed_secs * (1.0 / duration_secs)).min(1.0)
+    };
+    if progress <= 0.0 {
+        motion.current = motion.initial;
+        return false;
+    } else if progress >= 1.0 {
+        motion.current = motion.target;
+        return true;
+    }
+    let eased_progress = (tween.easing)(progress, 0.0, 1.0, 1.0);
+    match eased_progress {
+        0.0 => motion.current = motion.initial,
+        1.0 => motion.current = motion.target,
+        _ => motion.current = motion.initial.interpolate(&motion.target, eased_progress),
+    }
+    progress >= 1.0
+}
+
+fn handle_completion<T: Animatable>(motion: &mut Motion<T>) -> bool {
+    let should_continue = match motion.config.loop_mode.unwrap_or(LoopMode::None) {
+        LoopMode::None => {
+            motion.running = false;
             false
         }
+        LoopMode::Infinite => {
+            motion.current = motion.initial;
+            motion.elapsed = Duration::default();
+            motion.velocity = T::zero();
+            true
+        }
+        LoopMode::Times(count) => {
+            motion.current_loop += 1;
+            if motion.current_loop >= count {
+                motion.stop();
+                false
+            } else {
+                motion.current = motion.initial;
+                motion.elapsed = Duration::default();
+                motion.velocity = T::zero();
+                true
+            }
+        }
+        LoopMode::Alternate => {
+            motion.reverse = !motion.reverse;
+            if motion.reverse {
+                std::mem::swap(&mut motion.initial, &mut motion.target);
+            }
+            motion.elapsed = Duration::default();
+            motion.velocity = T::zero();
+            true
+        }
+        LoopMode::AlternateTimes(count) => {
+            motion.current_loop += 1;
+            if motion.current_loop >= count * 2 {
+                motion.stop();
+                false
+            } else {
+                motion.reverse = !motion.reverse;
+                if motion.reverse {
+                    std::mem::swap(&mut motion.initial, &mut motion.target);
+                }
+                motion.elapsed = Duration::default();
+                motion.velocity = T::zero();
+                true
+            }
+        }
+    };
+    if !should_continue {
+        if let Some(ref f) = motion.config.on_complete {
+            if let Ok(mut guard) = f.lock() {
+                guard();
+            }
+        }
+    }
+    should_continue
+}
+
+fn update_keyframes<T: Animatable>(motion: &mut Motion<T>, dt: f32) -> bool {
+    if let Some(animation) = &motion.keyframe_animation {
+        let progress =
+            (motion.elapsed.as_secs_f32() / animation.duration.as_secs_f32()).clamp(0.0, 1.0);
+        let (start, end) = if animation.keyframes.is_empty() {
+            // No keyframes, nothing to animate
+            return false;
+        } else {
+            animation
+                .keyframes
+                .windows(2)
+                .find(|w| progress >= w[0].offset && progress <= w[1].offset)
+                .map(|w| (&w[0], &w[1]))
+                .unwrap_or_else(|| {
+                    if progress <= animation.keyframes[0].offset {
+                        let first = &animation.keyframes[0];
+                        (first, first)
+                    } else {
+                        let last = animation
+                            .keyframes
+                            .last()
+                            .expect("Keyframes vector should not be empty here");
+                        (last, last)
+                    }
+                })
+        };
+        let local_progress = if start.offset == end.offset {
+            1.0
+        } else {
+            (progress - start.offset) / (end.offset - start.offset)
+        };
+        let eased_progress = end
+            .easing
+            .map_or(local_progress, |ease| (ease)(local_progress, 0.0, 1.0, 1.0));
+        motion.current = start.value.interpolate(&end.value, eased_progress);
+        motion.elapsed += Duration::from_secs_f32(dt);
+        if progress >= 1.0 {
+            handle_completion(motion)
+        } else {
+            true
+        }
+    } else {
+        false
     }
 }

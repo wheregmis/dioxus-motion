@@ -8,7 +8,11 @@ use crate::{
     use_motion,
 };
 
-use super::utils::TransitionVariant;
+use super::config::TransitionVariant;
+use crate::animations::core::Animatable;
+use crate::animations::epsilon::PAGE_TRANSITION_EPSILON;
+use crate::prelude::Transform;
+use wide::f32x4;
 
 #[derive(Clone)]
 pub enum AnimatedRouterContext<R: Routable + PartialEq> {
@@ -42,6 +46,113 @@ impl<R: Routable + PartialEq> AnimatedRouterContext<R> {
     pub fn settle(&mut self) {
         if let Self::FromTo(_, to) = self {
             *self = Self::In(to.clone())
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PageTransitionAnimation {
+    pub x: f32,
+    pub y: f32,
+    pub scale: f32,
+    pub rotation: f32,
+    pub opacity: f32,
+}
+
+impl PageTransitionAnimation {
+    pub fn from_transform_and_opacity(transform: &Transform, opacity: f32) -> Self {
+        Self {
+            x: transform.x,
+            y: transform.y,
+            scale: transform.scale,
+            rotation: transform.rotation,
+            opacity,
+        }
+    }
+    pub fn from_exit_start(config: &super::config::TransitionConfig) -> Self {
+        Self::from_transform_and_opacity(&config.exit_start, 1.0)
+    }
+    pub fn from_exit_end(config: &super::config::TransitionConfig) -> Self {
+        Self::from_transform_and_opacity(&config.exit_end, 0.0)
+    }
+    pub fn from_enter_start(config: &super::config::TransitionConfig) -> Self {
+        Self::from_transform_and_opacity(&config.enter_start, 0.0)
+    }
+    pub fn from_enter_end(config: &super::config::TransitionConfig) -> Self {
+        Self::from_transform_and_opacity(&config.enter_end, 1.0)
+    }
+}
+
+impl Animatable for PageTransitionAnimation {
+    fn zero() -> Self {
+        Self {
+            x: 0.0,
+            y: 0.0,
+            scale: 0.0,
+            rotation: 0.0,
+            opacity: 0.0,
+        }
+    }
+    fn epsilon() -> f32 {
+        PAGE_TRANSITION_EPSILON // Standardized precision for page transitions
+    }
+    fn magnitude(&self) -> f32 {
+        (self.x * self.x
+            + self.y * self.y
+            + self.scale * self.scale
+            + self.rotation * self.rotation
+            + self.opacity * self.opacity)
+            .sqrt()
+    }
+    fn scale(&self, factor: f32) -> Self {
+        Self {
+            x: self.x * factor,
+            y: self.y * factor,
+            scale: self.scale * factor,
+            rotation: self.rotation * factor,
+            opacity: self.opacity * factor,
+        }
+    }
+    fn add(&self, other: &Self) -> Self {
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+            scale: self.scale + other.scale,
+            rotation: self.rotation + other.rotation,
+            opacity: self.opacity + other.opacity,
+        }
+    }
+    fn sub(&self, other: &Self) -> Self {
+        Self {
+            x: self.x - other.x,
+            y: self.y - other.y,
+            scale: self.scale - other.scale,
+            rotation: self.rotation - other.rotation,
+            opacity: self.opacity - other.opacity,
+        }
+    }
+    fn interpolate(&self, target: &Self, t: f32) -> Self {
+        let a = [self.x, self.y, self.scale, self.opacity];
+        let b = [target.x, target.y, target.scale, target.opacity];
+        let va = f32x4::new([a[0], a[1], a[2], a[3]]);
+        let vb = f32x4::new([b[0], b[1], b[2], b[3]]);
+        let vt = f32x4::splat(t.clamp(0.0, 1.0));
+        let result = va + (vb - va) * vt;
+        let out = result.to_array();
+        // Rotation: shortest path
+        let mut rotation_diff = target.rotation - self.rotation;
+        if rotation_diff > std::f32::consts::PI {
+            rotation_diff -= 2.0 * std::f32::consts::PI;
+        } else if rotation_diff < -std::f32::consts::PI {
+            rotation_diff += 2.0 * std::f32::consts::PI;
+        }
+        let rotation = self.rotation + rotation_diff * t;
+        Self {
+            x: out[0],
+            y: out[1],
+            scale: out[2],
+            rotation,
+            opacity: out[3],
         }
     }
 }
@@ -126,10 +237,8 @@ pub fn use_animated_router<Route: Routable + PartialEq>() -> Signal<AnimatedRout
 fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, to: R) -> Element {
     let mut animated_router = use_animated_router::<R>();
     let config = to.get_transition().get_config();
-    let mut from_transform = use_motion(config.exit_start);
-    let mut to_transform = use_motion(config.enter_start);
-    let mut from_opacity = use_motion(1.0f32);
-    let mut to_opacity = use_motion(0.0f32);
+    let mut from_anim = use_motion(PageTransitionAnimation::from_exit_start(&config));
+    let mut to_anim = use_motion(PageTransitionAnimation::from_enter_start(&config));
 
     let spring = try_use_context::<Signal<Spring>>().unwrap_or_else(|| {
         use_signal(|| Spring {
@@ -141,60 +250,45 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     });
 
     use_effect(move || {
-        // Animate FROM route
-        from_transform.animate_to(
-            config.exit_end,
-            AnimationConfig::new(AnimationMode::Spring(spring())),
+        from_anim.animate_to(
+            PageTransitionAnimation::from_exit_end(&config),
+            AnimationConfig::new(AnimationMode::Spring(spring()))
+                .with_epsilon(PAGE_TRANSITION_EPSILON),
         );
-
-        // Animate TO route
-        to_transform.animate_to(
-            config.enter_end,
-            AnimationConfig::new(AnimationMode::Spring(spring())),
+        to_anim.animate_to(
+            PageTransitionAnimation::from_enter_end(&config),
+            AnimationConfig::new(AnimationMode::Spring(spring()))
+                .with_epsilon(PAGE_TRANSITION_EPSILON),
         );
-
-        // Fade out old route
-        from_opacity.animate_to(0.0, AnimationConfig::new(AnimationMode::Spring(spring())));
-        to_opacity.animate_to(1.0, AnimationConfig::new(AnimationMode::Spring(spring())));
     });
 
     use_effect(move || {
-        if !from_transform.is_running()
-            && !to_transform.is_running()
-            && !from_opacity.is_running()
-            && !to_opacity.is_running()
-        {
+        if !from_anim.is_running() && !to_anim.is_running() {
             animated_router.write().settle();
         }
     });
 
+    let from_val = from_anim.get_value();
+    let to_val = to_anim.get_value();
+
     rsx! {
         div {
             class: "route-container",
-            style: "position: relative; overflow-visible;",
+            style: "position: relative; overflow-visible; perspective: 1000px;",
             div {
                 class: "route-content from",
-                style: "
-                    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-                    transform: translate3d({from_transform.get_value().x}%, {from_transform.get_value().y}%, 0)
-                             scale({from_transform.get_value().scale});
-                    opacity: {from_opacity.get_value()};
-                    will-change: transform, opacity;
-                       backface-visibility: hidden;
-                    -webkit-backface-visibility: hidden;
-                ",
+                style: format!(
+                    "transform: translate3d({}% , {}%, 0) scale({}); opacity: {}; will-change: transform, opacity; backface-visibility: hidden; -webkit-backface-visibility: hidden; contain: layout style;",
+                    from_val.x, from_val.y, from_val.scale, from_val.opacity
+                ),
                 {from.render(from.get_layout_depth() + 1)}
             }
             div {
                 class: "route-content to",
-                style: "
-                    transform: translate3d({to_transform.get_value().x}%, {to_transform.get_value().y}%, 0)
-                             scale({to_transform.get_value().scale});
-                    opacity: {to_opacity.get_value()};
-                    will-change: transform, opacity;
-                    backface-visibility: hidden;
-                    -webkit-backface-visibility: hidden;
-                ",
+                style: format!(
+                    "transform: translate3d({}% , {}%, 0) scale({}); opacity: {}; will-change: transform, opacity; backface-visibility: hidden; -webkit-backface-visibility: hidden;",
+                    to_val.x, to_val.y, to_val.scale, to_val.opacity
+                ),
                 Outlet::<R> {}
             }
         }

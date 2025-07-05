@@ -3,7 +3,9 @@
 //! Provides RGBA color representation and animation interpolation.
 //! Supports both normalized (0.0-1.0) and byte (0-255) color values.
 
-use crate::animations::utils::Animatable;
+use crate::animations::core::Animatable;
+use crate::animations::epsilon::COLOR_EPSILON;
+use wide::f32x4;
 
 /// Represents an RGBA color with normalized components
 ///
@@ -76,7 +78,7 @@ impl Animatable for Color {
 
     /// Minimum difference between color components
     fn epsilon() -> f32 {
-        0.00001 // Increased precision for smoother transitions
+        COLOR_EPSILON // Standardized precision for color animations
     }
 
     /// Calculates color vector magnitude
@@ -126,15 +128,14 @@ impl Animatable for Color {
     /// * `target` - Target color to interpolate towards
     /// * `t` - Interpolation factor (0.0-1.0)
     fn interpolate(&self, target: &Self, t: f32) -> Self {
-        let t = t.clamp(0.0, 1.0);
-
-        // Direct linear interpolation that works for both increasing and decreasing values
-        let r = self.r * (1.0 - t) + target.r * t;
-        let g = self.g * (1.0 - t) + target.g * t;
-        let b = self.b * (1.0 - t) + target.b * t;
-        let a = self.a * (1.0 - t) + target.a * t;
-
-        Color::new(r, g, b, a)
+        let a = [self.r, self.g, self.b, self.a];
+        let b = [target.r, target.g, target.b, target.a];
+        let va = f32x4::new(a);
+        let vb = f32x4::new(b);
+        let vt = f32x4::splat(t.clamp(0.0, 1.0));
+        let result = va + (vb - va) * vt;
+        let out = result.to_array();
+        Color::new(out[0], out[1], out[2], out[3])
     }
 }
 

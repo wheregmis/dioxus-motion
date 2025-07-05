@@ -168,7 +168,7 @@ fn highlight_token(token: &str, in_string: bool) -> String {
     ];
 
     if keywords.contains(&clean_token.as_str()) {
-        return format!("<span class='text-blue-500'>{}</span>", token);
+        return format!("<span class='text-blue-500'>{token}</span>");
     }
 
     // Dioxus components (capitalized identifiers)
@@ -176,12 +176,12 @@ fn highlight_token(token: &str, in_string: bool) -> String {
         && clean_token.chars().next().unwrap().is_uppercase()
         && !clean_token.starts_with("Route::")
     {
-        return format!("<span class='text-orange-400'>{}</span>", token);
+        return format!("<span class='text-orange-400'>{token}</span>");
     }
 
     // Handle RSX macro
     if clean_token == "rsx!" {
-        return format!("<span class='text-yellow-500'>{}</span>", token);
+        return format!("<span class='text-yellow-500'>{token}</span>");
     }
 
     // Route types
@@ -197,14 +197,14 @@ fn highlight_token(token: &str, in_string: bool) -> String {
 
     // Element properties (followed by colon)
     if token.ends_with(':') {
-        return format!("<span class='text-blue-300'>{}</span>", token);
+        return format!("<span class='text-blue-300'>{token}</span>");
     }
 
     // Numbers
     if clean_token.chars().all(|c| c.is_ascii_digit() || c == '.')
         && clean_token.chars().any(|c| c.is_ascii_digit())
     {
-        return format!("<span class='text-orange-400'>{}</span>", token);
+        return format!("<span class='text-orange-400'>{token}</span>");
     }
 
     token.to_string()
@@ -370,7 +370,7 @@ fn highlight_toml_token(token: &str, in_string: bool) -> String {
 
     // Handle section headers
     if clean_token.starts_with('[') && clean_token.ends_with(']') {
-        return format!("<span class='text-blue-400'>{}</span>", token);
+        return format!("<span class='text-blue-400'>{token}</span>");
     }
 
     // Handle key-value pairs
@@ -389,7 +389,7 @@ fn highlight_toml_token(token: &str, in_string: bool) -> String {
 
     // Handle keys
     if token.ends_with('=') {
-        return format!("<span class='text-purple-400'>{}</span>", token);
+        return format!("<span class='text-purple-400'>{token}</span>");
     }
 
     // Handle version numbers and other literals
@@ -397,7 +397,7 @@ fn highlight_toml_token(token: &str, in_string: bool) -> String {
         .chars()
         .all(|c| c.is_ascii_digit() || c == '.' || c == '"')
     {
-        return format!("<span class='text-orange-400'>{}</span>", token);
+        return format!("<span class='text-orange-400'>{token}</span>");
     }
 
     token.to_string()
@@ -426,7 +426,7 @@ fn highlight_toml_token(token: &str, in_string: bool) -> String {
 fn highlight_toml_value(value: &str) -> String {
     // Handle boolean values
     if value == "true" || value == "false" {
-        return format!("<span class='text-orange-400'>{}</span>", value);
+        return format!("<span class='text-orange-400'>{value}</span>");
     }
 
     // Handle numbers
@@ -434,12 +434,12 @@ fn highlight_toml_value(value: &str) -> String {
         .chars()
         .all(|c| c.is_ascii_digit() || c == '.' || c == '-')
     {
-        return format!("<span class='text-orange-400'>{}</span>", value);
+        return format!("<span class='text-orange-400'>{value}</span>");
     }
 
     // Handle quoted strings
     if value.starts_with('"') && value.ends_with('"') {
-        return format!("<span class='text-green-500'>{}</span>", value);
+        return format!("<span class='text-green-500'>{value}</span>");
     }
 
     value.to_string()

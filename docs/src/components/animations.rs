@@ -1,7 +1,8 @@
 use crate::components::code_block::CodeBlock;
 use dioxus::prelude::*;
-use dioxus_motion::{animations::utils::Animatable, prelude::*};
+use dioxus_motion::{animations::core::Animatable, prelude::*};
 use easer::functions::Easing;
+use wide::f32x4;
 
 #[component]
 fn AnimationStep(title: String, description: String, code: String, children: Element) -> Element {
@@ -173,10 +174,17 @@ impl Animatable for ColorValue {
     }
 
     fn interpolate(&self, target: &Self, t: f32) -> Self {
+        let a = [self.r, self.g, self.b, 0.0];
+        let b = [target.r, target.g, target.b, 0.0];
+        let va = f32x4::new(a);
+        let vb = f32x4::new(b);
+        let vt = f32x4::splat(t);
+        let result = va + (vb - va) * vt;
+        let out = result.to_array();
         ColorValue {
-            r: self.r + (target.r - self.r) * t,
-            g: self.g + (target.g - self.g) * t,
-            b: self.b + (target.b - self.b) * t,
+            r: out[0],
+            g: out[1],
+            b: out[2],
         }
     }
 }
@@ -486,11 +494,14 @@ impl Animatable for ColorValue {
         (self.r * self.r + self.g * self.g + self.b * self.b).sqrt()
     }
     fn interpolate(&self, target: &Self, t: f32) -> Self {
-        ColorValue {
-            r: self.r + (target.r - self.r) * t,
-            g: self.g + (target.g - self.g) * t,
-            b: self.b + (target.b - self.b) * t,
-        }
+        let a = [self.r, self.g, self.b, 0.0];
+        let b = [target.r, target.g, target.b, 0.0];
+        let va = f32x4::new(a);
+        let vb = f32x4::new(b);
+        let vt = f32x4::splat(t);
+        let result = va + (vb - va) * vt;
+        let out = result.to_array();
+        ColorValue { r: out[0], g: out[1], b: out[2] }
     }
 }
 

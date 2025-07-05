@@ -249,7 +249,7 @@ fn NavLink(to: Route, children: Element) -> Element {
             class: {
                 let base_classes = "relative group text-sm text-text-secondary hover:text-text-primary transition-all duration-300";
                 if is_active {
-                    format!("{} text-primary", base_classes)
+                    format!("{base_classes} text-primary")
                 } else {
                     base_classes.to_string()
                 }

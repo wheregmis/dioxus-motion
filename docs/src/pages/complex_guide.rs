@@ -59,13 +59,13 @@ impl std::ops::Add for PetalTransform {
     }
 }
 
-impl dioxus_motion::animations::utils::Animatable for PetalTransform {
+impl dioxus_motion::animations::core::Animatable for PetalTransform {
     fn zero() -> Self {
         Self::zero()
     }
 
     fn epsilon() -> f32 {
-        0.001
+        dioxus_motion::animations::epsilon::DEFAULT_EPSILON
     }
 
     fn magnitude(&self) -> f32 {
@@ -203,13 +203,13 @@ impl std::ops::Add for PetalTransform {
     }
 }
 
-impl dioxus_motion::animations::utils::Animatable for PetalTransform {
+impl dioxus_motion::animations::core::Animatable for PetalTransform {
     fn zero() -> Self {
         Self::zero()
     }
 
     fn epsilon() -> f32 {
-        0.001
+        dioxus_motion::animations::epsilon::DEFAULT_EPSILON
     }
 
     fn magnitude(&self) -> f32 {

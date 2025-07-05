@@ -1,5 +1,5 @@
 use crate::Duration;
-use crate::animations::utils::Animatable;
+use crate::animations::core::Animatable;
 use tracing::error;
 
 pub type EasingFn = fn(f32, f32, f32, f32) -> f32;

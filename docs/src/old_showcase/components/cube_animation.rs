@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
-use dioxus_motion::{animations::utils::Animatable, prelude::*};
+use dioxus_motion::{animations::core::Animatable, prelude::*};
 use std::f32::consts::PI;
+use wide::f32x4;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Transform3D {
@@ -85,14 +86,32 @@ impl Animatable for Transform3D {
     }
 
     fn interpolate(&self, target: &Self, t: f32) -> Self {
-        Self::new(
-            self.rotate_x + (target.rotate_x - self.rotate_x) * t,
-            self.rotate_y + (target.rotate_y - self.rotate_y) * t,
-            self.rotate_z + (target.rotate_z - self.rotate_z) * t,
-            self.translate_x + (target.translate_x - self.translate_x) * t,
-            self.translate_y + (target.translate_y - self.translate_y) * t,
-            self.scale + (target.scale - self.scale) * t,
-        )
+        // SIMD for the first 4 fields
+        let a1 = [
+            self.rotate_x,
+            self.rotate_y,
+            self.rotate_z,
+            self.translate_x,
+        ];
+        let b1 = [
+            target.rotate_x,
+            target.rotate_y,
+            target.rotate_z,
+            target.translate_x,
+        ];
+        let va1 = f32x4::new(a1);
+        let vb1 = f32x4::new(b1);
+        let vt = f32x4::splat(t);
+        let result1 = va1 + (vb1 - va1) * vt;
+        let out1 = result1.to_array();
+        // SIMD for the last 2 fields + 2 zeros
+        let a2 = [self.translate_y, self.scale, 0.0, 0.0];
+        let b2 = [target.translate_y, target.scale, 0.0, 0.0];
+        let va2 = f32x4::new(a2);
+        let vb2 = f32x4::new(b2);
+        let result2 = va2 + (vb2 - va2) * vt;
+        let out2 = result2.to_array();
+        Self::new(out1[0], out1[1], out1[2], out1[3], out2[0], out2[1])
     }
 }
 

@@ -1,8 +1,7 @@
-//! Animation module providing core animation functionality
+//! Core animation types and traits for Dioxus Motion
 //!
-//! This module contains traits and types for implementing animations in Dioxus Motion.
-//! It provides support for both tweening and spring-based animations with configurable
-//! parameters.
+//! This module contains the fundamental traits and types for implementing animations in Dioxus Motion.
+//! It provides support for both tweening and spring-based animations with configurable parameters.
 
 use std::sync::{Arc, Mutex};
 
@@ -85,6 +84,9 @@ pub struct AnimationConfig {
     pub delay: Duration,
     /// Callback when animation completes
     pub on_complete: Option<Arc<Mutex<dyn FnMut() + Send>>>,
+    /// Custom epsilon threshold for animation completion detection
+    /// If None, uses the type's default epsilon from Animatable::epsilon()
+    pub epsilon: Option<f32>,
 }
 
 impl AnimationConfig {
@@ -95,6 +97,7 @@ impl AnimationConfig {
             loop_mode: None,
             delay: Duration::default(),
             on_complete: None,
+            epsilon: None,
         }
     }
 
@@ -116,6 +119,22 @@ impl AnimationConfig {
         F: FnMut() + Send + 'static,
     {
         self.on_complete = Some(Arc::new(Mutex::new(f)));
+        self
+    }
+
+    /// Sets a custom epsilon threshold for animation completion detection
+    ///
+    /// # Arguments
+    /// * `epsilon` - The minimum meaningful difference between values for completion detection
+    ///
+    /// # Examples
+    /// ```rust
+    /// use dioxus_motion::prelude::*;
+    /// let config = AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+    ///     .with_epsilon(0.01); // Custom threshold for page transitions
+    /// ```
+    pub fn with_epsilon(mut self, epsilon: f32) -> Self {
+        self.epsilon = Some(epsilon);
         self
     }
 

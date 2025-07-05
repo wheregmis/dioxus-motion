@@ -16,7 +16,16 @@
 //! use dioxus_motion::prelude::*;
 //!
 //! let mut value = use_motion(0.0f32);
+//!
+//! // Basic animation with default epsilon
 //! value.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
+//!
+//! // Animation with custom epsilon for fine-tuned performance
+//! value.animate_to(
+//!     100.0,
+//!     AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+//!         .with_epsilon(0.01) // Custom threshold for completion detection
+//! );
 //! ```
 
 #![deny(clippy::unwrap_used)]
@@ -31,7 +40,7 @@
 #![deny(clippy::modulo_arithmetic)] // Check modulo operations
 #![deny(clippy::option_if_let_else)] // Prefer map/and_then
 
-use animations::utils::Animatable;
+use animations::core::Animatable;
 use dioxus::prelude::*;
 pub use instant::Duration;
 
@@ -40,6 +49,7 @@ pub mod keyframes;
 pub mod manager;
 pub mod motion;
 pub mod sequence;
+#[cfg(feature = "transitions")]
 pub mod transitions;
 
 #[cfg(feature = "transitions")]
@@ -54,7 +64,7 @@ use motion::Motion;
 
 // Re-exports
 pub mod prelude {
-    pub use crate::animations::utils::{AnimationConfig, AnimationMode, LoopMode};
+    pub use crate::animations::core::{AnimationConfig, AnimationMode, LoopMode};
     pub use crate::animations::{
         colors::Color, spring::Spring, transform::Transform, tween::Tween,
     };
@@ -62,13 +72,39 @@ pub mod prelude {
     pub use crate::dioxus_motion_transitions_macro::MotionTransitions;
     pub use crate::sequence::AnimationSequence;
     #[cfg(feature = "transitions")]
-    pub use crate::transitions::page_transitions::{AnimatableRoute, AnimatedOutlet};
+    pub use crate::transitions::config::TransitionVariant;
     #[cfg(feature = "transitions")]
-    pub use crate::transitions::utils::TransitionVariant;
+    pub use crate::transitions::page_transitions::{AnimatableRoute, AnimatedOutlet};
     pub use crate::{AnimationManager, Duration, Time, TimeProvider, use_motion};
 }
 
 pub type Time = MotionTime;
+
+/// Helper function to calculate the appropriate delay for the animation loop
+fn calculate_delay(dt: f32, running_frames: u32) -> Duration {
+    #[cfg(feature = "web")]
+    {
+        // running_frames is not used in web builds but kept for API consistency
+        let _ = running_frames;
+        match dt {
+            x if x < 0.008 => Duration::from_millis(8),  // ~120fps
+            x if x < 0.016 => Duration::from_millis(16), // ~60fps
+            _ => Duration::from_millis(32),              // ~30fps
+        }
+    }
+    #[cfg(not(feature = "web"))]
+    {
+        if running_frames <= 200 {
+            Duration::from_micros(8333) // ~120fps
+        } else {
+            match dt {
+                x if x < 0.005 => Duration::from_millis(8),  // ~120fps
+                x if x < 0.011 => Duration::from_millis(16), // ~60fps
+                _ => Duration::from_millis(33),              // ~30fps
+            }
+        }
+    }
+}
 
 /// Creates an animation manager that continuously updates a motion state.
 ///
@@ -113,7 +149,7 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
         // This executes after rendering is complete
         spawn(async move {
             let mut last_frame = Time::now();
-            let mut _running_frames = 0u32;
+            let mut running_frames = 0u32;
 
             loop {
                 let now = Time::now();
@@ -122,31 +158,25 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
 
                 // Only check if running first, then write to the signal
                 if (*state.peek()).is_running() {
-                    _running_frames += 1;
-                    (*state.write()).update(dt);
+                    running_frames += 1;
+                    let prev_value = (*state.peek()).get_value();
+                    let updated = (*state.write()).update(dt);
+                    let new_value = (*state.peek()).get_value();
+                    let epsilon = (*state.peek()).get_epsilon();
+                    // Only trigger a re-render if the value changed significantly
+                    if (new_value.sub(&prev_value)).magnitude() > epsilon || updated {
+                        // State has changed enough, continue
+                    } else {
+                        // Skip this frame's update to avoid unnecessary re-render
+                        let delay = calculate_delay(dt, running_frames);
+                        Time::delay(delay).await;
+                        continue;
+                    }
 
-                    #[cfg(feature = "web")]
-                    // Adaptive frame rate
-                    let delay = match dt {
-                        x if x < 0.008 => Duration::from_millis(8),  // ~120fps
-                        x if x < 0.016 => Duration::from_millis(16), // ~60fps
-                        _ => Duration::from_millis(32),              // ~30fps
-                    };
-
-                    #[cfg(not(feature = "web"))]
-                    let delay = match _running_frames {
-                        // Higher frame rate for the first ~200 frames for smooth starts
-                        0..=200 => Duration::from_micros(8333), // ~120fps
-                        _ => match dt {
-                            x if x < 0.005 => Duration::from_millis(8),  // ~120fps
-                            x if x < 0.011 => Duration::from_millis(16), // ~60fps
-                            _ => Duration::from_millis(33),              // ~30fps
-                        },
-                    };
-
+                    let delay = calculate_delay(dt, running_frames);
                     Time::delay(delay).await;
                 } else {
-                    _running_frames = 0;
+                    running_frames = 0;
                     Time::delay(idle_poll_rate).await;
                 }
             }

@@ -1,6 +1,6 @@
 //! AnimationSequence<T> - Animation step sequences
 
-use crate::animations::utils::Animatable;
+use crate::animations::core::Animatable;
 use crate::prelude::AnimationConfig;
 use smallvec::SmallVec;
 use std::sync::Arc;
