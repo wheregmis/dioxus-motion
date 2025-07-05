@@ -4,6 +4,7 @@
 //! Supports both normalized (0.0-1.0) and byte (0-255) color values.
 
 use crate::animations::core::Animatable;
+use crate::animations::epsilon::COLOR_EPSILON;
 use wide::f32x4;
 
 /// Represents an RGBA color with normalized components
@@ -77,7 +78,7 @@ impl Animatable for Color {
 
     /// Minimum difference between color components
     fn epsilon() -> f32 {
-        0.0001 // Increased precision for smoother transitions
+        COLOR_EPSILON // Standardized precision for color animations
     }
 
     /// Calculates color vector magnitude

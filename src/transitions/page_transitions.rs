@@ -10,6 +10,7 @@ use crate::{
 
 use super::config::TransitionVariant;
 use crate::animations::core::Animatable;
+use crate::animations::epsilon::PAGE_TRANSITION_EPSILON;
 use crate::prelude::Transform;
 use wide::f32x4;
 
@@ -93,7 +94,7 @@ impl Animatable for PageTransitionAnimation {
         }
     }
     fn epsilon() -> f32 {
-        0.005
+        PAGE_TRANSITION_EPSILON // Standardized precision for page transitions
     }
     fn magnitude(&self) -> f32 {
         (self.x * self.x
@@ -251,11 +252,13 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     use_effect(move || {
         from_anim.animate_to(
             PageTransitionAnimation::from_exit_end(&config),
-            AnimationConfig::new(AnimationMode::Spring(spring())).with_epsilon(0.01),
+            AnimationConfig::new(AnimationMode::Spring(spring()))
+                .with_epsilon(PAGE_TRANSITION_EPSILON),
         );
         to_anim.animate_to(
             PageTransitionAnimation::from_enter_end(&config),
-            AnimationConfig::new(AnimationMode::Spring(spring())).with_epsilon(0.01),
+            AnimationConfig::new(AnimationMode::Spring(spring()))
+                .with_epsilon(PAGE_TRANSITION_EPSILON),
         );
     });
 

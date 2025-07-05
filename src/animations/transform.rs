@@ -8,6 +8,7 @@
 //! Uses radians for rotation and supports smooth interpolation.
 
 use crate::Animatable;
+use crate::animations::epsilon::{DEFAULT_EPSILON, TRANSFORM_EPSILON};
 use wide::f32x4;
 
 /// Represents a 2D transformation with translation, scale, and rotation
@@ -60,7 +61,7 @@ impl Animatable for f32 {
     }
 
     fn epsilon() -> f32 {
-        0.001
+        DEFAULT_EPSILON // Standardized precision for numeric animations
     }
 
     fn magnitude(&self) -> f32 {
@@ -94,7 +95,7 @@ impl Animatable for Transform {
 
     /// Minimum meaningful difference between transforms
     fn epsilon() -> f32 {
-        0.01
+        TRANSFORM_EPSILON // Standardized precision for transform animations
     }
 
     /// Calculates the magnitude of the transform

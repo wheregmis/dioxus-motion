@@ -65,7 +65,7 @@ impl dioxus_motion::animations::core::Animatable for PetalTransform {
     }
 
     fn epsilon() -> f32 {
-        0.001
+        dioxus_motion::animations::epsilon::DEFAULT_EPSILON
     }
 
     fn magnitude(&self) -> f32 {
@@ -209,7 +209,7 @@ impl dioxus_motion::animations::core::Animatable for PetalTransform {
     }
 
     fn epsilon() -> f32 {
-        0.001
+        dioxus_motion::animations::epsilon::DEFAULT_EPSILON
     }
 
     fn magnitude(&self) -> f32 {
