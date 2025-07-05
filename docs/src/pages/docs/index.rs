@@ -157,11 +157,10 @@ fn SectionLink(to: Route, icon: &'static str, label: &'static str) -> Element {
                 let base_classes = "flex items-center gap-3 px-4 py-2 rounded-lg text-sm
                                                                          transition-all duration-300";
                 if is_active {
-                    format!("{} bg-primary/10 text-primary", base_classes)
+                    format!("{base_classes} bg-primary/10 text-primary")
                 } else {
                     format!(
-                        "{} text-text-secondary hover:text-text-primary hover:bg-surface-light/10",
-                        base_classes,
+                        "{base_classes} text-text-secondary hover:text-text-primary hover:bg-surface-light/10",
                     )
                 }
             },

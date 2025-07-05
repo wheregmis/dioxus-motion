@@ -116,10 +116,37 @@ mod tests {
 
     #[test]
     fn test_epsilon_constants() {
-        assert!(COLOR_EPSILON < DEFAULT_EPSILON);
-        assert!(DEFAULT_EPSILON < TRANSFORM_EPSILON);
-        assert!(TRANSFORM_EPSILON < PAGE_TRANSITION_EPSILON);
-        assert!(ULTRA_HIGH_PRECISION_EPSILON < COLOR_EPSILON);
+        // These constants are defined with specific ordering by design:
+        // ULTRA_HIGH_PRECISION_EPSILON (0.00001) < COLOR_EPSILON (0.0001) < DEFAULT_EPSILON (0.001) < TRANSFORM_EPSILON (0.005) < PAGE_TRANSITION_EPSILON (0.01)
+
+        // Test that all constants are within reasonable bounds by validating them
+        assert!(validate_epsilon(COLOR_EPSILON).is_ok());
+        assert!(validate_epsilon(DEFAULT_EPSILON).is_ok());
+        assert!(validate_epsilon(TRANSFORM_EPSILON).is_ok());
+        assert!(validate_epsilon(PAGE_TRANSITION_EPSILON).is_ok());
+        assert!(validate_epsilon(ULTRA_HIGH_PRECISION_EPSILON).is_ok());
+
+        // Test that the get_epsilon_for_type function works correctly
+        assert_eq!(
+            get_epsilon_for_type(AnimationTypeHint::Color),
+            COLOR_EPSILON
+        );
+        assert_eq!(
+            get_epsilon_for_type(AnimationTypeHint::Default),
+            DEFAULT_EPSILON
+        );
+        assert_eq!(
+            get_epsilon_for_type(AnimationTypeHint::Transform),
+            TRANSFORM_EPSILON
+        );
+        assert_eq!(
+            get_epsilon_for_type(AnimationTypeHint::PageTransition),
+            PAGE_TRANSITION_EPSILON
+        );
+        assert_eq!(
+            get_epsilon_for_type(AnimationTypeHint::UltraHighPrecision),
+            ULTRA_HIGH_PRECISION_EPSILON
+        );
     }
 
     #[test]

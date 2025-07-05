@@ -80,7 +80,7 @@ impl<T: Animatable> Motion<T> {
         let now = crate::Time::now().elapsed().as_secs_f32();
         if let Some((ref cached, cached_time)) = self.value_cache {
             if (now - cached_time).abs() < 0.001 {
-                return cached.clone();
+                return *cached;
             }
         }
         // Not cached or outdated, so cache and return current value
@@ -242,14 +242,14 @@ fn update_spring<T: Animatable>(motion: &mut Motion<T>, spring: Spring, dt: f32)
             let damping_force = state.vel.scale(damping);
             let acc = (force.sub(&damping_force)).scale(mass_inv);
             State {
-                pos: state.vel.clone(),
+                pos: state.vel,
                 vel: acc,
             }
         };
 
         let mut state = State {
-            pos: motion.current.clone(),
-            vel: motion.velocity.clone(),
+            pos: motion.current,
+            vel: motion.velocity,
         };
 
         let k1 = derive(&state);
