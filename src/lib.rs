@@ -81,9 +81,11 @@ pub mod prelude {
 pub type Time = MotionTime;
 
 /// Helper function to calculate the appropriate delay for the animation loop
-fn calculate_delay(dt: f32, _running_frames: u32) -> Duration {
+fn calculate_delay(dt: f32, running_frames: u32) -> Duration {
     #[cfg(feature = "web")]
     {
+        // running_frames is not used in web builds but kept for API consistency
+        let _ = running_frames;
         match dt {
             x if x < 0.008 => Duration::from_millis(8),  // ~120fps
             x if x < 0.016 => Duration::from_millis(16), // ~60fps
@@ -92,7 +94,7 @@ fn calculate_delay(dt: f32, _running_frames: u32) -> Duration {
     }
     #[cfg(not(feature = "web"))]
     {
-        if _running_frames <= 200 {
+        if running_frames <= 200 {
             Duration::from_micros(8333) // ~120fps
         } else {
             match dt {
@@ -147,7 +149,7 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
         // This executes after rendering is complete
         spawn(async move {
             let mut last_frame = Time::now();
-            let mut _running_frames = 0u32;
+            let mut running_frames = 0u32;
 
             loop {
                 let now = Time::now();
@@ -156,7 +158,7 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
 
                 // Only check if running first, then write to the signal
                 if (*state.peek()).is_running() {
-                    _running_frames += 1;
+                    running_frames += 1;
                     let prev_value = (*state.peek()).get_value();
                     let updated = (*state.write()).update(dt);
                     let new_value = (*state.peek()).get_value();
@@ -166,15 +168,15 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
                         // State has changed enough, continue
                     } else {
                         // Skip this frame's update to avoid unnecessary re-render
-                        let delay = calculate_delay(dt, _running_frames);
+                        let delay = calculate_delay(dt, running_frames);
                         Time::delay(delay).await;
                         continue;
                     }
 
-                    let delay = calculate_delay(dt, _running_frames);
+                    let delay = calculate_delay(dt, running_frames);
                     Time::delay(delay).await;
                 } else {
-                    _running_frames = 0;
+                    running_frames = 0;
                     Time::delay(idle_poll_rate).await;
                 }
             }
