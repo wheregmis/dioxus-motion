@@ -3,94 +3,139 @@
 @config './tailwind.config.js';
 
 @theme {
-  /* Typography */
-  --font-display: 'JetBrains Mono', monospace;
-  --font-body: 'Inter', sans-serif;
+    /* Typography */
+    --font-display: 'JetBrains Mono', monospace;
+    --font-body: 'Inter', sans-serif;
 
-  /* Base theme colors */
-  --color-background: oklch(0.04 0 0);
-  /* #0A0F1A */
-  --color-background-light: oklch(1 0 0);
-  /* #FFFFFF */
+    /* Base theme colors with Safari fallbacks */
+    --color-background: #0a0f1a;
+    /* Safari fallback */
+    --color-background: oklch(0.04 0 0);
+    --color-background-light: #ffffff;
+    /* Safari fallback */
+    --color-background-light: oklch(1 0 0);
 
-  /* Dark theme colors */
-  --color-dark-50: oklch(0.1 0 0);
-  --color-dark-100: oklch(0.15 0 0);
-  --color-dark-200: oklch(0.2 0 0);
-  --color-dark-300: oklch(0.25 0 0);
-  --color-dark-400: oklch(0.3 0 0);
+    /* Dark theme colors with Safari fallbacks */
+    --color-dark-50: #1a1a1a;
+    /* Safari fallback */
+    --color-dark-50: oklch(0.1 0 0);
+    --color-dark-100: #262626;
+    /* Safari fallback */
+    --color-dark-100: oklch(0.15 0 0);
+    --color-dark-200: #333333;
+    /* Safari fallback */
+    --color-dark-200: oklch(0.2 0 0);
+    --color-dark-300: #404040;
+    /* Safari fallback */
+    --color-dark-300: oklch(0.25 0 0);
+    --color-dark-400: #4d4d4d;
+    /* Safari fallback */
+    --color-dark-400: oklch(0.3 0 0);
 
-  /* Light theme colors */
-  --color-light-50: oklch(0.98 0 0);
-  --color-light-100: oklch(0.95 0 0);
-  --color-light-200: oklch(0.9 0 0);
-  --color-light-300: oklch(0.85 0 0);
-  --color-light-400: oklch(0.8 0 0);
+    /* Light theme colors with Safari fallbacks */
+    --color-light-50: #fafafa;
+    /* Safari fallback */
+    --color-light-50: oklch(0.98 0 0);
+    --color-light-100: #f5f5f5;
+    /* Safari fallback */
+    --color-light-100: oklch(0.95 0 0);
+    --color-light-200: #e5e5e5;
+    /* Safari fallback */
+    --color-light-200: oklch(0.9 0 0);
+    --color-light-300: #d4d4d4;
+    /* Safari fallback */
+    --color-light-300: oklch(0.85 0 0);
+    --color-light-400: #a3a3a3;
+    /* Safari fallback */
+    --color-light-400: oklch(0.8 0 0);
 
-  /* Primary colors - Rust orange */
-  --color-primary: oklch(0.75 0.15 30);
-  /* #CD7F32 - Rust bronze */
-  --color-primary-light: oklch(0.8 0.15 30);
-  /* #FFA07A - Light salmon */
-  --color-primary-dark: oklch(0.7 0.15 30);
-  /* #B87333 - Bronze */
-  --color-primary-hover: oklch(0.85 0.15 30);
+    /* Primary colors - Rust orange with Safari fallbacks */
+    --color-primary: #cd7f32;
+    /* Safari fallback */
+    --color-primary: oklch(0.75 0.15 30);
+    --color-primary-light: #ffa07a;
+    /* Safari fallback */
+    --color-primary-light: oklch(0.8 0.15 30);
+    --color-primary-dark: #b87333;
+    /* Safari fallback */
+    --color-primary-dark: oklch(0.7 0.15 30);
+    --color-primary-hover: #ff8c42;
+    /* Safari fallback */
+    --color-primary-hover: oklch(0.85 0.15 30);
 
-  /* Secondary colors - Rust gray */
-  --color-secondary: oklch(0.65 0.02 30);
-  /* #8B4513 - Saddle brown */
-  --color-secondary-light: oklch(0.9 0.02 30);
-  /* #DEB887 - Burly wood */
-  --color-secondary-dark: oklch(0.35 0.02 30);
-  /* #A0522D - Sienna */
+    /* Secondary colors - Rust gray with Safari fallbacks */
+    --color-secondary: #8b7355;
+    /* Safari fallback */
+    --color-secondary: oklch(0.65 0.02 30);
+    --color-secondary-light: #deb887;
+    /* Safari fallback */
+    --color-secondary-light: oklch(0.9 0.02 30);
+    --color-secondary-dark: #a0522d;
+    /* Safari fallback */
+    --color-secondary-dark: oklch(0.35 0.02 30);
 
-  /* Accent colors */
-  --color-accent-rust: oklch(0.75 0.15 30);
-  /* #CD7F32 - Rust bronze */
-  --color-accent-rust-hover: oklch(0.85 0.15 30);
-  /* #FFA07A - Light salmon */
+    /* Accent colors with Safari fallbacks */
+    --color-accent-rust: #cd7f32;
+    /* Safari fallback */
+    --color-accent-rust: oklch(0.75 0.15 30);
+    --color-accent-rust-hover: #ffa07a;
+    /* Safari fallback */
+    --color-accent-rust-hover: oklch(0.85 0.15 30);
 
-  /* Surface colors */
-  --color-surface: oklch(0.25 0 0);
-  /* #1F2937 */
-  --color-surface-light: oklch(0.35 0 0);
-  /* #374151 */
-  --color-surface-dark: oklch(0.15 0 0);
-  /* #111827 */
-  --color-surface-hover: oklch(0.15 0 0 / 0.7);
-  /* #111827B3 */
+    /* Surface colors with Safari fallbacks */
+    --color-surface: #1f2937;
+    /* Safari fallback */
+    --color-surface: oklch(0.25 0 0);
+    --color-surface-light: #374151;
+    /* Safari fallback */
+    --color-surface-light: oklch(0.35 0 0);
+    --color-surface-dark: #111827;
+    /* Safari fallback */
+    --color-surface-dark: oklch(0.15 0 0);
+    --color-surface-hover: rgba(17, 24, 39, 0.7);
+    /* Safari fallback */
+    --color-surface-hover: oklch(0.15 0 0 / 0.7);
 
-  /* Text colors */
-  --color-text-primary: oklch(1 0 0);
-  /* #FFFFFF */
-  --color-text-secondary: oklch(0.85 0 0);
-  /* #D1D5DB */
-  --color-text-muted: oklch(0.65 0 0);
-  /* #9CA3AF */
+    /* Text colors with Safari fallbacks */
+    --color-text-primary: #ffffff;
+    /* Safari fallback */
+    --color-text-primary: oklch(1 0 0);
+    --color-text-secondary: #d1d5db;
+    /* Safari fallback */
+    --color-text-secondary: oklch(0.85 0 0);
+    --color-text-muted: #9ca3af;
+    /* Safari fallback */
+    --color-text-muted: oklch(0.65 0 0);
 
-  /* Text colors for light mode */
-  --color-text-primary-light: oklch(0.15 0 0);
-  --color-text-secondary-light: oklch(0.25 0 0);
-  --color-text-muted-light: oklch(0.35 0 0);
+    /* Text colors for light mode with Safari fallbacks */
+    --color-text-primary-light: #262626;
+    /* Safari fallback */
+    --color-text-primary-light: oklch(0.15 0 0);
+    --color-text-secondary-light: #404040;
+    /* Safari fallback */
+    --color-text-secondary-light: oklch(0.25 0 0);
+    --color-text-muted-light: #525252;
+    /* Safari fallback */
+    --color-text-muted-light: oklch(0.35 0 0);
 
-  /* Transitions */
-  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  --ease-snappy: cubic-bezier(0.2, 0, 0, 1);
-  --transition-fast: 150ms var(--ease-snappy);
-  --transition-medium: 300ms var(--ease-smooth);
-  --transition-spring: 500ms var(--ease-spring);
+    /* Transitions */
+    --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    --ease-snappy: cubic-bezier(0.2, 0, 0, 1);
+    --transition-fast: 150ms var(--ease-snappy);
+    --transition-medium: 300ms var(--ease-smooth);
+    --transition-spring: 500ms var(--ease-spring);
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg:
-    0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-neumorphic:
-    20px 20px 60px #d9d9d9, -20px -20px 60px #ffffff,
-    0 4px 6px -1px rgba(255, 255, 255, 0.1),
-    0 2px 4px -1px rgba(255, 255, 255, 0.06),
-    0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg:
+        0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-neumorphic:
+        20px 20px 60px #d9d9d9, -20px -20px 60px #ffffff,
+        0 4px 6px -1px rgba(255, 255, 255, 0.1),
+        0 2px 4px -1px rgba(255, 255, 255, 0.06),
+        0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 /*
@@ -102,33 +147,85 @@
   color utility to any element that depends on these defaults.
 */
 @layer base {
-  *,
-  ::after,
-  ::before,
-  ::backdrop,
-  ::file-selector-button {
-    border-color: var(--color-gray-200, currentcolor);
-  }
+
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-gray-200, currentcolor);
+    }
 }
 
-/* Keyframes */
+/* Safari-specific optimizations */
+@supports (-webkit-backdrop-filter: blur(1px)) {
+    .backdrop-blur-xs {
+        -webkit-backdrop-filter: blur(4px);
+        backdrop-filter: blur(4px);
+    }
+
+    .backdrop-blur-md {
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+    }
+
+    .backdrop-blur-lg {
+        -webkit-backdrop-filter: blur(16px);
+        backdrop-filter: blur(16px);
+    }
+}
+
+/* Safari transform optimization */
+@media screen and (-webkit-min-device-pixel-ratio: 1) {
+    .transform-gpu {
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        -webkit-perspective: 1000px;
+        perspective: 1000px;
+    }
+
+    /* Optimize animations for Safari */
+    [style*="transform"] {
+        will-change: transform;
+        -webkit-transform-style: preserve-3d;
+        transform-style: preserve-3d;
+    }
+}
+
+/* Reduced motion support for Safari accessibility */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Keyframes optimized for Safari */
 @keyframes down {
     0% {
-        transform: translateY(0%);
+        transform: translateY(0%) translateZ(0);
+        will-change: transform;
     }
 
     100% {
-        transform: translateY(calc(45vh - 8rem));
+        transform: translateY(calc(45vh - 8rem)) translateZ(0);
     }
 }
 
 @keyframes shimmer {
     0% {
-        transform: translateX(-100%);
+        transform: translateX(-100%) translateZ(0);
+        will-change: transform;
     }
 
     100% {
-        transform: translateX(100%);
+        transform: translateX(100%) translateZ(0);
     }
 }
 
@@ -136,11 +233,12 @@
 
     0%,
     100% {
-        transform: translateY(0);
+        transform: translateY(0) translateZ(0);
+        will-change: transform;
     }
 
     50% {
-        transform: translateY(-10px);
+        transform: translateY(-10px) translateZ(0);
     }
 }
 
@@ -149,6 +247,7 @@
     0%,
     100% {
         filter: brightness(1);
+        will-change: filter;
     }
 
     50% {
@@ -156,21 +255,28 @@
     }
 }
 
-/* Animation classes */
+/* Animation classes optimized for Safari */
 .animate-move-down {
     animation: down 3s linear infinite;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
 }
 
 .animate-shimmer {
     animation: shimmer 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
 }
 
 .animate-float {
     animation: float 3s ease-in-out infinite;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
 }
 
 .animate-glow {
     animation: glow 2s ease-in-out infinite;
+    will-change: filter;
 }
 
 /* Gradient backgrounds */
@@ -261,28 +367,31 @@
 
     0%,
     100% {
-        transform: translateY(0);
+        transform: translateY(0) translateZ(0);
+        will-change: transform;
     }
 
     50% {
-        transform: translateY(-5px);
+        transform: translateY(-8px) translateZ(0);
     }
 }
 
 .logo-float {
-    animation: gentle-float 3s ease-in-out infinite;
+    animation: gentle-float 4s ease-in-out infinite;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
 }
 
-/* Animation keyframes */
 @keyframes float {
 
     0%,
     100% {
-        transform: translateY(0);
+        transform: translateY(0) translateZ(0);
+        will-change: transform;
     }
 
     50% {
-        transform: translateY(-10px);
+        transform: translateY(-10px) translateZ(0);
     }
 }
 
@@ -290,11 +399,12 @@
 
     0%,
     100% {
-        filter: brightness(1);
+        filter: brightness(1) contrast(1);
+        will-change: filter;
     }
 
     50% {
-        filter: brightness(1.2);
+        filter: brightness(1.2) contrast(1.1);
     }
 }
 
@@ -302,33 +412,32 @@
 
     0%,
     100% {
-        box-shadow: var(--shadow-glow-perf);
-        transform: scale(1);
+        transform: scale(1) translateZ(0);
+        opacity: 1;
+        will-change: transform, opacity;
     }
 
     50% {
-        box-shadow: none;
-        transform: scale(0.98);
+        transform: scale(1.05) translateZ(0);
+        opacity: 0.9;
     }
 }
 
-/* Animation classes */
 .animate-float {
     animation: float 3s ease-in-out infinite;
-    transform-style: preserve-3d;
-    will-change: transform;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
 }
 
 .animate-glow {
     animation: glow 2s ease-in-out infinite;
-    transform-style: preserve-3d;
-    will-change: transform;
+    will-change: filter;
 }
 
 .animate-performance {
-    animation: performance-pulse 1.5s var(--ease-spring) infinite;
-    transform-style: preserve-3d;
-    will-change: transform;
+    animation: performance-pulse 2s ease-in-out infinite;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
 }
 
 /* Layout utilities */
@@ -398,14 +507,19 @@
 
     0%,
     100% {
-        box-shadow: 0 0 0 0 var(--color-primary);
+        transform: scale(1) translateZ(0);
+        filter: brightness(1) hue-rotate(0deg);
+        will-change: transform, filter;
     }
 
     50% {
-        box-shadow: 0 0 20px 0 var(--color-primary);
+        transform: scale(1.02) translateZ(0);
+        filter: brightness(1.1) hue-rotate(5deg);
     }
 }
 
 .animate-rust-pulse {
-    animation: rust-pulse 2s infinite;
+    animation: rust-pulse 3s ease-in-out infinite;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
 }
