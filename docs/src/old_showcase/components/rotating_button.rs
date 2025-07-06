@@ -1,6 +1,18 @@
 use dioxus::prelude::*;
-use dioxus_motion::prelude::*;
+use dioxus_motion::{KeyframeAnimation, prelude::*};
 use easer::functions::Easing;
+
+// Helper function to safely build keyframe animations
+fn build_keyframes<T: dioxus_motion::animations::core::Animatable>(
+    duration: Duration,
+    keyframes: Vec<(T, f32, Option<fn(f32, f32, f32, f32) -> f32>)>,
+) -> Result<KeyframeAnimation<T>, dioxus_motion::keyframes::KeyframeError> {
+    let mut animation = KeyframeAnimation::new(duration);
+    for (value, offset, easing) in keyframes {
+        animation = animation.add_keyframe(value, offset, easing)?;
+    }
+    Ok(animation)
+}
 
 // A playful button that bounces on click
 #[component]
@@ -10,58 +22,48 @@ pub fn RotatingButton() -> Element {
     let mut glow = use_motion(0.0f32);
 
     let onclick = move |_| {
-        // Optimized scale sequence with better physics and smoother transitions
-        let scale_sequence = AnimationSequence::new()
-            .then(
-                1.15, // Reduced maximum scale for snappier feel
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 500.0, // Increased stiffness for faster response
-                    damping: 15.0,    // Balanced damping for controlled bounce
-                    mass: 0.8,        // Lighter mass for quicker movement
-                    velocity: 8.0,    // Increased initial velocity
-                })),
-            )
-            .then(
-                0.9, // Subtle scale down
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 400.0,
-                    damping: 12.0,
-                    mass: 0.6,
-                    velocity: -4.0, // Negative velocity for natural rebound
-                })),
-            )
-            .then(
-                1.0, // Return to original size
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 350.0,
-                    damping: 20.0, // Higher damping for smooth finish
-                    mass: 0.7,
-                    velocity: 0.0,
-                })),
-            );
-
-        // Optimized rotation with smoother easing
-        let rotation_sequence = AnimationSequence::new().then(
-            360.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(800),     // Faster rotation
-                easing: easer::functions::Expo::ease_out, // Smoother deceleration
-            })),
+        // Smooth scale keyframe animation for bounce effect
+        let scale_keyframes = build_keyframes(
+            Duration::from_millis(800),
+            vec![
+                (1.0, 0.0, Some(easer::functions::Expo::ease_out)), // Start
+                (1.15, 0.3, Some(easer::functions::Back::ease_out)), // Peak scale
+                (0.95, 0.7, Some(easer::functions::Bounce::ease_out)), // Slight undershoot
+                (1.0, 1.0, Some(easer::functions::Elastic::ease_out)), // Final rest
+            ],
         );
 
-        // Quick glow effect
-        glow.animate_to(
-            1.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 450.0,
-                damping: 15.0,
-                mass: 0.5,
-                velocity: 10.0,
-            })),
+        // Smooth rotation keyframe animation
+        let rotation_keyframes = build_keyframes(
+            Duration::from_millis(800),
+            vec![
+                (0.0, 0.0, Some(easer::functions::Cubic::ease_in_out)), // Start
+                (180.0, 0.5, Some(easer::functions::Expo::ease_in_out)), // Half rotation
+                (360.0, 1.0, Some(easer::functions::Back::ease_out)), // Full rotation with overshoot
+            ],
         );
 
-        scale.animate_sequence(scale_sequence);
-        rotation.animate_sequence(rotation_sequence);
+        // Quick glow effect with keyframes
+        let glow_keyframes = build_keyframes(
+            Duration::from_millis(600),
+            vec![
+                (0.0, 0.0, Some(easer::functions::Quart::ease_out)), // Start
+                (1.0, 0.2, Some(easer::functions::Expo::ease_out)),  // Peak glow
+                (0.3, 0.6, Some(easer::functions::Cubic::ease_in_out)), // Fade
+                (0.0, 1.0, Some(easer::functions::Quart::ease_in)),  // Fade out
+            ],
+        );
+
+        // Only animate if keyframe creation succeeded
+        if let Ok(scale_anim) = scale_keyframes {
+            scale.animate_keyframes(scale_anim);
+        }
+        if let Ok(rotation_anim) = rotation_keyframes {
+            rotation.animate_keyframes(rotation_anim);
+        }
+        if let Ok(glow_anim) = glow_keyframes {
+            glow.animate_keyframes(glow_anim);
+        }
     };
 
     rsx! {

@@ -22,33 +22,15 @@ impl PetalTransform {
     }
 }
 
-impl Animatable for PetalTransform {
-    fn zero() -> Self {
+impl Default for PetalTransform {
+    fn default() -> Self {
         Self::new(0.0, 0.0, 0.0, 0.0)
     }
+}
 
-    fn epsilon() -> f32 {
-        0.001
-    }
-
-    fn magnitude(&self) -> f32 {
-        (self.rotate * self.rotate
-            + self.scale * self.scale
-            + self.translate_x * self.translate_x
-            + self.translate_y * self.translate_y)
-            .sqrt()
-    }
-
-    fn scale(&self, factor: f32) -> Self {
-        Self::new(
-            self.rotate * factor,
-            self.scale * factor,
-            self.translate_x * factor,
-            self.translate_y * factor,
-        )
-    }
-
-    fn add(&self, other: &Self) -> Self {
+impl std::ops::Add for PetalTransform {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
         Self::new(
             self.rotate + other.rotate,
             self.scale + other.scale,
@@ -56,8 +38,11 @@ impl Animatable for PetalTransform {
             self.translate_y + other.translate_y,
         )
     }
+}
 
-    fn sub(&self, other: &Self) -> Self {
+impl std::ops::Sub for PetalTransform {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self {
         Self::new(
             self.rotate - other.rotate,
             self.scale - other.scale,
@@ -65,7 +50,21 @@ impl Animatable for PetalTransform {
             self.translate_y - other.translate_y,
         )
     }
+}
 
+impl std::ops::Mul<f32> for PetalTransform {
+    type Output = Self;
+    fn mul(self, factor: f32) -> Self {
+        Self::new(
+            self.rotate * factor,
+            self.scale * factor,
+            self.translate_x * factor,
+            self.translate_y * factor,
+        )
+    }
+}
+
+impl Animatable for PetalTransform {
     fn interpolate(&self, target: &Self, t: f32) -> Self {
         let a = [self.rotate, self.scale, self.translate_x, self.translate_y];
         let b = [
@@ -81,12 +80,20 @@ impl Animatable for PetalTransform {
         let out = result.to_array();
         PetalTransform::new(out[0], out[1], out[2], out[3])
     }
+
+    fn magnitude(&self) -> f32 {
+        (self.rotate * self.rotate
+            + self.scale * self.scale
+            + self.translate_x * self.translate_x
+            + self.translate_y * self.translate_y)
+            .sqrt()
+    }
 }
 
 #[component]
 pub fn AnimatedFlower() -> Element {
-    let mut petal_transform = use_motion(PetalTransform::zero());
-    let mut leaf_transform = use_motion(PetalTransform::zero());
+    let mut petal_transform = use_motion(PetalTransform::default());
+    let mut leaf_transform = use_motion(PetalTransform::default());
     let mut center_scale = use_motion(1.0f32); // Start from 1.0 instead of 0.0
     let mut center_rotate = use_motion(0.0f32);
     let mut is_leaves_grown = use_signal_sync(|| false);

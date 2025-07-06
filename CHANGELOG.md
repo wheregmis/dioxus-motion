@@ -6,12 +6,53 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### BREAKING CHANGES:
+- **Major Simplification: Simplified Animatable Trait**
+  - Reduced from 7 required methods to just 2: `interpolate()` and `magnitude()`
+  - Now leverages standard Rust operator traits (`Add`, `Sub`, `Mul<f32>`, `Default`)
+  - Eliminates custom `zero()`, `epsilon()`, `scale()`, `add()`, `sub()` methods
+  - Single default epsilon (0.01) for consistent behavior
+  - ~70% less boilerplate when implementing custom animatable types
+  
+- `KeyframeAnimation::add_keyframe` now returns a `Result`, not `Self`. Chaining requires `.and_then(...).unwrap()` or error handling. All documentation and guides updated to reflect this.
+
+### Migration Guide:
+For custom `Animatable` implementations:
+```rust
+// Before (Old trait):
+impl Animatable for MyType {
+    fn zero() -> Self { /* implementation */ }
+    fn epsilon() -> f32 { /* implementation */ }  
+    fn magnitude(&self) -> f32 { /* implementation */ }
+    fn scale(&self, factor: f32) -> Self { /* implementation */ }
+    fn add(&self, other: &Self) -> Self { /* implementation */ }
+    fn sub(&self, other: &Self) -> Self { /* implementation */ }
+    fn interpolate(&self, target: &Self, t: f32) -> Self { /* implementation */ }
+}
+
+// After (New simplified trait):
+#[derive(Default)] // Add Default derive
+impl Animatable for MyType {
+    fn interpolate(&self, target: &Self, t: f32) -> Self { /* implementation */ }
+    fn magnitude(&self) -> f32 { /* implementation */ }
+}
+
+// Also implement standard operators:
+impl Add for MyType { /* standard addition */ }
+impl Sub for MyType { /* standard subtraction */ }
+impl Mul<f32> for MyType { /* scalar multiplication */ }
+```
+
+Replace `MyType::zero()` calls with `MyType::default()`.
+
 ### Fixes:
 - Layout not being shown when animating in the case of nested Layouts
 - Nested Layout fully fixed
 ### Changes:
 - Few code refactoring
-- BREAKING: `KeyframeAnimation::add_keyframe` now returns a `Result`, not `Self`. Chaining requires `.and_then(...).unwrap()` or error handling. All documentation and guides updated to reflect this.
+- Simplified epsilon system with single default value (0.01)
+- Updated all built-in types (f32, Transform, Color, PageTransitionAnimation) to use new trait
+- Enhanced documentation with simplified examples
 
 ## [0.3.1] - 2024-02-08
 - Rerelease

@@ -33,37 +33,15 @@ impl Transform3D {
     }
 }
 
-impl Animatable for Transform3D {
-    fn zero() -> Self {
+impl Default for Transform3D {
+    fn default() -> Self {
         Self::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0)
     }
+}
 
-    fn epsilon() -> f32 {
-        0.001
-    }
-
-    fn magnitude(&self) -> f32 {
-        (self.rotate_x * self.rotate_x
-            + self.rotate_y * self.rotate_y
-            + self.rotate_z * self.rotate_z
-            + self.translate_x * self.translate_x
-            + self.translate_y * self.translate_y
-            + self.scale * self.scale)
-            .sqrt()
-    }
-
-    fn scale(&self, factor: f32) -> Self {
-        Self::new(
-            self.rotate_x * factor,
-            self.rotate_y * factor,
-            self.rotate_z * factor,
-            self.translate_x * factor,
-            self.translate_y * factor,
-            self.scale * factor,
-        )
-    }
-
-    fn add(&self, other: &Self) -> Self {
+impl std::ops::Add for Transform3D {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
         Self::new(
             self.rotate_x + other.rotate_x,
             self.rotate_y + other.rotate_y,
@@ -73,8 +51,11 @@ impl Animatable for Transform3D {
             self.scale + other.scale,
         )
     }
+}
 
-    fn sub(&self, other: &Self) -> Self {
+impl std::ops::Sub for Transform3D {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self {
         Self::new(
             self.rotate_x - other.rotate_x,
             self.rotate_y - other.rotate_y,
@@ -84,7 +65,23 @@ impl Animatable for Transform3D {
             self.scale - other.scale,
         )
     }
+}
 
+impl std::ops::Mul<f32> for Transform3D {
+    type Output = Self;
+    fn mul(self, factor: f32) -> Self {
+        Self::new(
+            self.rotate_x * factor,
+            self.rotate_y * factor,
+            self.rotate_z * factor,
+            self.translate_x * factor,
+            self.translate_y * factor,
+            self.scale * factor,
+        )
+    }
+}
+
+impl Animatable for Transform3D {
     fn interpolate(&self, target: &Self, t: f32) -> Self {
         // SIMD for the first 4 fields
         let a1 = [
@@ -112,6 +109,16 @@ impl Animatable for Transform3D {
         let result2 = va2 + (vb2 - va2) * vt;
         let out2 = result2.to_array();
         Self::new(out1[0], out1[1], out1[2], out1[3], out2[0], out2[1])
+    }
+
+    fn magnitude(&self) -> f32 {
+        (self.rotate_x * self.rotate_x
+            + self.rotate_y * self.rotate_y
+            + self.rotate_z * self.rotate_z
+            + self.translate_x * self.translate_x
+            + self.translate_y * self.translate_y
+            + self.scale * self.scale)
+            .sqrt()
     }
 }
 
@@ -218,7 +225,7 @@ const FACES: [[usize; 4]; 6] = [
 
 #[component]
 pub fn SwingingCube() -> Element {
-    let mut transform = use_motion(Transform3D::zero());
+    let mut transform = use_motion(Transform3D::default());
     let mut glow_scale = use_motion(1.0f32);
     let mut pulse_scale = use_motion(1.0f32);
     let mut highlight_opacity = use_motion(0.0f32);

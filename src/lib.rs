@@ -4,12 +4,14 @@
 //! Supports both spring physics and tween-based animations with configurable parameters.
 //!
 //! # Features
+//! - **Simplified Animatable trait** - Uses standard Rust operators (`+`, `-`, `*`) for math operations
 //! - Spring physics animations
 //! - Tween animations with custom easing
 //! - Color interpolation
 //! - Transform animations
 //! - Configurable animation loops
 //! - Animation sequences
+//! - Single default epsilon (0.01) for consistent animation completion
 //!
 //! # Example
 //! ```rust,no_run
@@ -17,15 +19,60 @@
 //!
 //! let mut value = use_motion(0.0f32);
 //!
-//! // Basic animation with default epsilon
+//! // Basic animation - uses default epsilon (0.01) for completion detection
 //! value.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
 //!
-//! // Animation with custom epsilon for fine-tuned performance
+//! // Animation with custom epsilon for fine-tuned performance (optional)
 //! value.animate_to(
 //!     100.0,
 //!     AnimationConfig::new(AnimationMode::Spring(Spring::default()))
-//!         .with_epsilon(0.01) // Custom threshold for completion detection
+//!         .with_epsilon(0.001) // Tighter threshold for high-precision animations
 //! );
+//! ```
+//!
+//! # Creating Custom Animatable Types
+//!
+//! The simplified `Animatable` trait requires only two methods and leverages standard Rust traits:
+//!
+//! ```rust
+//! use dioxus_motion::prelude::*;
+//! use dioxus_motion::animations::core::Animatable;
+//!
+//! #[derive(Debug, Copy, Clone, PartialEq, Default)]
+//! struct Point { x: f32, y: f32 }
+//!
+//! // Implement standard math operators
+//! impl std::ops::Add for Point {
+//!     type Output = Self;
+//!     fn add(self, other: Self) -> Self {
+//!         Self { x: self.x + other.x, y: self.y + other.y }
+//!     }
+//! }
+//!
+//! impl std::ops::Sub for Point {
+//!     type Output = Self;
+//!     fn sub(self, other: Self) -> Self {
+//!         Self { x: self.x - other.x, y: self.y - other.y }
+//!     }
+//! }
+//!
+//! impl std::ops::Mul<f32> for Point {
+//!     type Output = Self;
+//!     fn mul(self, factor: f32) -> Self {
+//!         Self { x: self.x * factor, y: self.y * factor }
+//!     }
+//! }
+//!
+//! // Implement Animatable with just two methods
+//! impl Animatable for Point {
+//!     fn interpolate(&self, target: &Self, t: f32) -> Self {
+//!         *self + (*target - *self) * t
+//!     }
+//!     
+//!     fn magnitude(&self) -> f32 {
+//!         (self.x * self.x + self.y * self.y).sqrt()
+//!     }
+//! }
 //! ```
 
 #![deny(clippy::unwrap_used)]
@@ -164,7 +211,7 @@ pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
                     let new_value = (*state.peek()).get_value();
                     let epsilon = (*state.peek()).get_epsilon();
                     // Only trigger a re-render if the value changed significantly
-                    if (new_value.sub(&prev_value)).magnitude() > epsilon || updated {
+                    if (new_value - prev_value).magnitude() > epsilon || updated {
                         // State has changed enough, continue
                     } else {
                         // Skip this frame's update to avoid unnecessary re-render

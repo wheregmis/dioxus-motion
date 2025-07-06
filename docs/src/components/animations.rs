@@ -2,7 +2,6 @@ use crate::components::code_block::CodeBlock;
 use dioxus::prelude::*;
 use dioxus_motion::{animations::core::Animatable, prelude::*};
 use easer::functions::Easing;
-use wide::f32x4;
 
 #[component]
 fn AnimationStep(title: String, description: String, code: String, children: Element) -> Element {
@@ -132,60 +131,56 @@ struct ColorValue {
     b: f32,
 }
 
-impl Animatable for ColorValue {
-    fn zero() -> Self {
+impl Default for ColorValue {
+    fn default() -> Self {
         ColorValue {
             r: 0.0,
             g: 0.0,
             b: 0.0,
         }
     }
+}
 
-    fn epsilon() -> f32 {
-        0.001
-    }
-
-    fn magnitude(&self) -> f32 {
-        (self.r * self.r + self.g * self.g + self.b * self.b).sqrt()
-    }
-
-    fn scale(&self, factor: f32) -> Self {
-        ColorValue {
-            r: (self.r * factor).clamp(0.0, 1.0),
-            g: (self.g * factor).clamp(0.0, 1.0),
-            b: (self.b * factor).clamp(0.0, 1.0),
-        }
-    }
-
-    fn add(&self, other: &Self) -> Self {
+impl std::ops::Add for ColorValue {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
         ColorValue {
             r: (self.r + other.r).clamp(0.0, 1.0),
             g: (self.g + other.g).clamp(0.0, 1.0),
             b: (self.b + other.b).clamp(0.0, 1.0),
         }
     }
+}
 
-    fn sub(&self, other: &Self) -> Self {
+impl std::ops::Sub for ColorValue {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self {
         ColorValue {
             r: (self.r - other.r).clamp(0.0, 1.0),
             g: (self.g - other.g).clamp(0.0, 1.0),
             b: (self.b - other.b).clamp(0.0, 1.0),
         }
     }
+}
 
-    fn interpolate(&self, target: &Self, t: f32) -> Self {
-        let a = [self.r, self.g, self.b, 0.0];
-        let b = [target.r, target.g, target.b, 0.0];
-        let va = f32x4::new(a);
-        let vb = f32x4::new(b);
-        let vt = f32x4::splat(t);
-        let result = va + (vb - va) * vt;
-        let out = result.to_array();
+impl std::ops::Mul<f32> for ColorValue {
+    type Output = Self;
+    fn mul(self, factor: f32) -> Self {
         ColorValue {
-            r: out[0],
-            g: out[1],
-            b: out[2],
+            r: (self.r * factor).clamp(0.0, 1.0),
+            g: (self.g * factor).clamp(0.0, 1.0),
+            b: (self.b * factor).clamp(0.0, 1.0),
         }
+    }
+}
+
+impl Animatable for ColorValue {
+    fn interpolate(&self, target: &Self, t: f32) -> Self {
+        *self + (*target - *self) * t
+    }
+
+    fn magnitude(&self) -> f32 {
+        (self.r * self.r + self.g * self.g + self.b * self.b).sqrt()
     }
 }
 
@@ -486,22 +481,54 @@ struct ColorValue {
     r: f32, g: f32, b: f32,
 }
 
-// Implement Animatable to enable animation
+// Implement standard Rust operator traits
+impl std::ops::Add for ColorValue {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
+        ColorValue {
+            r: (self.r + other.r).clamp(0.0, 1.0),
+            g: (self.g + other.g).clamp(0.0, 1.0),
+            b: (self.b + other.b).clamp(0.0, 1.0),
+        }
+    }
+}
+
+impl std::ops::Sub for ColorValue {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self {
+        ColorValue {
+            r: (self.r - other.r).clamp(0.0, 1.0),
+            g: (self.g - other.g).clamp(0.0, 1.0),
+            b: (self.b - other.b).clamp(0.0, 1.0),
+        }
+    }
+}
+
+impl std::ops::Mul<f32> for ColorValue {
+    type Output = Self;
+    fn mul(self, factor: f32) -> Self {
+        ColorValue {
+            r: (self.r * factor).clamp(0.0, 1.0),
+            g: (self.g * factor).clamp(0.0, 1.0),
+            b: (self.b * factor).clamp(0.0, 1.0),
+        }
+    }
+}
+
+impl Default for ColorValue {
+    fn default() -> Self {
+        ColorValue { r: 0.0, g: 0.0, b: 0.0 }
+    }
+}
+
+// Implement Animatable with only 2 required methods
 impl Animatable for ColorValue {
-    fn zero() -> Self { ColorValue { r: 0.0, g: 0.0, b: 0.0 } }
-    fn epsilon() -> f32 { 0.001 }
+    fn interpolate(&self, target: &Self, t: f32) -> Self {
+        *self + (*target - *self) * t
+    }
+    
     fn magnitude(&self) -> f32 {
         (self.r * self.r + self.g * self.g + self.b * self.b).sqrt()
-    }
-    fn interpolate(&self, target: &Self, t: f32) -> Self {
-        let a = [self.r, self.g, self.b, 0.0];
-        let b = [target.r, target.g, target.b, 0.0];
-        let va = f32x4::new(a);
-        let vb = f32x4::new(b);
-        let vt = f32x4::splat(t);
-        let result = va + (vb - va) * vt;
-        let out = result.to_array();
-        ColorValue { r: out[0], g: out[1], b: out[2] }
     }
 }
 

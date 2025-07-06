@@ -31,7 +31,7 @@ impl<T: Animatable> Motion<T> {
             initial,
             current: initial,
             target: initial,
-            velocity: T::zero(),
+            velocity: T::default(),
             running: false,
             elapsed: Duration::default(),
             delay_elapsed: Duration::default(),
@@ -53,7 +53,7 @@ impl<T: Animatable> Motion<T> {
         self.running = true;
         self.elapsed = Duration::default();
         self.delay_elapsed = Duration::default();
-        self.velocity = T::zero();
+        self.velocity = T::default();
         self.current_loop = 0;
     }
 
@@ -72,7 +72,7 @@ impl<T: Animatable> Motion<T> {
         self.keyframe_animation = Some(Arc::new(animation));
         self.running = true;
         self.elapsed = Duration::default();
-        self.velocity = T::zero();
+        self.velocity = T::default();
     }
 
     pub fn get_value(&self) -> T {
@@ -105,7 +105,7 @@ impl<T: Animatable> Motion<T> {
         self.value_cache = None;
         self.running = false;
         self.current_loop = 0;
-        self.velocity = T::zero();
+        self.velocity = T::default();
         self.sequence = None;
         self.keyframe_animation = None;
     }
@@ -149,7 +149,7 @@ impl<T: Animatable> Motion<T> {
                     self.running = true;
                     self.elapsed = Duration::default();
                     self.delay_elapsed = Duration::default();
-                    self.velocity = T::zero();
+                    self.velocity = T::default();
                     return true;
                 } else {
                     let mut sequence_clone = (**sequence).clone();
@@ -204,10 +204,10 @@ fn update_spring<T: Animatable>(motion: &mut Motion<T>, spring: Spring, dt: f32)
     let mass_inv = 1.0 / spring.mass;
 
     // Check for completion first
-    let delta = motion.target.sub(&motion.current);
+    let delta = motion.target - motion.current;
     if delta.magnitude() < epsilon && motion.velocity.magnitude() < epsilon {
         motion.current = motion.target;
-        motion.velocity = T::zero();
+        motion.velocity = T::default();
         return SpringState::Completed;
     }
 
@@ -219,12 +219,10 @@ fn update_spring<T: Animatable>(motion: &mut Motion<T>, spring: Spring, dt: f32)
         let step_dt = dt / steps as f32;
 
         for _ in 0..steps {
-            let force = delta.scale(stiffness);
-            let damping_force = motion.velocity.scale(damping);
-            motion.velocity = motion
-                .velocity
-                .add(&(force.sub(&damping_force)).scale(mass_inv * step_dt));
-            motion.current = motion.current.add(&motion.velocity.scale(step_dt));
+            let force = delta * stiffness;
+            let damping_force = motion.velocity * damping;
+            motion.velocity = motion.velocity + (force - damping_force) * (mass_inv * step_dt);
+            motion.current = motion.current + motion.velocity * step_dt;
         }
     }
 
@@ -237,10 +235,10 @@ fn update_spring<T: Animatable>(motion: &mut Motion<T>, spring: Spring, dt: f32)
         }
 
         let derive = |state: &State<T>| -> State<T> {
-            let delta = motion.target.sub(&state.pos);
-            let force = delta.scale(stiffness);
-            let damping_force = state.vel.scale(damping);
-            let acc = (force.sub(&damping_force)).scale(mass_inv);
+            let delta = motion.target - state.pos;
+            let force = delta * stiffness;
+            let damping_force = state.vel * damping;
+            let acc = (force - damping_force) * mass_inv;
             State {
                 pos: state.vel,
                 vel: acc,
@@ -254,33 +252,22 @@ fn update_spring<T: Animatable>(motion: &mut Motion<T>, spring: Spring, dt: f32)
 
         let k1 = derive(&state);
         let k2 = derive(&State {
-            pos: state.pos.add(&k1.pos.scale(dt * 0.5)),
-            vel: state.vel.add(&k1.vel.scale(dt * 0.5)),
+            pos: state.pos + k1.pos * (dt * 0.5),
+            vel: state.vel + k1.vel * (dt * 0.5),
         });
         let k3 = derive(&State {
-            pos: state.pos.add(&k2.pos.scale(dt * 0.5)),
-            vel: state.vel.add(&k2.vel.scale(dt * 0.5)),
+            pos: state.pos + k2.pos * (dt * 0.5),
+            vel: state.vel + k2.vel * (dt * 0.5),
         });
         let k4 = derive(&State {
-            pos: state.pos.add(&k3.pos.scale(dt)),
-            vel: state.vel.add(&k3.vel.scale(dt)),
+            pos: state.pos + k3.pos * dt,
+            vel: state.vel + k3.vel * dt,
         });
 
         const SIXTH: f32 = 1.0 / 6.0;
-        motion.current = state.pos.add(
-            &(k1.pos
-                .add(&k2.pos.scale(2.0))
-                .add(&k3.pos.scale(2.0))
-                .add(&k4.pos))
-            .scale(dt * SIXTH),
-        );
-        motion.velocity = state.vel.add(
-            &(k1.vel
-                .add(&k2.vel.scale(2.0))
-                .add(&k3.vel.scale(2.0))
-                .add(&k4.vel))
-            .scale(dt * SIXTH),
-        );
+        motion.current = state.pos + (k1.pos + k2.pos * 2.0 + k3.pos * 2.0 + k4.pos) * (dt * SIXTH);
+        motion.velocity =
+            state.vel + (k1.vel + k2.vel * 2.0 + k3.vel * 2.0 + k4.vel) * (dt * SIXTH);
     }
 
     check_spring_completion(motion)
@@ -290,11 +277,11 @@ fn check_spring_completion<T: Animatable>(motion: &mut Motion<T>) -> SpringState
     let epsilon = motion.get_epsilon();
     let epsilon_sq = epsilon * epsilon;
     let velocity_sq = motion.velocity.magnitude().powi(2);
-    let delta = motion.target.sub(&motion.current);
+    let delta = motion.target - motion.current;
     let delta_sq = delta.magnitude().powi(2);
     if velocity_sq < epsilon_sq && delta_sq < epsilon_sq {
         motion.current = motion.target;
-        motion.velocity = T::zero();
+        motion.velocity = T::default();
         SpringState::Completed
     } else {
         SpringState::Active
@@ -335,7 +322,7 @@ fn handle_completion<T: Animatable>(motion: &mut Motion<T>) -> bool {
         LoopMode::Infinite => {
             motion.current = motion.initial;
             motion.elapsed = Duration::default();
-            motion.velocity = T::zero();
+            motion.velocity = T::default();
             true
         }
         LoopMode::Times(count) => {
@@ -346,7 +333,7 @@ fn handle_completion<T: Animatable>(motion: &mut Motion<T>) -> bool {
             } else {
                 motion.current = motion.initial;
                 motion.elapsed = Duration::default();
-                motion.velocity = T::zero();
+                motion.velocity = T::default();
                 true
             }
         }
@@ -356,7 +343,7 @@ fn handle_completion<T: Animatable>(motion: &mut Motion<T>) -> bool {
                 std::mem::swap(&mut motion.initial, &mut motion.target);
             }
             motion.elapsed = Duration::default();
-            motion.velocity = T::zero();
+            motion.velocity = T::default();
             true
         }
         LoopMode::AlternateTimes(count) => {
@@ -370,7 +357,7 @@ fn handle_completion<T: Animatable>(motion: &mut Motion<T>) -> bool {
                     std::mem::swap(&mut motion.initial, &mut motion.target);
                 }
                 motion.elapsed = Duration::default();
-                motion.velocity = T::zero();
+                motion.velocity = T::default();
                 true
             }
         }
