@@ -10,7 +10,6 @@ use crate::{
 
 use super::config::TransitionVariant;
 use crate::animations::core::Animatable;
-use crate::animations::epsilon::PAGE_TRANSITION_EPSILON;
 use crate::prelude::Transform;
 use wide::f32x4;
 
@@ -83,37 +82,22 @@ impl PageTransitionAnimation {
     }
 }
 
-impl Animatable for PageTransitionAnimation {
-    fn zero() -> Self {
+impl Default for PageTransitionAnimation {
+    fn default() -> Self {
         Self {
             x: 0.0,
             y: 0.0,
-            scale: 0.0,
+            scale: 1.0, // Default scale to 1.0 for identity
             rotation: 0.0,
-            opacity: 0.0,
+            opacity: 1.0, // Default to fully opaque
         }
     }
-    fn epsilon() -> f32 {
-        PAGE_TRANSITION_EPSILON // Standardized precision for page transitions
-    }
-    fn magnitude(&self) -> f32 {
-        (self.x * self.x
-            + self.y * self.y
-            + self.scale * self.scale
-            + self.rotation * self.rotation
-            + self.opacity * self.opacity)
-            .sqrt()
-    }
-    fn scale(&self, factor: f32) -> Self {
-        Self {
-            x: self.x * factor,
-            y: self.y * factor,
-            scale: self.scale * factor,
-            rotation: self.rotation * factor,
-            opacity: self.opacity * factor,
-        }
-    }
-    fn add(&self, other: &Self) -> Self {
+}
+
+impl std::ops::Add for PageTransitionAnimation {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
         Self {
             x: self.x + other.x,
             y: self.y + other.y,
@@ -122,7 +106,12 @@ impl Animatable for PageTransitionAnimation {
             opacity: self.opacity + other.opacity,
         }
     }
-    fn sub(&self, other: &Self) -> Self {
+}
+
+impl std::ops::Sub for PageTransitionAnimation {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
         Self {
             x: self.x - other.x,
             y: self.y - other.y,
@@ -131,6 +120,23 @@ impl Animatable for PageTransitionAnimation {
             opacity: self.opacity - other.opacity,
         }
     }
+}
+
+impl std::ops::Mul<f32> for PageTransitionAnimation {
+    type Output = Self;
+
+    fn mul(self, factor: f32) -> Self {
+        Self {
+            x: self.x * factor,
+            y: self.y * factor,
+            scale: self.scale * factor,
+            rotation: self.rotation * factor,
+            opacity: self.opacity * factor,
+        }
+    }
+}
+
+impl Animatable for PageTransitionAnimation {
     fn interpolate(&self, target: &Self, t: f32) -> Self {
         let a = [self.x, self.y, self.scale, self.opacity];
         let b = [target.x, target.y, target.scale, target.opacity];
@@ -139,6 +145,7 @@ impl Animatable for PageTransitionAnimation {
         let vt = f32x4::splat(t.clamp(0.0, 1.0));
         let result = va + (vb - va) * vt;
         let out = result.to_array();
+
         // Rotation: shortest path
         let mut rotation_diff = target.rotation - self.rotation;
         if rotation_diff > std::f32::consts::PI {
@@ -147,6 +154,7 @@ impl Animatable for PageTransitionAnimation {
             rotation_diff += 2.0 * std::f32::consts::PI;
         }
         let rotation = self.rotation + rotation_diff * t;
+
         Self {
             x: out[0],
             y: out[1],
@@ -154,6 +162,15 @@ impl Animatable for PageTransitionAnimation {
             rotation,
             opacity: out[3],
         }
+    }
+
+    fn magnitude(&self) -> f32 {
+        (self.x * self.x
+            + self.y * self.y
+            + self.scale * self.scale
+            + self.rotation * self.rotation
+            + self.opacity * self.opacity)
+            .sqrt()
     }
 }
 
@@ -252,13 +269,11 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     use_effect(move || {
         from_anim.animate_to(
             PageTransitionAnimation::from_exit_end(&config),
-            AnimationConfig::new(AnimationMode::Spring(spring()))
-                .with_epsilon(PAGE_TRANSITION_EPSILON),
+            AnimationConfig::new(AnimationMode::Spring(spring())),
         );
         to_anim.animate_to(
             PageTransitionAnimation::from_enter_end(&config),
-            AnimationConfig::new(AnimationMode::Spring(spring()))
-                .with_epsilon(PAGE_TRANSITION_EPSILON),
+            AnimationConfig::new(AnimationMode::Spring(spring())),
         );
     });
 

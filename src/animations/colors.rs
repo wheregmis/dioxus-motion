@@ -4,7 +4,6 @@
 //! Supports both normalized (0.0-1.0) and byte (0-255) color values.
 
 use crate::animations::core::Animatable;
-use crate::animations::epsilon::COLOR_EPSILON;
 use wide::f32x4;
 
 /// Represents an RGBA color with normalized components
@@ -69,64 +68,54 @@ impl Color {
     }
 }
 
-/// Implementation of animation interpolation for Color
+impl Default for Color {
+    fn default() -> Self {
+        Color::new(0.0, 0.0, 0.0, 1.0) // Black with full opacity
+    }
+}
+
+impl std::ops::Add for Color {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Color::new(
+            (self.r + other.r).clamp(0.0, 1.0),
+            (self.g + other.g).clamp(0.0, 1.0),
+            (self.b + other.b).clamp(0.0, 1.0),
+            (self.a + other.a).clamp(0.0, 1.0),
+        )
+    }
+}
+
+impl std::ops::Sub for Color {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Color::new(
+            (self.r - other.r).clamp(0.0, 1.0),
+            (self.g - other.g).clamp(0.0, 1.0),
+            (self.b - other.b).clamp(0.0, 1.0),
+            (self.a - other.a).clamp(0.0, 1.0),
+        )
+    }
+}
+
+impl std::ops::Mul<f32> for Color {
+    type Output = Self;
+
+    fn mul(self, factor: f32) -> Self {
+        Color::new(
+            (self.r * factor).clamp(0.0, 1.0),
+            (self.g * factor).clamp(0.0, 1.0),
+            (self.b * factor).clamp(0.0, 1.0),
+            (self.a * factor).clamp(0.0, 1.0),
+        )
+    }
+}
+
+/// Implementation of Animatable for Color
+/// Much simpler with the new trait design - uses standard operators
 impl Animatable for Color {
-    /// Creates a fully transparent black color
-    fn zero() -> Self {
-        Color::new(0.0, 0.0, 0.0, 0.0)
-    }
-
-    /// Minimum difference between color components
-    fn epsilon() -> f32 {
-        COLOR_EPSILON // Standardized precision for color animations
-    }
-
-    /// Calculates color vector magnitude
-    fn magnitude(&self) -> f32 {
-        // Weighted magnitude calculation for better precision
-        let r_diff = self.r;
-        let g_diff = self.g;
-        let b_diff = self.b;
-        let a_diff = self.a;
-
-        (r_diff * r_diff + g_diff * g_diff + b_diff * b_diff + a_diff * a_diff).sqrt()
-    }
-
-    /// Scales color components by a factor
-    fn scale(&self, factor: f32) -> Self {
-        Color::new(
-            self.r * factor,
-            self.g * factor,
-            self.b * factor,
-            self.a * factor,
-        )
-    }
-
-    /// Adds two colors component-wise
-    fn add(&self, other: &Self) -> Self {
-        Color::new(
-            self.r + other.r,
-            self.g + other.g,
-            self.b + other.b,
-            self.a + other.a,
-        )
-    }
-
-    /// Subtracts two colors component-wise
-    fn sub(&self, other: &Self) -> Self {
-        Color::new(
-            self.r - other.r,
-            self.g - other.g,
-            self.b - other.b,
-            self.a - other.a,
-        )
-    }
-
-    /// Linearly interpolates between two colors
-    ///
-    /// # Parameters
-    /// * `target` - Target color to interpolate towards
-    /// * `t` - Interpolation factor (0.0-1.0)
     fn interpolate(&self, target: &Self, t: f32) -> Self {
         let a = [self.r, self.g, self.b, self.a];
         let b = [target.r, target.g, target.b, target.a];
@@ -137,6 +126,12 @@ impl Animatable for Color {
         let out = result.to_array();
         Color::new(out[0], out[1], out[2], out[3])
     }
+
+    fn magnitude(&self) -> f32 {
+        (self.r * self.r + self.g * self.g + self.b * self.b + self.a * self.a).sqrt()
+    }
+
+    // Uses default epsilon of 0.01 from the trait - no need for COLOR_EPSILON
 }
 
 #[cfg(test)]

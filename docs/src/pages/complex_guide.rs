@@ -15,15 +15,6 @@ struct PetalTransform {
 }
 
 impl PetalTransform {
-    fn zero() -> Self {
-        Self {
-            rotate: 0.0,
-            scale: 0.0,
-            translate_x: 0.0,
-            translate_y: 0.0,
-        }
-    }
-
     fn new(rotate: f32, scale: f32, translate_x: f32, translate_y: f32) -> Self {
         Self {
             rotate,
@@ -59,13 +50,37 @@ impl std::ops::Add for PetalTransform {
     }
 }
 
-impl dioxus_motion::animations::core::Animatable for PetalTransform {
-    fn zero() -> Self {
-        Self::zero()
+impl Default for PetalTransform {
+    fn default() -> Self {
+        Self {
+            rotate: 0.0,
+            scale: 1.0, // Default scale to 1.0 for identity
+            translate_x: 0.0,
+            translate_y: 0.0,
+        }
     }
+}
 
-    fn epsilon() -> f32 {
-        dioxus_motion::animations::epsilon::DEFAULT_EPSILON
+impl std::ops::Sub for PetalTransform {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        Self {
+            rotate: self.rotate - rhs.rotate,
+            scale: self.scale - rhs.scale,
+            translate_x: self.translate_x - rhs.translate_x,
+            translate_y: self.translate_y - rhs.translate_y,
+        }
+    }
+}
+
+impl dioxus_motion::animations::core::Animatable for PetalTransform {
+    fn interpolate(&self, other: &Self, t: f32) -> Self {
+        Self::new(
+            self.rotate + (other.rotate - self.rotate) * t,
+            self.scale + (other.scale - self.scale) * t,
+            self.translate_x + (other.translate_x - self.translate_x) * t,
+            self.translate_y + (other.translate_y - self.translate_y) * t,
+        )
     }
 
     fn magnitude(&self) -> f32 {
@@ -76,41 +91,7 @@ impl dioxus_motion::animations::core::Animatable for PetalTransform {
             .sqrt()
     }
 
-    fn scale(&self, factor: f32) -> Self {
-        Self::new(
-            self.rotate * factor,
-            self.scale * factor,
-            self.translate_x * factor,
-            self.translate_y * factor,
-        )
-    }
-
-    fn add(&self, other: &Self) -> Self {
-        Self::new(
-            self.rotate + other.rotate,
-            self.scale + other.scale,
-            self.translate_x + other.translate_x,
-            self.translate_y + other.translate_y,
-        )
-    }
-
-    fn sub(&self, other: &Self) -> Self {
-        Self::new(
-            self.rotate - other.rotate,
-            self.scale - other.scale,
-            self.translate_x - other.translate_x,
-            self.translate_y - other.translate_y,
-        )
-    }
-
-    fn interpolate(&self, other: &Self, t: f32) -> Self {
-        Self::new(
-            self.rotate + (other.rotate - self.rotate) * t,
-            self.scale + (other.scale - self.scale) * t,
-            self.translate_x + (other.translate_x - self.translate_x) * t,
-            self.translate_y + (other.translate_y - self.translate_y) * t,
-        )
-    }
+    // Uses default epsilon of 0.01 from the trait
 }
 
 #[component]
@@ -204,12 +185,13 @@ impl std::ops::Add for PetalTransform {
 }
 
 impl dioxus_motion::animations::core::Animatable for PetalTransform {
-    fn zero() -> Self {
-        Self::zero()
-    }
-
-    fn epsilon() -> f32 {
-        dioxus_motion::animations::epsilon::DEFAULT_EPSILON
+    fn interpolate(&self, other: &Self, t: f32) -> Self {
+        Self::new(
+            self.rotate + (other.rotate - self.rotate) * t,
+            self.scale + (other.scale - self.scale) * t,
+            self.translate_x + (other.translate_x - self.translate_x) * t,
+            self.translate_y + (other.translate_y - self.translate_y) * t,
+        )
     }
 
     fn magnitude(&self) -> f32 {
@@ -220,41 +202,31 @@ impl dioxus_motion::animations::core::Animatable for PetalTransform {
             .sqrt()
     }
 
-    fn scale(&self, factor: f32) -> Self {
-        Self::new(
-            self.rotate * factor,
-            self.scale * factor,
-            self.translate_x * factor,
-            self.translate_y * factor,
-        )
-    }
+    // Uses default epsilon of 0.01 from the trait
+}
 
-    fn add(&self, other: &Self) -> Self {
-        Self::new(
-            self.rotate + other.rotate,
-            self.scale + other.scale,
-            self.translate_x + other.translate_x,
-            self.translate_y + other.translate_y,
-        )
+impl Default for PetalTransform {
+    fn default() -> Self {
+        Self {
+            rotate: 0.0,
+            scale: 1.0, // Default scale to 1.0 for identity
+            translate_x: 0.0,
+            translate_y: 0.0,
+        }
     }
+}
 
-    fn sub(&self, other: &Self) -> Self {
-        Self::new(
-            self.rotate - other.rotate,
-            self.scale - other.scale,
-            self.translate_x - other.translate_x,
-            self.translate_y - other.translate_y,
-        )
+impl std::ops::Sub for PetalTransform {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        Self {
+            rotate: self.rotate - rhs.rotate,
+            scale: self.scale - rhs.scale,
+            translate_x: self.translate_x - rhs.translate_x,
+            translate_y: self.translate_y - rhs.translate_y,
+        }
     }
-
-    fn interpolate(&self, other: &Self, t: f32) -> Self {
-        Self::new(
-            self.rotate + (other.rotate - self.rotate) * t,
-            self.scale + (other.scale - self.scale) * t,
-            self.translate_x + (other.translate_x - self.translate_x) * t,
-            self.translate_y + (other.translate_y - self.translate_y) * t,
-        )
-    }
+}
 }"#.to_string(),
                         language: "rust".to_string(),
                     }
@@ -277,7 +249,7 @@ impl dioxus_motion::animations::core::Animatable for PetalTransform {
 
 #[component]
 fn StepTwo() -> Element {
-    let mut petal = use_motion(PetalTransform::zero());
+    let mut petal = use_motion(PetalTransform::default());
 
     let animate = move |_| {
         petal.animate_to(
@@ -293,7 +265,7 @@ fn StepTwo() -> Element {
 
     let reset = move |_| {
         petal.animate_to(
-            PetalTransform::zero(),
+            PetalTransform::default(),
             AnimationConfig::new(AnimationMode::Spring(Spring::default())),
         );
     };
@@ -311,7 +283,7 @@ fn StepTwo() -> Element {
                 // Code example
                 div { class: "bg-dark-200/50 p-3 rounded-lg",
                     CodeBlock {
-                        code: r#"let mut petal = use_motion(PetalTransform::zero());
+                        code: r#"let mut petal = use_motion(PetalTransform::default());
 
 // Animate to new values
 petal.animate_to(
@@ -372,7 +344,7 @@ petal.animate_to(
 
 #[component]
 fn StepThree() -> Element {
-    let mut petal = use_motion(PetalTransform::zero());
+    let mut petal = use_motion(PetalTransform::default());
 
     let animate_sequence = move |_| {
         let sequence = AnimationSequence::new()
@@ -395,7 +367,7 @@ fn StepThree() -> Element {
                 })),
             )
             .then(
-                PetalTransform::zero(),
+                PetalTransform::default(),
                 AnimationConfig::new(AnimationMode::Spring(Spring {
                     stiffness: 200.0,
                     damping: 15.0,
@@ -410,7 +382,7 @@ fn StepThree() -> Element {
     let animate_keyframes = move |_| {
         let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
             .add_keyframe(
-                PetalTransform::zero(),
+                PetalTransform::default(),
                 0.0,
                 Some(easer::functions::Cubic::ease_in),
             )
@@ -430,7 +402,7 @@ fn StepThree() -> Element {
             })
             .and_then(|kf| {
                 kf.add_keyframe(
-                    PetalTransform::zero(),
+                    PetalTransform::default(),
                     1.0,
                     Some(easer::functions::Back::ease_in_out),
                 )
@@ -464,7 +436,7 @@ fn StepThree() -> Element {
         spring_config.clone(),
     )
     .then(
-        PetalTransform::zero(),
+        PetalTransform::default(),
         spring_config,
     );
 

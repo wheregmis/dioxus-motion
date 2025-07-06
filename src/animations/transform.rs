@@ -8,7 +8,6 @@
 //! Uses radians for rotation and supports smooth interpolation.
 
 use crate::Animatable;
-use crate::animations::epsilon::{DEFAULT_EPSILON, TRANSFORM_EPSILON};
 use wide::f32x4;
 
 /// Represents a 2D transformation with translation, scale, and rotation
@@ -53,72 +52,16 @@ impl Transform {
     }
 }
 
-/// Implementation of Animatable for f32 primitive type
-/// Enables direct animation of float values
-impl Animatable for f32 {
-    fn zero() -> Self {
-        0.0
-    }
-
-    fn epsilon() -> f32 {
-        DEFAULT_EPSILON // Standardized precision for numeric animations
-    }
-
-    fn magnitude(&self) -> f32 {
-        self.abs()
-    }
-
-    fn scale(&self, factor: f32) -> Self {
-        self * factor
-    }
-
-    fn add(&self, other: &Self) -> Self {
-        self + other
-    }
-
-    fn sub(&self, other: &Self) -> Self {
-        self - other
-    }
-
-    fn interpolate(&self, target: &Self, t: f32) -> Self {
-        self + (target - self) * t
+impl Default for Transform {
+    fn default() -> Self {
+        Transform::identity()
     }
 }
 
-/// Implementation of Animatable for Transform
-/// Provides smooth interpolation between transform states
-impl Animatable for Transform {
-    /// Creates a zero transform (all components 0)
-    fn zero() -> Self {
-        Transform::new(0.0, 0.0, 0.0, 0.0)
-    }
+impl std::ops::Add for Transform {
+    type Output = Self;
 
-    /// Minimum meaningful difference between transforms
-    fn epsilon() -> f32 {
-        TRANSFORM_EPSILON // Standardized precision for transform animations
-    }
-
-    /// Calculates the magnitude of the transform
-    fn magnitude(&self) -> f32 {
-        (self.x * self.x
-            + self.y * self.y
-            + self.scale * self.scale
-            + self.rotation * self.rotation)
-            .sqrt()
-    }
-
-    /// Scales all transform components by a factor
-    fn scale(&self, factor: f32) -> Self {
-        Transform::new(
-            self.x * factor,
-            self.y * factor,
-            self.scale * factor,
-            self.rotation * factor,
-        )
-    }
-
-    /// Adds two transforms component-wise
-    fn add(&self, other: &Self) -> Self {
+    fn add(self, other: Self) -> Self {
         Transform::new(
             self.x + other.x,
             self.y + other.y,
@@ -126,9 +69,12 @@ impl Animatable for Transform {
             self.rotation + other.rotation,
         )
     }
+}
 
-    /// Subtracts two transforms component-wise
-    fn sub(&self, other: &Self) -> Self {
+impl std::ops::Sub for Transform {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
         Transform::new(
             self.x - other.x,
             self.y - other.y,
@@ -136,9 +82,38 @@ impl Animatable for Transform {
             self.rotation - other.rotation,
         )
     }
+}
 
-    /// Interpolates between two transforms
-    /// Handles rotation specially to ensure shortest path
+impl std::ops::Mul<f32> for Transform {
+    type Output = Self;
+
+    fn mul(self, factor: f32) -> Self {
+        Transform::new(
+            self.x * factor,
+            self.y * factor,
+            self.scale * factor,
+            self.rotation * factor,
+        )
+    }
+}
+
+/// Implementation of Animatable for f32 primitive type
+/// Much simpler with the new trait design - leverages standard Rust operators
+impl Animatable for f32 {
+    fn interpolate(&self, target: &Self, t: f32) -> Self {
+        self + (target - self) * t
+    }
+
+    fn magnitude(&self) -> f32 {
+        self.abs()
+    }
+
+    // Uses default epsilon of 0.01 from the trait
+}
+
+/// Implementation of Animatable for Transform
+/// Much simpler with the new trait design - uses standard operators
+impl Animatable for Transform {
     fn interpolate(&self, target: &Self, t: f32) -> Self {
         // SIMD for x, y, scale; handle rotation separately for shortest path
         let a = [self.x, self.y, self.scale, 0.0];
@@ -160,6 +135,16 @@ impl Animatable for Transform {
 
         Transform::new(out[0], out[1], out[2], rotation)
     }
+
+    fn magnitude(&self) -> f32 {
+        (self.x * self.x
+            + self.y * self.y
+            + self.scale * self.scale
+            + self.rotation * self.rotation)
+            .sqrt()
+    }
+
+    // Uses default epsilon of 0.01 from the trait - no need for TRANSFORM_EPSILON
 }
 
 #[cfg(test)]

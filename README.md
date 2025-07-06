@@ -146,12 +146,13 @@ scale.animate_sequence(sequence);
 
 ## ✨ Features
 
-- **Cross-Platform Support**: Works on web, desktop, and mobile
-- **Flexible Animation Configuration**
-- **Custom Easing Functions**
-- **Modular Feature Setup**
-- **Simple, Intuitive API**
-- **Page Transitions**
+- **🔧 Simplified Animatable Trait**: Uses standard Rust operators (`+`, `-`, `*`) instead of custom methods
+- **🌍 Cross-Platform Support**: Works on web, desktop, and mobile
+- **⚙️ Flexible Animation Configuration**: Spring physics and tween animations
+- **📊 Custom Easing Functions**: Built-in and custom easing support
+- **🧩 Modular Feature Setup**: Choose only what you need
+- **💡 Simple, Intuitive API**: Easy to learn and use
+- **🎬 Page Transitions**: Smooth route transitions with the `transitions` feature
 
 ## 🛠 Installation
 
@@ -194,6 +195,78 @@ Choose the right feature for your platform:
 - `default`: Web support (if no feature specified)
 
 ## 🚀 Quick Start
+
+## 🎨 Creating Custom Animatable Types
+
+The simplified `Animatable` trait makes it easy to create custom animatable types:
+
+```rust
+use dioxus_motion::prelude::*;
+
+#[derive(Debug, Copy, Clone, PartialEq, Default)]
+struct Point3D {
+    x: f32,
+    y: f32,
+    z: f32,
+}
+
+// Implement standard Rust operator traits
+impl std::ops::Add for Point3D {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+            z: self.z + other.z,
+        }
+    }
+}
+
+impl std::ops::Sub for Point3D {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self {
+        Self {
+            x: self.x - other.x,
+            y: self.y - other.y,
+            z: self.z - other.z,
+        }
+    }
+}
+
+impl std::ops::Mul<f32> for Point3D {
+    type Output = Self;
+    fn mul(self, factor: f32) -> Self {
+        Self {
+            x: self.x * factor,
+            y: self.y * factor,
+            z: self.z * factor,
+        }
+    }
+}
+
+// Implement Animatable with just two methods!
+impl Animatable for Point3D {
+    fn interpolate(&self, target: &Self, t: f32) -> Self {
+        *self + (*target - *self) * t
+    }
+    
+    fn magnitude(&self) -> f32 {
+        (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
+    }
+}
+
+// Now you can animate 3D points!
+let mut position = use_motion(Point3D::default());
+position.animate_to(
+    Point3D { x: 10.0, y: 5.0, z: -2.0 },
+    AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+);
+```
+
+**Previous vs. New Trait Complexity:**
+- **Before**: 7 required methods (`zero`, `epsilon`, `magnitude`, `scale`, `add`, `sub`, `interpolate`)
+- **After**: 2 required methods (`interpolate`, `magnitude`) + standard Rust operators
+- **Result**: ~70% less boilerplate, more idiomatic Rust code!
 
 ## 🔄 Migration Guide (v0.3.0)
 

@@ -8,32 +8,31 @@ use std::sync::{Arc, Mutex};
 use crate::animations::{spring::Spring, tween::Tween};
 use instant::Duration;
 
-/// A trait for types that can be animated
+/// A simplified trait for types that can be animated
 ///
-/// Types implementing this trait can be used with both tween and spring animations.
-/// The trait provides basic mathematical operations needed for interpolation and
-/// physics calculations.
-pub trait Animatable: Copy + 'static {
-    /// Creates a zero value for the type
-    fn zero() -> Self;
-
-    /// Returns the smallest meaningful difference between values
-    fn epsilon() -> f32;
-
-    /// Calculates the magnitude/length of the value
-    fn magnitude(&self) -> f32;
-
-    /// Scales the value by a factor
-    fn scale(&self, factor: f32) -> Self;
-
-    /// Adds another value
-    fn add(&self, other: &Self) -> Self;
-
-    /// Subtracts another value
-    fn sub(&self, other: &Self) -> Self;
-
+/// This trait leverages standard Rust operator traits for mathematical operations,
+/// reducing boilerplate and making implementations more intuitive.
+/// Only requires implementing interpolation and magnitude calculation.
+pub trait Animatable:
+    Copy
+    + 'static
+    + Default
+    + std::ops::Add<Output = Self>
+    + std::ops::Sub<Output = Self>
+    + std::ops::Mul<f32, Output = Self>
+{
     /// Interpolates between self and target using t (0.0 to 1.0)
     fn interpolate(&self, target: &Self, t: f32) -> Self;
+
+    /// Calculates the magnitude/distance from zero
+    /// Used for determining animation completion
+    fn magnitude(&self) -> f32;
+
+    /// Returns the epsilon threshold for this type
+    /// Default implementation provides a reasonable value for most use cases
+    fn epsilon() -> f32 {
+        0.01 // Single default epsilon for simplicity
+    }
 }
 
 /// Defines the type of animation to be used
