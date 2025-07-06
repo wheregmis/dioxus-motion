@@ -54,7 +54,7 @@ impl Default for PetalTransform {
     fn default() -> Self {
         Self {
             rotate: 0.0,
-            scale: 1.0, // Default scale to 1.0 for identity
+            scale: 0.0, // Start invisible, consistent with animated_flower.rs
             translate_x: 0.0,
             translate_y: 0.0,
         }
@@ -209,7 +209,7 @@ impl Default for PetalTransform {
     fn default() -> Self {
         Self {
             rotate: 0.0,
-            scale: 1.0, // Default scale to 1.0 for identity
+            scale: 0.0, // Start invisible, consistent with animated_flower.rs
             translate_x: 0.0,
             translate_y: 0.0,
         }
