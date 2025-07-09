@@ -540,6 +540,44 @@ enum Route {
                 }
             }
 
+            // Dynamic Transition Resolver Example
+            section {
+                h2 { class: "text-2xl font-semibold text-text-primary", "Dynamic Transition Direction" }
+                p { class: "text-text-secondary mb-4",
+                    "You can dynamically choose the transition direction based on navigation context. For example, in a card navigation UI, you may want to slide left or right depending on which card the user is moving to."
+                }
+                div { class: "bg-dark-200/50 backdrop-blur-xs rounded-xl p-6 border border-primary/10 mb-6",
+                    h3 { class: "text-lg font-medium text-text-primary mb-4", "How to Provide a Dynamic Resolver" }
+                    p { class: "text-text-secondary mb-4",
+                        "Provide a resolver function via context that receives the previous and next route, and returns the appropriate transition variant."
+                    }
+                    CodeBlock {
+                        code: r#"use dioxus_motion::transitions::page_transitions::TransitionVariantResolver;
+
+let resolver: TransitionVariantResolver<Route> = std::rc::Rc::new(|from, to| {
+    // Assuming Route::Card { idx } for cards
+    match (from, to) {
+        (Route::Card { idx: from_idx }, Route::Card { idx: to_idx }) => {
+            if to_idx > from_idx {
+                TransitionVariant::SlideLeft
+            } else if to_idx < from_idx {
+                TransitionVariant::SlideRight
+            } else {
+                TransitionVariant::Fade
+            }
+        }
+        _ => to.get_transition(),
+    }
+});
+use_context_provider(|| resolver);"#.to_string(),
+                        language: "rust".to_string(),
+                    }
+                }
+                p { class: "text-text-secondary mt-2",
+                    "This enables advanced navigation flows, such as card stacks, wizards, or any scenario where the transition direction depends on user action."
+                }
+            }
+
             // Navigation links
             GuideNavigation {}
         }

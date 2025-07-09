@@ -6,7 +6,7 @@ pub mod old_showcase;
 pub mod pages;
 pub mod utils;
 
-use docs::utils::router::Route;
+use easer::functions::Easing;
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 
@@ -37,6 +37,35 @@ const MAIN_CSS: Asset = asset!("/assets/main.css");
 /// ```
 fn main() {
     dioxus::launch(|| {
+        // Dynamic transition resolver for Home, Docs, ShowcaseGallery
+        use dioxus_motion::prelude::TransitionVariant;
+        use dioxus_motion::transitions::page_transitions::TransitionVariantResolver;
+        use docs::utils::router::Route;
+        let resolver: TransitionVariantResolver<Route> = std::rc::Rc::new(|from, to| {
+            fn idx(route: &Route) -> i32 {
+                match route {
+                    Route::Home { .. } => 0,
+                    Route::DocsLanding { .. } => 1,
+                    Route::ShowcaseGallery { .. } => 2,
+                    _ => -1,
+                }
+            }
+            let from_idx = idx(from);
+            let to_idx = idx(to);
+            if from_idx != -1 && to_idx != -1 {
+                if to_idx > from_idx {
+                    TransitionVariant::SlideLeft
+                } else if to_idx < from_idx {
+                    TransitionVariant::SlideRight
+                } else {
+                    TransitionVariant::Fade
+                }
+            } else {
+                to.get_transition()
+            }
+        });
+        use_context_provider(|| resolver);
+
         // To use a Tween for page transitions, provide it via context:
         let tween = use_signal(|| Tween {
             duration: std::time::Duration::from_millis(500),
@@ -52,6 +81,27 @@ fn main() {
         //     velocity: 0.0,
         // });
         // use_context_provider(|| spring);
+
+        // Example: Provide a dynamic transition resolver for card navigation
+        // use dioxus_motion::transitions::page_transitions::{TransitionVariantResolver};
+        // use dioxus_motion::prelude::TransitionVariant;
+        //
+        // let resolver: TransitionVariantResolver<Route> = std::rc::Rc::new(|from, to| {
+        //     // Assuming Route::Card { idx } for cards
+        //     match (from, to) {
+        //         (Route::Card { idx: from_idx }, Route::Card { idx: to_idx }) => {
+        //             if to_idx > from_idx {
+        //                 TransitionVariant::SlideLeft
+        //             } else if to_idx < from_idx {
+        //                 TransitionVariant::SlideRight
+        //             } else {
+        //                 TransitionVariant::Fade
+        //             }
+        //         }
+        //         _ => to.get_transition(),
+        //     }
+        // });
+        // use_context_provider(|| resolver);
 
         rsx! {
             head {

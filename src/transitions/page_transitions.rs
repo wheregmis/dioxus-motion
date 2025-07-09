@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 
 use dioxus::prelude::*;
+use std::rc::Rc;
 
 use crate::{
     AnimationManager,
@@ -250,10 +251,18 @@ pub fn use_animated_router<Route: Routable + PartialEq>() -> Signal<AnimatedRout
     use_context()
 }
 
+// Add a type alias for the resolver
+pub type TransitionVariantResolver<R> = Rc<dyn Fn(&R, &R) -> TransitionVariant>;
+
 #[component]
 fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, to: R) -> Element {
     let mut animated_router = use_animated_router::<R>();
-    let config = to.get_transition().get_config();
+    // Try to get a dynamic transition resolver from context
+    let resolver = try_use_context::<TransitionVariantResolver<R>>();
+    // Use the resolver if present, otherwise use the static transition
+    let transition_variant =
+        resolver.map_or_else(|| to.get_transition(), |resolver| resolver(&from, &to));
+    let config = transition_variant.get_config();
     let mut from_anim = use_motion(PageTransitionAnimation::from_exit_start(&config));
     let mut to_anim = use_motion(PageTransitionAnimation::from_enter_start(&config));
 
@@ -262,25 +271,28 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     let spring = try_use_context::<Signal<Spring>>();
 
     use_effect(move || {
-        let (from_config, to_config) = if let Some(tween) = &tween {
-            (
-                AnimationConfig::new(AnimationMode::Tween(tween())),
-                AnimationConfig::new(AnimationMode::Tween(tween())),
-            )
-        } else {
-            let spring = spring.unwrap_or_else(|| {
-                use_signal(|| Spring {
-                    stiffness: 160.0,
-                    damping: 25.0,
-                    mass: 1.0,
-                    velocity: 0.0,
-                })
-            });
-            (
-                AnimationConfig::new(AnimationMode::Spring(spring())),
-                AnimationConfig::new(AnimationMode::Spring(spring())),
-            )
-        };
+        let (from_config, to_config) = tween.map_or_else(
+            || {
+                let spring = spring.unwrap_or_else(|| {
+                    use_signal(|| Spring {
+                        stiffness: 160.0,
+                        damping: 25.0,
+                        mass: 1.0,
+                        velocity: 0.0,
+                    })
+                });
+                (
+                    AnimationConfig::new(AnimationMode::Spring(spring())),
+                    AnimationConfig::new(AnimationMode::Spring(spring())),
+                )
+            },
+            |tween| {
+                (
+                    AnimationConfig::new(AnimationMode::Tween(tween())),
+                    AnimationConfig::new(AnimationMode::Tween(tween())),
+                )
+            },
+        );
         from_anim.animate_to(PageTransitionAnimation::from_exit_end(&config), from_config);
         to_anim.animate_to(PageTransitionAnimation::from_enter_end(&config), to_config);
     });
