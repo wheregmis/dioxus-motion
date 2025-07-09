@@ -89,9 +89,12 @@ impl TimeProvider for MotionTime {
     #[cfg(not(feature = "web"))]
     fn delay(duration: Duration) -> impl Future<Output = ()> {
         Box::pin(async move {
-            let start = std::time::Instant::now();
+            let start = Instant::now();
 
+            #[cfg(feature = "desktop")]
             tokio::time::sleep(duration).await;
+            #[cfg(not(feature = "desktop"))]
+            std::thread::sleep(duration);
 
             // High precision timing for desktop
             let remaining = duration.saturating_sub(start.elapsed());

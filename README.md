@@ -153,6 +153,7 @@ scale.animate_sequence(sequence);
 - **🧩 Modular Feature Setup**: Choose only what you need
 - **💡 Simple, Intuitive API**: Easy to learn and use
 - **🎬 Page Transitions**: Smooth route transitions with the `transitions` feature
+- **🔄 Multithreaded processing**: Parallel animation calculations with SyncSignal
 
 ## 🛠 Installation
 
@@ -167,23 +168,9 @@ default = ["web"]
 web = ["dioxus/web", "dioxus-motion/web"]
 desktop = ["dioxus/desktop", "dioxus-motion/desktop"]
 mobile = ["dioxus/mobile", "dioxus-motion/desktop"]
-```
 
-If you want to use page transiton dependency will look like,
-
-```toml
-[dependencies]
-dioxus-motion = { version = "0.3.0", optional = true, default-features = false }
-
-[features]
-default = ["web"]
-web = ["dioxus/web", "dioxus-motion/web", "dioxus-motion/transitions"]
-desktop = [
-    "dioxus/desktop",
-    "dioxus-motion/desktop",
-    "dioxus-motion/transitions",
-]
-mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
+# For page transitions
+transitions = ["dioxus-motion/transitions"]
 ```
 
 ## 🌐 Platform Support
@@ -508,3 +495,63 @@ Please report issues on the GitHub repository with:
 ## 🌟 Motivation
 
 Bringing elegant, performant motion animations to Rust's web and desktop ecosystems with minimal complexity.
+
+## Multithreaded Animations
+
+For performance-intensive applications, Dioxus Motion supports multithreaded animation processing using `SyncSignal`:
+
+```rust
+use dioxus::prelude::*;
+use dioxus_motion::prelude::*;
+
+fn multithreaded_app() -> Element {
+    // Use multithreaded motion for heavy computations
+    let motion = use_motion_multithreaded(0.0f32);
+    
+    // Use scheduled animations for batch processing
+    let scheduled = use_motion_scheduled(Transform::default());
+    
+    // Parallel batch processing
+    let start_parallel = move |_| {
+        let targets = vec![
+            (100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default()))),
+            (200.0, AnimationConfig::new(AnimationMode::Spring(Spring::default()))),
+            (300.0, AnimationConfig::new(AnimationMode::Spring(Spring::default()))),
+        ];
+        motion.animate_to_parallel(targets);
+    };
+    
+    // Heavy computation offloading
+    let start_heavy = move |_| {
+        motion.animate_to_heavy(
+            500.0,
+            AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+        );
+    };
+
+    rsx! {
+        div {
+            button { onclick: start_parallel, "Parallel Animation" }
+            button { onclick: start_heavy, "Heavy Computation" }
+            div {
+                style: "transform: translateX({motion.get_value()}px)",
+                "Multithreaded Animation"
+            }
+        }
+    }
+}
+```
+
+### Multithreading Features
+
+- **Parallel Batch Processing**: Process multiple animations simultaneously
+- **Heavy Computation Offloading**: Move expensive calculations to background threads
+- **Centralized Scheduler**: Efficient batch processing of animations
+- **Thread-Safe Operations**: Uses `SyncSignal` for safe cross-thread communication
+
+### Performance Benefits
+
+- Non-blocking UI: Heavy calculations don't freeze the interface
+- Parallel Processing: Multiple animations computed simultaneously
+- Adaptive Frame Rates: Dynamic adjustment based on workload
+- Resource Management: Automatic cleanup and optimization

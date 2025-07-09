@@ -1,7 +1,9 @@
 pub mod colors;
 pub mod core;
 pub mod epsilon;
+pub mod parallel;
 pub mod platform;
+pub mod scheduler;
 pub mod spring;
 pub mod transform;
 pub mod tween;

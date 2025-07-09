@@ -13,8 +13,8 @@ struct ShapeConfig {
 #[component]
 pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
     let mut current_shape = use_signal(|| 0);
-    let mut transform = use_motion(Transform::identity());
-    let mut scale_pulse = use_motion(1.0f32);
+    let transform = use_motion(Transform::identity());
+    let scale_pulse = use_motion(1.0f32);
 
     let shape_configs = [
         ShapeConfig {
@@ -69,33 +69,29 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
     ];
 
     use_effect(move || {
+        let mut transform = transform.clone();
+        let mut scale_pulse = scale_pulse.clone();
         // Main rotation and scale animation
         transform.animate_to(
-            Transform {
-                rotation: 360.0,
-                scale: 1.2,
-                x: 0.0,
-                y: 0.0,
-            },
+            Transform::new(0.0, 0.0, 1.2, std::f32::consts::PI / 4.0),
             AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 35.0, // Reduced for more fluid motion
-                damping: 5.0,    // Lower damping for organic movement
-                mass: 0.6,       // Lighter mass for faster response
-                velocity: 0.8,   // Increased initial velocity
+                stiffness: 120.0,
+                damping: 10.0,
+                mass: 1.0,
+                velocity: 0.0,
             }))
-            .with_loop(LoopMode::Infinite),
+            .with_loop(LoopMode::Alternate),
         );
-
-        // Additional scale pulse animation
+        // Pulse scale
         scale_pulse.animate_to(
-            1.15,
+            1.3,
             AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 25.0,
-                damping: 3.0,
-                mass: 0.5,
-                velocity: 0.5,
+                stiffness: 80.0,
+                damping: 8.0,
+                mass: 0.8,
+                velocity: 0.0,
             }))
-            .with_loop(LoopMode::Infinite),
+            .with_loop(LoopMode::Alternate),
         );
 
         // Shape transition loop
@@ -109,6 +105,8 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
     });
 
     let current_config = &shape_configs[*current_shape.read()];
+    let transform_val = transform.clone();
+    let scale_pulse_val = scale_pulse.clone();
 
     rsx! {
         div { class: "w-32 h-32 relative transition-all duration-300",
@@ -116,16 +114,24 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
                 class: "absolute inset-0 rounded-lg shadow-lg backdrop-blur-xs",
                 class: "absolute inset-0 bg-linear-to-r from-pink-500 to-orange-500
                        hover:from-purple-500 hover:to-blue-500 rounded-lg",
-                style: "clip-path: {current_config.path};
-                       transform: rotate({transform.get_value().rotation}deg)
-                                scale({transform.get_value().scale * scale_pulse.get_value()});
+                style: format!("clip-path: {};
+                       transform: rotate({}deg)
+                                scale({} * {});
                        transition: clip-path 0.8s cubic-bezier(0.4, 0, 0.2, 1);
                        filter: brightness(1.2) contrast(1.1) saturate(1.2);",
+                current_config.path,
+                transform_val.get_value().rotation,
+                scale_pulse_val.get_value(),
+                scale_pulse_val.get_value()),
                 // Lighter inner glow effect
                 div {
                     class: "absolute inset-0 bg-white/30 rounded-lg",
                     style: "mix-blend-mode: soft-light;",
                 }
+            }
+            div {
+                class: "absolute inset-0 rounded-lg border-2 border-primary",
+                style: format!("transform: {}", transform_val.get_value().to_css()),
             }
         }
     }

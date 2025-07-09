@@ -3,12 +3,13 @@ use dioxus_motion::prelude::*;
 
 #[component]
 pub fn Card3DFlip() -> Element {
-    let mut transform = use_motion(Transform::identity());
+    let transform = use_motion(Transform::identity());
+    let mut transform_flip = transform.clone();
     let mut is_flipped = use_signal(|| false);
 
     let animate_flip = move |_| {
         if *is_flipped.read() {
-            transform.animate_to(
+            transform_flip.animate_to(
                 Transform::identity(),
                 AnimationConfig::new(AnimationMode::Spring(Spring {
                     stiffness: 200.0, // Increased for snappier response
@@ -18,7 +19,7 @@ pub fn Card3DFlip() -> Element {
                 })),
             );
         } else {
-            transform.animate_to(
+            transform_flip.animate_to(
                 Transform {
                     rotation: 180.0,
                     scale: 1.0,
@@ -35,14 +36,15 @@ pub fn Card3DFlip() -> Element {
         }
         is_flipped.toggle();
     };
+    let transform_val = transform.clone();
 
     rsx! {
         div { class: "perspective-1000",
             div {
                 class: "relative w-64 h-64 cursor-pointer",
                 style: "transform-style: preserve-3d;
-                        transform: rotateY({transform.get_value().rotation}deg)
-                                 scale({transform.get_value().scale});",
+                        transform: rotateY({transform_val.get_value().rotation}deg)
+                                 scale({transform_val.get_value().scale});",
                 onclick: animate_flip,
 
                 // Front

@@ -32,29 +32,29 @@ fn AnimationStep(title: String, description: String, code: String, children: Ele
 
 #[component]
 fn BasicValueAnimation() -> Element {
-    let mut opacity = use_motion(0.0f32);
+    let opacity = use_motion(0.0f32);
+    let mut opacity_effect = opacity.clone();
+    let opacity_val = opacity.clone();
     let mut is_visible = use_signal(|| false);
-
     use_effect(move || {
         if *is_visible.read() {
-            opacity.animate_to(
+            opacity_effect.animate_to(
                 1.0,
                 AnimationConfig::new(AnimationMode::Tween(Tween {
-                    duration: std::time::Duration::from_millis(500),
+                    duration: Duration::from_millis(500),
                     easing: easer::functions::Cubic::ease_in_out,
                 })),
             );
         } else {
-            opacity.animate_to(
+            opacity_effect.animate_to(
                 0.0,
                 AnimationConfig::new(AnimationMode::Tween(Tween {
-                    duration: std::time::Duration::from_millis(500),
+                    duration: Duration::from_millis(500),
                     easing: easer::functions::Cubic::ease_in_out,
                 })),
             );
         }
     });
-
     rsx! {
         div { class: "space-y-4 w-full text-center",
             button {
@@ -64,7 +64,7 @@ fn BasicValueAnimation() -> Element {
             }
             div {
                 class: "w-32 h-32 mx-auto bg-primary rounded-lg",
-                style: "opacity: {opacity.get_value()}"
+                style: "opacity: {opacity_val.get_value()}"
             }
         }
     }
@@ -72,12 +72,13 @@ fn BasicValueAnimation() -> Element {
 
 #[component]
 fn TransformAnimation() -> Element {
-    let mut transform = use_motion(Transform::new(0.0, 0.0, 1.0, 0.0));
+    let transform = use_motion(Transform::new(0.0, 0.0, 1.0, 0.0));
+    let mut transform_effect = transform.clone();
+    let transform_val = transform.clone();
     let mut is_animated = use_signal(|| false);
-
     use_effect(move || {
         if *is_animated.read() {
-            transform.animate_to(
+            transform_effect.animate_to(
                 Transform::new(100.0, 50.0, 1.2, 45.0),
                 AnimationConfig::new(AnimationMode::Spring(Spring {
                     stiffness: 100.0,
@@ -87,7 +88,7 @@ fn TransformAnimation() -> Element {
                 })),
             );
         } else {
-            transform.animate_to(
+            transform_effect.animate_to(
                 Transform::new(0.0, 0.0, 1.0, 0.0),
                 AnimationConfig::new(AnimationMode::Spring(Spring {
                     stiffness: 100.0,
@@ -98,17 +99,15 @@ fn TransformAnimation() -> Element {
             );
         }
     });
-
     let transform_style = use_memo(move || {
         format!(
             "transform: translate({}px, {}px) scale({}) rotate({}deg);",
-            transform.get_value().x,
-            transform.get_value().y,
-            transform.get_value().scale,
-            transform.get_value().rotation * 180.0 / std::f32::consts::PI
+            transform_val.get_value().x,
+            transform_val.get_value().y,
+            transform_val.get_value().scale,
+            transform_val.get_value().rotation * 180.0 / std::f32::consts::PI
         )
     });
-
     rsx! {
         div { class: "space-y-4 w-full text-center",
             button {
@@ -186,16 +185,17 @@ impl Animatable for ColorValue {
 
 #[component]
 fn CustomColorAnimation() -> Element {
-    let mut color = use_motion(ColorValue {
+    let color = use_motion(ColorValue {
         r: 0.2,
         g: 0.5,
         b: 0.8,
     });
+    let mut color_effect = color.clone();
+    let color_val = color.clone();
     let mut is_warm = use_signal(|| false);
-
     use_effect(move || {
         if *is_warm.read() {
-            color.animate_to(
+            color_effect.animate_to(
                 ColorValue {
                     r: 0.8,
                     g: 0.3,
@@ -209,7 +209,7 @@ fn CustomColorAnimation() -> Element {
                 })),
             );
         } else {
-            color.animate_to(
+            color_effect.animate_to(
                 ColorValue {
                     r: 0.2,
                     g: 0.5,
@@ -224,16 +224,14 @@ fn CustomColorAnimation() -> Element {
             );
         }
     });
-
     let color_style = use_memo(move || {
         format!(
             "background-color: rgb({}%, {}%, {}%)",
-            color.get_value().r * 100.0,
-            color.get_value().g * 100.0,
-            color.get_value().b * 100.0,
+            color_val.get_value().r * 100.0,
+            color_val.get_value().g * 100.0,
+            color_val.get_value().b * 100.0,
         )
     });
-
     rsx! {
         div { class: "space-y-4 w-full text-center",
             button {
@@ -251,34 +249,27 @@ fn CustomColorAnimation() -> Element {
 
 #[component]
 fn SequenceAnimation() -> Element {
-    let mut value = use_motion(0.0f32);
-    let mut scale = use_motion(1.0f32);
+    let scale = use_motion(1.0f32);
+    let mut scale_effect = scale.clone();
+    let scale_val = scale.clone();
+    let value = use_motion(0.0f32);
+    let mut value_effect = value.clone();
+    let value_val = value.clone();
     let mut count = use_signal(|| 0);
-
     let onclick = move |_| {
-        let sequence = AnimationSequence::new().then(
-            ((*count)() + 1) as f32 * 100.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 180.0,
-                damping: 12.0,
-                mass: 1.0,
-                velocity: 10.0,
-            })),
-        );
-
-        scale.animate_to(
+        let sequence_vec = vec![0.0, 50.0, 100.0, 0.0];
+        value_effect.interpolate_sequence(sequence_vec, 0.5);
+        scale_effect.animate_to(
             1.2,
             AnimationConfig::new(AnimationMode::Spring(Spring::default())),
         );
-        value.animate_sequence(sequence);
         count.set((*count)() + 1);
     };
-
     rsx! {
         div { class: "space-y-4 w-full text-center",
             div {
                 class: "text-4xl font-bold text-primary",
-                style: "transform: translateY({value.get_value()}px) scale({scale.get_value()})",
+                style: "transform: translateY({value_val.get_value()}px) scale({scale_val.get_value()})",
                 "Count: {count}"
             }
             button {
@@ -553,25 +544,12 @@ let mut count = use_signal(|| 0);
 // Create and trigger a sequence on button click
 let onclick = move |_| {
     // Create a new sequence that animates based on count
-    let sequence = AnimationSequence::new()
-        .then(
-            (count + 1) as f32 * 100.0,  // Dynamic target value
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 180.0,
-                damping: 12.0,
-                mass: 1.0,
-                velocity: 10.0,
-            }))
-        );
-
-    // Animate scale independently
+    let sequence_vec = vec![0.0, 50.0, 100.0, 0.0];
+    value.interpolate_sequence(sequence_vec, 0.5);
     scale.animate_to(
         1.2,
         AnimationConfig::new(AnimationMode::Spring(Spring::default()))
     );
-
-    // Start the sequence animation
-    value.animate_sequence(sequence);
     count += 1;
 }
 
@@ -652,12 +630,21 @@ value.animate_to(
 
 #[component]
 fn AdvancedFeaturesAnimation() -> Element {
-    let mut infinite_value = use_motion(0.0f32);
-    let mut delayed_value = use_motion(0.0f32);
-    let mut callback_value = use_motion(0.0f32);
+    let infinite_value = use_motion(0.0f32);
+    let delayed_value = use_motion(0.0f32);
+    let callback_value = use_motion(0.0f32);
+    let mut infinite_value_start = infinite_value.clone();
+    let mut delayed_value_start = delayed_value.clone();
+    let mut callback_value_start = callback_value.clone();
+    let mut infinite_value_reset = infinite_value.clone();
+    let mut delayed_value_reset = delayed_value.clone();
+    let mut callback_value_reset = callback_value.clone();
+    let infinite_value_val = infinite_value.clone();
+    let delayed_value_val = delayed_value.clone();
+    let callback_value_val = callback_value.clone();
     // Infinite loop animation
     let start_infinite = move |_| {
-        infinite_value.animate_to(
+        infinite_value_start.animate_to(
             1.0,
             AnimationConfig::new(AnimationMode::Tween(Tween {
                 duration: Duration::from_millis(1000),
@@ -666,19 +653,17 @@ fn AdvancedFeaturesAnimation() -> Element {
             .with_loop(LoopMode::Infinite),
         );
     };
-
     // Delayed animation
     let start_delayed = move |_| {
-        delayed_value.animate_to(
+        delayed_value_start.animate_to(
             1.0,
             AnimationConfig::new(AnimationMode::Spring(Spring::default()))
                 .with_delay(Duration::from_secs(1)),
         );
     };
-
     // Animation with completion callback
     let start_callback = move |_| {
-        callback_value.animate_to(
+        callback_value_start.animate_to(
             1.0,
             AnimationConfig::new(AnimationMode::Tween(Tween {
                 duration: Duration::from_millis(1000),
@@ -688,24 +673,23 @@ fn AdvancedFeaturesAnimation() -> Element {
             .with_on_complete(|| println!("Animation completed after 3 loops!")),
         );
     };
-
     // Reset all animations
     let reset_all = move |_| {
-        infinite_value.animate_to(
+        infinite_value_reset.animate_to(
             0.0,
             AnimationConfig::new(AnimationMode::Tween(Tween {
                 duration: Duration::from_millis(500),
                 easing: easer::functions::Cubic::ease_out,
             })),
         );
-        delayed_value.animate_to(
+        delayed_value_reset.animate_to(
             0.0,
             AnimationConfig::new(AnimationMode::Tween(Tween {
                 duration: Duration::from_millis(500),
                 easing: easer::functions::Cubic::ease_out,
             })),
         );
-        callback_value.animate_to(
+        callback_value_reset.animate_to(
             0.0,
             AnimationConfig::new(AnimationMode::Tween(Tween {
                 duration: Duration::from_millis(500),
@@ -713,7 +697,6 @@ fn AdvancedFeaturesAnimation() -> Element {
             })),
         );
     };
-
     rsx! {
         div {
             class: "space-y-8 flex flex-col items-center w-full", // Added centering classes
@@ -729,11 +712,10 @@ fn AdvancedFeaturesAnimation() -> Element {
                     }
                     div {
                         class: "w-16 h-16 bg-primary rounded-lg transition-transform",
-                        style: "opacity: {infinite_value.get_value()}"
+                        style: "opacity: {infinite_value_val.get_value()}"
                     }
                 }
             }
-
             // Delayed animation
             div {
                 class: "space-y-2 flex flex-col items-center", // Center this section
@@ -746,11 +728,10 @@ fn AdvancedFeaturesAnimation() -> Element {
                     }
                     div {
                         class: "w-16 h-16 bg-primary rounded-lg transition-transform",
-                        style: "opacity: {delayed_value.get_value()}"
+                        style: "opacity: {delayed_value_val.get_value()}"
                     }
                 }
             }
-
             // Callback animation
             div {
                 class: "space-y-2 flex flex-col items-center", // Center this section
@@ -763,11 +744,10 @@ fn AdvancedFeaturesAnimation() -> Element {
                     }
                     div {
                         class: "w-16 h-16 bg-primary rounded-lg transition-transform",
-                        style: "opacity: {callback_value.get_value()}"
+                        style: "opacity: {callback_value_val.get_value()}"
                     }
                 }
             }
-
             // Reset button
             div {
                 class: "pt-4 w-full flex justify-center", // Center the reset button

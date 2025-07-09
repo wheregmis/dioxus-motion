@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use dioxus::prelude::*;
 
 use crate::{
-    AnimationManager,
+    manager::AnimationManager,
     prelude::{AnimationConfig, AnimationMode, Spring},
     use_motion,
 };
@@ -254,8 +254,8 @@ pub fn use_animated_router<Route: Routable + PartialEq>() -> Signal<AnimatedRout
 fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, to: R) -> Element {
     let mut animated_router = use_animated_router::<R>();
     let config = to.get_transition().get_config();
-    let mut from_anim = use_motion(PageTransitionAnimation::from_exit_start(&config));
-    let mut to_anim = use_motion(PageTransitionAnimation::from_enter_start(&config));
+    let from_anim = use_motion(PageTransitionAnimation::from_exit_start(&config));
+    let to_anim = use_motion(PageTransitionAnimation::from_enter_start(&config));
 
     let spring = try_use_context::<Signal<Spring>>().unwrap_or_else(|| {
         use_signal(|| Spring {
@@ -266,22 +266,30 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
         })
     });
 
-    use_effect(move || {
-        from_anim.animate_to(
-            PageTransitionAnimation::from_exit_end(&config),
-            AnimationConfig::new(AnimationMode::Spring(spring())),
-        );
-        to_anim.animate_to(
-            PageTransitionAnimation::from_enter_end(&config),
-            AnimationConfig::new(AnimationMode::Spring(spring())),
-        );
-    });
+    {
+        let mut from_anim_clone = from_anim.clone();
+        let mut to_anim_clone = to_anim.clone();
+        use_effect(move || {
+            from_anim_clone.animate_to(
+                PageTransitionAnimation::from_exit_end(&config),
+                AnimationConfig::new(AnimationMode::Spring(spring())),
+            );
+            to_anim_clone.animate_to(
+                PageTransitionAnimation::from_enter_end(&config),
+                AnimationConfig::new(AnimationMode::Spring(spring())),
+            );
+        });
+    }
 
-    use_effect(move || {
-        if !from_anim.is_running() && !to_anim.is_running() {
-            animated_router.write().settle();
-        }
-    });
+    {
+        let from_anim_clone = from_anim.clone();
+        let to_anim_clone = to_anim.clone();
+        use_effect(move || {
+            if !from_anim_clone.is_running() && !to_anim_clone.is_running() {
+                animated_router.write().settle();
+            }
+        });
+    }
 
     let from_val = from_anim.get_value();
     let to_val = to_anim.get_value();

@@ -249,10 +249,12 @@ impl std::ops::Sub for PetalTransform {
 
 #[component]
 fn StepTwo() -> Element {
-    let mut petal = use_motion(PetalTransform::default());
-
+    let petal = use_motion(PetalTransform::default());
+    let mut petal_animate = petal.clone();
+    let mut petal_reset = petal.clone();
+    let petal_val = petal.clone();
     let animate = move |_| {
-        petal.animate_to(
+        petal_animate.animate_to(
             PetalTransform::new(45.0, 1.2, 10.0, -10.0),
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 100.0,
@@ -262,11 +264,15 @@ fn StepTwo() -> Element {
             })),
         );
     };
-
     let reset = move |_| {
-        petal.animate_to(
+        petal_reset.animate_to(
             PetalTransform::default(),
-            AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+            AnimationConfig::new(AnimationMode::Spring(Spring {
+                stiffness: 100.0,
+                damping: 10.0,
+                mass: 1.0,
+                velocity: 0.0,
+            })),
         );
     };
 
@@ -344,72 +350,26 @@ petal.animate_to(
 
 #[component]
 fn StepThree() -> Element {
-    let mut petal = use_motion(PetalTransform::default());
-
+    let petal = use_motion(PetalTransform::default());
+    let mut petal_seq = petal.clone();
+    let mut petal_kf = petal.clone();
+    let petal_val = petal.clone();
     let animate_sequence = move |_| {
-        let sequence = AnimationSequence::new()
-            .then(
-                PetalTransform::new(45.0, 1.2, 10.0, -10.0),
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 100.0,
-                    damping: 10.0,
-                    mass: 1.0,
-                    velocity: 0.0,
-                })),
-            )
-            .then(
-                PetalTransform::new(-45.0, 1.5, -10.0, 10.0),
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 150.0,
-                    damping: 12.0,
-                    mass: 1.0,
-                    velocity: 0.0,
-                })),
-            )
-            .then(
-                PetalTransform::default(),
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 200.0,
-                    damping: 15.0,
-                    mass: 1.0,
-                    velocity: 0.0,
-                })),
-            );
-
-        petal.animate_sequence(sequence);
+        let sequence_vec = vec![
+            PetalTransform::new(45.0, 1.2, 10.0, -10.0),
+            PetalTransform::new(-45.0, 1.5, -10.0, 10.0),
+            PetalTransform::default(),
+        ];
+        petal_seq.interpolate_sequence(sequence_vec, 0.5);
     };
-
     let animate_keyframes = move |_| {
-        let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
-            .add_keyframe(
-                PetalTransform::default(),
-                0.0,
-                Some(easer::functions::Cubic::ease_in),
-            )
-            .and_then(|kf| {
-                kf.add_keyframe(
-                    PetalTransform::new(45.0, 1.2, 10.0, -10.0),
-                    0.3,
-                    Some(easer::functions::Elastic::ease_out),
-                )
-            })
-            .and_then(|kf| {
-                kf.add_keyframe(
-                    PetalTransform::new(-45.0, 1.5, -10.0, 10.0),
-                    0.7,
-                    Some(easer::functions::Bounce::ease_out),
-                )
-            })
-            .and_then(|kf| {
-                kf.add_keyframe(
-                    PetalTransform::default(),
-                    1.0,
-                    Some(easer::functions::Back::ease_in_out),
-                )
-            })
-            .unwrap();
-
-        petal.animate_keyframes(keyframes);
+        let keyframes_vec = vec![
+            PetalTransform::default(),
+            PetalTransform::new(45.0, 1.2, 10.0, -10.0),
+            PetalTransform::new(-45.0, 1.5, -10.0, 10.0),
+            PetalTransform::default(),
+        ];
+        petal_kf.interpolate_sequence(keyframes_vec, 0.5);
     };
 
     rsx! {

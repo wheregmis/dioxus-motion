@@ -71,7 +71,7 @@ impl Default for LoopMode {
     }
 }
 
-pub type OnComplete = Arc<Mutex<dyn FnMut() + Send + 'static>>;
+pub type OnComplete = Arc<Mutex<dyn FnMut() + Send + Sync + 'static>>;
 /// Configuration for an animation
 #[derive(Clone, Default)]
 pub struct AnimationConfig {
@@ -82,7 +82,7 @@ pub struct AnimationConfig {
     /// Delay before animation starts
     pub delay: Duration,
     /// Callback when animation completes
-    pub on_complete: Option<Arc<Mutex<dyn FnMut() + Send>>>,
+    pub on_complete: Option<Arc<Mutex<dyn FnMut() + Send + Sync>>>,
     /// Custom epsilon threshold for animation completion detection
     /// If None, uses the type's default epsilon from Animatable::epsilon()
     pub epsilon: Option<f32>,
@@ -115,7 +115,7 @@ impl AnimationConfig {
     /// Sets a callback to be called when animation completes
     pub fn with_on_complete<F>(mut self, f: F) -> Self
     where
-        F: FnMut() + Send + 'static,
+        F: FnMut() + Send + Sync + 'static,
     {
         self.on_complete = Some(Arc::new(Mutex::new(f)));
         self

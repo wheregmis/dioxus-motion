@@ -27,27 +27,22 @@ use crate::utils::router::Route;
 /// }
 /// ```
 pub fn NavBar() -> Element {
-    let mut nav_bg = use_motion(Transform::new(0.0, -100.0, 1.0, 0.0));
-    let mut nav_opacity = use_motion(0.0f32);
+    let nav_bg = use_motion(Transform::new(0.0, -100.0, 1.0, 0.0));
+    let mut nav_bg_effect = nav_bg.clone();
+    let nav_bg_val = nav_bg.clone();
+    let nav_opacity = use_motion(0.0f32);
+    let mut nav_opacity_effect = nav_opacity.clone();
+    let nav_opacity_val = nav_opacity.clone();
     let mut is_menu_open = use_signal(|| false);
 
     use_effect(move || {
-        nav_bg.animate_to(
+        nav_bg_effect.animate_to(
             Transform::new(0.0, 0.0, 1.0, 0.0),
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 100.0,
-                damping: 20.0,
-                mass: 1.0,
-                velocity: 0.0,
-            })),
+            AnimationConfig::new(AnimationMode::Spring(Spring::default())),
         );
-
-        nav_opacity.animate_to(
+        nav_opacity_effect.animate_to(
             1.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(300),
-                easing: easer::functions::Cubic::ease_out,
-            })),
+            AnimationConfig::new(AnimationMode::Tween(Tween::default())),
         );
     });
 
@@ -56,8 +51,8 @@ pub fn NavBar() -> Element {
             header {
                 class: "fixed top-0 w-full z-50 h-16 backdrop-blur-md border-b border-primary/10 rust-accent",
                 style: "
-                    transform: translateY({nav_bg.get_value().y}px);
-                    opacity: {nav_opacity.get_value()};
+                    transform: translateY({nav_bg_val.get_value().y}px);
+                    opacity: {nav_opacity_val.get_value()};
                 ",
                 // Background elements
                 div { class: "absolute inset-0 overflow-hidden",
@@ -85,7 +80,7 @@ pub fn NavBar() -> Element {
                                 // Navigation links - Desktop
                                 nav { class: "hidden md:flex items-center space-x-6",
                                     NavLink { to: Route::DocsLanding {}, "Documentation" }
-                                    NavLink { to: Route::ShowcaseGallery {}, "Showcase Gallery" }
+                                    // NavLink { to: Route::ShowcaseGallery {}, "Showcase Gallery" }
                                 }
                             }
 
@@ -159,7 +154,7 @@ pub fn NavBar() -> Element {
                                     div { class: "flex flex-col space-y-6",
                                         NavLink { to: Route::DocsLanding {}, "Documentation" }
                                         // Add showcase gallery link
-                                        NavLink { to: Route::ShowcaseGallery {}, "Showcase Gallery" }
+                                        // NavLink { to: Route::ShowcaseGallery {}, "Showcase Gallery" }
 
                                         a {
                                             class: "flex items-center px-6 py-3 rounded-xl

@@ -52,10 +52,19 @@ pub fn BasicAnimationGuide() -> Element {
 
 #[component]
 fn StepOne() -> Element {
-    let mut value = use_motion(0.0f32);
+    let value = use_motion(0.0f32);
+    let spring_value = use_motion(0.0f32);
+    let tween_value = use_motion(0.0f32);
+
+    let mut value_start = value.clone();
+    let mut value_reset = value.clone();
+    let mut spring_value_start = spring_value.clone();
+    let mut spring_value_reset = spring_value.clone();
+    let mut tween_value_start = tween_value.clone();
+    let mut tween_value_reset = tween_value.clone();
 
     let animate = move |_| {
-        value.animate_to(
+        value_start.animate_to(
             100.0,
             AnimationConfig::new(AnimationMode::Tween(Tween {
                 duration: Duration::from_millis(1000),
@@ -65,7 +74,7 @@ fn StepOne() -> Element {
     };
 
     let reset = move |_| {
-        value.animate_to(
+        value_reset.animate_to(
             0.0,
             AnimationConfig::new(AnimationMode::Tween(Tween::default())),
         );
@@ -171,11 +180,19 @@ value.animate_to(
 
 #[component]
 fn StepTwo() -> Element {
-    let mut tween_value = use_motion(0.0f32);
-    let mut spring_value = use_motion(0.0f32);
+    let value = use_motion(0.0f32);
+    let spring_value = use_motion(0.0f32);
+    let tween_value = use_motion(0.0f32);
+
+    let mut value_start = value.clone();
+    let mut value_reset = value.clone();
+    let mut spring_value_start = spring_value.clone();
+    let mut spring_value_reset = spring_value.clone();
+    let mut tween_value_start = tween_value.clone();
+    let mut tween_value_reset = tween_value.clone();
 
     let animate_tween = move |_| {
-        tween_value.animate_to(
+        tween_value_start.animate_to(
             100.0,
             AnimationConfig::new(AnimationMode::Tween(Tween {
                 duration: Duration::from_millis(1000),
@@ -185,7 +202,7 @@ fn StepTwo() -> Element {
     };
 
     let animate_spring = move |_| {
-        spring_value.animate_to(
+        spring_value_start.animate_to(
             100.0,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 100.0,
@@ -196,15 +213,15 @@ fn StepTwo() -> Element {
         );
     };
 
-    // Instead of using separate reset functions, let's simplify
     let reset_both = move |_| {
-        // Reset tween value
-        let tween_config = AnimationConfig::new(AnimationMode::Tween(Tween::default()));
-        tween_value.animate_to(0.0, tween_config);
-
-        // Reset spring value
-        let spring_config = AnimationConfig::new(AnimationMode::Spring(Spring::default()));
-        spring_value.animate_to(0.0, spring_config);
+        tween_value_reset.animate_to(
+            0.0,
+            AnimationConfig::new(AnimationMode::Tween(Tween::default())),
+        );
+        spring_value_reset.animate_to(
+            0.0,
+            AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+        );
     };
 
     rsx! {

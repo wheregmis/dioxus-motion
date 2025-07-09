@@ -17,7 +17,7 @@ pub type AnimationSteps<T> = SmallVec<[AnimationStep<T>; 8]>;
 pub struct AnimationSequence<T: Animatable> {
     pub steps: AnimationSteps<T>,
     pub current_step: u8,
-    pub on_complete: Option<Box<dyn FnOnce()>>,
+    pub on_complete: Option<Box<dyn FnOnce() + Send + Sync>>,
     pub capacity_hint: u8,
 }
 
@@ -64,7 +64,7 @@ impl<T: Animatable> AnimationSequence<T> {
         self
     }
 
-    pub fn on_complete<F: FnOnce() + 'static>(mut self, f: F) -> Self {
+    pub fn on_complete<F: FnOnce() + Send + Sync + 'static>(mut self, f: F) -> Self {
         self.on_complete = Some(Box::new(f));
         self
     }

@@ -86,7 +86,7 @@ pub fn InteractiveCube() -> Element {
         glow.animate_to(
             0.2,
             AnimationConfig::new(AnimationMode::Spring(Spring::default()))
-                .with_delay(std::time::Duration::from_millis(500)),
+                .with_delay(Duration::from_millis(500)),
         );
     };
 

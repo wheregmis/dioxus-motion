@@ -4,7 +4,7 @@ use dioxus_motion::prelude::*;
 use crate::components::navbar::NavBar;
 use crate::components::page_not_found::PageNotFound;
 use crate::components::page_transition::PageTransition;
-use crate::old_showcase::showcase_component::ShowcaseGallery;
+// use crate::old_showcase::showcase_component::ShowcaseGallery;
 use crate::pages::basic_guide::BasicAnimationGuide;
 use crate::pages::blog::index::Blog;
 use crate::pages::complex_guide::ComplexAnimationGuide;
@@ -67,9 +67,9 @@ pub enum Route {
         #[transition(SlideDown)]
         Blog {},
 
-        #[route("/old_showcase")]
-        #[transition(Fade)]
-        ShowcaseGallery {},
+        // #[route("/old_showcase")]
+        // #[transition(Fade)]
+        // ShowcaseGallery {},
 
 
     // And the regular page layout

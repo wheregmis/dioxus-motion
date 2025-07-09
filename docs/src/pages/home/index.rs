@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
 
 use crate::components::footer::Footer;
-use crate::old_showcase::components::{AnimatedFlower, SwingingCube, TransformAnimationShowcase};
+// use crate::old_showcase::components::{AnimatedFlower, SwingingCube, TransformAnimationShowcase};
 use crate::utils::router::Route;
 
 #[component]
@@ -66,7 +66,7 @@ pub fn Home() -> Element {
                         // Left side - Simple animation
                         div { class: "w-full lg:w-1/3",
                             div { class: "flex flex-col items-center gap-4",
-                                TransformAnimationShowcase {}
+                                // TransformAnimationShowcase {}
                                 div { class: "text-center",
                                     span { class: "inline-block text-lg font-medium bg-clip-text text-transparent
                                                bg-linear-to-r from-text-secondary/70 to-text-secondary/40
@@ -83,7 +83,7 @@ pub fn Home() -> Element {
                         // Center content - Flower
                         div { class: "w-full lg:w-1/3",
                             div { class: "flex flex-col items-center gap-4",
-                                AnimatedFlower {}
+                                // AnimatedFlower {}
                                 div { class: "text-center",
                                     span { class: "inline-block text-lg font-medium bg-clip-text text-transparent
                                                bg-linear-to-r from-text-secondary/70 to-text-secondary/40
@@ -98,7 +98,7 @@ pub fn Home() -> Element {
                         // Right side - Advanced animation
                         div { class: "w-full lg:w-1/3",
                             div { class: "flex flex-col items-center gap-4",
-                                SwingingCube {}
+                                // SwingingCube {}
                                 div { class: "text-center",
                                     span { class: "inline-block text-lg font-medium bg-clip-text text-transparent
                                                bg-linear-to-r from-text-secondary/70 to-text-secondary/40
@@ -210,66 +210,64 @@ pub fn Home() -> Element {
 /// }
 /// ```
 fn FeatureCard(title: &'static str, description: &'static str, icon: &'static str) -> Element {
-    let mut card_scale = use_motion(1.0f32);
-    let mut card_y = use_motion(0.0f32);
+    let card_scale = use_motion(1.0f32);
+    let card_y = use_motion(0.0f32);
+    let mut card_scale_mouse = card_scale.clone();
+    let mut card_y_mouse = card_y.clone();
+    let mut card_scale_leave = card_scale.clone();
+    let mut card_y_leave = card_y.clone();
 
     rsx! {
         div {
-            class: "p-6 rounded-xl bg-dark-200/50 backdrop-blur-xs
-                    border border-primary/10 transition-all duration-300
-                    hover:border-primary/20",
-            style: "transform: translateY({card_y.get_value()}px) scale({card_scale.get_value()})",
+            class: "p-6 rounded-xl bg-dark-200/50 backdrop-blur-xs border border-primary/10 transition-all duration-300 hover:border-primary/20",
+            style: format!("transform: translateY({}px) scale({})", card_y.get_value(), card_scale.get_value()),
             onmouseenter: move |_| {
-                card_scale
-                    .animate_to(
-                        1.05,
-                        AnimationConfig::new(
-                            AnimationMode::Spring(Spring {
-                                stiffness: 300.0,
-                                damping: 20.0,
-                                mass: 1.0,
-                                velocity: 0.0,
-                            }),
-                        ),
-                    );
-                card_y
-                    .animate_to(
-                        -5.0,
-                        AnimationConfig::new(
-                            AnimationMode::Spring(Spring {
-                                stiffness: 300.0,
-                                damping: 20.0,
-                                mass: 1.0,
-                                velocity: 0.0,
-                            }),
-                        ),
-                    );
+                card_scale_mouse.animate_to(
+                    1.05,
+                    AnimationConfig::new(
+                        AnimationMode::Spring(Spring {
+                            stiffness: 300.0,
+                            damping: 20.0,
+                            mass: 1.0,
+                            velocity: 0.0,
+                        }),
+                    ),
+                );
+                card_y_mouse.animate_to(
+                    -5.0,
+                    AnimationConfig::new(
+                        AnimationMode::Spring(Spring {
+                            stiffness: 300.0,
+                            damping: 20.0,
+                            mass: 1.0,
+                            velocity: 0.0,
+                        }),
+                    ),
+                );
             },
             onmouseleave: move |_| {
-                card_scale
-                    .animate_to(
-                        1.0,
-                        AnimationConfig::new(
-                            AnimationMode::Spring(Spring {
-                                stiffness: 300.0,
-                                damping: 20.0,
-                                mass: 1.0,
-                                velocity: 0.0,
-                            }),
-                        ),
-                    );
-                card_y
-                    .animate_to(
-                        0.0,
-                        AnimationConfig::new(
-                            AnimationMode::Spring(Spring {
-                                stiffness: 300.0,
-                                damping: 20.0,
-                                mass: 1.0,
-                                velocity: 0.0,
-                            }),
-                        ),
-                    );
+                card_scale_leave.animate_to(
+                    1.0,
+                    AnimationConfig::new(
+                        AnimationMode::Spring(Spring {
+                            stiffness: 300.0,
+                            damping: 20.0,
+                            mass: 1.0,
+                            velocity: 0.0,
+                        }),
+                    ),
+                );
+                card_y_leave.animate_to(
+                    0.0,
+                    AnimationConfig::new(
+                        AnimationMode::Spring(Spring {
+                            stiffness: 300.0,
+                            damping: 20.0,
+                            mass: 1.0,
+                            velocity: 0.0,
+                        }),
+                    ),
+                );
             },
             div { class: "flex items-center gap-3 mb-4",
                 span { class: "text-2xl", {icon} }
