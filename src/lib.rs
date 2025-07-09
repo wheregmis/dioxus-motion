@@ -121,6 +121,8 @@ pub mod prelude {
     #[cfg(feature = "transitions")]
     pub use crate::transitions::config::TransitionVariant;
     #[cfg(feature = "transitions")]
+    pub use crate::transitions::page_transitions::TransitionVariantResolver;
+    #[cfg(feature = "transitions")]
     pub use crate::transitions::page_transitions::{AnimatableRoute, AnimatedOutlet};
     pub use crate::{AnimationManager, Duration, Time, TimeProvider, use_motion};
 }
