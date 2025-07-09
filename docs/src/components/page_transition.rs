@@ -554,8 +554,9 @@ enum Route {
                     CodeBlock {
                         code: r#"use dioxus_motion::transitions::page_transitions::TransitionVariantResolver;
 
+// NOTE: Route::Card { idx } is a hypothetical example variant for illustration purposes.
+// Replace with your actual route variants as needed.
 let resolver: TransitionVariantResolver<Route> = std::rc::Rc::new(|from, to| {
-    // Assuming Route::Card { idx } for cards
     match (from, to) {
         (Route::Card { idx: from_idx }, Route::Card { idx: to_idx }) => {
             if to_idx > from_idx {
