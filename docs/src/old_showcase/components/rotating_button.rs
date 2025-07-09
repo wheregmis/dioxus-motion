@@ -2,13 +2,10 @@ use dioxus::prelude::*;
 use dioxus_motion::{KeyframeAnimation, prelude::*};
 use easer::functions::Easing;
 
-// Add type alias for keyframe tuple
-type KeyframeTuple<T> = (T, f32, Option<fn(f32, f32, f32, f32) -> f32>);
-
 // Helper function to safely build keyframe animations
 fn build_keyframes<T: dioxus_motion::animations::core::Animatable>(
     duration: Duration,
-    keyframes: Vec<KeyframeTuple<T>>,
+    keyframes: Vec<(T, f32, Option<fn(f32, f32, f32, f32) -> f32>)>,
 ) -> Result<KeyframeAnimation<T>, dioxus_motion::keyframes::KeyframeError> {
     let mut animation = KeyframeAnimation::new(duration);
     for (value, offset, easing) in keyframes {
