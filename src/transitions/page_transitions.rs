@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 
 use crate::{
     AnimationManager,
-    prelude::{AnimationConfig, AnimationMode, Spring},
+    prelude::{AnimationConfig, AnimationMode, Spring, Tween}, // Add Tween
     use_motion,
 };
 
@@ -257,24 +257,32 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     let mut from_anim = use_motion(PageTransitionAnimation::from_exit_start(&config));
     let mut to_anim = use_motion(PageTransitionAnimation::from_enter_start(&config));
 
-    let spring = try_use_context::<Signal<Spring>>().unwrap_or_else(|| {
-        use_signal(|| Spring {
-            stiffness: 160.0,
-            damping: 25.0,
-            mass: 1.0,
-            velocity: 0.0,
-        })
-    });
+    // Try to get a Tween from context, otherwise use Spring
+    let tween = try_use_context::<Signal<Tween>>();
+    let spring = try_use_context::<Signal<Spring>>();
 
     use_effect(move || {
-        from_anim.animate_to(
-            PageTransitionAnimation::from_exit_end(&config),
-            AnimationConfig::new(AnimationMode::Spring(spring())),
-        );
-        to_anim.animate_to(
-            PageTransitionAnimation::from_enter_end(&config),
-            AnimationConfig::new(AnimationMode::Spring(spring())),
-        );
+        let (from_config, to_config) = if let Some(tween) = &tween {
+            (
+                AnimationConfig::new(AnimationMode::Tween(tween())),
+                AnimationConfig::new(AnimationMode::Tween(tween())),
+            )
+        } else {
+            let spring = spring.unwrap_or_else(|| {
+                use_signal(|| Spring {
+                    stiffness: 160.0,
+                    damping: 25.0,
+                    mass: 1.0,
+                    velocity: 0.0,
+                })
+            });
+            (
+                AnimationConfig::new(AnimationMode::Spring(spring())),
+                AnimationConfig::new(AnimationMode::Spring(spring())),
+            )
+        };
+        from_anim.animate_to(PageTransitionAnimation::from_exit_end(&config), from_config);
+        to_anim.animate_to(PageTransitionAnimation::from_enter_end(&config), to_config);
     });
 
     use_effect(move || {

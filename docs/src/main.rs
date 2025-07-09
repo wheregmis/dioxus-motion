@@ -37,14 +37,21 @@ const MAIN_CSS: Asset = asset!("/assets/main.css");
 /// ```
 fn main() {
     dioxus::launch(|| {
-        let spring = use_signal(|| Spring {
-            stiffness: 220.0,
-            damping: 30.0,
-            mass: 1.0,
-            velocity: 0.0,
+        // To use a Tween for page transitions, provide it via context:
+        let tween = use_signal(|| Tween {
+            duration: std::time::Duration::from_millis(500),
+            easing: easer::functions::Cubic::ease_in_out,
         });
+        use_context_provider(|| tween);
 
-        use_context_provider(|| spring);
+        // To use a Spring instead, comment out the above and uncomment below:
+        // let spring = use_signal(|| Spring {
+        //     stiffness: 220.0,
+        //     damping: 30.0,
+        //     mass: 1.0,
+        //     velocity: 0.0,
+        // });
+        // use_context_provider(|| spring);
 
         rsx! {
             head {
