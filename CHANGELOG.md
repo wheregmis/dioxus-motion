@@ -6,6 +6,118 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.4.0](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-v0.3.1...dioxus-motion-v0.4.0) - 2025-07-12
+
+### Added
+
+- update edition
+- rustfmt **/*.rs --edition 2024
+- cargo update
+
+### Fixed
+
+- fixed page transition animation from/to to root route
+- fixing animation config explicit conversion
+
+### Other
+
+- Export TransitionVariantResolver in prelude module
+- Add dynamic transition resolver for page transitions
+- Add support for Tween-based page transitions
+- simplifying animatable trait
+- Clippy Fixes
+- Refactor animation frame counter variable naming
+- Standardize animation epsilon values
+- Refactor timing logic in MotionTime for web platform
+- Add new feature to process user input
+- Add value caching to Motion for frame optimization
+- Optimize animation interpolation with SIMD via wide
+- Add perspective and contain to route transition styles
+- Refactor Motion<T> update logic into helper functions
+- Refactor animation and transition modules structure
+- Refactor animation delay logic into helper function
+- Create FUNDING.yml
+- providing animation context
+- Adjust spring parameters and styles in page transitions
+- remove more unused stuffs
+- small cleanups
+- small tweak for keyframe
+- Update src/keyframes.rs
+- Improve keyframe animation handling by adding a check for empty keyframes, ensuring proper behavior when no keyframes are present.
+- Clippy Fixes
+- more refactor
+- more refactor
+- update cube_animation.rs source link in README.md
+- remove use_drop
+- ai suggestions
+- More Guide
+- Update readme
+- Using dioxus main branch
+- Clippy FIxes
+- Merge branch 'main' of https://github.com/wheregmis/dioxus-motion
+- Modified and Added some tests
+- Few Timing optimization for desktop
+- Clippy Fixes
+- Fix Nested Page transition
+- Setting basepath for github deployment
+- Remove example project and embed it into docs
+- step calculation fix
+- optimize animation state updates and route handling in effects
+- remove AnimationSignal implementation from AnimationManager trait
+- More cleanup
+- few cleanup
+- animation step stack allocation
+- more spring optimizations
+- optimized spring
+- using arc for shared config, memory opt
+- adaptive delay calculation
+- 📝 Add docstrings to `ft_docs`
+- Fix Clippy
+- Revert page transitions and platform.rs
+- Few opts
+- Wrap first Draft on Dioxus Motion Docs
+- Making docs cross platform
+- Basic Landing Page
+- Update changelog to use consistent versioning format
+- Update changelog to include project documentation and semantic versioning details
+- Update changelog
+- Refactor dioxus-motion-transitions-macro package structure and remove obsolete route_transitions crate
+- Update Cargo.toml to use resolver version 3
+- Add release-plz configuration for dioxus-motion packages
+- Update dependencies: syn to 2.0.100, quote to 1.0.40, and proc-macro2 to 1.0.94
+- Disable publish.yml
+- remove router_test from workspace
+- Lets try release plz action
+- Lock tokio to 1.43.0
+- Now we fully support nested routing
+- Comment Github Pages Action
+- Bringing back all the Page Transitions- AI Generated
+- Making version 0.3.1  so it wont publish things on crate.io
+- Clean and Easy Animation For now
+- wip nested route
+- Thanks to Evan
+- Using use_context_provider
+- Update the changelog
+- Using Outlet to Include Layout for the time being
+- Dumping all the changes
+- Not showing layout, now need to show it somehow
+- Update workspace configuration and add utils module for transitions
+
+## [0.1.1](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-transitions-macro-v0.1.0...dioxus-motion-transitions-macro-v0.1.1) - 2025-07-12
+
+### Added
+
+- update edition
+- rustfmt **/*.rs --edition 2024
+
+### Fixed
+
+- edition2024 -> error: binding modifiers may only be written when the default binding mode is move
+
+### Other
+
+- Refactor dioxus-motion-transitions-macro package structure and remove obsolete route_transitions crate
 ### BREAKING CHANGES:
 - **Major Simplification: Simplified Animatable Trait**
   - Reduced from 7 required methods to just 2: `interpolate()` and `magnitude()`
