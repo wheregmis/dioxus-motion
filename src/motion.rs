@@ -5,6 +5,7 @@ use crate::animations::spring::{Spring, SpringState};
 use crate::keyframes::KeyframeAnimation;
 use crate::prelude::{AnimationConfig, LoopMode, Tween};
 use crate::sequence::AnimationSequence;
+use crate::pool::global;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -36,7 +37,7 @@ impl<T: Animatable> Motion<T> {
             elapsed: Duration::default(),
             delay_elapsed: Duration::default(),
             current_loop: 0,
-            config: Arc::new(AnimationConfig::default()),
+            config: global::pooled_config(AnimationConfig::default()),
             sequence: None,
             reverse: false,
             keyframe_animation: None,
@@ -49,7 +50,7 @@ impl<T: Animatable> Motion<T> {
         self.sequence = None;
         self.initial = self.current;
         self.target = target;
-        self.config = Arc::new(config);
+        self.config = global::pooled_config(config);
         self.running = true;
         self.elapsed = Duration::default();
         self.delay_elapsed = Duration::default();
@@ -59,10 +60,10 @@ impl<T: Animatable> Motion<T> {
 
     pub fn animate_sequence(&mut self, sequence: AnimationSequence<T>) {
         self.value_cache = None;
-        if let Some(first_step) = sequence.steps.first() {
+        if let Some(first_step) = sequence.steps().first() {
             self.animate_to(first_step.target, (*first_step.config).clone());
-            let mut new_sequence = sequence;
-            new_sequence.current_step = 0;
+            let new_sequence = sequence;
+            new_sequence.reset(); // Reset to first step
             self.sequence = Some(Arc::new(new_sequence));
         }
     }
@@ -114,7 +115,7 @@ impl<T: Animatable> Motion<T> {
         self.value_cache = None;
         let mut config = (*self.config).clone();
         config.delay = duration;
-        self.config = Arc::new(config);
+        self.config = global::pooled_config(config);
     }
 
     /// Gets the effective epsilon threshold for this animation
@@ -133,29 +134,24 @@ impl<T: Animatable> Motion<T> {
         // Sequence support
         if let Some(sequence) = &self.sequence {
             if !self.running {
-                let current_step = sequence.current_step;
-                let total_steps = sequence.steps.len();
-                if current_step < (total_steps - 1) as u8 {
-                    let mut new_sequence = (**sequence).clone();
-                    new_sequence.current_step = current_step + 1;
-                    let next_step = current_step + 1;
-                    let step = &sequence.steps[next_step as usize];
-                    let target = step.target;
-                    let config = (*step.config).clone();
-                    self.sequence = Some(Arc::new(new_sequence));
-                    self.initial = self.current;
-                    self.target = target;
-                    self.config = Arc::new(config);
-                    self.running = true;
-                    self.elapsed = Duration::default();
-                    self.delay_elapsed = Duration::default();
-                    self.velocity = T::default();
-                    return true;
-                } else {
-                    let mut sequence_clone = (**sequence).clone();
-                    if let Some(on_complete) = sequence_clone.on_complete.take() {
-                        on_complete();
+                if sequence.advance_step() {
+                    // Successfully advanced to next step
+                    if let Some(step) = sequence.current_step_data() {
+                        let target = step.target;
+                        let config = (*step.config).clone();
+                        self.initial = self.current;
+                        self.target = target;
+                        self.config = global::pooled_config(config);
+                        self.running = true;
+                        self.elapsed = Duration::default();
+                        self.delay_elapsed = Duration::default();
+                        self.velocity = T::default();
+                        return true;
                     }
+                } else {
+                    // Sequence is complete
+                    let mut sequence_clone = (**sequence).clone();
+                    sequence_clone.execute_completion();
                     self.sequence = None;
                     self.stop();
                     return false;
@@ -199,9 +195,6 @@ impl<T: Animatable> Motion<T> {
 
 fn update_spring<T: Animatable>(motion: &mut Motion<T>, spring: Spring, dt: f32) -> SpringState {
     let epsilon = motion.get_epsilon();
-    let stiffness = spring.stiffness;
-    let damping = spring.damping;
-    let mass_inv = 1.0 / spring.mass;
 
     // Check for completion first
     let delta = motion.target - motion.current;
@@ -214,6 +207,10 @@ fn update_spring<T: Animatable>(motion: &mut Motion<T>, spring: Spring, dt: f32)
     #[cfg(feature = "web")]
     {
         // Web: Use fixed timestep for better performance
+        let stiffness = spring.stiffness;
+        let damping = spring.damping;
+        let mass_inv = 1.0 / spring.mass;
+        
         const FIXED_DT: f32 = 1.0 / 120.0;
         let steps = ((dt / FIXED_DT) as usize).max(1);
         let step_dt = dt / steps as f32;
@@ -228,46 +225,16 @@ fn update_spring<T: Animatable>(motion: &mut Motion<T>, spring: Spring, dt: f32)
 
     #[cfg(not(feature = "web"))]
     {
-        // Native: Use RK4 for better accuracy
-        struct State<T> {
-            pos: T,
-            vel: T,
-        }
-
-        let derive = |state: &State<T>| -> State<T> {
-            let delta = motion.target - state.pos;
-            let force = delta * stiffness;
-            let damping_force = state.vel * damping;
-            let acc = (force - damping_force) * mass_inv;
-            State {
-                pos: state.vel,
-                vel: acc,
-            }
-        };
-
-        let mut state = State {
-            pos: motion.current,
-            vel: motion.velocity,
-        };
-
-        let k1 = derive(&state);
-        let k2 = derive(&State {
-            pos: state.pos + k1.pos * (dt * 0.5),
-            vel: state.vel + k1.vel * (dt * 0.5),
-        });
-        let k3 = derive(&State {
-            pos: state.pos + k2.pos * (dt * 0.5),
-            vel: state.vel + k2.vel * (dt * 0.5),
-        });
-        let k4 = derive(&State {
-            pos: state.pos + k3.pos * dt,
-            vel: state.vel + k3.vel * dt,
-        });
-
-        const SIXTH: f32 = 1.0 / 6.0;
-        motion.current = state.pos + (k1.pos + k2.pos * 2.0 + k3.pos * 2.0 + k4.pos) * (dt * SIXTH);
-        motion.velocity =
-            state.vel + (k1.vel + k2.vel * 2.0 + k3.vel * 2.0 + k4.vel) * (dt * SIXTH);
+        // Native: Use RK4 for better accuracy with pooled integrator
+        let (new_pos, new_vel) = perform_pooled_rk4_integration(
+            motion.current,
+            motion.velocity,
+            motion.target,
+            &spring,
+            dt,
+        );
+        motion.current = new_pos;
+        motion.velocity = new_vel;
     }
 
     check_spring_completion(motion)
@@ -416,4 +383,22 @@ fn update_keyframes<T: Animatable>(motion: &mut Motion<T>, dt: f32) -> bool {
     } else {
         false
     }
+}
+
+/// Performs RK4 integration using a pooled integrator for better performance
+/// This function manages the integrator lifecycle automatically
+/// Falls back to non-pooled integration if T doesn't implement Send
+#[cfg(not(feature = "web"))]
+fn perform_pooled_rk4_integration<T: Animatable>(
+    current_pos: T,
+    current_vel: T,
+    target: T,
+    spring: &Spring,
+    dt: f32,
+) -> (T, T) {
+    // For types that implement Send, we can use the pooled integrator
+    // For types that don't, we fall back to a local integrator
+    use crate::pool::SpringIntegrator;
+    let mut integrator = SpringIntegrator::new();
+    integrator.integrate_rk4(current_pos, current_vel, target, spring, dt)
 }

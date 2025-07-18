@@ -23,7 +23,7 @@ web-sys = { version = "0.3.77", optional = true, default-features = false, featu
 ] }
 futures-channel = { version = "0.3.31", default-features = false }
 # For desktop platforms
-tokio = { version = "1.43.0", optional = true, default-features = false }
+tokio = { version = "1.43.0", optional = true, default-features = false, features = ["time"] }
 # For transitions
 dioxus-motion-transitions-macro = { path = "packages/dioxus-motion-transitions-macro", version = "0.1.0", optional = true }
 dioxus = { version = "0.7.0-alpha.3", features = ["router"] }

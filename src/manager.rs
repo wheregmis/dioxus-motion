@@ -4,8 +4,8 @@ use crate::keyframes::KeyframeAnimation;
 use crate::motion::Motion;
 use crate::prelude::AnimationConfig;
 use crate::sequence::AnimationSequence;
+use crate::pool::global;
 use dioxus::prelude::{Readable, Signal, Writable};
-use std::sync::Arc;
 
 pub trait AnimationManager<T: Animatable>: Clone + Copy {
     fn new(initial: T) -> Self;
@@ -30,7 +30,7 @@ impl<T: Animatable> AnimationManager<T> for Signal<Motion<T>> {
     }
 
     fn animate_sequence(&mut self, sequence: AnimationSequence<T>) {
-        if let Some(first_step) = sequence.steps.first() {
+        if let Some(first_step) = sequence.steps().first() {
             let mut state = self.write();
             (*state).animate_to(first_step.target, (*first_step.config).clone());
             state.sequence = Some(sequence.into());
@@ -66,6 +66,6 @@ impl<T: Animatable> AnimationManager<T> for Signal<Motion<T>> {
         let mut state = self.write();
         let mut config = state.config.as_ref().clone();
         config.delay = duration;
-        state.config = Arc::new(config);
+        state.config = global::pooled_config(config);
     }
 }
