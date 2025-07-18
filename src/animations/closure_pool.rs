@@ -101,9 +101,9 @@ impl Default for WebClosurePool {
     }
 }
 
-/// Thread-local storage for the global closure pool
 #[cfg(feature = "web")]
 thread_local! {
+    /// Thread-local storage for the global closure pool
     static CLOSURE_POOL: RefCell<WebClosurePool> = RefCell::new(WebClosurePool::new());
 }
 

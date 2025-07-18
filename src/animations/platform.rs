@@ -123,3 +123,74 @@ impl TimeProvider for MotionTime {
 
 /// Type alias for the default time provider
 pub type Time = MotionTime;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_time_provider_now() {
+        // Test that TimeProvider::now() works consistently
+        let time1 = MotionTime::now();
+        std::thread::sleep(std::time::Duration::from_millis(1));
+        let time2 = MotionTime::now();
+        
+        assert!(time2 > time1, "Time should advance");
+        assert!(time2.duration_since(time1) >= Duration::from_millis(1), 
+                "Time difference should be at least 1ms");
+    }
+
+    #[cfg(not(feature = "web"))]
+    #[tokio::test]
+    async fn test_desktop_sleep_threshold_optimization() {
+        // Test that very short durations don't use spin sleep
+        let short_duration = Duration::from_micros(500);
+        let start = Instant::now();
+        
+        MotionTime::delay(short_duration).await;
+        
+        let elapsed = start.elapsed();
+        
+        // For very short durations, we should yield instead of sleep
+        // The elapsed time should be minimal (less than 2ms)
+        assert!(elapsed < Duration::from_millis(2), 
+                "Short duration sleep took too long: {:?}", elapsed);
+    }
+
+    #[cfg(not(feature = "web"))]
+    #[tokio::test]
+    async fn test_desktop_sleep_longer_duration() {
+        // Test that longer durations use proper sleep
+        let long_duration = Duration::from_millis(10);
+        let start = Instant::now();
+        
+        MotionTime::delay(long_duration).await;
+        
+        let elapsed = start.elapsed();
+        
+        // For longer durations, we should sleep properly
+        // Allow some tolerance for timing variations
+        assert!(elapsed >= Duration::from_millis(8), 
+                "Long duration sleep was too short: {:?}", elapsed);
+        assert!(elapsed <= Duration::from_millis(15), 
+                "Long duration sleep was too long: {:?}", elapsed);
+    }
+
+    #[cfg(not(feature = "web"))]
+    #[tokio::test]
+    async fn test_desktop_sleep_threshold_boundary() {
+        // Test the 1ms threshold boundary
+        let threshold_duration = Duration::from_millis(1);
+        let start = Instant::now();
+        
+        MotionTime::delay(threshold_duration).await;
+        
+        let elapsed = start.elapsed();
+        
+        // At the threshold, we should still use proper sleep
+        assert!(elapsed >= Duration::from_micros(800), 
+                "Threshold duration sleep was too short: {:?}", elapsed);
+        assert!(elapsed <= Duration::from_millis(3), 
+                "Threshold duration sleep was too long: {:?}", elapsed);
+    }
+}
