@@ -96,10 +96,9 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         });
 
         // Set up spring integrator if needed
-        if matches!(config.mode, crate::animations::core::AnimationMode::Spring(_)) {
-            if self.spring_integrator_handle.is_none() {
-                self.spring_integrator_handle = self.try_get_spring_integrator();
-            }
+        if matches!(config.mode, crate::animations::core::AnimationMode::Spring(_))
+            && self.spring_integrator_handle.is_none() {
+            self.spring_integrator_handle = self.try_get_spring_integrator();
         }
 
         // Set up state machine for running animation
@@ -246,6 +245,7 @@ pub struct MotionOptimizationStats {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     use crate::animations::core::AnimationMode;
     use crate::animations::spring::Spring;

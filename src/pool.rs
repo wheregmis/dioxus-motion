@@ -7,7 +7,7 @@
 use crate::animations::core::{Animatable, AnimationConfig};
 use crate::animations::spring::Spring;
 use std::collections::HashMap;
-use std::sync::{Arc, Weak, Mutex};
+
 use std::cell::RefCell;
 use std::any::{Any, TypeId};
 
@@ -42,7 +42,6 @@ impl ConfigPool {
         
         ConfigHandle {
             id,
-            pool_ref: Arc::downgrade(&Arc::new(Mutex::new(self as *mut ConfigPool))),
         }
     }
 
@@ -97,7 +96,8 @@ impl Default for ConfigPool {
 /// A handle to a pooled AnimationConfig that automatically returns to pool when dropped
 pub struct ConfigHandle {
     id: usize,
-    pool_ref: Weak<Mutex<*mut ConfigPool>>,
+    // Simplified - in a real implementation this would need proper cleanup
+    // For now we rely on the global pool for management
 }
 
 impl ConfigHandle {
@@ -112,7 +112,6 @@ impl ConfigHandle {
     pub fn new_test(id: usize) -> Self {
         Self {
             id,
-            pool_ref: Weak::new(),
         }
     }
 }
@@ -130,7 +129,6 @@ impl Clone for ConfigHandle {
     fn clone(&self) -> Self {
         Self {
             id: self.id,
-            pool_ref: self.pool_ref.clone(),
         }
     }
 }
@@ -404,6 +402,12 @@ pub struct GlobalIntegratorPools {
     pools: HashMap<TypeId, Box<dyn Any + Send>>,
 }
 
+impl Default for GlobalIntegratorPools {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GlobalIntegratorPools {
     pub fn new() -> Self {
         Self {
@@ -516,11 +520,9 @@ impl MotionResourcePools {
     pub fn maintain(&mut self) {
         // Trim config pool if it's grown too large
         if self.config_pool.available_count() > self.config.max_config_pool_size {
-            let excess = self.config_pool.available_count() - self.config.target_config_pool_size;
-            for _ in 0..excess {
-                // Remove excess configs (simplified - would need actual implementation)
-                break;
-            }
+            let _excess = self.config_pool.available_count() - self.config.target_config_pool_size;
+            // TODO: Implement actual config pool trimming
+            // This would require modifying ConfigPool to support trimming excess configs
         }
 
         // Similar maintenance for other pools could be added here
@@ -609,13 +611,11 @@ pub mod integrator {
         INTEGRATOR_POOLS.with(|pools| {
             let mut pools = pools.borrow_mut();
             let pool = pools.get_pool::<T>();
-            if let Some(integrator) = pool.get_integrator_mut(handle) {
-                integrator.integrate_rk4(current_pos, current_vel, target, spring, dt)
-            } else {
+            pool.get_integrator_mut(handle).map_or_else(|| {
                 // Fallback to non-pooled integration if handle is invalid
                 let mut integrator = SpringIntegrator::new();
                 integrator.integrate_rk4(current_pos, current_vel, target, spring, dt)
-            }
+            }, |integrator| integrator.integrate_rk4(current_pos, current_vel, target, spring, dt))
         })
     }
 
@@ -724,6 +724,7 @@ pub mod resource_pools {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     use crate::animations::core::AnimationMode;
     use crate::animations::spring::Spring;

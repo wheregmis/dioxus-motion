@@ -5,6 +5,7 @@
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::uninlined_format_args)]
     use instant::{Duration, Instant};
 
     /// Test web closure pooling performance

@@ -34,9 +34,10 @@
 //!         .with_epsilon(0.001) // Tighter threshold for high-precision animations
 //! );
 //!
-//! // Check optimization status (optional)
-//! let stats = value.optimization_stats();
-//! println!("Optimizations active: {:?}", stats);
+//! // Check if animation is running
+//! if value.is_running() {
+//!     println!("Animation is active with current value: {}", value.get_value());
+//! }
 //! ```
 //!
 //! # Creating Custom Animatable Types

@@ -490,6 +490,8 @@ impl<T: Animatable> Default for AnimationState<T> {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
+    #![allow(clippy::arc_with_non_send_sync)]
     use super::*;
     use crate::animations::core::AnimationMode;
     use crate::animations::spring::Spring;

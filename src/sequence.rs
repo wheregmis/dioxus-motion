@@ -1,4 +1,4 @@
-//! AnimationSequence<T> - Optimized animation step sequences
+//! `AnimationSequence<T>` - Optimized animation step sequences
 
 use crate::animations::core::Animatable;
 use crate::prelude::AnimationConfig;
@@ -35,7 +35,7 @@ impl<T: Animatable> AnimationSequence<T> {
     }
 
     /// Creates a new animation sequence with specified capacity hint
-    /// Note: This is kept for API compatibility but doesn't pre-allocate since we use Arc<[T]>
+    /// Note: This is kept for API compatibility but doesn't pre-allocate since we use Arc<\[T\]>
     pub fn with_capacity(_capacity: u8) -> Self {
         Self::new()
     }
@@ -61,7 +61,7 @@ impl<T: Animatable> AnimationSequence<T> {
         }
     }
 
-    /// Reserve additional capacity (kept for API compatibility, but no-op since we use Arc<[T]>)
+    /// Reserve additional capacity (kept for API compatibility, but no-op since we use Arc<\[T\]>)
     pub fn reserve(&mut self, _additional: u8) {
         // No-op for Arc<[T]> - kept for backward compatibility
     }
@@ -188,6 +188,7 @@ impl<T: Animatable> Default for AnimationSequence<T> {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     use crate::animations::core::AnimationMode;
     use crate::animations::spring::Spring;
