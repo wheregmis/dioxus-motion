@@ -102,7 +102,7 @@ impl TimeProvider for MotionTime {
             const MIN_SPIN_THRESHOLD: Duration = Duration::from_millis(1);
             
             if duration > MIN_SPIN_THRESHOLD {
-                let start = std::time::Instant::now();
+                let start = Instant::now();
                 
                 // Use tokio sleep for longer durations
                 tokio::time::sleep(duration).await;
@@ -132,7 +132,7 @@ mod tests {
     fn test_time_provider_now() {
         // Test that TimeProvider::now() works consistently
         let time1 = MotionTime::now();
-        std::thread::sleep(std::time::Duration::from_millis(1));
+        std::thread::sleep(Duration::from_millis(1));
         let time2 = MotionTime::now();
         
         assert!(time2 > time1, "Time should advance");
