@@ -77,8 +77,6 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         }
     }
 
-
-
     pub fn animate_to(&mut self, target: T, config: AnimationConfig) {
         self.value_cache = None;
         self.sequence = None;
@@ -96,8 +94,11 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         });
 
         // Set up spring integrator if needed
-        if matches!(config.mode, crate::animations::core::AnimationMode::Spring(_))
-            && self.spring_integrator_handle.is_none() {
+        if matches!(
+            config.mode,
+            crate::animations::core::AnimationMode::Spring(_)
+        ) && self.spring_integrator_handle.is_none()
+        {
             self.spring_integrator_handle = self.try_get_spring_integrator();
         }
 
@@ -110,12 +111,13 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         if let Some(first_step) = sequence.steps().first() {
             let first_config = (*first_step.config).clone();
             self.animate_to(first_step.target, first_config);
-            let new_sequence = sequence;
+            let mut new_sequence = sequence.clone();
             new_sequence.reset(); // Reset to first step
             self.sequence = Some(Arc::new(new_sequence.clone()));
 
             // Set up state machine for sequence animation
-            self.animation_state = AnimationState::new_sequence(Arc::new(new_sequence), self.config_handle.clone());
+            self.animation_state =
+                AnimationState::new_sequence(Arc::new(new_sequence), self.config_handle.clone());
         }
     }
 
@@ -127,7 +129,8 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         self.velocity = T::default();
 
         // Set up state machine for keyframe animation
-        self.animation_state = AnimationState::new_keyframes(Arc::new(animation), self.config_handle.clone());
+        self.animation_state =
+            AnimationState::new_keyframes(Arc::new(animation), self.config_handle.clone());
     }
 
     pub fn get_value(&self) -> T {
@@ -173,7 +176,7 @@ impl<T: Animatable + Send + 'static> Motion<T> {
 
     pub fn delay(&mut self, duration: Duration) {
         self.value_cache = None;
-        
+
         // Update config handle
         global::modify_config(&self.config_handle, |pooled_config| {
             pooled_config.delay = duration;
@@ -211,7 +214,6 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     pub fn spring_integrator_handle(&self) -> Option<&SpringIntegratorHandle> {
         self.spring_integrator_handle.as_ref()
     }
-
 
     /// Gets optimization statistics for this Motion instance
     pub fn optimization_stats(&self) -> MotionOptimizationStats {
