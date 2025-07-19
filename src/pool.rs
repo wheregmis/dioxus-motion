@@ -165,6 +165,17 @@ impl ConfigPoolable for AnimationConfig {
     }
 }
 
+/// Trait for pools that can provide statistics
+trait PoolStatsProvider {
+    fn stats(&self) -> (usize, usize);
+}
+
+impl<T: Animatable + Send> PoolStatsProvider for SpringIntegratorPool<T> {
+    fn stats(&self) -> (usize, usize) {
+        (self.in_use.len(), self.available.len())
+    }
+}
+
 // Thread-local config pool for efficient access
 thread_local! {
     static CONFIG_POOL: RefCell<ConfigPool> = RefCell::new(ConfigPool::new());
@@ -419,6 +430,8 @@ impl SpringIntegratorHandle {
 /// Global integrator pool management using type-erased storage
 pub struct GlobalIntegratorPools {
     pools: HashMap<TypeId, Box<dyn Any + Send>>,
+    // Track stats separately since we can't easily downcast trait objects
+    stats_tracker: HashMap<TypeId, (usize, usize)>,
 }
 
 impl Default for GlobalIntegratorPools {
@@ -431,29 +444,49 @@ impl GlobalIntegratorPools {
     pub fn new() -> Self {
         Self {
             pools: HashMap::new(),
+            stats_tracker: HashMap::new(),
         }
     }
 
     /// Gets or creates a pool for type T
     pub fn get_pool<T: Animatable + Send + 'static>(&mut self) -> &mut SpringIntegratorPool<T> {
         let type_id = TypeId::of::<T>();
-        self.pools
+
+        // Get or create the pool
+        let pool = self
+            .pools
             .entry(type_id)
             .or_insert_with(|| Box::new(SpringIntegratorPool::<T>::new()))
             .downcast_mut::<SpringIntegratorPool<T>>()
-            .expect("Type mismatch in integrator pool")
+            .expect("Type mismatch in integrator pool");
+
+        // Update stats tracker
+        let stats = pool.stats();
+        self.stats_tracker.insert(type_id, stats);
+
+        pool
     }
 
     /// Clears all pools
     pub fn clear(&mut self) {
         self.pools.clear();
+        self.stats_tracker.clear();
     }
 
     /// Gets statistics for all pools
     pub fn stats(&self) -> HashMap<TypeId, (usize, usize)> {
-        // Note: This is a simplified version since we can't easily downcast
-        // and call stats() on each pool without knowing the concrete type
-        HashMap::new()
+        self.stats_tracker.clone()
+    }
+
+    /// Updates stats for a specific type (called when integrators are returned)
+    pub fn update_stats<T: Animatable + Send + 'static>(&mut self) {
+        let type_id = TypeId::of::<T>();
+        if let Some(pool) = self.pools.get(&type_id) {
+            if let Some(pool) = pool.downcast_ref::<SpringIntegratorPool<T>>() {
+                let stats = pool.stats();
+                self.stats_tracker.insert(type_id, stats);
+            }
+        }
     }
 }
 
@@ -503,10 +536,13 @@ impl MotionResourcePools {
         #[cfg(not(feature = "web"))]
         let (closure_in_use, closure_available) = (0, 0);
 
+        // Get integrator stats from the global integrator pools
+        let integrator_stats = INTEGRATOR_POOLS.with(|pools| pools.borrow().stats());
+
         PoolStats {
             config_pool: (config_in_use, config_available),
             closure_pool: (closure_in_use, closure_available),
-            integrator_pools: self.integrator_pools.stats(),
+            integrator_pools: integrator_stats,
             total_memory_saved_bytes: self.estimate_memory_savings(),
         }
     }
@@ -621,7 +657,9 @@ pub mod integrator {
     /// Returns an integrator to the global thread-local pool
     pub fn return_integrator<T: Animatable + Send + 'static>(handle: SpringIntegratorHandle) {
         INTEGRATOR_POOLS.with(|pools| {
-            pools.borrow_mut().get_pool::<T>().return_integrator(handle);
+            let mut pools = pools.borrow_mut();
+            pools.get_pool::<T>().return_integrator(handle);
+            pools.update_stats::<T>();
         });
     }
 
@@ -1024,6 +1062,44 @@ mod tests {
     }
 
     #[test]
+    fn test_integrator_pool_stats_tracking() {
+        // Clear both pools to start fresh
+        integrator::clear_pools();
+        resource_pools::clear_all();
+
+        // Get integrators for different types using the integrator module
+        let handle_f32 = integrator::get_integrator::<f32>();
+        let handle_vec2 = integrator::get_integrator::<crate::animations::transform::Transform>();
+
+        // Get stats from the integrator module directly
+        let f32_stats = integrator::pool_stats::<f32>();
+        let transform_stats = integrator::pool_stats::<crate::animations::transform::Transform>();
+
+        // Check that stats are tracked correctly
+        assert_eq!(f32_stats.0, 1); // in_use
+        assert_eq!(f32_stats.1, 0); // available
+
+        assert_eq!(transform_stats.0, 1); // in_use
+        assert_eq!(transform_stats.1, 0); // available
+
+        // Return integrators
+        integrator::return_integrator::<f32>(handle_f32);
+        integrator::return_integrator::<crate::animations::transform::Transform>(handle_vec2);
+
+        // Get updated stats
+        let updated_f32_stats = integrator::pool_stats::<f32>();
+        let updated_transform_stats =
+            integrator::pool_stats::<crate::animations::transform::Transform>();
+
+        // Check that stats were updated after returning
+        assert_eq!(updated_f32_stats.0, 0); // in_use
+        assert_eq!(updated_f32_stats.1, 1); // available
+
+        assert_eq!(updated_transform_stats.0, 0); // in_use
+        assert_eq!(updated_transform_stats.1, 1); // available
+    }
+
+    #[test]
     fn test_spring_integrator_accuracy() {
         // Test that the pooled integrator produces the same results as the original
         let mut integrator = SpringIntegrator::<f32>::new();
@@ -1138,6 +1214,43 @@ mod tests {
         // Memory savings should be reasonable estimate
         assert!(stats.total_memory_saved_bytes > 0);
         assert!(stats.total_memory_saved_bytes < 1_000_000); // Shouldn't be unreasonably large
+    }
+
+    #[test]
+    fn test_resource_pools_stats_returns_actual_data() {
+        // Clear pools to start fresh
+        resource_pools::clear_all();
+
+        // Get some integrators to populate the pools
+        let handle1 = integrator::get_integrator::<f32>();
+        let handle2 = integrator::get_integrator::<crate::animations::transform::Transform>();
+
+        // Get stats from resource_pools
+        let stats = resource_pools::stats();
+
+        // Verify that we get actual stats instead of empty data
+        // The integrator_pools should contain stats for the types we used
+        assert!(
+            !stats.integrator_pools.is_empty(),
+            "Integrator pools stats should not be empty"
+        );
+
+        // Check that we have stats for the types we used
+        let f32_type_id = std::any::TypeId::of::<f32>();
+        let transform_type_id = std::any::TypeId::of::<crate::animations::transform::Transform>();
+
+        assert!(
+            stats.integrator_pools.contains_key(&f32_type_id),
+            "Should have f32 stats"
+        );
+        assert!(
+            stats.integrator_pools.contains_key(&transform_type_id),
+            "Should have Transform stats"
+        );
+
+        // Return integrators
+        integrator::return_integrator::<f32>(handle1);
+        integrator::return_integrator::<crate::animations::transform::Transform>(handle2);
     }
 
     #[test]
