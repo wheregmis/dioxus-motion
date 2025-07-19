@@ -18,20 +18,19 @@ pub struct Motion<T: Animatable + Send + 'static> {
     pub elapsed: Duration,
     pub delay_elapsed: Duration,
     pub current_loop: u8,
-
-    // Legacy fields for backward compatibility
-    pub config: Arc<AnimationConfig>,
-    pub sequence: Option<Arc<AnimationSequence<T>>>,
     pub reverse: bool,
-    pub keyframe_animation: Option<Arc<KeyframeAnimation<T>>>,
 
-    // Optimization components
+    // Optimized components (now the primary implementation)
     /// State machine for efficient animation dispatch
     pub animation_state: AnimationState<T>,
     /// Handle to pooled configuration
-    config_handle: Option<ConfigHandle>,
+    config_handle: ConfigHandle,
     /// Handle to pooled spring integrator for spring animations
     spring_integrator_handle: Option<SpringIntegratorHandle>,
+    /// Current sequence being animated (if any)
+    pub sequence: Option<Arc<AnimationSequence<T>>>,
+    /// Current keyframe animation (if any)
+    pub keyframe_animation: Option<Arc<KeyframeAnimation<T>>>,
 
     // Internal value cache: (value, frame_time)
     value_cache: Option<(T, f32)>,
@@ -40,9 +39,7 @@ pub struct Motion<T: Animatable + Send + 'static> {
 impl<T: Animatable + Send + 'static> Drop for Motion<T> {
     fn drop(&mut self) {
         // Return config handle to pool
-        if let Some(handle) = self.config_handle.take() {
-            global::return_config(handle);
-        }
+        global::return_config(self.config_handle.clone());
 
         // Return spring integrator handle to pool
         if let Some(handle) = self.spring_integrator_handle.take() {
@@ -58,7 +55,7 @@ impl<T: Animatable + Send + 'static> Motion<T> {
             *config = AnimationConfig::default();
         });
 
-        let mut motion = Self {
+        Self {
             initial,
             current: initial,
             target: initial,
@@ -67,103 +64,59 @@ impl<T: Animatable + Send + 'static> Motion<T> {
             elapsed: Duration::default(),
             delay_elapsed: Duration::default(),
             current_loop: 0,
-
-            // Legacy fields for backward compatibility
-            config: global::pooled_config(AnimationConfig::default()),
-            sequence: None,
             reverse: false,
+
+            // Optimized components
+            animation_state: AnimationState::new_idle(),
+            config_handle,
+            spring_integrator_handle: None,
+            sequence: None,
             keyframe_animation: None,
 
-            // Optimization components
-            animation_state: AnimationState::new_idle(),
-            config_handle: Some(config_handle),
-            spring_integrator_handle: None,
-
             value_cache: None,
-        };
-
-        // Enable all available optimizations automatically
-        motion.enable_all_optimizations();
-        motion
-    }
-
-    /// Enables all available optimizations for this Motion instance
-    /// This is called automatically in new() for maximum performance
-    pub fn enable_all_optimizations(&mut self) {
-        // Ensure we have a config handle (should already be set in new())
-        if self.config_handle.is_none() {
-            let handle = global::get_config();
-            global::modify_config(&handle, |pooled_config| {
-                *pooled_config = (*self.config).clone();
-            });
-            self.config_handle = Some(handle);
         }
-
-        // Spring integrator will be allocated on-demand when needed
-        // This avoids pre-allocating resources for animations that may never use them
     }
+
+
 
     pub fn animate_to(&mut self, target: T, config: AnimationConfig) {
         self.value_cache = None;
         self.sequence = None;
         self.initial = self.current;
         self.target = target;
-
-        // Update legacy config for backward compatibility
-        self.config = global::pooled_config(config.clone());
-
         self.running = true;
         self.elapsed = Duration::default();
         self.delay_elapsed = Duration::default();
         self.velocity = T::default();
         self.current_loop = 0;
 
-        // Set up optimized config handle
-        let config_handle = self
-            .config_handle
-            .take()
-            .unwrap_or_else(|| global::get_config());
-        global::modify_config(&config_handle, |pooled_config| {
+        // Update config handle
+        global::modify_config(&self.config_handle, |pooled_config| {
             *pooled_config = config.clone();
         });
 
-        // Set up spring integrator if needed and supported
-        if matches!(
-            config.mode,
-            crate::animations::core::AnimationMode::Spring(_)
-        ) {
+        // Set up spring integrator if needed
+        if matches!(config.mode, crate::animations::core::AnimationMode::Spring(_)) {
             if self.spring_integrator_handle.is_none() {
                 self.spring_integrator_handle = self.try_get_spring_integrator();
             }
         }
 
         // Set up state machine for running animation
-        self.animation_state = AnimationState::new_running(config.mode, config_handle.clone());
-        self.config_handle = Some(config_handle);
+        self.animation_state = AnimationState::new_running(config.mode, self.config_handle.clone());
     }
 
     pub fn animate_sequence(&mut self, sequence: AnimationSequence<T>) {
         self.value_cache = None;
         if let Some(first_step) = sequence.steps().first() {
             let first_config = (*first_step.config).clone();
-            self.animate_to(first_step.target, first_config.clone());
+            self.animate_to(first_step.target, first_config);
             let new_sequence = sequence;
             new_sequence.reset(); // Reset to first step
             self.sequence = Some(Arc::new(new_sequence.clone()));
 
-            // Set up optimized config handle
-            let config_handle = self
-                .config_handle
-                .take()
-                .unwrap_or_else(|| global::get_config());
-            global::modify_config(&config_handle, |pooled_config| {
-                *pooled_config = first_config;
-            });
-
             // Set up state machine for sequence animation
-            self.animation_state =
-                AnimationState::new_sequence(Arc::new(new_sequence), config_handle.clone());
-            self.config_handle = Some(config_handle);
+            self.animation_state = AnimationState::new_sequence(Arc::new(new_sequence), self.config_handle.clone());
         }
     }
 
@@ -174,16 +127,8 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         self.elapsed = Duration::default();
         self.velocity = T::default();
 
-        // Set up optimized config handle
-        let config_handle = self
-            .config_handle
-            .take()
-            .unwrap_or_else(|| global::get_config());
-
         // Set up state machine for keyframe animation
-        self.animation_state =
-            AnimationState::new_keyframes(Arc::new(animation), config_handle.clone());
-        self.config_handle = Some(config_handle);
+        self.animation_state = AnimationState::new_keyframes(Arc::new(animation), self.config_handle.clone());
     }
 
     pub fn get_value(&self) -> T {
@@ -229,32 +174,21 @@ impl<T: Animatable + Send + 'static> Motion<T> {
 
     pub fn delay(&mut self, duration: Duration) {
         self.value_cache = None;
-
-        // Update both legacy config and optimized config handle
-        let mut config = (*self.config).clone();
-        config.delay = duration;
-        self.config = global::pooled_config(config.clone());
-
-        // Update optimized config handle
-        if let Some(ref handle) = self.config_handle {
-            global::modify_config(handle, |pooled_config| {
-                pooled_config.delay = duration;
-            });
-        }
+        
+        // Update config handle
+        global::modify_config(&self.config_handle, |pooled_config| {
+            pooled_config.delay = duration;
+        });
     }
 
     /// Gets the effective epsilon threshold for this animation
     /// Uses the configured epsilon if present, otherwise falls back to the type's default
     pub fn get_epsilon(&self) -> f32 {
-        // Try to get epsilon from optimized config handle first
-        if let Some(ref handle) = self.config_handle {
-            if let Some(config) = global::get_config_ref(handle) {
-                return config.epsilon.unwrap_or_else(T::epsilon);
-            }
+        if let Some(config) = global::get_config_ref(&self.config_handle) {
+            config.epsilon.unwrap_or_else(T::epsilon)
+        } else {
+            T::epsilon()
         }
-
-        // Fallback to legacy config
-        self.config.epsilon.unwrap_or_else(T::epsilon)
     }
 
     pub fn update(&mut self, dt: f32) -> bool {
@@ -270,8 +204,8 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     }
 
     /// Gets the current config handle for optimization purposes
-    pub fn config_handle(&self) -> Option<&ConfigHandle> {
-        self.config_handle.as_ref()
+    pub fn config_handle(&self) -> &ConfigHandle {
+        &self.config_handle
     }
 
     /// Gets the current spring integrator handle for optimization purposes
@@ -279,38 +213,11 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         self.spring_integrator_handle.as_ref()
     }
 
-    /// Migrates from legacy Motion struct to optimized version
-    /// This is used for backward compatibility when upgrading existing code
-    /// Note: In the new version, all optimizations are enabled by default
-    pub fn migrate_to_optimized(&mut self) {
-        // Enable all optimizations (same as what new() does now)
-        self.enable_all_optimizations();
-
-        // Update animation state if needed
-        if matches!(self.animation_state, AnimationState::Idle) && self.running {
-            if let Some(ref handle) = self.config_handle {
-                if let Some(config) = global::get_config_ref(handle) {
-                    if let Some(ref keyframe_animation) = self.keyframe_animation {
-                        self.animation_state = AnimationState::new_keyframes(
-                            keyframe_animation.clone(),
-                            handle.clone(),
-                        );
-                    } else if let Some(ref sequence) = self.sequence {
-                        self.animation_state =
-                            AnimationState::new_sequence(sequence.clone(), handle.clone());
-                    } else {
-                        self.animation_state =
-                            AnimationState::new_running(config.mode, handle.clone());
-                    }
-                }
-            }
-        }
-    }
 
     /// Gets optimization statistics for this Motion instance
     pub fn optimization_stats(&self) -> MotionOptimizationStats {
         MotionOptimizationStats {
-            has_config_handle: self.config_handle.is_some(),
+            has_config_handle: true, // Always true now
             has_spring_integrator: self.spring_integrator_handle.is_some(),
             state_machine_active: self.animation_state.is_active(),
             value_cache_active: self.value_cache.is_some(),
@@ -386,10 +293,9 @@ mod tests {
         assert!(stats.state_machine_active);
 
         // Verify config handle contains correct config
-        if let Some(handle) = motion.config_handle() {
-            let config = crate::pool::global::get_config_ref(handle).unwrap();
-            assert!(matches!(config.mode, AnimationMode::Tween(_)));
-        }
+        let handle = motion.config_handle();
+        let config = crate::pool::global::get_config_ref(handle).unwrap();
+        assert!(matches!(config.mode, AnimationMode::Tween(_)));
     }
 
     #[test]
@@ -425,12 +331,12 @@ mod tests {
         let steps = vec![
             AnimationStep {
                 target: 50.0,
-                config: crate::pool::global::pooled_config(AnimationConfig::default()),
+                config: Arc::new(AnimationConfig::default()),
                 predicted_next: None,
             },
             AnimationStep {
                 target: 100.0,
-                config: crate::pool::global::pooled_config(AnimationConfig::default()),
+                config: Arc::new(AnimationConfig::default()),
                 predicted_next: None,
             },
         ];
@@ -538,54 +444,6 @@ mod tests {
     }
 
     #[test]
-    fn test_motion_migrate_to_optimized() {
-        crate::pool::global::clear_pool();
-
-        // Create a motion with legacy initialization (simulating old code)
-        let mut motion = Motion {
-            initial: 0.0f32,
-            current: 0.0,
-            target: 100.0,
-            velocity: 0.0,
-            running: true,
-            elapsed: Duration::default(),
-            delay_elapsed: Duration::default(),
-            current_loop: 0,
-            config: Arc::new(AnimationConfig::new(AnimationMode::Spring(
-                Spring::default(),
-            ))),
-            sequence: None,
-            reverse: false,
-            keyframe_animation: None,
-            animation_state: AnimationState::new_idle(),
-            config_handle: None, // Legacy - no optimization
-            spring_integrator_handle: None,
-            value_cache: None,
-        };
-
-        // Verify no optimizations initially
-        let stats_before = motion.optimization_stats();
-        assert!(!stats_before.has_config_handle);
-        assert!(!stats_before.has_spring_integrator);
-        assert!(!stats_before.state_machine_active);
-
-        // Migrate to optimized version
-        motion.migrate_to_optimized();
-
-        // Verify optimizations are now active
-        let stats_after = motion.optimization_stats();
-        assert!(stats_after.has_config_handle);
-        assert!(!stats_after.has_spring_integrator); // Allocated on-demand, not pre-allocated
-        assert!(stats_after.state_machine_active);
-
-        // Verify state machine is properly set up
-        assert!(matches!(
-            motion.animation_state,
-            AnimationState::Running { .. }
-        ));
-    }
-
-    #[test]
     fn test_motion_get_epsilon_optimization() {
         crate::pool::global::clear_pool();
 
@@ -595,11 +453,10 @@ mod tests {
         assert_eq!(motion.get_epsilon(), f32::epsilon());
 
         // Test custom epsilon through optimized config handle
-        if let Some(handle) = motion.config_handle() {
-            crate::pool::global::modify_config(handle, |config| {
-                config.epsilon = Some(0.01);
-            });
-        }
+        let handle = motion.config_handle();
+        crate::pool::global::modify_config(handle, |config| {
+            config.epsilon = Some(0.01);
+        });
 
         assert_eq!(motion.get_epsilon(), 0.01);
     }
@@ -613,13 +470,11 @@ mod tests {
 
         motion.delay(delay);
 
-        // Verify both legacy and optimized configs are updated
-        assert_eq!(motion.config.delay, delay);
+        // Verify config is updated through the optimized handle
 
-        if let Some(handle) = motion.config_handle() {
-            let config = crate::pool::global::get_config_ref(handle).unwrap();
-            assert_eq!(config.delay, delay);
-        }
+        let handle = motion.config_handle();
+        let config = crate::pool::global::get_config_ref(handle).unwrap();
+        assert_eq!(config.delay, delay);
     }
 
     #[test]
@@ -680,10 +535,9 @@ mod tests {
         // Test that legacy API still works
         motion.animate_to(100.0, config);
 
-        // Legacy fields should still be accessible
+        // Core fields should still be accessible
         assert_eq!(motion.target, 100.0);
         assert!(motion.running);
-        assert!(motion.config.delay == Duration::default());
 
         // But optimizations should also be active
         let stats = motion.optimization_stats();

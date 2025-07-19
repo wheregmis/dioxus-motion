@@ -2,7 +2,7 @@
 
 use crate::animations::core::Animatable;
 use crate::prelude::AnimationConfig;
-use crate::pool::global;
+
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU8, Ordering};
 
@@ -77,7 +77,7 @@ impl<T: Animatable> AnimationSequence<T> {
 
         let new_step = AnimationStep {
             target,
-            config: global::pooled_config(config),
+            config: Arc::new(config),
             predicted_next,
         };
 
@@ -198,17 +198,17 @@ mod tests {
         let steps = vec![
             AnimationStep {
                 target: 10.0f32,
-                config: global::pooled_config(AnimationConfig::new(AnimationMode::Spring(Spring::default()))),
+                config: Arc::new(AnimationConfig::new(AnimationMode::Spring(Spring::default()))),
                 predicted_next: None,
             },
             AnimationStep {
                 target: 20.0f32,
-                config: global::pooled_config(AnimationConfig::new(AnimationMode::Spring(Spring::default()))),
+                config: Arc::new(AnimationConfig::new(AnimationMode::Spring(Spring::default()))),
                 predicted_next: None,
             },
             AnimationStep {
                 target: 30.0f32,
-                config: global::pooled_config(AnimationConfig::new(AnimationMode::Spring(Spring::default()))),
+                config: Arc::new(AnimationConfig::new(AnimationMode::Spring(Spring::default()))),
                 predicted_next: None,
             },
         ];
@@ -269,7 +269,7 @@ mod tests {
         let steps = vec![
             AnimationStep {
                 target: 10.0f32,
-                config: global::pooled_config(AnimationConfig::new(AnimationMode::Spring(Spring::default()))),
+                config: Arc::new(AnimationConfig::new(AnimationMode::Spring(Spring::default()))),
                 predicted_next: None,
             },
         ];
@@ -292,7 +292,7 @@ mod tests {
         let steps = vec![
             AnimationStep {
                 target: 10.0f32,
-                config: global::pooled_config(AnimationConfig::new(AnimationMode::Spring(Spring::default()))),
+                config: Arc::new(AnimationConfig::new(AnimationMode::Spring(Spring::default()))),
                 predicted_next: None,
             },
         ];

@@ -140,7 +140,6 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
                         // Update motion for new step
                         motion.initial = motion.current;
                         motion.target = target;
-                        motion.config = global::pooled_config(config.clone());
                         motion.running = true;
                         motion.elapsed = Duration::default();
                         motion.delay_elapsed = Duration::default();
@@ -200,7 +199,6 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
                     // Update motion for new step
                     motion.initial = motion.current;
                     motion.target = target;
-                    motion.config = global::pooled_config(config.clone());
                     motion.running = true;
                     motion.elapsed = Duration::default();
                     motion.delay_elapsed = Duration::default();
@@ -301,7 +299,7 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
 
     /// Updates spring animation using optimized integration
     fn update_spring(&self, motion: &mut crate::Motion<T>, spring: Spring, dt: f32) -> SpringState {
-        let epsilon = motion.config.epsilon.unwrap_or_else(T::epsilon);
+        let epsilon = motion.get_epsilon();
 
         // Check for completion first
         let delta = motion.target - motion.current;
@@ -349,7 +347,7 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
 
     /// Checks if spring animation is complete
     fn check_spring_completion(&self, motion: &mut crate::Motion<T>) -> SpringState {
-        let epsilon = motion.config.epsilon.unwrap_or_else(T::epsilon);
+        let epsilon = motion.get_epsilon();
         let epsilon_sq = epsilon * epsilon;
         let velocity_sq = motion.velocity.magnitude().powi(2);
         let delta = motion.target - motion.current;
@@ -539,12 +537,12 @@ mod tests {
         let steps = vec![
             AnimationStep {
                 target: 10.0f32,
-                config: global::pooled_config(AnimationConfig::default()),
+                config: Arc::new(AnimationConfig::default()),
                 predicted_next: None,
             },
             AnimationStep {
                 target: 20.0f32,
-                config: global::pooled_config(AnimationConfig::default()),
+                config: Arc::new(AnimationConfig::default()),
                 predicted_next: None,
             },
         ];

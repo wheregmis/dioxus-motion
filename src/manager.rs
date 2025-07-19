@@ -4,7 +4,7 @@ use crate::keyframes::KeyframeAnimation;
 use crate::motion::Motion;
 use crate::prelude::AnimationConfig;
 use crate::sequence::AnimationSequence;
-use crate::pool::global;
+
 use dioxus::prelude::{Readable, Signal, Writable};
 
 pub trait AnimationManager<T: Animatable + Send + 'static>: Clone + Copy {
@@ -63,9 +63,6 @@ impl<T: Animatable + Send + 'static> AnimationManager<T> for Signal<Motion<T>> {
     }
 
     fn delay(&mut self, duration: Duration) {
-        let mut state = self.write();
-        let mut config = state.config.as_ref().clone();
-        config.delay = duration;
-        state.config = global::pooled_config(config);
+        (*self.write()).delay(duration);
     }
 }

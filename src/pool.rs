@@ -151,63 +151,7 @@ thread_local! {
     static CONFIG_POOL: RefCell<ConfigPool> = RefCell::new(ConfigPool::new());
 }
 
-/// A pooled Arc<AnimationConfig> that automatically returns to pool when dropped
-pub struct PooledConfig {
-    config: Arc<AnimationConfig>,
-    handle: Option<ConfigHandle>,
-}
 
-impl PooledConfig {
-    /// Creates a new pooled config from the global pool
-    pub fn new(config: AnimationConfig) -> Self {
-        let handle = global::get_config();
-        global::modify_config(&handle, |pooled_config| {
-            *pooled_config = config;
-        });
-        
-        let arc_config = global::get_config_ref(&handle)
-            .map(Arc::new)
-            .unwrap_or_else(|| Arc::new(AnimationConfig::default()));
-            
-        Self {
-            config: arc_config,
-            handle: Some(handle),
-        }
-    }
-    
-    /// Creates a pooled config from an existing Arc (for compatibility)
-    pub fn from_arc(config: Arc<AnimationConfig>) -> Self {
-        Self {
-            config,
-            handle: None,
-        }
-    }
-    
-    /// Gets the Arc<AnimationConfig> for compatibility with existing code
-    pub fn as_arc(&self) -> Arc<AnimationConfig> {
-        self.config.clone()
-    }
-}
-
-impl Drop for PooledConfig {
-    fn drop(&mut self) {
-        if let Some(handle) = self.handle.take() {
-            global::return_config(handle);
-        }
-    }
-}
-
-impl Clone for PooledConfig {
-    fn clone(&self) -> Self {
-        if self.handle.is_some() {
-            // Create a new pooled config with the same configuration
-            Self::new((*self.config).clone())
-        } else {
-            // Just clone the Arc for non-pooled configs
-            Self::from_arc(self.config.clone())
-        }
-    }
-}
 
 /// Global functions for accessing the thread-local config pool
 pub mod global {
@@ -242,16 +186,6 @@ pub mod global {
         CONFIG_POOL.with(|pool| {
             pool.borrow().get_config_ref(handle).cloned()
         })
-    }
-
-    /// Creates a pooled Arc<AnimationConfig> - replacement for Arc::new(config)
-    /// Note: This is a simple replacement that doesn't actually pool since Arc<AnimationConfig>
-    /// doesn't have a way to track when it's dropped. For true pooling, we'd need to change
-    /// the Motion struct to use PooledConfig directly.
-    pub fn pooled_config(config: AnimationConfig) -> Arc<AnimationConfig> {
-        // For now, just create a regular Arc to maintain compatibility
-        // In a future version, we could change Motion to use PooledConfig directly
-        Arc::new(config)
     }
 
     /// Gets pool statistics
@@ -925,40 +859,7 @@ mod tests {
         assert_eq!(handle1.id(), 42);
     }
 
-    #[test]
-    fn test_pooled_config() {
-        global::clear_pool();
-        
-        let config = AnimationConfig::new(AnimationMode::Spring(Spring::default()));
-        
-        {
-            let pooled = global::pooled_config(config);
-            
-            // Verify it's an Arc<AnimationConfig>
-            assert!(matches!(pooled.mode, AnimationMode::Spring(_)));
-            
-            let (in_use, _) = global::pool_stats();
-            // Note: The pooled_config function creates and immediately drops the PooledConfig,
-            // so the handle is returned to the pool right away
-            assert_eq!(in_use, 0);
-        }
-    }
 
-    #[test]
-    fn test_pooled_config_clone() {
-        global::clear_pool();
-        
-        let config = AnimationConfig::new(AnimationMode::Spring(Spring::default()));
-        let pooled1 = PooledConfig::new(config);
-        let pooled2 = pooled1.clone();
-        
-        // Both should have the same config values but different pool handles
-        assert!(matches!(pooled1.as_arc().mode, AnimationMode::Spring(_)));
-        assert!(matches!(pooled2.as_arc().mode, AnimationMode::Spring(_)));
-        
-        let (in_use, _) = global::pool_stats();
-        assert_eq!(in_use, 2); // Two separate pooled configs
-    }
 
 
 
