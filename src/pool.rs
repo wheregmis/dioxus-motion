@@ -40,7 +40,7 @@ impl ConfigPool {
         self.next_id += 1;
         self.in_use.insert(id, config);
 
-        ConfigHandle { id }
+        ConfigHandle { id, valid: true }
     }
 
     /// Returns a config to the pool for reuse
@@ -50,6 +50,8 @@ impl ConfigPool {
             config.reset_to_default();
             self.available.push(config);
         }
+        // If the config wasn't found in in_use, it might have already been returned
+        // This is safe to ignore as it prevents double-return issues
     }
 
     /// Modifies a config in the pool safely
@@ -104,8 +106,8 @@ impl Default for ConfigPool {
 /// A handle to a pooled AnimationConfig that automatically returns to pool when dropped
 pub struct ConfigHandle {
     id: usize,
-    // Simplified - in a real implementation this would need proper cleanup
-    // For now we rely on the global pool for management
+    // Track if this handle is still valid (not yet dropped)
+    valid: bool,
 }
 
 impl ConfigHandle {
@@ -118,22 +120,37 @@ impl ConfigHandle {
     /// This is primarily for testing purposes
     #[cfg(test)]
     pub fn new_test(id: usize) -> Self {
-        Self { id }
+        Self { id, valid: true }
     }
 }
 
 impl Drop for ConfigHandle {
     fn drop(&mut self) {
-        // Note: In a real implementation, we'd need to properly handle
-        // returning the config to the pool here. For now, this is a
-        // simplified version that demonstrates the pattern.
-        // The actual return would need to be handled by the pool manager.
+        // Only return to pool if this handle is still valid
+        if self.valid {
+            // Mark as invalid to prevent double-return
+            self.valid = false;
+
+            // Return the config to the thread-local pool
+            // Use try_with to handle potential borrow conflicts gracefully
+            let _ = CONFIG_POOL.try_with(|pool| {
+                if let Ok(mut pool) = pool.try_borrow_mut() {
+                    pool.return_config(ConfigHandle {
+                        id: self.id,
+                        valid: false,
+                    });
+                }
+            });
+        }
     }
 }
 
 impl Clone for ConfigHandle {
     fn clone(&self) -> Self {
-        Self { id: self.id }
+        Self {
+            id: self.id,
+            valid: self.valid,
+        }
     }
 }
 
@@ -866,6 +883,57 @@ mod tests {
 
         assert_eq!(handle1.id(), handle2.id());
         assert_eq!(handle1.id(), 42);
+    }
+
+    #[test]
+    fn test_config_handle_automatic_cleanup() {
+        // Clear the pool first
+        global::clear_pool();
+
+        // Get a config handle
+        let handle = global::get_config();
+
+        // Verify the config is in use
+        let (in_use, available) = global::pool_stats();
+        assert_eq!(in_use, 1);
+        assert_eq!(available, 0);
+
+        // Drop the handle - should automatically return to pool
+        drop(handle);
+
+        // Verify the config was returned to the pool
+        let (in_use, available) = global::pool_stats();
+        assert_eq!(in_use, 0);
+        assert_eq!(available, 1);
+    }
+
+    #[test]
+    fn test_config_handle_double_drop_safety() {
+        // Clear the pool first
+        global::clear_pool();
+
+        // Get a config handle
+        let handle = global::get_config();
+        let handle_id = handle.id();
+
+        // Manually return the config
+        global::return_config(ConfigHandle {
+            id: handle_id,
+            valid: false,
+        });
+
+        // Verify it was returned
+        let (in_use, available) = global::pool_stats();
+        assert_eq!(in_use, 0);
+        assert_eq!(available, 1);
+
+        // Now drop the original handle - should not cause issues
+        drop(handle);
+
+        // Should still have the same state
+        let (in_use, available) = global::pool_stats();
+        assert_eq!(in_use, 0);
+        assert_eq!(available, 1);
     }
 
     #[test]
