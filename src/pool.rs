@@ -8,8 +8,8 @@ use crate::animations::core::{Animatable, AnimationConfig};
 use crate::animations::spring::Spring;
 use std::collections::HashMap;
 
-use std::cell::RefCell;
 use std::any::{Any, TypeId};
+use std::cell::RefCell;
 
 /// A pool for reusing AnimationConfig instances to reduce allocations
 pub struct ConfigPool {
@@ -39,10 +39,8 @@ impl ConfigPool {
         let id = self.next_id;
         self.next_id += 1;
         self.in_use.insert(id, config);
-        
-        ConfigHandle {
-            id,
-        }
+
+        ConfigHandle { id }
     }
 
     /// Returns a config to the pool for reuse
@@ -55,9 +53,9 @@ impl ConfigPool {
     }
 
     /// Modifies a config in the pool safely
-    pub fn modify_config<F>(&mut self, handle: &ConfigHandle, f: F) 
-    where 
-        F: FnOnce(&mut AnimationConfig)
+    pub fn modify_config<F>(&mut self, handle: &ConfigHandle, f: F)
+    where
+        F: FnOnce(&mut AnimationConfig),
     {
         if let Some(config) = self.in_use.get_mut(&handle.id) {
             f(config);
@@ -85,6 +83,16 @@ impl ConfigPool {
         self.in_use.clear();
         self.next_id = 0;
     }
+
+    /// Trims the available configs to the specified target size
+    /// This removes excess configs from the available pool while preserving in-use configs
+    pub fn trim_to_size(&mut self, target_size: usize) {
+        let current_available = self.available.len();
+        if current_available > target_size {
+            // Remove excess configs from the end of the available vector
+            self.available.truncate(target_size);
+        }
+    }
 }
 
 impl Default for ConfigPool {
@@ -110,9 +118,7 @@ impl ConfigHandle {
     /// This is primarily for testing purposes
     #[cfg(test)]
     pub fn new_test(id: usize) -> Self {
-        Self {
-            id,
-        }
+        Self { id }
     }
 }
 
@@ -127,9 +133,7 @@ impl Drop for ConfigHandle {
 
 impl Clone for ConfigHandle {
     fn clone(&self) -> Self {
-        Self {
-            id: self.id,
-        }
+        Self { id: self.id }
     }
 }
 
@@ -149,17 +153,13 @@ thread_local! {
     static CONFIG_POOL: RefCell<ConfigPool> = RefCell::new(ConfigPool::new());
 }
 
-
-
 /// Global functions for accessing the thread-local config pool
 pub mod global {
     use super::*;
 
     /// Gets a config from the global thread-local pool
     pub fn get_config() -> ConfigHandle {
-        CONFIG_POOL.with(|pool| {
-            pool.borrow_mut().get_config()
-        })
+        CONFIG_POOL.with(|pool| pool.borrow_mut().get_config())
     }
 
     /// Returns a config to the global thread-local pool
@@ -170,9 +170,9 @@ pub mod global {
     }
 
     /// Modifies a config in the global thread-local pool
-    pub fn modify_config<F>(handle: &ConfigHandle, f: F) 
-    where 
-        F: FnOnce(&mut AnimationConfig)
+    pub fn modify_config<F>(handle: &ConfigHandle, f: F)
+    where
+        F: FnOnce(&mut AnimationConfig),
     {
         CONFIG_POOL.with(|pool| {
             pool.borrow_mut().modify_config(handle, f);
@@ -181,9 +181,7 @@ pub mod global {
 
     /// Gets a reference to a config in the global thread-local pool
     pub fn get_config_ref(handle: &ConfigHandle) -> Option<AnimationConfig> {
-        CONFIG_POOL.with(|pool| {
-            pool.borrow().get_config_ref(handle).cloned()
-        })
+        CONFIG_POOL.with(|pool| pool.borrow().get_config_ref(handle).cloned())
     }
 
     /// Gets pool statistics
@@ -202,7 +200,6 @@ pub mod global {
         });
     }
 }
-
 
 /// Spring integrator with pre-allocated buffers for RK4 integration
 /// Eliminates temporary State struct allocations in hot paths
@@ -292,8 +289,10 @@ impl<T: Animatable> SpringIntegrator<T> {
 
         // Final integration
         const SIXTH: f32 = 1.0 / 6.0;
-        let new_pos = current_pos + (self.k1_pos + self.k2_pos * 2.0 + self.k3_pos * 2.0 + self.k4_pos) * (dt * SIXTH);
-        let new_vel = current_vel + (self.k1_vel + self.k2_vel * 2.0 + self.k3_vel * 2.0 + self.k4_vel) * (dt * SIXTH);
+        let new_pos = current_pos
+            + (self.k1_pos + self.k2_pos * 2.0 + self.k3_pos * 2.0 + self.k4_pos) * (dt * SIXTH);
+        let new_vel = current_vel
+            + (self.k1_vel + self.k2_vel * 2.0 + self.k3_vel * 2.0 + self.k4_vel) * (dt * SIXTH);
 
         (new_pos, new_vel)
     }
@@ -345,11 +344,11 @@ impl<T: Animatable> SpringIntegratorPool<T> {
     pub fn get_integrator(&mut self) -> SpringIntegratorHandle {
         let mut integrator = self.available.pop().unwrap_or_default();
         integrator.reset(); // Ensure clean state
-        
+
         let id = self.next_id;
         self.next_id += 1;
         self.in_use.insert(id, integrator);
-        
+
         SpringIntegratorHandle { id }
     }
 
@@ -361,7 +360,10 @@ impl<T: Animatable> SpringIntegratorPool<T> {
     }
 
     /// Gets a mutable reference to an integrator
-    pub fn get_integrator_mut(&mut self, handle: &SpringIntegratorHandle) -> Option<&mut SpringIntegrator<T>> {
+    pub fn get_integrator_mut(
+        &mut self,
+        handle: &SpringIntegratorHandle,
+    ) -> Option<&mut SpringIntegrator<T>> {
         self.in_use.get_mut(&handle.id)
     }
 
@@ -471,10 +473,16 @@ impl MotionResourcePools {
 
     /// Gets statistics for all pools
     pub fn stats(&self) -> PoolStats {
-        let (config_in_use, config_available) = (self.config_pool.in_use_count(), self.config_pool.available_count());
-        
+        let (config_in_use, config_available) = (
+            self.config_pool.in_use_count(),
+            self.config_pool.available_count(),
+        );
+
         #[cfg(feature = "web")]
-        let (closure_in_use, closure_available) = (self.closure_pool.in_use_count(), self.closure_pool.available_count());
+        let (closure_in_use, closure_available) = (
+            self.closure_pool.in_use_count(),
+            self.closure_pool.available_count(),
+        );
         #[cfg(not(feature = "web"))]
         let (closure_in_use, closure_available) = (0, 0);
 
@@ -496,9 +504,13 @@ impl MotionResourcePools {
         let config_savings = self.config_pool.available_count() * CONFIG_SIZE;
         let closure_savings = {
             #[cfg(feature = "web")]
-            { self.closure_pool.available_count() * CLOSURE_SIZE }
+            {
+                self.closure_pool.available_count() * CLOSURE_SIZE
+            }
             #[cfg(not(feature = "web"))]
-            { 0 }
+            {
+                0
+            }
         };
 
         // Integrator savings would need type-specific calculation
@@ -520,9 +532,8 @@ impl MotionResourcePools {
     pub fn maintain(&mut self) {
         // Trim config pool if it's grown too large
         if self.config_pool.available_count() > self.config.max_config_pool_size {
-            let _excess = self.config_pool.available_count() - self.config.target_config_pool_size;
-            // TODO: Implement actual config pool trimming
-            // This would require modifying ConfigPool to support trimming excess configs
+            self.config_pool
+                .trim_to_size(self.config.target_config_pool_size);
         }
 
         // Similar maintenance for other pools could be added here
@@ -587,9 +598,7 @@ pub mod integrator {
 
     /// Gets an integrator from the global thread-local pool
     pub fn get_integrator<T: Animatable + Send + 'static>() -> SpringIntegratorHandle {
-        INTEGRATOR_POOLS.with(|pools| {
-            pools.borrow_mut().get_pool::<T>().get_integrator()
-        })
+        INTEGRATOR_POOLS.with(|pools| pools.borrow_mut().get_pool::<T>().get_integrator())
     }
 
     /// Returns an integrator to the global thread-local pool
@@ -611,19 +620,20 @@ pub mod integrator {
         INTEGRATOR_POOLS.with(|pools| {
             let mut pools = pools.borrow_mut();
             let pool = pools.get_pool::<T>();
-            pool.get_integrator_mut(handle).map_or_else(|| {
-                // Fallback to non-pooled integration if handle is invalid
-                let mut integrator = SpringIntegrator::new();
-                integrator.integrate_rk4(current_pos, current_vel, target, spring, dt)
-            }, |integrator| integrator.integrate_rk4(current_pos, current_vel, target, spring, dt))
+            pool.get_integrator_mut(handle).map_or_else(
+                || {
+                    // Fallback to non-pooled integration if handle is invalid
+                    let mut integrator = SpringIntegrator::new();
+                    integrator.integrate_rk4(current_pos, current_vel, target, spring, dt)
+                },
+                |integrator| integrator.integrate_rk4(current_pos, current_vel, target, spring, dt),
+            )
         })
     }
 
     /// Gets pool statistics for type T
     pub fn pool_stats<T: Animatable + Send + 'static>() -> (usize, usize) {
-        INTEGRATOR_POOLS.with(|pools| {
-            pools.borrow_mut().get_pool::<T>().stats()
-        })
+        INTEGRATOR_POOLS.with(|pools| pools.borrow_mut().get_pool::<T>().stats())
     }
 
     /// Clears all integrator pools (primarily for testing)
@@ -641,9 +651,7 @@ pub mod resource_pools {
 
     /// Gets statistics for all resource pools
     pub fn stats() -> PoolStats {
-        MOTION_RESOURCE_POOLS.with(|pools| {
-            pools.borrow().stats()
-        })
+        MOTION_RESOURCE_POOLS.with(|pools| pools.borrow().stats())
     }
 
     /// Configures the global resource pools
@@ -695,9 +703,7 @@ pub mod resource_pools {
 
     /// Gets the current pool configuration
     pub fn get_config() -> PoolConfig {
-        MOTION_RESOURCE_POOLS.with(|pools| {
-            pools.borrow().config.clone()
-        })
+        MOTION_RESOURCE_POOLS.with(|pools| pools.borrow().config.clone())
     }
 
     /// Estimates total memory usage of all pools
@@ -705,7 +711,7 @@ pub mod resource_pools {
         MOTION_RESOURCE_POOLS.with(|pools| {
             let pools = pools.borrow();
             let stats = pools.stats();
-            
+
             // Rough calculation of memory usage
             const CONFIG_SIZE: usize = std::mem::size_of::<AnimationConfig>();
             const INTEGRATOR_SIZE: usize = 256;
@@ -713,7 +719,9 @@ pub mod resource_pools {
 
             let config_memory = (stats.config_pool.0 + stats.config_pool.1) * CONFIG_SIZE;
             let closure_memory = (stats.closure_pool.0 + stats.closure_pool.1) * CLOSURE_SIZE;
-            let integrator_memory = stats.integrator_pools.values()
+            let integrator_memory = stats
+                .integrator_pools
+                .values()
                 .map(|(in_use, available)| (in_use + available) * INTEGRATOR_SIZE)
                 .sum::<usize>();
 
@@ -733,27 +741,27 @@ mod tests {
     #[test]
     fn test_config_pool_basic_operations() {
         let mut pool = ConfigPool::new();
-        
+
         // Test getting a config
         let handle1 = pool.get_config();
         assert_eq!(pool.in_use_count(), 1);
         assert_eq!(pool.available_count(), 0);
-        
+
         // Test getting another config
         let handle2 = pool.get_config();
         assert_eq!(pool.in_use_count(), 2);
         assert_eq!(pool.available_count(), 0);
-        
+
         // Test returning a config
         pool.return_config(handle1);
         assert_eq!(pool.in_use_count(), 1);
         assert_eq!(pool.available_count(), 1);
-        
+
         // Test reusing returned config
         let handle3 = pool.get_config();
         assert_eq!(pool.in_use_count(), 2);
         assert_eq!(pool.available_count(), 0);
-        
+
         // Clean up
         pool.return_config(handle2);
         pool.return_config(handle3);
@@ -763,18 +771,18 @@ mod tests {
     fn test_config_pool_modification() {
         let mut pool = ConfigPool::new();
         let handle = pool.get_config();
-        
+
         // Modify the config
         pool.modify_config(&handle, |config| {
             config.mode = AnimationMode::Spring(Spring::default());
             config.delay = Duration::from_millis(100);
         });
-        
+
         // Verify modification
         let config_ref = pool.get_config_ref(&handle).unwrap();
         assert!(matches!(config_ref.mode, AnimationMode::Spring(_)));
         assert_eq!(config_ref.delay, Duration::from_millis(100));
-        
+
         pool.return_config(handle);
     }
 
@@ -782,22 +790,22 @@ mod tests {
     fn test_config_pool_reset_on_return() {
         let mut pool = ConfigPool::new();
         let handle = pool.get_config();
-        
+
         // Modify the config
         pool.modify_config(&handle, |config| {
             config.mode = AnimationMode::Spring(Spring::default());
             config.delay = Duration::from_millis(100);
         });
-        
+
         // Return to pool (should reset)
         pool.return_config(handle);
-        
+
         // Get a new config and verify it's reset
         let new_handle = pool.get_config();
         let config_ref = pool.get_config_ref(&new_handle).unwrap();
         assert!(matches!(config_ref.mode, AnimationMode::Tween(_)));
         assert_eq!(config_ref.delay, Duration::default());
-        
+
         pool.return_config(new_handle);
     }
 
@@ -813,39 +821,39 @@ mod tests {
         let mut pool = ConfigPool::new();
         let handle1 = pool.get_config();
         let _handle2 = pool.get_config();
-        
+
         pool.return_config(handle1);
         assert_eq!(pool.in_use_count(), 1);
         assert_eq!(pool.available_count(), 1);
-        
+
         pool.clear();
         assert_eq!(pool.in_use_count(), 0);
         assert_eq!(pool.available_count(), 0);
-        
+
         // _handle2 is now invalid, but we won't try to return it
     }
 
     #[test]
     fn test_global_config_pool() {
         global::clear_pool();
-        
+
         let handle1 = global::get_config();
         let handle2 = global::get_config();
-        
+
         let (in_use, available) = global::pool_stats();
         assert_eq!(in_use, 2);
         assert_eq!(available, 0);
-        
+
         global::modify_config(&handle1, |config| {
             config.delay = Duration::from_millis(50);
         });
-        
+
         let config = global::get_config_ref(&handle1).unwrap();
         assert_eq!(config.delay, Duration::from_millis(50));
-        
+
         global::return_config(handle1);
         global::return_config(handle2);
-        
+
         let (in_use, available) = global::pool_stats();
         assert_eq!(in_use, 0);
         assert_eq!(available, 2);
@@ -855,32 +863,29 @@ mod tests {
     fn test_config_handle_clone() {
         let handle1 = ConfigHandle::new_test(42);
         let handle2 = handle1.clone();
-        
+
         assert_eq!(handle1.id(), handle2.id());
         assert_eq!(handle1.id(), 42);
     }
-
-
-
-
 
     #[test]
     fn test_spring_integrator() {
         let mut integrator = SpringIntegrator::<f32>::new();
         let spring = Spring::default();
-        
+
         let current_pos = 0.0f32;
         let current_vel = 0.0f32;
         let target = 100.0f32;
         let dt = 1.0 / 60.0; // 60 FPS
-        
-        let (new_pos, new_vel) = integrator.integrate_rk4(current_pos, current_vel, target, &spring, dt);
-        
+
+        let (new_pos, new_vel) =
+            integrator.integrate_rk4(current_pos, current_vel, target, &spring, dt);
+
         // After one integration step, position should have moved toward target
         assert!(new_pos > current_pos);
         assert!(new_pos < target);
         assert!(new_vel > 0.0); // Should be moving toward target
-        
+
         // Test reset
         integrator.reset();
         // All buffers should be reset to default (can't easily test without exposing internals)
@@ -889,35 +894,35 @@ mod tests {
     #[test]
     fn test_spring_integrator_pool() {
         let mut pool = SpringIntegratorPool::<f32>::new();
-        
+
         // Test getting integrator
         let handle1 = pool.get_integrator();
         let handle2 = pool.get_integrator();
-        
+
         let (in_use, available) = pool.stats();
         assert_eq!(in_use, 2);
         assert_eq!(available, 0);
-        
+
         // Test using integrator
         let spring = Spring::default();
         if let Some(integrator) = pool.get_integrator_mut(&handle1) {
-            let (new_pos, new_vel) = integrator.integrate_rk4(0.0, 0.0, 100.0, &spring, 1.0/60.0);
+            let (new_pos, new_vel) = integrator.integrate_rk4(0.0, 0.0, 100.0, &spring, 1.0 / 60.0);
             assert!(new_pos > 0.0);
             assert!(new_vel > 0.0);
         }
-        
+
         // Test returning integrator
         pool.return_integrator(handle1);
         let (in_use, available) = pool.stats();
         assert_eq!(in_use, 1);
         assert_eq!(available, 1);
-        
+
         // Test reusing returned integrator
         let handle3 = pool.get_integrator();
         let (in_use, available) = pool.stats();
         assert_eq!(in_use, 2);
         assert_eq!(available, 0);
-        
+
         // Clean up
         pool.return_integrator(handle2);
         pool.return_integrator(handle3);
@@ -926,26 +931,25 @@ mod tests {
     #[test]
     fn test_global_integrator_pool() {
         integrator::clear_pools();
-        
+
         let handle1 = integrator::get_integrator::<f32>();
         let handle2 = integrator::get_integrator::<f32>();
-        
+
         let (in_use, available) = integrator::pool_stats::<f32>();
         assert_eq!(in_use, 2);
         assert_eq!(available, 0);
-        
+
         // Test integration
         let spring = Spring::default();
-        let (new_pos, new_vel) = integrator::integrate_rk4(
-            &handle1, 0.0, 0.0, 100.0, &spring, 1.0/60.0
-        );
+        let (new_pos, new_vel) =
+            integrator::integrate_rk4(&handle1, 0.0, 0.0, 100.0, &spring, 1.0 / 60.0);
         assert!(new_pos > 0.0);
         assert!(new_vel > 0.0);
-        
+
         // Return integrators
         integrator::return_integrator::<f32>(handle1);
         integrator::return_integrator::<f32>(handle2);
-        
+
         let (in_use, available) = integrator::pool_stats::<f32>();
         assert_eq!(in_use, 0);
         assert_eq!(available, 2);
@@ -956,14 +960,15 @@ mod tests {
         // Test that the pooled integrator produces the same results as the original
         let mut integrator = SpringIntegrator::<f32>::new();
         let spring = Spring::default();
-        
+
         let current_pos = 10.0f32;
         let current_vel = 5.0f32;
         let target = 50.0f32;
         let dt = 1.0 / 120.0; // 120 FPS
-        
-        let (new_pos, new_vel) = integrator.integrate_rk4(current_pos, current_vel, target, &spring, dt);
-        
+
+        let (new_pos, new_vel) =
+            integrator.integrate_rk4(current_pos, current_vel, target, &spring, dt);
+
         // The result should be mathematically consistent
         // Position should move in the direction of velocity
         assert!(new_pos > current_pos);
@@ -977,7 +982,7 @@ mod tests {
     #[test]
     fn test_motion_resource_pools() {
         let pools = MotionResourcePools::new();
-        
+
         // Test initial state
         let stats = pools.stats();
         assert_eq!(stats.config_pool, (0, 0));
@@ -995,7 +1000,7 @@ mod tests {
             auto_maintain: false,
             maintenance_interval: 500,
         };
-        
+
         let pools = MotionResourcePools::with_config(config.clone());
         assert_eq!(pools.config.config_pool_capacity, 32);
         assert_eq!(pools.config.max_config_pool_size, 128);
@@ -1005,12 +1010,12 @@ mod tests {
     #[test]
     fn test_motion_resource_pools_clear() {
         let mut pools = MotionResourcePools::new();
-        
+
         // Add some items to pools (simplified test)
         let _handle = pools.config_pool.get_config();
-        
+
         pools.clear();
-        
+
         let stats = pools.stats();
         assert_eq!(stats.config_pool, (0, 0));
         assert_eq!(stats.closure_pool, (0, 0));
@@ -1019,7 +1024,7 @@ mod tests {
     #[test]
     fn test_resource_pools_global_functions() {
         resource_pools::clear_all();
-        
+
         // Test configuration
         let config = PoolConfig {
             config_pool_capacity: 24,
@@ -1028,21 +1033,21 @@ mod tests {
             auto_maintain: true,
             maintenance_interval: 750,
         };
-        
+
         resource_pools::configure(config.clone());
         let retrieved_config = resource_pools::get_config();
         assert_eq!(retrieved_config.config_pool_capacity, 24);
         assert_eq!(retrieved_config.max_config_pool_size, 96);
-        
+
         // Test stats
         let stats = resource_pools::stats();
         assert_eq!(stats.config_pool, (0, 0));
-        
+
         // Test memory usage (should be reasonable)
         let memory_usage = resource_pools::memory_usage_bytes();
         // Memory usage should be reasonable (at least 0, but not too large)
         assert!(memory_usage < 1_000_000); // Shouldn't be unreasonably large
-        
+
         // Test maintenance (should not panic)
         resource_pools::maintain();
     }
@@ -1061,7 +1066,7 @@ mod tests {
     fn test_pool_stats_memory_estimation() {
         let pools = MotionResourcePools::new();
         let stats = pools.stats();
-        
+
         // Memory savings should be reasonable estimate
         assert!(stats.total_memory_saved_bytes > 0);
         assert!(stats.total_memory_saved_bytes < 1_000_000); // Shouldn't be unreasonably large
@@ -1070,12 +1075,76 @@ mod tests {
     #[test]
     fn test_motion_resource_pools_maintain() {
         let mut pools = MotionResourcePools::new();
-        
+
         // Test maintenance doesn't panic
         pools.maintain();
-        
+
         // Test with modified config
         pools.config.max_config_pool_size = 1;
         pools.config.target_config_pool_size = 0;
         pools.maintain(); // Should handle edge cases gracefully
-    }}
+    }
+
+    #[test]
+    fn test_config_pool_trimming() {
+        let mut pool = ConfigPool::new();
+
+        // Add some configs to the available pool
+        for _ in 0..10 {
+            pool.available.push(AnimationConfig::default());
+        }
+
+        // Verify initial state
+        assert_eq!(pool.available_count(), 10);
+        assert_eq!(pool.in_use_count(), 0);
+
+        // Trim to target size
+        pool.trim_to_size(5);
+        assert_eq!(pool.available_count(), 5);
+        assert_eq!(pool.in_use_count(), 0);
+
+        // Trim to smaller size
+        pool.trim_to_size(2);
+        assert_eq!(pool.available_count(), 2);
+        assert_eq!(pool.in_use_count(), 0);
+
+        // Trim to larger size (should not add configs)
+        pool.trim_to_size(10);
+        assert_eq!(pool.available_count(), 2);
+        assert_eq!(pool.in_use_count(), 0);
+
+        // Trim to zero
+        pool.trim_to_size(0);
+        assert_eq!(pool.available_count(), 0);
+        assert_eq!(pool.in_use_count(), 0);
+    }
+
+    #[test]
+    fn test_config_pool_trimming_with_in_use_configs() {
+        let mut pool = ConfigPool::new();
+
+        // Add some configs to the available pool
+        for _ in 0..10 {
+            pool.available.push(AnimationConfig::default());
+        }
+
+        // Get some configs (put them in use)
+        let handle1 = pool.get_config();
+        let handle2 = pool.get_config();
+
+        // Verify state before trimming
+        assert_eq!(pool.available_count(), 8);
+        assert_eq!(pool.in_use_count(), 2);
+
+        // Trim available configs (should not affect in-use configs)
+        pool.trim_to_size(3);
+        assert_eq!(pool.available_count(), 3);
+        assert_eq!(pool.in_use_count(), 2);
+
+        // Return configs and verify they're still available
+        pool.return_config(handle1);
+        pool.return_config(handle2);
+        assert_eq!(pool.available_count(), 5);
+        assert_eq!(pool.in_use_count(), 0);
+    }
+}
