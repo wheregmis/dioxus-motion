@@ -3,13 +3,13 @@
 //! This module implements a state machine pattern to replace complex nested conditionals
 //! in the animation update loop, providing better performance through efficient dispatch.
 
+use crate::Duration;
 use crate::animations::core::{Animatable, AnimationMode};
 use crate::animations::spring::{Spring, SpringState};
 use crate::keyframes::KeyframeAnimation;
-use crate::sequence::AnimationSequence;
 use crate::pool::{ConfigHandle, global};
 use crate::prelude::{AnimationConfig, LoopMode, Tween};
-use crate::Duration;
+use crate::sequence::AnimationSequence;
 use std::sync::Arc;
 
 /// Animation state enum that represents the current mode of animation
@@ -19,17 +19,17 @@ pub enum AnimationState<T: Animatable> {
     /// Animation is not running
     Idle,
     /// Single animation is running with specified mode
-    Running { 
+    Running {
         mode: AnimationMode,
         config_handle: ConfigHandle,
     },
     /// Animation sequence is active
-    Sequence { 
+    Sequence {
         sequence: Arc<AnimationSequence<T>>,
         config_handle: ConfigHandle,
     },
     /// Keyframe animation is active
-    Keyframes { 
+    Keyframes {
         animation: Arc<KeyframeAnimation<T>>,
         config_handle: ConfigHandle,
     },
@@ -43,17 +43,29 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
 
     /// Creates a new running state with the specified mode
     pub fn new_running(mode: AnimationMode, config_handle: ConfigHandle) -> Self {
-        Self::Running { mode, config_handle }
+        Self::Running {
+            mode,
+            config_handle,
+        }
     }
 
     /// Creates a new sequence state
     pub fn new_sequence(sequence: Arc<AnimationSequence<T>>, config_handle: ConfigHandle) -> Self {
-        Self::Sequence { sequence, config_handle }
+        Self::Sequence {
+            sequence,
+            config_handle,
+        }
     }
 
     /// Creates a new keyframes state
-    pub fn new_keyframes(animation: Arc<KeyframeAnimation<T>>, config_handle: ConfigHandle) -> Self {
-        Self::Keyframes { animation, config_handle }
+    pub fn new_keyframes(
+        animation: Arc<KeyframeAnimation<T>>,
+        config_handle: ConfigHandle,
+    ) -> Self {
+        Self::Keyframes {
+            animation,
+            config_handle,
+        }
     }
 
     /// Checks if the animation state is active (not idle)
@@ -76,31 +88,40 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
     pub fn update(&mut self, dt: f32, motion: &mut crate::Motion<T>) -> bool {
         match self {
             Self::Idle => false,
-            Self::Running { mode, config_handle } => {
+            Self::Running {
+                mode,
+                config_handle,
+            } => {
                 let mode = *mode;
                 let config_handle = config_handle.clone();
                 self.update_running(mode, &config_handle, dt, motion)
-            },
-            Self::Sequence { sequence, config_handle } => {
+            }
+            Self::Sequence {
+                sequence,
+                config_handle,
+            } => {
                 let sequence = sequence.clone();
                 let config_handle = config_handle.clone();
                 self.update_sequence(sequence, &config_handle, dt, motion)
-            },
-            Self::Keyframes { animation, config_handle } => {
+            }
+            Self::Keyframes {
+                animation,
+                config_handle,
+            } => {
                 let animation = animation.clone();
                 let config_handle = config_handle.clone();
                 self.update_keyframes(animation, &config_handle, dt, motion)
-            },
+            }
         }
     }
 
     /// Updates a running animation with the specified mode
     fn update_running(
-        &mut self, 
-        mode: AnimationMode, 
-        config_handle: &ConfigHandle, 
-        dt: f32, 
-        motion: &mut crate::Motion<T>
+        &mut self,
+        mode: AnimationMode,
+        config_handle: &ConfigHandle,
+        dt: f32,
+        motion: &mut crate::Motion<T>,
     ) -> bool {
         // Skip updates for imperceptible changes
         const MIN_DELTA: f32 = 1.0 / 240.0;
@@ -109,8 +130,7 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
         }
 
         // Get config from handle
-        let config = global::get_config_ref(config_handle)
-            .unwrap_or_default();
+        let config = global::get_config_ref(config_handle).unwrap_or_default();
 
         // Handle delay
         if motion.delay_elapsed < config.delay {
@@ -128,51 +148,24 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
 
         if completed {
             // Check if this is part of a sequence
-            if let Some(ref sequence) = motion.sequence {
+            if let Some(sequence) = motion.sequence.as_ref() {
                 // This is a sequence step completion - advance to next step
-                if sequence.advance_step() {
+                let sequence_clone = sequence.clone();
+                if let Some(new_mode) =
+                    self.advance_sequence_step(&sequence_clone, config_handle, motion)
+                {
                     // Successfully advanced to next step
-                    if let Some(step) = sequence.current_step_data() {
-                        let target = step.target;
-                        let config = (*step.config).clone();
-                        let mode = config.mode;
-                        
-                        // Update motion for new step
-                        motion.initial = motion.current;
-                        motion.target = target;
-                        motion.running = true;
-                        motion.elapsed = Duration::default();
-                        motion.delay_elapsed = Duration::default();
-                        motion.velocity = T::default();
-                        
-                        // Update config handle for new step
-                        global::modify_config(config_handle, |pooled_config| {
-                            *pooled_config = config;
-                        });
-                        
-                        // Update state to running mode for new step
-                        *self = Self::Running { 
-                            mode, 
-                            config_handle: config_handle.clone() 
-                        };
-                        
-                        return true;
-                    }
+                    *self = Self::Running {
+                        mode: new_mode,
+                        config_handle: config_handle.clone(),
+                    };
+                    return true;
                 } else {
                     // Sequence is complete
-                    if let Ok(mut sequence_owned) = Arc::try_unwrap(sequence.clone()) {
-                        sequence_owned.execute_completion();
-                    }
-                    motion.running = false;
-                    motion.current_loop = 0;
-                    motion.velocity = T::default();
-                    motion.sequence = None;
-                    motion.keyframe_animation = None;
-                    *self = Self::Idle;
                     return false;
                 }
             }
-            
+
             // Not part of a sequence, handle normal completion
             self.handle_completion(motion, &config)
         } else {
@@ -180,60 +173,83 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
         }
     }
 
+    /// Helper method to advance a sequence step and update motion state
+    /// Returns Some(new_mode) if successfully advanced, None if sequence is complete
+    fn advance_sequence_step(
+        &mut self,
+        sequence: &Arc<AnimationSequence<T>>,
+        config_handle: &ConfigHandle,
+        motion: &mut crate::Motion<T>,
+    ) -> Option<AnimationMode> {
+        if sequence.advance_step() {
+            // Successfully advanced to next step
+            if let Some(step) = sequence.current_step_data() {
+                let target = step.target;
+                let config = (*step.config).clone();
+                let mode = config.mode;
+
+                // Update motion for new step
+                motion.initial = motion.current;
+                motion.target = target;
+                motion.running = true;
+                motion.elapsed = Duration::default();
+                motion.delay_elapsed = Duration::default();
+                motion.velocity = T::default();
+
+                // Update config handle for new step
+                global::modify_config(config_handle, |pooled_config| {
+                    *pooled_config = config;
+                });
+
+                return Some(mode);
+            }
+        } else {
+            // Sequence is complete
+            if let Ok(mut sequence_owned) = Arc::try_unwrap(sequence.clone()) {
+                sequence_owned.execute_completion();
+            }
+            motion.running = false;
+            motion.current_loop = 0;
+            motion.velocity = T::default();
+            motion.sequence = None;
+            motion.keyframe_animation = None;
+            *self = Self::Idle;
+        }
+
+        None
+    }
+
     /// Updates a sequence animation
     fn update_sequence(
-        &mut self, 
-        sequence: Arc<AnimationSequence<T>>, 
-        _config_handle: &ConfigHandle, 
-        dt: f32, 
-        motion: &mut crate::Motion<T>
+        &mut self,
+        sequence: Arc<AnimationSequence<T>>,
+        _config_handle: &ConfigHandle,
+        dt: f32,
+        motion: &mut crate::Motion<T>,
     ) -> bool {
         if !motion.running {
-            if sequence.advance_step() {
+            if let Some(new_mode) =
+                self.advance_sequence_step(&sequence, &global::get_config(), motion)
+            {
                 // Successfully advanced to next step
-                if let Some(step) = sequence.current_step_data() {
-                    let target = step.target;
-                    let config = (*step.config).clone();
-                    let mode = config.mode;
-                    
-                    // Update motion for new step
-                    motion.initial = motion.current;
-                    motion.target = target;
-                    motion.running = true;
-                    motion.elapsed = Duration::default();
-                    motion.delay_elapsed = Duration::default();
-                    motion.velocity = T::default();
-                    
-                    // Update state to running mode for this step
-                    let new_config_handle = global::get_config();
-                    global::modify_config(&new_config_handle, |pooled_config| {
-                        *pooled_config = config;
-                    });
-                    
-                    *self = Self::Running { 
-                        mode, 
-                        config_handle: new_config_handle 
-                    };
-                    
-                    return true;
-                }
+                *self = Self::Running {
+                    mode: new_mode,
+                    config_handle: global::get_config(),
+                };
+                return true;
             } else {
                 // Sequence is complete
-                let mut sequence_clone = (*sequence).clone();
-                sequence_clone.execute_completion();
-                *self = Self::Idle;
-                motion.running = false;
-                motion.current_loop = 0;
-                motion.velocity = T::default();
-                motion.sequence = None;
-                motion.keyframe_animation = None;
                 return false;
             }
         }
-        
+
         // If we're here, the current step is still running
         // Delegate to running update
-        if let Self::Running { mode, config_handle } = self {
+        if let Self::Running {
+            mode,
+            config_handle,
+        } = self
+        {
             let mode = *mode;
             let config_handle = config_handle.clone();
             self.update_running(mode, &config_handle, dt, motion)
@@ -245,14 +261,15 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
 
     /// Updates a keyframe animation
     fn update_keyframes(
-        &mut self, 
-        animation: Arc<KeyframeAnimation<T>>, 
-        config_handle: &ConfigHandle, 
-        dt: f32, 
-        motion: &mut crate::Motion<T>
+        &mut self,
+        animation: Arc<KeyframeAnimation<T>>,
+        config_handle: &ConfigHandle,
+        dt: f32,
+        motion: &mut crate::Motion<T>,
     ) -> bool {
-        let progress = (motion.elapsed.as_secs_f32() / animation.duration.as_secs_f32()).clamp(0.0, 1.0);
-        
+        let progress =
+            (motion.elapsed.as_secs_f32() / animation.duration.as_secs_f32()).clamp(0.0, 1.0);
+
         let (start, end) = if animation.keyframes.is_empty() {
             // No keyframes, nothing to animate
             return false;
@@ -275,20 +292,20 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
                     }
                 })
         };
-        
+
         let local_progress = if start.offset == end.offset {
             1.0
         } else {
             (progress - start.offset) / (end.offset - start.offset)
         };
-        
+
         let eased_progress = end
             .easing
             .map_or(local_progress, |ease| (ease)(local_progress, 0.0, 1.0, 1.0));
-        
+
         motion.current = start.value.interpolate(&end.value, eased_progress);
         motion.elapsed += Duration::from_secs_f32(dt);
-        
+
         if progress >= 1.0 {
             let config = global::get_config_ref(config_handle).unwrap_or_default();
             self.handle_completion(motion, &config)
@@ -315,7 +332,7 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
             let stiffness = spring.stiffness;
             let damping = spring.damping;
             let mass_inv = 1.0 / spring.mass;
-            
+
             const FIXED_DT: f32 = 1.0 / 120.0;
             let steps = ((dt / FIXED_DT) as usize).max(1);
             let step_dt = dt / steps as f32;
@@ -352,7 +369,7 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
         let velocity_sq = motion.velocity.magnitude().powi(2);
         let delta = motion.target - motion.current;
         let delta_sq = delta.magnitude().powi(2);
-        
+
         if velocity_sq < epsilon_sq && delta_sq < epsilon_sq {
             motion.current = motion.target;
             motion.velocity = T::default();
@@ -367,13 +384,13 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
         let elapsed_secs = motion.elapsed.as_secs_f32() + dt;
         motion.elapsed = Duration::from_secs_f32(elapsed_secs);
         let duration_secs = tween.duration.as_secs_f32();
-        
+
         let progress = if duration_secs == 0.0 {
             1.0
         } else {
             (elapsed_secs * (1.0 / duration_secs)).min(1.0)
         };
-        
+
         if progress <= 0.0 {
             motion.current = motion.initial;
             return false;
@@ -381,19 +398,23 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
             motion.current = motion.target;
             return true;
         }
-        
+
         let eased_progress = (tween.easing)(progress, 0.0, 1.0, 1.0);
         match eased_progress {
             0.0 => motion.current = motion.initial,
             1.0 => motion.current = motion.target,
             _ => motion.current = motion.initial.interpolate(&motion.target, eased_progress),
         }
-        
+
         progress >= 1.0
     }
 
     /// Handles animation completion and loop logic
-    fn handle_completion(&mut self, motion: &mut crate::Motion<T>, config: &AnimationConfig) -> bool {
+    fn handle_completion(
+        &mut self,
+        motion: &mut crate::Motion<T>,
+        config: &AnimationConfig,
+    ) -> bool {
         let should_continue = match config.loop_mode.unwrap_or(LoopMode::None) {
             LoopMode::None => {
                 motion.running = false;
@@ -453,7 +474,7 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
                 }
             }
         };
-        
+
         if !should_continue {
             if let Some(ref f) = config.on_complete {
                 if let Ok(mut guard) = f.lock() {
@@ -461,7 +482,7 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
                 }
             }
         }
-        
+
         should_continue
     }
 
@@ -493,12 +514,12 @@ mod tests {
     #![allow(clippy::unwrap_used)]
     #![allow(clippy::arc_with_non_send_sync)]
     use super::*;
+    use crate::Motion;
     use crate::animations::core::AnimationMode;
     use crate::animations::spring::Spring;
     use crate::keyframes::KeyframeAnimation;
-    use crate::sequence::{AnimationSequence, AnimationStep};
     use crate::prelude::Tween;
-    use crate::Motion;
+    use crate::sequence::{AnimationSequence, AnimationStep};
     use std::sync::{Arc, Mutex};
 
     #[test]
@@ -506,31 +527,31 @@ mod tests {
         let state = AnimationState::<f32>::new_idle();
         assert!(!state.is_active());
         assert!(state.config_handle().is_none());
-        
+
         let mut motion = Motion::new(0.0f32);
         let mut state = state;
-        assert!(!state.update(1.0/60.0, &mut motion));
+        assert!(!state.update(1.0 / 60.0, &mut motion));
     }
 
     #[test]
     fn test_animation_state_running() {
         let config_handle = global::get_config();
         let mode = AnimationMode::Tween(Tween::default());
-        
+
         let state = AnimationState::<f32>::new_running(mode, config_handle.clone());
         assert!(state.is_active());
         assert!(state.config_handle().is_some());
-        
+
         let mut motion = Motion::new(0.0f32);
         motion.target = 100.0f32;
         motion.running = true;
-        
+
         let mut state = state;
-        let should_continue = state.update(1.0/60.0, &mut motion);
-        
+        let should_continue = state.update(1.0 / 60.0, &mut motion);
+
         // Should continue animating
         assert!(should_continue);
-        
+
         global::return_config(config_handle);
     }
 
@@ -548,23 +569,23 @@ mod tests {
                 predicted_next: None,
             },
         ];
-        
+
         let sequence = Arc::new(AnimationSequence::from_steps(steps));
         let config_handle = global::get_config();
-        
+
         let state = AnimationState::<f32>::new_sequence(sequence, config_handle.clone());
         assert!(state.is_active());
-        
+
         let mut motion = Motion::new(0.0f32);
         motion.running = false; // Sequence should advance to next step
-        
+
         let mut state = state;
-        let should_continue = state.update(1.0/60.0, &mut motion);
-        
+        let should_continue = state.update(1.0 / 60.0, &mut motion);
+
         // Should continue and transition to running state
         assert!(should_continue);
         assert!(matches!(state, AnimationState::Running { .. }));
-        
+
         global::return_config(config_handle);
     }
 
@@ -573,22 +594,23 @@ mod tests {
         let mut animation = KeyframeAnimation::new(Duration::from_secs(1));
         animation = animation.add_keyframe(0.0f32, 0.0, None).unwrap();
         animation = animation.add_keyframe(100.0f32, 1.0, None).unwrap();
-        
+
         let config_handle = global::get_config();
-        let state = AnimationState::<f32>::new_keyframes(Arc::new(animation), config_handle.clone());
+        let state =
+            AnimationState::<f32>::new_keyframes(Arc::new(animation), config_handle.clone());
         assert!(state.is_active());
-        
+
         let mut motion = Motion::new(0.0f32);
         motion.elapsed = Duration::from_millis(500); // Halfway through
-        
+
         let mut state = state;
-        let should_continue = state.update(1.0/60.0, &mut motion);
-        
+        let should_continue = state.update(1.0 / 60.0, &mut motion);
+
         // Should continue animating
         assert!(should_continue);
         // Value should be interpolated
         assert!(motion.current > 0.0 && motion.current < 100.0);
-        
+
         global::return_config(config_handle);
     }
 
@@ -598,22 +620,22 @@ mod tests {
         global::modify_config(&config_handle, |config| {
             config.mode = AnimationMode::Spring(Spring::default());
         });
-        
+
         let mode = AnimationMode::Spring(Spring::default());
         let state = AnimationState::<f32>::new_running(mode, config_handle.clone());
-        
+
         let mut motion = Motion::new(0.0f32);
         motion.target = 0.0f32; // Already at target
         motion.velocity = 0.0f32; // No velocity
         motion.running = true;
-        
+
         let mut state = state;
-        let should_continue = state.update(1.0/60.0, &mut motion);
-        
+        let should_continue = state.update(1.0 / 60.0, &mut motion);
+
         // Should complete immediately since already at target with no velocity
         assert!(!should_continue);
         assert!(matches!(state, AnimationState::Idle));
-        
+
         global::return_config(config_handle);
     }
 
@@ -623,23 +645,23 @@ mod tests {
         global::modify_config(&config_handle, |config| {
             config.mode = AnimationMode::Tween(Tween::default());
         });
-        
+
         let mode = AnimationMode::Tween(Tween::default());
         let state = AnimationState::<f32>::new_running(mode, config_handle.clone());
-        
+
         let mut motion = Motion::new(0.0f32);
         motion.target = 100.0f32;
         motion.running = true;
         motion.elapsed = Duration::from_secs(2); // Past default duration
-        
+
         let mut state = state;
-        let should_continue = state.update(1.0/60.0, &mut motion);
-        
+        let should_continue = state.update(1.0 / 60.0, &mut motion);
+
         // Should complete
         assert!(!should_continue);
         assert!(matches!(state, AnimationState::Idle));
         assert_eq!(motion.current, motion.target);
-        
+
         global::return_config(config_handle);
     }
 
@@ -650,25 +672,25 @@ mod tests {
             config.mode = AnimationMode::Tween(Tween::default());
             config.loop_mode = Some(LoopMode::Infinite);
         });
-        
+
         let mode = AnimationMode::Tween(Tween::default());
         let state = AnimationState::<f32>::new_running(mode, config_handle.clone());
-        
+
         let mut motion = Motion::new(0.0f32);
         motion.target = 100.0f32;
         motion.running = true;
         motion.elapsed = Duration::from_secs(2); // Past default duration
-        
+
         let mut state = state;
-        let should_continue = state.update(1.0/60.0, &mut motion);
-        
+        let should_continue = state.update(1.0 / 60.0, &mut motion);
+
         // Should continue looping
         assert!(should_continue);
         assert!(matches!(state, AnimationState::Running { .. }));
         // Should reset to initial position
         assert_eq!(motion.current, motion.initial);
         assert_eq!(motion.elapsed, Duration::default());
-        
+
         global::return_config(config_handle);
     }
 
@@ -676,7 +698,7 @@ mod tests {
     fn test_animation_state_completion_callback() {
         let callback_executed = Arc::new(Mutex::new(false));
         let callback_executed_clone = callback_executed.clone();
-        
+
         let config_handle = global::get_config();
         global::modify_config(&config_handle, |config| {
             config.mode = AnimationMode::Tween(Tween::default());
@@ -684,22 +706,22 @@ mod tests {
                 *callback_executed_clone.lock().unwrap() = true;
             }))));
         });
-        
+
         let mode = AnimationMode::Tween(Tween::default());
         let state = AnimationState::<f32>::new_running(mode, config_handle.clone());
-        
+
         let mut motion = Motion::new(0.0f32);
         motion.target = 100.0f32;
         motion.running = true;
         motion.elapsed = Duration::from_secs(2); // Past default duration
-        
+
         let mut state = state;
-        let should_continue = state.update(1.0/60.0, &mut motion);
-        
+        let should_continue = state.update(1.0 / 60.0, &mut motion);
+
         // Should complete and execute callback
         assert!(!should_continue);
         assert!(*callback_executed.lock().unwrap());
-        
+
         global::return_config(config_handle);
     }
 
@@ -710,22 +732,22 @@ mod tests {
             config.mode = AnimationMode::Tween(Tween::default());
             config.delay = Duration::from_millis(100);
         });
-        
+
         let mode = AnimationMode::Tween(Tween::default());
         let state = AnimationState::<f32>::new_running(mode, config_handle.clone());
-        
+
         let mut motion = Motion::new(0.0f32);
         motion.target = 100.0f32;
         motion.running = true;
         motion.delay_elapsed = Duration::from_millis(50); // Still in delay
-        
+
         let mut state = state;
-        let should_continue = state.update(1.0/60.0, &mut motion);
-        
+        let should_continue = state.update(1.0 / 60.0, &mut motion);
+
         // Should continue but not animate yet (still in delay)
         assert!(should_continue);
         assert_eq!(motion.current, motion.initial); // Shouldn't have moved
-        
+
         global::return_config(config_handle);
     }
 }
