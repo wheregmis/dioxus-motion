@@ -205,9 +205,8 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
             }
         } else {
             // Sequence is complete
-            if let Ok(mut sequence_owned) = Arc::try_unwrap(sequence.clone()) {
-                sequence_owned.execute_completion();
-            }
+            // Execute completion callback safely without requiring ownership
+            sequence.execute_completion();
             motion.running = false;
             motion.current_loop = 0;
             motion.velocity = T::default();
