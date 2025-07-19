@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Single default epsilon (0.01) for consistent behavior
   - ~70% less boilerplate when implementing custom animatable types
   
+- **`use_motion<T>` now requires `T: Send + 'static`**
+  - The `use_motion<T>` function now requires types to implement `Send + 'static` in addition to `Animatable`
+  - This enables better thread safety and resource management for animations
+  - Types that don't satisfy these bounds will no longer compile with `use_motion`
+  
 - `KeyframeAnimation::add_keyframe` now returns a `Result`, not `Self`. Chaining requires `.and_then(...).unwrap()` or error handling. All documentation and guides updated to reflect this.
 
 ### Migration Guide:
@@ -44,6 +49,11 @@ impl Mul<f32> for MyType { /* scalar multiplication */ }
 ```
 
 Replace `MyType::zero()` calls with `MyType::default()`.
+
+**For `use_motion<T>` trait bound requirements:**
+- Ensure your custom types implement `Send + 'static` in addition to `Animatable`
+- Most types automatically satisfy these bounds, but types with non-Send fields (like `Rc<T>`) will need to be refactored
+- Use `Arc<T>` instead of `Rc<T>` for shared ownership in animatable types
 
 ### Fixes:
 - Layout not being shown when animating in the case of nested Layouts

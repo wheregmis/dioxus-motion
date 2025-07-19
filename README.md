@@ -209,6 +209,7 @@ struct Point3D {
     y: f32,
     z: f32,
 }
+// Point3D automatically implements Send + 'static since all fields are Send + 'static
 
 // Implement standard Rust operator traits
 impl std::ops::Add for Point3D {
@@ -270,10 +271,35 @@ position.animate_to(
 
 ## 🔄 Migration Guide (v0.3.0)
 
-- No breaking changes to the existing APIs. Just minor exports might change so just import prelude::\* if anything breaks on import
+### Breaking Changes
+
+- **`use_motion<T>` now requires `T: Send + 'static`**: The `use_motion<T>` function now requires types to implement `Send + 'static` in addition to `Animatable`. This enables better thread safety and resource management for animations.
+
+### Migration Steps
+
+- Most built-in types (`f32`, `Transform`, `Color`) already satisfy these bounds
+- For custom types, ensure they implement `Send + 'static`:
+  - Types with non-Send fields (like `Rc<T>`) will need to be refactored
+  - Use `Arc<T>` instead of `Rc<T>` for shared ownership in animatable types
+- Minor exports might change so just import `prelude::*` if anything breaks on import
 
 ```rust
 use dioxus_motion::prelude::*;
+
+// ✅ This works - f32 is Send + 'static
+let motion = use_motion(0.0f32);
+
+// ✅ This works - custom type with Send + 'static
+#[derive(Copy, Clone, Default)]
+struct Point { x: f32, y: f32 } // Send + 'static automatically derived
+
+let point_motion = use_motion(Point::default());
+
+// ❌ This won't compile - Rc<T> is not Send
+// let bad_motion = use_motion(std::rc::Rc::new(0.0f32));
+
+// ✅ Use Arc<T> instead for shared ownership
+let shared_motion = use_motion(std::sync::Arc::new(0.0f32));
 ```
 
 ## 🔄 Migration Guide (v0.2.0)
