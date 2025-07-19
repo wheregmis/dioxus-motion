@@ -136,11 +136,11 @@ pub mod prelude {
     #[cfg(feature = "transitions")]
     pub use crate::transitions::page_transitions::{AnimatableRoute, AnimatedOutlet};
     pub use crate::{AnimationManager, Duration, Time, TimeProvider, use_motion};
-    
+
     // Performance optimization exports
+    pub use crate::motion::MotionOptimizationStats;
     pub use crate::pool::resource_pools;
     pub use crate::pool::{PoolConfig, PoolStats};
-    pub use crate::motion::MotionOptimizationStats;
 }
 
 pub type Time = MotionTime;

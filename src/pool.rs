@@ -166,6 +166,7 @@ impl ConfigPoolable for AnimationConfig {
 }
 
 /// Trait for pools that can provide statistics
+#[allow(dead_code)]
 trait PoolStatsProvider {
     fn stats(&self) -> (usize, usize);
 }

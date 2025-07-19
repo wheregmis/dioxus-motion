@@ -1,6 +1,9 @@
 use std::marker::PhantomData;
 
-use dioxus::{prelude::*, router::{use_outlet_context, OutletContext}};
+use dioxus::{
+    prelude::*,
+    router::{OutletContext, use_outlet_context},
+};
 use std::rc::Rc;
 
 use crate::{

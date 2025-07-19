@@ -209,7 +209,7 @@ mod tests {
     }
 
     /// Test conditional checking overhead impact on state machine performance
-    /// 
+    ///
     /// Note: This test measures the overhead of additional conditional checks
     /// rather than comparing against a true branching implementation (which is no longer available).
     /// It validates that extra conditional logic doesn't significantly impact performance.

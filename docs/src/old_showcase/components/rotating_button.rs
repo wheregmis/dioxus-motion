@@ -2,10 +2,14 @@ use dioxus::prelude::*;
 use dioxus_motion::{KeyframeAnimation, prelude::*};
 use easer::functions::Easing;
 
+// Type alias to simplify complex keyframe type
+#[allow(clippy::type_complexity)]
+type KeyframeData<T> = Vec<(T, f32, Option<fn(f32, f32, f32, f32) -> f32>)>;
+
 // Helper function to safely build keyframe animations
 fn build_keyframes<T: dioxus_motion::animations::core::Animatable>(
     duration: Duration,
-    keyframes: Vec<(T, f32, Option<fn(f32, f32, f32, f32) -> f32>)>,
+    keyframes: KeyframeData<T>,
 ) -> Result<KeyframeAnimation<T>, dioxus_motion::keyframes::KeyframeError> {
     let mut animation = KeyframeAnimation::new(duration);
     for (value, offset, easing) in keyframes {

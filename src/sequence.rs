@@ -22,6 +22,7 @@ pub struct AnimationSequence<T: Animatable> {
     /// Atomic counter for current step - thread-safe without locks
     current_step: AtomicU8,
     /// Completion callback - thread-safe with Mutex to allow execution without ownership
+    #[allow(clippy::type_complexity)]
     on_complete: Arc<Mutex<Option<Box<dyn FnOnce() + Send>>>>,
 }
 
@@ -96,7 +97,7 @@ impl<T: Animatable> AnimationSequence<T> {
     }
 
     /// Sets a completion callback
-    pub fn on_complete<F: FnOnce() + Send + 'static>(mut self, f: F) -> Self {
+    pub fn on_complete<F: FnOnce() + Send + 'static>(self, f: F) -> Self {
         if let Ok(mut guard) = self.on_complete.lock() {
             *guard = Some(Box::new(f));
         }

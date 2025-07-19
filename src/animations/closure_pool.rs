@@ -4,11 +4,11 @@
 //! of creating new closures for every animation frame callback.
 
 #[cfg(feature = "web")]
-use wasm_bindgen::prelude::*;
+use std::cell::RefCell;
 #[cfg(feature = "web")]
 use std::collections::{HashMap, HashSet};
 #[cfg(feature = "web")]
-use std::cell::RefCell;
+use wasm_bindgen::prelude::*;
 
 /// Pool of reusable JavaScript closures for web platform optimization
 #[cfg(feature = "web")]
@@ -39,10 +39,10 @@ impl WebClosurePool {
     }
 
     /// Registers a callback and returns its ID for later execution
-    /// 
+    ///
     /// # Arguments
     /// * `callback` - The callback function to execute when requested
-    /// 
+    ///
     /// # Returns
     /// The callback ID for later execution
     pub fn register_callback(&mut self, callback: Box<dyn FnOnce() + Send>) -> u32 {
@@ -51,29 +51,29 @@ impl WebClosurePool {
 
         // Store the callback in the registry
         self.callback_registry.insert(callback_id, callback);
-        
+
         // Mark this closure as in use
         self.in_use_ids.insert(callback_id);
-        
+
         // If we had available closures, use one
         if self.available_count > 0 {
             self.available_count -= 1;
         }
-        
+
         callback_id
     }
 
     /// Executes a registered callback and returns the closure to the pool
-    /// 
+    ///
     /// # Arguments
     /// * `callback_id` - The ID of the callback to execute
     pub fn execute_callback(&mut self, callback_id: u32) {
         if let Some(callback) = self.callback_registry.remove(&callback_id) {
             callback();
-            
+
             // Mark closure as no longer in use
             self.in_use_ids.remove(&callback_id);
-            
+
             // Return to available pool if we haven't exceeded max size
             if self.available_count < self.max_pool_size {
                 self.available_count += 1;
@@ -82,10 +82,10 @@ impl WebClosurePool {
     }
 
     /// Creates a JavaScript closure that will execute the callback with the given ID
-    /// 
+    ///
     /// # Arguments
     /// * `callback_id` - The ID of the callback to execute
-    /// 
+    ///
     /// # Returns
     /// A JavaScript closure that can be used with web APIs
     pub fn create_js_closure(&self, callback_id: u32) -> Closure<dyn FnMut()> {
@@ -192,15 +192,15 @@ mod tests {
     #[test]
     fn test_callback_registration() {
         let mut pool = WebClosurePool::new();
-        
+
         // Test registering a callback
         let callback = Box::new(|| {});
         let id = pool.register_callback(callback);
         assert!(id > 0);
-        
+
         // Test executing a callback
         pool.execute_callback(id);
-        
+
         // Callback should be removed after execution
         pool.execute_callback(id); // Should not panic
     }
@@ -209,16 +209,16 @@ mod tests {
     #[test]
     fn test_multiple_callbacks() {
         let mut pool = WebClosurePool::new();
-        
+
         // Register multiple callbacks
         let callback1 = Box::new(|| {});
         let callback2 = Box::new(|| {});
         let id1 = pool.register_callback(callback1);
         let id2 = pool.register_callback(callback2);
-        
+
         // IDs should be different
         assert_ne!(id1, id2);
-        
+
         // Execute callbacks
         pool.execute_callback(id1);
         pool.execute_callback(id2);
@@ -228,13 +228,13 @@ mod tests {
     #[test]
     fn test_closure_pool_clear() {
         let mut pool = WebClosurePool::new();
-        
+
         // Add some callbacks
         let callback1 = Box::new(|| {});
         let callback2 = Box::new(|| {});
         let _id1 = pool.register_callback(callback1);
         let _id2 = pool.register_callback(callback2);
-        
+
         // Clear the pool
         pool.clear();
         assert_eq!(pool.available_count(), 0);
@@ -253,7 +253,7 @@ mod tests {
             assert_eq!(available, 0);
             assert_eq!(in_use, 0);
         }
-        
+
         // Test that web implementation works correctly
         #[cfg(feature = "web")]
         {
@@ -261,14 +261,14 @@ mod tests {
             CLOSURE_POOL.with(|pool| {
                 pool.borrow_mut().clear();
             });
-            
+
             let callback = Box::new(|| {});
             let id = register_pooled_callback(callback);
-            
+
             // After registration, should have 1 in use
             let (_available, in_use) = closure_pool_stats();
             assert_eq!(in_use, 1);
-            
+
             // After execution, should be returned to available pool
             execute_and_return_pooled_closure(id);
             let (available, in_use) = closure_pool_stats();

@@ -7,7 +7,7 @@ use instant::{Duration, Instant};
 use std::future::Future;
 
 #[cfg(feature = "web")]
-use crate::animations::closure_pool::{register_pooled_callback, create_pooled_closure};
+use crate::animations::closure_pool::{create_pooled_closure, register_pooled_callback};
 
 /// Provides platform-agnostic timing operations
 ///
@@ -57,7 +57,7 @@ impl TimeProvider for MotionTime {
             if _duration.as_millis() <= RAF_THRESHOLD_MS as u128 {
                 // For frame-based timing, use requestAnimationFrame
                 // This is ideal for animation frames (typically 16ms at 60fps)
-                
+
                 // Use pooled closure for better performance
                 let callback_id = register_pooled_callback(Box::new(move || {
                     let _ = sender.send(());
@@ -71,7 +71,7 @@ impl TimeProvider for MotionTime {
                 cb.forget();
             } else {
                 // For longer delays, use setTimeout which is more appropriate
-                
+
                 // Use pooled closure for better performance
                 let callback_id = register_pooled_callback(Box::new(move || {
                     let _ = sender.send(());
@@ -100,13 +100,13 @@ impl TimeProvider for MotionTime {
         Box::pin(async move {
             // Threshold-based sleep optimization
             const MIN_SPIN_THRESHOLD: Duration = Duration::from_millis(1);
-            
+
             if duration > MIN_SPIN_THRESHOLD {
                 let start = Instant::now();
-                
+
                 // Use tokio sleep for longer durations
                 tokio::time::sleep(duration).await;
-                
+
                 // High precision timing for desktop - only for remaining time
                 let remaining = duration.saturating_sub(start.elapsed());
                 if remaining > Duration::from_micros(100) {
@@ -134,10 +134,12 @@ mod tests {
         let time1 = MotionTime::now();
         std::thread::sleep(Duration::from_millis(1));
         let time2 = MotionTime::now();
-        
+
         assert!(time2 > time1, "Time should advance");
-        assert!(time2.duration_since(time1) >= Duration::from_millis(1), 
-                "Time difference should be at least 1ms");
+        assert!(
+            time2.duration_since(time1) >= Duration::from_millis(1),
+            "Time difference should be at least 1ms"
+        );
     }
 
     #[cfg(not(feature = "web"))]
@@ -146,15 +148,18 @@ mod tests {
         // Test that very short durations don't use spin sleep
         let short_duration = Duration::from_micros(500);
         let start = Instant::now();
-        
+
         MotionTime::delay(short_duration).await;
-        
+
         let elapsed = start.elapsed();
-        
+
         // For very short durations, we should yield instead of sleep
         // The elapsed time should be minimal (less than 2ms)
-        assert!(elapsed < Duration::from_millis(2), 
-                "Short duration sleep took too long: {:?}", elapsed);
+        assert!(
+            elapsed < Duration::from_millis(2),
+            "Short duration sleep took too long: {:?}",
+            elapsed
+        );
     }
 
     #[cfg(not(feature = "web"))]
@@ -163,17 +168,23 @@ mod tests {
         // Test that longer durations use proper sleep
         let long_duration = Duration::from_millis(10);
         let start = Instant::now();
-        
+
         MotionTime::delay(long_duration).await;
-        
+
         let elapsed = start.elapsed();
-        
+
         // For longer durations, we should sleep properly
         // Allow some tolerance for timing variations
-        assert!(elapsed >= Duration::from_millis(8), 
-                "Long duration sleep was too short: {:?}", elapsed);
-        assert!(elapsed <= Duration::from_millis(15), 
-                "Long duration sleep was too long: {:?}", elapsed);
+        assert!(
+            elapsed >= Duration::from_millis(8),
+            "Long duration sleep was too short: {:?}",
+            elapsed
+        );
+        assert!(
+            elapsed <= Duration::from_millis(15),
+            "Long duration sleep was too long: {:?}",
+            elapsed
+        );
     }
 
     #[cfg(not(feature = "web"))]
@@ -182,15 +193,21 @@ mod tests {
         // Test the 1ms threshold boundary
         let threshold_duration = Duration::from_millis(1);
         let start = Instant::now();
-        
+
         MotionTime::delay(threshold_duration).await;
-        
+
         let elapsed = start.elapsed();
-        
+
         // At the threshold, we should still use proper sleep
-        assert!(elapsed >= Duration::from_micros(800), 
-                "Threshold duration sleep was too short: {:?}", elapsed);
-        assert!(elapsed <= Duration::from_millis(3), 
-                "Threshold duration sleep was too long: {:?}", elapsed);
+        assert!(
+            elapsed >= Duration::from_micros(800),
+            "Threshold duration sleep was too short: {:?}",
+            elapsed
+        );
+        assert!(
+            elapsed <= Duration::from_millis(3),
+            "Threshold duration sleep was too long: {:?}",
+            elapsed
+        );
     }
 }

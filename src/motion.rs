@@ -111,7 +111,7 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         if let Some(first_step) = sequence.steps().first() {
             let first_config = (*first_step.config).clone();
             self.animate_to(first_step.target, first_config);
-            let mut new_sequence = sequence.clone();
+            let new_sequence = sequence.clone();
             new_sequence.reset(); // Reset to first step
             self.sequence = Some(Arc::new(new_sequence.clone()));
 
