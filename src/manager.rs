@@ -7,7 +7,7 @@ use crate::sequence::AnimationSequence;
 use crate::pool::global;
 use dioxus::prelude::{Readable, Signal, Writable};
 
-pub trait AnimationManager<T: Animatable>: Clone + Copy {
+pub trait AnimationManager<T: Animatable + Send + 'static>: Clone + Copy {
     fn new(initial: T) -> Self;
     fn animate_to(&mut self, target: T, config: AnimationConfig);
     fn animate_sequence(&mut self, sequence: AnimationSequence<T>);
@@ -20,7 +20,7 @@ pub trait AnimationManager<T: Animatable>: Clone + Copy {
     fn delay(&mut self, duration: Duration);
 }
 
-impl<T: Animatable> AnimationManager<T> for Signal<Motion<T>> {
+impl<T: Animatable + Send + 'static> AnimationManager<T> for Signal<Motion<T>> {
     fn new(initial: T) -> Self {
         Signal::new(Motion::new(initial))
     }

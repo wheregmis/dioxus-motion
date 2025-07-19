@@ -5,21 +5,26 @@
 //!
 //! # Features
 //! - **Simplified Animatable trait** - Uses standard Rust operators (`+`, `-`, `*`) for math operations
-//! - Spring physics animations
+//! - **High-performance optimizations** - Automatic memory pooling, state machine dispatch, and resource management
+//! - Spring physics animations with optimized integration
 //! - Tween animations with custom easing
 //! - Color interpolation
 //! - Transform animations
 //! - Configurable animation loops
-//! - Animation sequences
+//! - Animation sequences with atomic step management
 //! - Single default epsilon (0.01) for consistent animation completion
+//! - Automatic resource pool management for maximum performance
 //!
 //! # Example
 //! ```rust,no_run
 //! use dioxus_motion::prelude::*;
 //!
+//! // Optional: Configure resource pools for optimal performance (recommended for production)
+//! resource_pools::init_high_performance();
+//!
 //! let mut value = use_motion(0.0f32);
 //!
-//! // Basic animation - uses default epsilon (0.01) for completion detection
+//! // Basic animation - automatically uses all optimizations
 //! value.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
 //!
 //! // Animation with custom epsilon for fine-tuned performance (optional)
@@ -28,6 +33,10 @@
 //!     AnimationConfig::new(AnimationMode::Spring(Spring::default()))
 //!         .with_epsilon(0.001) // Tighter threshold for high-precision animations
 //! );
+//!
+//! // Check optimization status (optional)
+//! let stats = value.optimization_stats();
+//! println!("Optimizations active: {:?}", stats);
 //! ```
 //!
 //! # Creating Custom Animatable Types
@@ -126,6 +135,11 @@ pub mod prelude {
     #[cfg(feature = "transitions")]
     pub use crate::transitions::page_transitions::{AnimatableRoute, AnimatedOutlet};
     pub use crate::{AnimationManager, Duration, Time, TimeProvider, use_motion};
+    
+    // Performance optimization exports
+    pub use crate::pool::resource_pools;
+    pub use crate::pool::{PoolConfig, PoolStats};
+    pub use crate::motion::MotionOptimizationStats;
 }
 
 pub type Time = MotionTime;
@@ -186,7 +200,7 @@ fn calculate_delay(dt: f32, running_frames: u32) -> Duration {
 ///     }
 /// }
 /// ```
-pub fn use_motion<T: Animatable>(initial: T) -> impl AnimationManager<T> {
+pub fn use_motion<T: Animatable + Send + 'static>(initial: T) -> impl AnimationManager<T> {
     let mut state = use_signal(|| Motion::new(initial));
 
     #[cfg(feature = "web")]

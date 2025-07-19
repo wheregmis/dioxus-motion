@@ -103,6 +103,8 @@ fn main() {
         // });
         // use_context_provider(|| resolver);
 
+        resource_pools::init_high_performance();
+
         rsx! {
             head {
                 link {

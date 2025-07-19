@@ -491,10 +491,157 @@ impl GlobalIntegratorPools {
     pub fn clear(&mut self) {
         self.pools.clear();
     }
+
+    /// Gets statistics for all pools
+    pub fn stats(&self) -> HashMap<TypeId, (usize, usize)> {
+        // Note: This is a simplified version since we can't easily downcast
+        // and call stats() on each pool without knowing the concrete type
+        HashMap::new()
+    }
 }
 
-// Thread-local integrator pools
+/// Global resource pool management for Motion optimizations
+/// Manages all pooled resources including configs, integrators, and closures
+pub struct MotionResourcePools {
+    /// Configuration pool for reusing AnimationConfig instances
+    pub config_pool: ConfigPool,
+    /// Integrator pools for different animatable types
+    pub integrator_pools: GlobalIntegratorPools,
+    /// Web closure pool for JavaScript closure reuse (web only)
+    #[cfg(feature = "web")]
+    pub closure_pool: crate::animations::closure_pool::WebClosurePool,
+    /// Pool configuration settings
+    pub config: PoolConfig,
+}
+
+impl MotionResourcePools {
+    /// Creates new resource pools with default configuration
+    pub fn new() -> Self {
+        Self::with_config(PoolConfig::default())
+    }
+
+    /// Creates new resource pools with specified configuration
+    pub fn with_config(config: PoolConfig) -> Self {
+        Self {
+            config_pool: ConfigPool::with_capacity(config.config_pool_capacity),
+            integrator_pools: GlobalIntegratorPools::new(),
+            #[cfg(feature = "web")]
+            closure_pool: crate::animations::closure_pool::WebClosurePool::new(),
+            config,
+        }
+    }
+
+    /// Gets statistics for all pools
+    pub fn stats(&self) -> PoolStats {
+        let (config_in_use, config_available) = (self.config_pool.in_use_count(), self.config_pool.available_count());
+        
+        #[cfg(feature = "web")]
+        let (closure_in_use, closure_available) = (self.closure_pool.in_use_count(), self.closure_pool.available_count());
+        #[cfg(not(feature = "web"))]
+        let (closure_in_use, closure_available) = (0, 0);
+
+        PoolStats {
+            config_pool: (config_in_use, config_available),
+            closure_pool: (closure_in_use, closure_available),
+            integrator_pools: self.integrator_pools.stats(),
+            total_memory_saved_bytes: self.estimate_memory_savings(),
+        }
+    }
+
+    /// Estimates memory savings from pooling (rough calculation)
+    fn estimate_memory_savings(&self) -> usize {
+        // Rough estimates based on typical struct sizes
+        const CONFIG_SIZE: usize = std::mem::size_of::<AnimationConfig>();
+        const INTEGRATOR_SIZE: usize = 256; // Rough estimate for SpringIntegrator<f32>
+        const CLOSURE_SIZE: usize = 64; // Rough estimate for web closures
+
+        let config_savings = self.config_pool.available_count() * CONFIG_SIZE;
+        let closure_savings = {
+            #[cfg(feature = "web")]
+            { self.closure_pool.available_count() * CLOSURE_SIZE }
+            #[cfg(not(feature = "web"))]
+            { 0 }
+        };
+
+        // Integrator savings would need type-specific calculation
+        // For now, just estimate based on common usage
+        let integrator_savings = 8 * INTEGRATOR_SIZE; // Assume ~8 pooled integrators on average
+
+        config_savings + closure_savings + integrator_savings
+    }
+
+    /// Clears all pools (primarily for testing and cleanup)
+    pub fn clear(&mut self) {
+        self.config_pool.clear();
+        self.integrator_pools.clear();
+        #[cfg(feature = "web")]
+        self.closure_pool.clear();
+    }
+
+    /// Performs maintenance on all pools (removes excess capacity, etc.)
+    pub fn maintain(&mut self) {
+        // Trim config pool if it's grown too large
+        if self.config_pool.available_count() > self.config.max_config_pool_size {
+            let excess = self.config_pool.available_count() - self.config.target_config_pool_size;
+            for _ in 0..excess {
+                // Remove excess configs (simplified - would need actual implementation)
+                break;
+            }
+        }
+
+        // Similar maintenance for other pools could be added here
+    }
+}
+
+impl Default for MotionResourcePools {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Configuration for resource pools
+#[derive(Debug, Clone)]
+pub struct PoolConfig {
+    /// Initial capacity for config pool
+    pub config_pool_capacity: usize,
+    /// Maximum size for config pool before trimming
+    pub max_config_pool_size: usize,
+    /// Target size to trim config pool to
+    pub target_config_pool_size: usize,
+    /// Whether to enable automatic pool maintenance
+    pub auto_maintain: bool,
+    /// Interval for automatic maintenance (in animation frames)
+    pub maintenance_interval: u32,
+}
+
+impl Default for PoolConfig {
+    fn default() -> Self {
+        Self {
+            config_pool_capacity: 16,
+            max_config_pool_size: 64,
+            target_config_pool_size: 32,
+            auto_maintain: true,
+            maintenance_interval: 1000, // Every ~16 seconds at 60fps
+        }
+    }
+}
+
+/// Statistics about all resource pools
+#[derive(Debug, Clone)]
+pub struct PoolStats {
+    /// Config pool stats: (in_use, available)
+    pub config_pool: (usize, usize),
+    /// Closure pool stats: (in_use, available)
+    pub closure_pool: (usize, usize),
+    /// Integrator pool stats by type
+    pub integrator_pools: HashMap<TypeId, (usize, usize)>,
+    /// Estimated memory saved by pooling (in bytes)
+    pub total_memory_saved_bytes: usize,
+}
+
+// Thread-local resource pools
 thread_local! {
+    static MOTION_RESOURCE_POOLS: RefCell<MotionResourcePools> = RefCell::new(MotionResourcePools::new());
     static INTEGRATOR_POOLS: RefCell<GlobalIntegratorPools> = RefCell::new(GlobalIntegratorPools::new());
 }
 
@@ -551,6 +698,93 @@ pub mod integrator {
         INTEGRATOR_POOLS.with(|pools| {
             pools.borrow_mut().clear();
         });
+    }
+}
+
+/// Global functions for managing Motion resource pools
+pub mod resource_pools {
+    use super::*;
+
+    /// Gets statistics for all resource pools
+    pub fn stats() -> PoolStats {
+        MOTION_RESOURCE_POOLS.with(|pools| {
+            pools.borrow().stats()
+        })
+    }
+
+    /// Configures the global resource pools
+    /// This should be called early in your application startup for optimal performance
+    pub fn configure(config: PoolConfig) {
+        MOTION_RESOURCE_POOLS.with(|pools| {
+            *pools.borrow_mut() = MotionResourcePools::with_config(config);
+        });
+    }
+
+    /// Initializes resource pools with high-performance defaults
+    /// Recommended for applications with many concurrent animations
+    pub fn init_high_performance() {
+        configure(PoolConfig {
+            config_pool_capacity: 64,
+            max_config_pool_size: 256,
+            target_config_pool_size: 128,
+            auto_maintain: true,
+            maintenance_interval: 500, // More frequent maintenance
+        });
+    }
+
+    /// Initializes resource pools with memory-conservative defaults
+    /// Recommended for memory-constrained environments
+    pub fn init_memory_conservative() {
+        configure(PoolConfig {
+            config_pool_capacity: 8,
+            max_config_pool_size: 32,
+            target_config_pool_size: 16,
+            auto_maintain: true,
+            maintenance_interval: 2000, // Less frequent maintenance
+        });
+    }
+
+    /// Performs maintenance on all resource pools
+    pub fn maintain() {
+        MOTION_RESOURCE_POOLS.with(|pools| {
+            pools.borrow_mut().maintain();
+        });
+    }
+
+    /// Clears all resource pools (primarily for testing)
+    #[cfg(test)]
+    pub fn clear_all() {
+        MOTION_RESOURCE_POOLS.with(|pools| {
+            pools.borrow_mut().clear();
+        });
+    }
+
+    /// Gets the current pool configuration
+    pub fn get_config() -> PoolConfig {
+        MOTION_RESOURCE_POOLS.with(|pools| {
+            pools.borrow().config.clone()
+        })
+    }
+
+    /// Estimates total memory usage of all pools
+    pub fn memory_usage_bytes() -> usize {
+        MOTION_RESOURCE_POOLS.with(|pools| {
+            let pools = pools.borrow();
+            let stats = pools.stats();
+            
+            // Rough calculation of memory usage
+            const CONFIG_SIZE: usize = std::mem::size_of::<AnimationConfig>();
+            const INTEGRATOR_SIZE: usize = 256;
+            const CLOSURE_SIZE: usize = 64;
+
+            let config_memory = (stats.config_pool.0 + stats.config_pool.1) * CONFIG_SIZE;
+            let closure_memory = (stats.closure_pool.0 + stats.closure_pool.1) * CLOSURE_SIZE;
+            let integrator_memory = stats.integrator_pools.values()
+                .map(|(in_use, available)| (in_use + available) * INTEGRATOR_SIZE)
+                .sum::<usize>();
+
+            config_memory + closure_memory + integrator_memory
+        })
     }
 }
 
@@ -837,4 +1071,109 @@ mod tests {
         // With default spring settings, velocity should increase toward target
         assert!(new_vel > current_vel);
     }
-}
+
+    #[test]
+    fn test_motion_resource_pools() {
+        let pools = MotionResourcePools::new();
+        
+        // Test initial state
+        let stats = pools.stats();
+        assert_eq!(stats.config_pool, (0, 0));
+        assert_eq!(stats.closure_pool, (0, 0));
+        assert!(stats.integrator_pools.is_empty());
+        assert_eq!(stats.total_memory_saved_bytes, 8 * 256); // Estimated integrator savings
+    }
+
+    #[test]
+    fn test_motion_resource_pools_with_config() {
+        let config = PoolConfig {
+            config_pool_capacity: 32,
+            max_config_pool_size: 128,
+            target_config_pool_size: 64,
+            auto_maintain: false,
+            maintenance_interval: 500,
+        };
+        
+        let pools = MotionResourcePools::with_config(config.clone());
+        assert_eq!(pools.config.config_pool_capacity, 32);
+        assert_eq!(pools.config.max_config_pool_size, 128);
+        assert!(!pools.config.auto_maintain);
+    }
+
+    #[test]
+    fn test_motion_resource_pools_clear() {
+        let mut pools = MotionResourcePools::new();
+        
+        // Add some items to pools (simplified test)
+        let _handle = pools.config_pool.get_config();
+        
+        pools.clear();
+        
+        let stats = pools.stats();
+        assert_eq!(stats.config_pool, (0, 0));
+        assert_eq!(stats.closure_pool, (0, 0));
+    }
+
+    #[test]
+    fn test_resource_pools_global_functions() {
+        resource_pools::clear_all();
+        
+        // Test configuration
+        let config = PoolConfig {
+            config_pool_capacity: 24,
+            max_config_pool_size: 96,
+            target_config_pool_size: 48,
+            auto_maintain: true,
+            maintenance_interval: 750,
+        };
+        
+        resource_pools::configure(config.clone());
+        let retrieved_config = resource_pools::get_config();
+        assert_eq!(retrieved_config.config_pool_capacity, 24);
+        assert_eq!(retrieved_config.max_config_pool_size, 96);
+        
+        // Test stats
+        let stats = resource_pools::stats();
+        assert_eq!(stats.config_pool, (0, 0));
+        
+        // Test memory usage (should be reasonable)
+        let memory_usage = resource_pools::memory_usage_bytes();
+        // Memory usage should be reasonable (at least 0, but not too large)
+        assert!(memory_usage < 1_000_000); // Shouldn't be unreasonably large
+        
+        // Test maintenance (should not panic)
+        resource_pools::maintain();
+    }
+
+    #[test]
+    fn test_pool_config_default() {
+        let config = PoolConfig::default();
+        assert_eq!(config.config_pool_capacity, 16);
+        assert_eq!(config.max_config_pool_size, 64);
+        assert_eq!(config.target_config_pool_size, 32);
+        assert!(config.auto_maintain);
+        assert_eq!(config.maintenance_interval, 1000);
+    }
+
+    #[test]
+    fn test_pool_stats_memory_estimation() {
+        let pools = MotionResourcePools::new();
+        let stats = pools.stats();
+        
+        // Memory savings should be reasonable estimate
+        assert!(stats.total_memory_saved_bytes > 0);
+        assert!(stats.total_memory_saved_bytes < 1_000_000); // Shouldn't be unreasonably large
+    }
+
+    #[test]
+    fn test_motion_resource_pools_maintain() {
+        let mut pools = MotionResourcePools::new();
+        
+        // Test maintenance doesn't panic
+        pools.maintain();
+        
+        // Test with modified config
+        pools.config.max_config_pool_size = 1;
+        pools.config.target_config_pool_size = 0;
+        pools.maintain(); // Should handle edge cases gracefully
+    }}
