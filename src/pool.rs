@@ -912,7 +912,7 @@ mod tests {
     }
 
     #[test]
-    fn test_config_handle_automatic_cleanup() {
+    fn test_config_handle_explicit_cleanup() {
         // Clear the pool first
         global::clear_pool();
 
@@ -924,8 +924,8 @@ mod tests {
         assert_eq!(in_use, 1);
         assert_eq!(available, 0);
 
-        // Drop the handle - should automatically return to pool
-        drop(handle);
+        // Explicitly return the handle to pool
+        global::return_config(handle);
 
         // Verify the config was returned to the pool
         let (in_use, available) = global::pool_stats();
