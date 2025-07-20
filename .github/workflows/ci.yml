@@ -112,7 +112,8 @@ jobs:
             ${{ runner.os }}-${{ matrix.target }}-cargo-
 
       - name: Run tests
-        run: cargo test --target ${{ matrix.target }} --features ${{ matrix.features }} --lib
+        # Run all unit, integration and doc tests for the specific target
+        run: cargo test --target ${{ matrix.target }} --features ${{ matrix.features }}
 
   # Check documentation
   docs:
