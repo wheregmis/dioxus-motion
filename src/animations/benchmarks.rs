@@ -111,9 +111,9 @@ mod tests {
     /// Test animation config pool performance and reuse
     #[test]
     fn test_config_pool_performance() {
-        use crate::pool::global;
         use crate::animations::core::{AnimationConfig, AnimationMode};
         use crate::animations::tween::Tween;
+        use crate::pool::global;
 
         // Clear pool to start with known state
         global::clear_pool();
@@ -123,7 +123,7 @@ mod tests {
 
         // Test config pool allocation and release performance
         let mut handles = Vec::with_capacity(ITERATIONS);
-        
+
         // Phase 1: Allocate configs from pool
         let allocation_start = Instant::now();
         for _ in 0..ITERATIONS {
@@ -171,12 +171,12 @@ mod tests {
             allocation_time < Duration::from_millis(50),
             "Config allocation took too long: {allocation_time:?}"
         );
-        
+
         assert!(
             release_time < Duration::from_millis(10),
             "Config release took too long: {release_time:?}"
         );
-        
+
         assert!(
             reuse_time < Duration::from_millis(25),
             "Config reuse took too long: {reuse_time:?}"
@@ -203,7 +203,10 @@ mod tests {
         println!("  Release: {release_time:?} for {ITERATIONS} configs");
         println!("  Reuse: {reuse_time:?} for {ITERATIONS} configs");
         println!("  Total: {total_time:?}");
-        println!("  Reuse efficiency: {:.2}x", allocation_time.as_nanos() as f64 / reuse_time.as_nanos() as f64);
+        println!(
+            "  Reuse efficiency: {:.2}x",
+            allocation_time.as_nanos() as f64 / reuse_time.as_nanos() as f64
+        );
     }
 
     /// Test battery life impact simulation
