@@ -126,22 +126,9 @@ impl ConfigHandle {
 
 impl Drop for ConfigHandle {
     fn drop(&mut self) {
-        // Only return to pool if this handle is still valid
-        if self.valid {
-            // Mark as invalid to prevent double-return
-            self.valid = false;
-
-            // Return the config to the thread-local pool
-            // Use try_with to handle potential borrow conflicts gracefully
-            let _ = CONFIG_POOL.try_with(|pool| {
-                if let Ok(mut pool) = pool.try_borrow_mut() {
-                    pool.return_config(ConfigHandle {
-                        id: self.id,
-                        valid: false,
-                    });
-                }
-            });
-        }
+        // Don't automatically return configs to pool on drop
+        // This prevents issues with cloned handles returning the same config multiple times
+        // Configs should be explicitly returned via Motion::drop or other cleanup mechanisms
     }
 }
 

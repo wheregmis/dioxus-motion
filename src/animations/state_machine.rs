@@ -424,6 +424,7 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
                 motion.current = motion.initial;
                 motion.elapsed = Duration::default();
                 motion.velocity = T::default();
+                motion.running = true; // Ensure animation continues running
                 true
             }
             LoopMode::Times(count) => {
@@ -440,6 +441,7 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
                     motion.current = motion.initial;
                     motion.elapsed = Duration::default();
                     motion.velocity = T::default();
+                    motion.running = true; // Ensure animation continues running
                     true
                 }
             }
@@ -450,6 +452,7 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
                 }
                 motion.elapsed = Duration::default();
                 motion.velocity = T::default();
+                motion.running = true; // Ensure animation continues running
                 true
             }
             LoopMode::AlternateTimes(count) => {
@@ -469,6 +472,7 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
                     }
                     motion.elapsed = Duration::default();
                     motion.velocity = T::default();
+                    motion.running = true; // Ensure animation continues running
                     true
                 }
             }
@@ -636,6 +640,90 @@ mod tests {
         assert!(matches!(state, AnimationState::Idle));
 
         global::return_config(config_handle);
+    }
+
+    #[test]
+    fn test_loop_mode_infinite() {
+        use crate::Motion;
+        use crate::animations::core::AnimationMode;
+        use crate::prelude::{AnimationConfig, Tween, LoopMode};
+        use std::time::Duration;
+
+        let mut motion = Motion::new(0.0f32);
+        
+        motion.animate_to(
+            100.0,
+            AnimationConfig::new(AnimationMode::Tween(Tween::default()))
+            .with_loop(LoopMode::Infinite)
+        );
+        
+        // Animation should be running
+        assert!(motion.is_running());
+        
+        // Simulate enough time to complete one loop (100ms at 60fps = 6 frames)
+        let dt = 1.0 / 60.0; // ~16.67ms per frame
+        
+        // Run for 30 frames (should complete multiple loops)
+        for i in 0..30 {
+            let should_continue = motion.update(dt);
+            println!("Frame {}: value={:.2}, running={}, should_continue={}", 
+                     i, motion.get_value(), motion.is_running(), should_continue);
+            
+            // With infinite loop, animation should always continue
+            assert!(should_continue, "Animation stopped unexpectedly at frame {}", i);
+            assert!(motion.is_running(), "Motion should still be running at frame {}", i);
+        }
+    }
+
+    #[test]
+    fn test_loop_mode_times() {
+        use crate::Motion;
+        use crate::animations::core::AnimationMode;
+        use crate::prelude::{AnimationConfig, Tween, LoopMode};
+        use std::time::Duration;
+
+        let mut motion = Motion::new(0.0f32);
+        
+        motion.animate_to(
+            100.0,
+            AnimationConfig::new(AnimationMode::Tween(Tween::default()))
+            .with_loop(LoopMode::Times(2)) // Should loop exactly 2 times
+        );
+        
+        // Animation should be running
+        assert!(motion.is_running());
+        
+        let dt = 1.0 / 60.0; // ~16.67ms per frame
+        let mut completed_loops = 0;
+        let mut last_value = motion.get_value();
+        
+        // Run for enough frames to complete 2 loops (need ~36 frames for 2 loops)
+        for i in 0..40 {
+            let should_continue = motion.update(dt);
+            let current_value = motion.get_value();
+            
+            // Detect when animation resets (value goes back to start)
+            if current_value < last_value && last_value > 50.0 {
+                completed_loops += 1;
+                println!("Detected loop completion #{} at frame {}", completed_loops, i);
+            }
+            
+            last_value = current_value;
+            
+            println!("Frame {}: value={:.2}, running={}, should_continue={}, loops={}", 
+                     i, current_value, motion.is_running(), should_continue, completed_loops);
+            
+            // After 2 loops, animation should stop
+            if !should_continue {
+                // Animation has stopped, verify we completed at least 1 full loop
+                assert!(completed_loops >= 1, "Animation should have completed at least 1 loop");
+                assert!(!motion.is_running(), "Motion should not be running after completion");
+                break;
+            }
+        }
+        
+        // Ensure we actually completed the expected number of loops
+        assert!(completed_loops >= 2, "Animation should have completed 2 loops, but only completed {}", completed_loops);
     }
 
     #[test]
