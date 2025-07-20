@@ -209,6 +209,7 @@ struct Point3D {
     y: f32,
     z: f32,
 }
+// Point3D automatically implements Send + 'static since all fields are Send + 'static
 
 // Implement standard Rust operator traits
 impl std::ops::Add for Point3D {
@@ -270,10 +271,75 @@ position.animate_to(
 
 ## 🔄 Migration Guide (v0.3.0)
 
-- No breaking changes to the existing APIs. Just minor exports might change so just import prelude::\* if anything breaks on import
+### Breaking Changes
+
+- **`use_motion<T>` now requires `T: Send + 'static`**: The `use_motion<T>` function now requires types to implement `Send + 'static` in addition to `Animatable`. This enables better thread safety and resource management for animations.
+
+### Migration Steps
+
+- Most built-in types (`f32`, `Transform`, `Color`) already satisfy these bounds
+- For custom types, ensure they implement `Send + 'static`:
+  - Types with non-Send fields (like `Rc<T>`) will need to be refactored
+  - Use `Arc<T>` instead of `Rc<T>` for shared ownership in animatable types
+- Minor exports might change so just import `prelude::*` if anything breaks on import
 
 ```rust
 use dioxus_motion::prelude::*;
+
+// ✅ This works - f32 is Send + 'static
+let motion = use_motion(0.0f32);
+
+// ✅ This works - custom type with Send + 'static
+#[derive(Copy, Clone, Default)]
+struct Point { x: f32, y: f32 } // Send + 'static automatically derived
+
+let point_motion = use_motion(Point::default());
+
+// ❌ This won't compile - Rc<T> is not Send
+// let bad_motion = use_motion(std::rc::Rc::new(0.0f32));
+
+// ✅ Use Arc<T> instead for shared ownership
+// Note: The type inside Arc must implement Animatable
+#[derive(Copy, Clone, Default)]
+struct SharedValue { value: f32 }
+
+impl std::ops::Add for SharedValue {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
+        Self { value: self.value + other.value }
+    }
+}
+
+impl std::ops::Sub for SharedValue {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self {
+        Self { value: self.value - other.value }
+    }
+}
+
+impl std::ops::Mul<f32> for SharedValue {
+    type Output = Self;
+    fn mul(self, factor: f32) -> Self {
+        Self { value: self.value * factor }
+    }
+}
+
+impl dioxus_motion::animations::core::Animatable for SharedValue {
+    fn interpolate(&self, target: &Self, t: f32) -> Self {
+        Self { value: self.value + (target.value - self.value) * t }
+    }
+    
+    fn magnitude(&self) -> f32 {
+        self.value.abs()
+    }
+}
+
+let shared_motion = use_motion(SharedValue { value: 0.0 });
+
+// ✅ Alternative: Use Arc to share the motion itself (not the value)
+let shared_motion_handle = std::sync::Arc::new(use_motion(0.0f32));
+// Now you can clone the Arc and share the motion across components
+let motion_clone = shared_motion_handle.clone();
 ```
 
 ## 🔄 Migration Guide (v0.2.0)
@@ -373,19 +439,19 @@ transform.animate_to(
 
 The `Animatable` trait allows you to animate any custom type.
 
-Defination of Animatable Trait
+Definition of Animatable Trait
 
 ```rust
-pub trait Animatable: Copy + 'static {
-    fn zero() -> Self;
-    fn epsilon() -> f32;
-    fn magnitude(&self) -> f32;
-    fn scale(&self, factor: f32) -> Self;
-    fn add(&self, other: &Self) -> Self;
-    fn sub(&self, other: &Self) -> Self;
+pub trait Animatable: 
+    Copy + 'static + Default + 
+    std::ops::Add<Output = Self> + 
+    std::ops::Sub<Output = Self> + 
+    std::ops::Mul<f32, Output = Self> 
+{
     fn interpolate(&self, target: &Self, t: f32) -> Self;
+    fn magnitude(&self) -> f32;
+    fn epsilon() -> f32 { 0.01 } // Default implementation
 }
-
 ```
 
 Here's how to implement it:
@@ -399,57 +465,53 @@ struct Position {
     y: f32,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Default)]
+struct Position {
+    x: f32,
+    y: f32,
+}
+
+// Implement standard Rust operator traits
+impl std::ops::Add for Position {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
+        Self { x: self.x + other.x, y: self.y + other.y }
+    }
+}
+
+impl std::ops::Sub for Position {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self {
+        Self { x: self.x - other.x, y: self.y - other.y }
+    }
+}
+
+impl std::ops::Mul<f32> for Position {
+    type Output = Self;
+    fn mul(self, factor: f32) -> Self {
+        Self { x: self.x * factor, y: self.y * factor }
+    }
+}
+
+// Implement Animatable with just two methods!
 impl Animatable for Position {
-    fn zero() -> Self {
-        Position { x: 0.0, y: 0.0 }
+    fn interpolate(&self, target: &Self, t: f32) -> Self {
+        *self + (*target - *self) * t
     }
-
-    fn epsilon() -> f32 {
-        0.001
-    }
-
+    
     fn magnitude(&self) -> f32 {
         (self.x * self.x + self.y * self.y).sqrt()
-    }
-
-    fn scale(&self, factor: f32) -> Self {
-        Position {
-            x: self.x * factor,
-            y: self.y * factor,
-        }
-    }
-
-    fn add(&self, other: &Self) -> Self {
-        Position {
-            x: self.x + other.x,
-            y: self.y + other.y,
-        }
-    }
-
-    fn sub(&self, other: &Self) -> Self {
-        Position {
-            x: self.x - other.x,
-            y: self.y - other.y,
-        }
-    }
-
-    fn interpolate(&self, target: &Self, t: f32) -> Self {
-        Position {
-            x: self.x + (target.x - self.x) * t,
-            y: self.y + (target.y - self.y) * t,
-        }
     }
 }
 ```
 
 ### Best Practices
 
-- Zero State: Implement zero() as your type's neutral state
-- Epsilon: Choose a small value (~0.001) for animation completion checks
-- Magnitude: Return the square root of sum of squares for vector types
-- Scale: Multiply all components by the factor
-- Add/Sub: Implement component-wise addition/subtraction
-- Interpolate: Use linear interpolation for smooth transitions
+- **Default State**: Implement `Default` trait for your type's neutral state
+- **Operator Traits**: Implement `Add`, `Sub`, and `Mul<f32>` using standard Rust operators
+- **Magnitude**: Return the square root of sum of squares for vector types
+- **Interpolate**: Use linear interpolation for smooth transitions
+- **Epsilon**: Uses default 0.01, or override with `with_epsilon()` for custom precision
 
 ### Common Patterns
 
