@@ -648,31 +648,42 @@ mod tests {
     fn test_loop_mode_infinite() {
         use crate::Motion;
         use crate::animations::core::AnimationMode;
-        use crate::prelude::{AnimationConfig, Tween, LoopMode};
+        use crate::prelude::{AnimationConfig, LoopMode, Tween};
 
         let mut motion = Motion::new(0.0f32);
-        
+
         motion.animate_to(
             100.0,
             AnimationConfig::new(AnimationMode::Tween(Tween::default()))
-            .with_loop(LoopMode::Infinite)
+                .with_loop(LoopMode::Infinite),
         );
-        
+
         // Animation should be running
         assert!(motion.is_running());
-        
+
         // Simulate enough time to complete one loop (100ms at 60fps = 6 frames)
         let dt = 1.0 / 60.0; // ~16.67ms per frame
-        
+
         // Run for 30 frames (should complete multiple loops)
         for i in 0..30 {
             let should_continue = motion.update(dt);
-            println!("Frame {}: value={:.2}, running={}, should_continue={}", 
-                     i, motion.get_value(), motion.is_running(), should_continue);
-            
+            println!(
+                "Frame {}: value={:.2}, running={}, should_continue={}",
+                i,
+                motion.get_value(),
+                motion.is_running(),
+                should_continue
+            );
+
             // With infinite loop, animation should always continue
-            assert!(should_continue, "Animation stopped unexpectedly at frame {i}");
-            assert!(motion.is_running(), "Motion should still be running at frame {i}");
+            assert!(
+                should_continue,
+                "Animation stopped unexpectedly at frame {i}"
+            );
+            assert!(
+                motion.is_running(),
+                "Motion should still be running at frame {i}"
+            );
         }
     }
 
@@ -680,167 +691,211 @@ mod tests {
     fn test_loop_mode_times() {
         use crate::Motion;
         use crate::animations::core::AnimationMode;
-        use crate::prelude::{AnimationConfig, Tween, LoopMode};
+        use crate::prelude::{AnimationConfig, LoopMode, Tween};
 
         let mut motion = Motion::new(0.0f32);
-        
+
         motion.animate_to(
             100.0,
             AnimationConfig::new(AnimationMode::Tween(Tween::default()))
-            .with_loop(LoopMode::Times(2)) // Should loop exactly 2 times
+                .with_loop(LoopMode::Times(2)), // Should loop exactly 2 times
         );
-        
+
         // Animation should be running
         assert!(motion.is_running());
-        
+
         let dt = 1.0 / 60.0; // ~16.67ms per frame
         let mut completed_loops = 0;
         let mut last_value = motion.get_value();
-        
+
         // Run for enough frames to complete 2 loops (need ~36 frames for 2 loops)
         for i in 0..40 {
             let should_continue = motion.update(dt);
             let current_value = motion.get_value();
-            
+
             // Detect when animation resets (value goes back to start)
             if current_value < last_value && last_value > 50.0 {
                 completed_loops += 1;
                 println!("Detected loop completion #{completed_loops} at frame {i}");
             }
-            
+
             last_value = current_value;
-            
-            println!("Frame {}: value={:.2}, running={}, should_continue={}, loops={}", 
-                     i, current_value, motion.is_running(), should_continue, completed_loops);
-            
+
+            println!(
+                "Frame {}: value={:.2}, running={}, should_continue={}, loops={}",
+                i,
+                current_value,
+                motion.is_running(),
+                should_continue,
+                completed_loops
+            );
+
             // After 2 loops, animation should stop
             if !should_continue {
                 // Animation has stopped, verify we completed at least 1 full loop
-                assert!(completed_loops >= 1, "Animation should have completed at least 1 loop");
-                assert!(!motion.is_running(), "Motion should not be running after completion");
+                assert!(
+                    completed_loops >= 1,
+                    "Animation should have completed at least 1 loop"
+                );
+                assert!(
+                    !motion.is_running(),
+                    "Motion should not be running after completion"
+                );
                 break;
             }
         }
-        
+
         // Ensure we actually completed at least 1 loop (the test detected 1 loop restart)
-        assert!(completed_loops >= 1, "Animation should have completed at least 1 loop, but only completed {completed_loops}");
+        assert!(
+            completed_loops >= 1,
+            "Animation should have completed at least 1 loop, but only completed {completed_loops}"
+        );
     }
 
     #[test]
     fn test_loop_mode_alternate() {
         use crate::Motion;
         use crate::animations::core::AnimationMode;
-        use crate::prelude::{AnimationConfig, Tween, LoopMode};
+        use crate::prelude::{AnimationConfig, LoopMode, Tween};
 
         let mut motion = Motion::new(0.0f32);
-        
+
         motion.animate_to(
             100.0,
             AnimationConfig::new(AnimationMode::Tween(Tween::default()))
-                .with_loop(LoopMode::Alternate)
+                .with_loop(LoopMode::Alternate),
         );
-        
+
         // Animation should be running
         assert!(motion.is_running());
-        
+
         let dt = 1.0 / 60.0; // ~16.67ms per frame
         let mut direction_changes = 0;
         let mut last_value = motion.get_value();
         let mut going_up = true;
-        
+
         // Run for enough frames to see alternating behavior
         for i in 0..60 {
             let should_continue = motion.update(dt);
             let current_value = motion.get_value();
-            
+
             // Detect direction changes
             if going_up && current_value < last_value && last_value > 50.0 {
                 // Was going up, now going down
                 going_up = false;
                 direction_changes += 1;
-                println!("Direction change #{direction_changes} at frame {i}: going DOWN (value: {current_value:.2})");
+                println!(
+                    "Direction change #{direction_changes} at frame {i}: going DOWN (value: {current_value:.2})"
+                );
             } else if !going_up && current_value > last_value && last_value < 50.0 {
                 // Was going down, now going up
                 going_up = true;
                 direction_changes += 1;
-                println!("Direction change #{direction_changes} at frame {i}: going UP (value: {current_value:.2})");
+                println!(
+                    "Direction change #{direction_changes} at frame {i}: going UP (value: {current_value:.2})"
+                );
             }
-            
+
             last_value = current_value;
-            
-            println!("Frame {i}: value={current_value:.2}, running={}, should_continue={should_continue}, direction={}", 
-                     motion.is_running(), if going_up { "UP" } else { "DOWN" });
-            
+
+            println!(
+                "Frame {i}: value={current_value:.2}, running={}, should_continue={should_continue}, direction={}",
+                motion.is_running(),
+                if going_up { "UP" } else { "DOWN" }
+            );
+
             // With alternate loop, animation should always continue
-            assert!(should_continue, "Animation stopped unexpectedly at frame {i}");
-            assert!(motion.is_running(), "Motion should still be running at frame {i}");
-            
+            assert!(
+                should_continue,
+                "Animation stopped unexpectedly at frame {i}"
+            );
+            assert!(
+                motion.is_running(),
+                "Motion should still be running at frame {i}"
+            );
+
             // Stop after we've seen a few direction changes
             if direction_changes >= 3 {
                 break;
             }
         }
-        
+
         // Ensure we actually saw alternating behavior
-        assert!(direction_changes >= 2, "Animation should have alternated direction at least twice, but only changed {direction_changes} times");
+        assert!(
+            direction_changes >= 2,
+            "Animation should have alternated direction at least twice, but only changed {direction_changes} times"
+        );
     }
 
     #[test]
     fn test_loop_mode_alternate_times() {
         use crate::Motion;
         use crate::animations::core::AnimationMode;
-        use crate::prelude::{AnimationConfig, Tween, LoopMode};
+        use crate::prelude::{AnimationConfig, LoopMode, Tween};
 
         let mut motion = Motion::new(0.0f32);
-        
+
         motion.animate_to(
             100.0,
             AnimationConfig::new(AnimationMode::Tween(Tween::default()))
-                .with_loop(LoopMode::AlternateTimes(2)) // Should alternate 2 times (4 total segments)
+                .with_loop(LoopMode::AlternateTimes(2)), // Should alternate 2 times (4 total segments)
         );
-        
+
         // Animation should be running
         assert!(motion.is_running());
-        
+
         let dt = 1.0 / 60.0; // ~16.67ms per frame
         let mut direction_changes = 0;
         let mut last_value = motion.get_value();
         let mut going_up = true;
-        
+
         // Run for enough frames to complete the alternating cycles
         for i in 0..120 {
             let should_continue = motion.update(dt);
             let current_value = motion.get_value();
-            
+
             // Detect direction changes
             if going_up && current_value < last_value && last_value > 50.0 {
                 // Was going up, now going down
                 going_up = false;
                 direction_changes += 1;
-                println!("Direction change #{direction_changes} at frame {i}: going DOWN (value: {current_value:.2})");
+                println!(
+                    "Direction change #{direction_changes} at frame {i}: going DOWN (value: {current_value:.2})"
+                );
             } else if !going_up && current_value > last_value && last_value < 50.0 {
                 // Was going down, now going up
                 going_up = true;
                 direction_changes += 1;
-                println!("Direction change #{direction_changes} at frame {i}: going UP (value: {current_value:.2})");
+                println!(
+                    "Direction change #{direction_changes} at frame {i}: going UP (value: {current_value:.2})"
+                );
             }
-            
+
             last_value = current_value;
-            
-            println!("Frame {i}: value={current_value:.2}, running={}, should_continue={should_continue}, direction={}", 
-                     motion.is_running(), if going_up { "UP" } else { "DOWN" });
-            
+
+            println!(
+                "Frame {i}: value={current_value:.2}, running={}, should_continue={should_continue}, direction={}",
+                motion.is_running(),
+                if going_up { "UP" } else { "DOWN" }
+            );
+
             // Animation should stop after completing AlternateTimes(2)
             if !should_continue {
-                assert!(!motion.is_running(), "Motion should not be running after completion");
+                assert!(
+                    !motion.is_running(),
+                    "Motion should not be running after completion"
+                );
                 println!("Animation completed after {direction_changes} direction changes");
                 break;
             }
         }
-        
+
         // AlternateTimes(2) should complete after 4 segments (2 full alternations)
         // This means we should see at least 3 direction changes before stopping
-        assert!(direction_changes >= 3, "Animation should have alternated at least 3 times for AlternateTimes(2), but only changed {direction_changes} times");
+        assert!(
+            direction_changes >= 3,
+            "Animation should have alternated at least 3 times for AlternateTimes(2), but only changed {direction_changes} times"
+        );
     }
 
     #[test]
