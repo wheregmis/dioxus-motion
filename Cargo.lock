@@ -1023,7 +1023,7 @@ dependencies = [
 
 [[package]]
 name = "dioxus-motion"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "dioxus",
  "dioxus-motion-transitions-macro",
@@ -1043,7 +1043,7 @@ dependencies = [
 
 [[package]]
 name = "dioxus-motion-transitions-macro"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "proc-macro2",
  "quote",
