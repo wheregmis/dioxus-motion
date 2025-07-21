@@ -21,3 +21,7 @@ name = "dioxus-motion-transitions-macro"
 changelog_include = []
 changelog_path = "./CHANGELOG.md"
 git_release_enable = true
+
+[[package]]
+name = "docs"
+release = false
