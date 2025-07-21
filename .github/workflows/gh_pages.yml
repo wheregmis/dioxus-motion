@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build
         run: |
-          cd example_projects
+          cd docs
           $HOME/.cargo/bin/dx bundle --release --platform web
       - name: Copy index.html as 404.html for SPA routing
         run: |
