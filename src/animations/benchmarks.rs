@@ -511,7 +511,7 @@ mod tests {
         let state_ratio = state_size as f64 / motion_size as f64;
         assert!(
             state_ratio <= 0.5,
-            "AnimationState is too large relative to Motion: {:.2}%",
+            "AnimationState is too large relative to Motion: {:.1}%",
             state_ratio * 100.0
         );
 
