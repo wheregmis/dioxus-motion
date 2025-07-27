@@ -4,6 +4,7 @@ use dioxus::{
     prelude::*,
     router::{OutletContext, use_outlet_context},
 };
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::{
@@ -188,26 +189,52 @@ impl Animatable for PageTransitionAnimation {
 /// ```
 pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
     let route = use_route::<R>();
-    // Create router context only if we're the root AnimatedOutlet
-    let mut prev_route = use_signal(|| AnimatedRouterContext::In(route.clone()));
-    use_context_provider(move || prev_route);
 
-    use_effect(move || {
-        if prev_route.peek().target_route() != &use_route::<R>() {
-            prev_route
-                .write()
-                .set_target_route(use_route::<R>().clone());
+    // Create non-reactive router context
+    let router_ctx = use_hook(|| Rc::new(RefCell::new(AnimatedRouterContext::In(route.clone()))));
+
+    // Add a reactive trigger to force re-renders when context changes
+    let mut context_trigger = use_signal(|| 0);
+
+    // Provide the non-reactive context
+    use_context_provider({
+        let ctx = router_ctx.clone();
+        move || ctx
+    });
+
+    use_effect({
+        let router_ctx = router_ctx.clone();
+        move || {
+            let current_route = use_route::<R>();
+            if router_ctx.borrow().target_route() != &current_route {
+                println!(
+                    "🚀 Route change detected: {} → {}",
+                    router_ctx.borrow().target_route().to_string(),
+                    current_route.to_string()
+                );
+                router_ctx.borrow_mut().set_target_route(current_route);
+                // Trigger re-render by updating the reactive signal
+                context_trigger += 1;
+            }
         }
     });
 
     let outlet: OutletContext<R> = use_outlet_context();
 
-    let from_route: Option<(R, R)> = match prev_route() {
-        AnimatedRouterContext::FromTo(from, to) => Some((from, to)),
+    // Get current state from context (and subscribe to trigger for reactivity)
+    let _ = context_trigger(); // Subscribe to trigger
+    let from_route: Option<(R, R)> = match &*router_ctx.borrow() {
+        AnimatedRouterContext::FromTo(from, to) => Some((from.clone(), to.clone())),
         _ => None,
     };
 
     if let Some((from, to)) = from_route {
+        println!(
+            "🎬 Transition detected: {} → {}",
+            from.to_string(),
+            to.to_string()
+        );
+
         // Get the layout depth of both the previous and current routes
         let from_depth = from.get_layout_depth();
         let to_depth = to.get_layout_depth();
@@ -224,6 +251,7 @@ pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
         // If we're transitioning from/to root, or the outlet is at the same depth,
         // render the animated transition between routes
         if involves_root || is_same_depth_and_matching_level {
+            println!("✅ Rendering animated transition");
             return rsx! {
                 FromRouteToCurrent::<R> {
                     route_type: PhantomData,
@@ -232,11 +260,13 @@ pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
                 }
             };
         } else {
+            println!("❌ Depth mismatch - rendering normal outlet");
             return rsx! {
                 Outlet::<R> {}
             };
         }
     } else {
+        println!("🏠 No transition (In state) - rendering normal outlet");
         return rsx! {
             Outlet::<R> {}
         };
@@ -250,7 +280,8 @@ pub trait AnimatableRoute: Routable + Clone + PartialEq {
 }
 
 /// Shortcut to get access to the [AnimatedRouterContext].
-pub fn use_animated_router<Route: Routable + PartialEq>() -> Signal<AnimatedRouterContext<Route>> {
+pub fn use_animated_router<Route: Routable + PartialEq>()
+-> Rc<RefCell<AnimatedRouterContext<Route>>> {
     use_context()
 }
 
@@ -259,7 +290,13 @@ pub type TransitionVariantResolver<R> = Rc<dyn Fn(&R, &R) -> TransitionVariant>;
 
 #[component]
 fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, to: R) -> Element {
-    let mut animated_router = use_animated_router::<R>();
+    println!(
+        "🎭 Animation component created: {} → {}",
+        from.to_string(),
+        to.to_string()
+    );
+
+    let animated_router = use_animated_router::<R>();
     // Try to get a dynamic transition resolver from context
     let resolver = try_use_context::<TransitionVariantResolver<R>>();
     // Use the resolver if present, otherwise use the static transition
@@ -273,41 +310,59 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     let tween = try_use_context::<Signal<Tween>>();
     let spring = try_use_context::<Signal<Spring>>();
 
-    use_effect(move || {
-        let (from_config, to_config) = tween.map_or_else(
-            || {
-                let spring = spring.unwrap_or_else(|| {
-                    use_signal(|| Spring {
-                        stiffness: 160.0,
-                        damping: 25.0,
-                        mass: 1.0,
-                        velocity: 0.0,
-                    })
-                });
-                (
-                    AnimationConfig::new(AnimationMode::Spring(spring())),
-                    AnimationConfig::new(AnimationMode::Spring(spring())),
-                )
-            },
-            |tween| {
-                (
-                    AnimationConfig::new(AnimationMode::Tween(tween())),
-                    AnimationConfig::new(AnimationMode::Tween(tween())),
-                )
-            },
-        );
-        from_anim.animate_to(PageTransitionAnimation::from_exit_end(&config), from_config);
-        to_anim.animate_to(PageTransitionAnimation::from_enter_end(&config), to_config);
+    // Start animations immediately when component mounts
+    use_effect({
+        let config = config.clone();
+        let from_str = from.to_string();
+        let to_str = to.to_string();
+        move || {
+            println!("🚀 Starting animations: {} → {}", from_str, to_str);
+            let (from_config, to_config) = tween.map_or_else(
+                || {
+                    let spring = spring.unwrap_or_else(|| {
+                        use_signal(|| Spring {
+                            stiffness: 160.0,
+                            damping: 25.0,
+                            mass: 1.0,
+                            velocity: 0.0,
+                        })
+                    });
+                    (
+                        AnimationConfig::new(AnimationMode::Spring(spring())),
+                        AnimationConfig::new(AnimationMode::Spring(spring())),
+                    )
+                },
+                |tween| {
+                    (
+                        AnimationConfig::new(AnimationMode::Tween(tween())),
+                        AnimationConfig::new(AnimationMode::Tween(tween())),
+                    )
+                },
+            );
+            from_anim.animate_to(PageTransitionAnimation::from_exit_end(&config), from_config);
+            to_anim.animate_to(PageTransitionAnimation::from_enter_end(&config), to_config);
+        }
     });
 
-    use_effect(move || {
-        if !from_anim.is_running() && !to_anim.is_running() {
-            animated_router.write().settle();
+    use_effect({
+        let from_str = from.to_string();
+        let to_str = to.to_string();
+        move || {
+            if !from_anim.is_running() && !to_anim.is_running() {
+                println!(
+                    "🏁 Animations finished, settling: {} → {}",
+                    from_str, to_str
+                );
+                animated_router.borrow_mut().settle();
+            }
         }
     });
 
     let from_val = from_anim.get_value();
     let to_val = to_anim.get_value();
+
+    // Clone route for use in render
+    let from_clone = from.clone();
 
     rsx! {
         div {
@@ -319,7 +374,7 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
                     "transform: translate3d({}% , {}%, 0) scale({}); opacity: {}; will-change: transform, opacity; backface-visibility: hidden; -webkit-backface-visibility: hidden; contain: layout style;",
                     from_val.x, from_val.y, from_val.scale, from_val.opacity
                 ),
-                {from.render(from.get_layout_depth() + 1)}
+                {from_clone.render(from_clone.get_layout_depth() + 1)}
             }
             div {
                 class: "route-content to",
