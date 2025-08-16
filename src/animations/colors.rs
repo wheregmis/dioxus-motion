@@ -131,7 +131,9 @@ impl Animatable for Color {
         (self.r * self.r + self.g * self.g + self.b * self.b + self.a * self.a).sqrt()
     }
 
-    // Uses default epsilon of 0.01 from the trait - no need for COLOR_EPSILON
+    fn epsilon() -> f32 {
+        0.005 // Smaller epsilon for Color since components are in 0-1 range
+    }
 }
 
 #[cfg(test)]
