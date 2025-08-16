@@ -5,7 +5,7 @@
 //! fields of the animation state rather than the entire Motion struct.
 
 use crate::Duration;
-use crate::animations::core::{Animatable, AnimationConfig};
+use crate::animations::core::{Animatable, AnimationConfig, AnimationMode};
 use crate::animations::platform::TimeProvider;
 use crate::keyframes::KeyframeAnimation;
 use crate::sequence::AnimationSequence;
@@ -48,6 +48,8 @@ pub struct MotionStore<T> {
     pub current_keyframe: u8,
     /// Current sequence step for sequence animations
     pub current_sequence_step: u8,
+    /// Animation configuration (spring/tween settings)
+    pub config: AnimationConfig,
 }
 
 impl<T: Animatable + Copy + Default> MotionStore<T> {
@@ -66,6 +68,7 @@ impl<T: Animatable + Copy + Default> MotionStore<T> {
             animation_type: "simple".to_string(),
             current_keyframe: 0,
             current_sequence_step: 0,
+            config: AnimationConfig::default(),
         }
     }
 }
@@ -125,9 +128,9 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
     /// let mut motion = use_motion_store(0.0f32);
     /// motion.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
     /// ```
-    fn animate_to(&mut self, target: T, _config: AnimationConfig) {
-        // Simplified implementation for store-based motion
-        // Full configuration handling will be added in later phases
+    fn animate_to(&mut self, target: T, config: AnimationConfig) {
+        // Store the animation configuration for use in update loop
+        self.config().set(config);
         self.target().set(target);
         self.running().set(true);
         self.elapsed().set(Duration::default());
@@ -150,6 +153,7 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
         self.animation_type().set("simple".to_string());
         self.current_keyframe().set(0);
         self.current_sequence_step().set(0);
+        self.config().set(AnimationConfig::default());
         self.stop();
     }
 
@@ -162,8 +166,7 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
     ///
     /// Returns true if the animation is still running, false if it completed
     ///
-    /// Note: This is a simplified implementation for the store-based API.
-    /// Full spring physics and configuration handling will be added in future versions.
+    /// This implementation uses proper spring physics or tween interpolation based on the stored AnimationConfig.
     fn update(&mut self, dt: f32) -> bool {
         if !self.running().cloned() {
             return false;
@@ -178,6 +181,7 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
         let target = self.target().cloned();
         let current_velocity = self.velocity().cloned();
         let diff = target - current;
+        let config = self.config().cloned();
 
         // Use type-specific epsilon for stopping condition
         let epsilon = T::epsilon();
@@ -189,26 +193,58 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
             self.stop();
             false
         } else {
-            // Smooth interpolation with damping to prevent oscillation
-            let speed_factor = 4.0; // Reduced speed for smoother animation
-            let damping = 0.85; // Increased damping to reduce oscillation
+            match config.mode {
+                AnimationMode::Spring(spring) => {
+                    // Spring physics: F = -kx - cv
+                    let stiffness = spring.stiffness;
+                    let damping_ratio = spring.damping;
+                    let mass = spring.mass;
 
-            // Calculate desired velocity towards target
-            let desired_velocity = diff * speed_factor;
+                    // Calculate spring force and damping force
+                    let spring_force = diff * stiffness;
+                    let damping_force = current_velocity * damping_ratio;
+                    let net_force = spring_force - damping_force;
 
-            // Apply damping to current velocity and blend with desired velocity
-            let damped_velocity = current_velocity * damping;
-            let blend_factor = (dt * 6.0).min(0.8); // Smoother velocity transitions
-            let new_velocity =
-                damped_velocity + (desired_velocity - damped_velocity) * blend_factor;
+                    // Calculate acceleration and new velocity
+                    let acceleration = net_force * (1.0 / mass);
+                    let new_velocity = current_velocity + acceleration * dt;
 
-            // Update position based on velocity
-            let step = new_velocity * dt;
-            let new_current = current + step;
+                    // Update position
+                    let new_current = current + new_velocity * dt;
 
-            self.current().set(new_current);
-            self.velocity().set(new_velocity);
-            true
+                    self.current().set(new_current);
+                    self.velocity().set(new_velocity);
+                    true
+                }
+                AnimationMode::Tween(tween) => {
+                    // Tween interpolation based on elapsed time and duration
+                    let progress =
+                        (new_elapsed.as_secs_f32() / tween.duration.as_secs_f32()).clamp(0.0, 1.0);
+
+                    // Apply easing function
+                    let eased_progress = (tween.easing)(progress, 0.0, 1.0, 1.0);
+
+                    // Simple tween: just move towards target based on time-based progress
+                    let step = diff * eased_progress;
+                    let new_current = current + step;
+
+                    // Calculate velocity for smooth transitions
+                    let new_velocity = step * (1.0 / dt);
+
+                    self.current().set(new_current);
+                    self.velocity().set(new_velocity);
+
+                    // Check if tween is complete
+                    if progress >= 1.0 {
+                        self.current().set(target);
+                        self.velocity().set(T::default());
+                        self.stop();
+                        false
+                    } else {
+                        true
+                    }
+                }
+            }
         }
     }
 
@@ -640,4 +676,48 @@ fn update_sequence<T: Animatable + Copy + Default>(
             }
         },
     )
+}
+
+/// Helper function to easily animate a motion store to a target value with configuration
+///
+/// This is a convenience function that handles setting the target, config, and starting the animation.
+/// It's easier than manually calling `motion.target().set()`, `motion.config().set()`, and `motion.running().set()`.
+///
+/// # Example
+/// ```rust
+/// use dioxus::prelude::*;
+/// use dioxus_motion::prelude::*;
+///
+/// #[component]
+/// fn AnimatedComponent() -> Element {
+///     let motion = use_motion_store(0.0f32);
+///     let current = motion.current();
+///
+///     let start_animation = move |_| {
+///         // Easy way to animate with spring physics
+///         animate_to(&motion, 100.0, AnimationConfig::new(
+///             AnimationMode::Spring(Spring::default())
+///         ));
+///     };
+///
+///     rsx! {
+///         div {
+///             style: "transform: translateX({current()}px)",
+///             onclick: start_animation,
+///             "Click to animate"
+///         }
+///     }
+/// }
+/// ```
+pub fn animate_to<T: Animatable + Copy + Default>(
+    motion: &Store<MotionStore<T>>,
+    target: T,
+    config: AnimationConfig,
+) {
+    motion.config().set(config);
+    motion.target().set(target);
+    motion.running().set(true);
+    motion.elapsed().set(Duration::default());
+    motion.delay_elapsed().set(Duration::default());
+    motion.current_loop().set(0);
 }

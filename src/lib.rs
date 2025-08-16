@@ -132,7 +132,7 @@ pub mod prelude {
     pub use crate::dioxus_motion_transitions_macro::MotionTransitions;
     pub use crate::sequence::AnimationSequence;
     pub use crate::store::{
-        MotionStore, MotionStoreStoreExt, use_motion_store, use_motion_store_keyframes,
+        MotionStore, MotionStoreStoreExt, animate_to, use_motion_store, use_motion_store_keyframes,
         use_motion_store_sequence,
     };
     pub use crate::store_enhanced::{

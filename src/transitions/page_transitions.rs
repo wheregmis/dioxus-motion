@@ -7,7 +7,7 @@ use dioxus::{
 use std::rc::Rc;
 
 use crate::{
-    prelude::{AnimationConfig, AnimationMode, MotionStoreStoreExt, Spring, Tween}, // Add Tween and store extension
+    prelude::{AnimationConfig, AnimationMode, MotionStoreStoreExt, Spring, Tween, animate_to}, // Add Tween and store extension
     store::use_motion_store,
 };
 
@@ -273,7 +273,7 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     let spring = try_use_context::<Signal<Spring>>();
 
     use_effect(move || {
-        let (_from_config, _to_config) = tween.map_or_else(
+        let (from_config, to_config) = tween.map_or_else(
             || {
                 let spring = spring.unwrap_or_else(|| {
                     use_signal(|| Spring {
@@ -295,14 +295,16 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
                 )
             },
         );
-        from_anim
-            .target()
-            .set(PageTransitionAnimation::from_exit_end(&config));
-        from_anim.running().set(true);
-        to_anim
-            .target()
-            .set(PageTransitionAnimation::from_enter_end(&config));
-        to_anim.running().set(true);
+        animate_to(
+            &from_anim,
+            PageTransitionAnimation::from_exit_end(&config),
+            from_config,
+        );
+        animate_to(
+            &to_anim,
+            PageTransitionAnimation::from_enter_end(&config),
+            to_config,
+        );
     });
 
     use_effect(move || {
