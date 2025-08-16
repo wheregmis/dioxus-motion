@@ -7,9 +7,8 @@ use dioxus::{
 use std::rc::Rc;
 
 use crate::{
-    AnimationManager,
-    prelude::{AnimationConfig, AnimationMode, Spring, Tween}, // Add Tween
-    use_motion,
+    prelude::{AnimationConfig, AnimationMode, MotionStoreStoreExt, Spring, Tween}, // Add Tween and store extension
+    store::use_motion_store,
 };
 
 use super::config::TransitionVariant;
@@ -266,15 +265,15 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     let transition_variant =
         resolver.map_or_else(|| to.get_transition(), |resolver| resolver(&from, &to));
     let config = transition_variant.get_config();
-    let mut from_anim = use_motion(PageTransitionAnimation::from_exit_start(&config));
-    let mut to_anim = use_motion(PageTransitionAnimation::from_enter_start(&config));
+    let from_anim = use_motion_store(PageTransitionAnimation::from_exit_start(&config));
+    let to_anim = use_motion_store(PageTransitionAnimation::from_enter_start(&config));
 
     // Try to get a Tween from context, otherwise use Spring
     let tween = try_use_context::<Signal<Tween>>();
     let spring = try_use_context::<Signal<Spring>>();
 
     use_effect(move || {
-        let (from_config, to_config) = tween.map_or_else(
+        let (_from_config, _to_config) = tween.map_or_else(
             || {
                 let spring = spring.unwrap_or_else(|| {
                     use_signal(|| Spring {
@@ -296,18 +295,24 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
                 )
             },
         );
-        from_anim.animate_to(PageTransitionAnimation::from_exit_end(&config), from_config);
-        to_anim.animate_to(PageTransitionAnimation::from_enter_end(&config), to_config);
+        from_anim
+            .target()
+            .set(PageTransitionAnimation::from_exit_end(&config));
+        from_anim.running().set(true);
+        to_anim
+            .target()
+            .set(PageTransitionAnimation::from_enter_end(&config));
+        to_anim.running().set(true);
     });
 
     use_effect(move || {
-        if !from_anim.is_running() && !to_anim.is_running() {
+        if !from_anim.running()() && !to_anim.running()() {
             animated_router.write().settle();
         }
     });
 
-    let from_val = from_anim.get_value();
-    let to_val = to_anim.get_value();
+    let from_val = from_anim.current()();
+    let to_val = to_anim.current()();
 
     rsx! {
         div {
