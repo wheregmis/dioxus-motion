@@ -5,7 +5,7 @@
 //! fields of the animation state rather than the entire Motion struct.
 
 use crate::Duration;
-use crate::animations::core::{Animatable, AnimationConfig, AnimationMode};
+use crate::animations::core::{Animatable, AnimationConfig, AnimationMode, LoopMode};
 use crate::animations::platform::TimeProvider;
 use crate::keyframes::KeyframeAnimation;
 use crate::sequence::AnimationSequence;
@@ -187,11 +187,96 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
         let epsilon = T::epsilon();
 
         if diff.magnitude() < epsilon {
-            // Close enough to target, snap to target and stop
+            // Close enough to target, snap to target
             self.current().set(target);
             self.velocity().set(T::default());
-            self.stop();
-            false
+
+            // Handle loop modes
+            if let Some(loop_mode) = config.loop_mode {
+                match loop_mode {
+                    LoopMode::Infinite => {
+                        // Restart animation from initial to target
+                        self.current().set(self.initial().cloned());
+                        self.elapsed().set(Duration::default());
+                        self.current_loop().set(self.current_loop().cloned() + 1);
+                        true
+                    }
+                    LoopMode::Times(count) => {
+                        let current_loop = self.current_loop().cloned();
+                        if current_loop < count - 1 {
+                            // Restart animation for next loop
+                            self.current().set(self.initial().cloned());
+                            self.elapsed().set(Duration::default());
+                            self.current_loop().set(current_loop + 1);
+                            true
+                        } else {
+                            // All loops complete, stop animation
+                            self.stop();
+                            false
+                        }
+                    }
+                    LoopMode::Alternate => {
+                        // Toggle between initial and target values
+                        let new_target = if self.reverse().cloned() {
+                            self.initial().cloned()
+                        } else {
+                            target
+                        };
+                        let new_initial = if self.reverse().cloned() {
+                            target
+                        } else {
+                            self.initial().cloned()
+                        };
+
+                        // Update target and initial for next iteration
+                        self.target().set(new_target);
+                        self.initial().set(new_initial);
+                        // Don't jump current position - let it animate smoothly to new target
+                        self.reverse().set(!self.reverse().cloned());
+                        self.elapsed().set(Duration::default());
+                        self.current_loop().set(self.current_loop().cloned() + 1);
+                        true
+                    }
+                    LoopMode::AlternateTimes(count) => {
+                        let current_loop = self.current_loop().cloned();
+                        if current_loop < (count * 2) - 1 {
+                            // Toggle between initial and target values
+                            let new_target = if self.reverse().cloned() {
+                                self.initial().cloned()
+                            } else {
+                                target
+                            };
+                            let new_initial = if self.reverse().cloned() {
+                                target
+                            } else {
+                                self.initial().cloned()
+                            };
+
+                            // Update target and initial for next iteration
+                            self.target().set(new_target);
+                            self.initial().set(new_initial);
+                            // Don't jump current position - let it animate smoothly to new target
+                            self.reverse().set(!self.reverse().cloned());
+                            self.elapsed().set(Duration::default());
+                            self.current_loop().set(current_loop + 1);
+                            true
+                        } else {
+                            // All loops complete, stop animation
+                            self.stop();
+                            false
+                        }
+                    }
+                    LoopMode::None => {
+                        // No loop, stop animation
+                        self.stop();
+                        false
+                    }
+                }
+            } else {
+                // No loop mode specified, stop animation
+                self.stop();
+                false
+            }
         } else {
             match config.mode {
                 AnimationMode::Spring(spring) => {
@@ -238,8 +323,93 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                     if progress >= 1.0 {
                         self.current().set(target);
                         self.velocity().set(T::default());
-                        self.stop();
-                        false
+
+                        // Handle loop modes for tween animations
+                        if let Some(loop_mode) = config.loop_mode {
+                            match loop_mode {
+                                LoopMode::Infinite => {
+                                    // Restart animation from initial to target
+                                    self.current().set(self.initial().cloned());
+                                    self.elapsed().set(Duration::default());
+                                    self.current_loop().set(self.current_loop().cloned() + 1);
+                                    true
+                                }
+                                LoopMode::Times(count) => {
+                                    let current_loop = self.current_loop().cloned();
+                                    if current_loop < count - 1 {
+                                        // Restart animation for next loop
+                                        self.current().set(self.initial().cloned());
+                                        self.elapsed().set(Duration::default());
+                                        self.current_loop().set(current_loop + 1);
+                                        true
+                                    } else {
+                                        // All loops complete, stop animation
+                                        self.stop();
+                                        false
+                                    }
+                                }
+                                LoopMode::Alternate => {
+                                    // Toggle between initial and target values
+                                    let new_target = if self.reverse().cloned() {
+                                        self.initial().cloned()
+                                    } else {
+                                        target
+                                    };
+                                    let new_initial = if self.reverse().cloned() {
+                                        target
+                                    } else {
+                                        self.initial().cloned()
+                                    };
+
+                                    // Update target and initial for next iteration
+                                    self.target().set(new_target);
+                                    self.initial().set(new_initial);
+                                    // Don't jump current position - let it animate smoothly to new target
+                                    self.reverse().set(!self.reverse().cloned());
+                                    self.elapsed().set(Duration::default());
+                                    self.current_loop().set(self.current_loop().cloned() + 1);
+                                    true
+                                }
+                                LoopMode::AlternateTimes(count) => {
+                                    let current_loop = self.current_loop().cloned();
+                                    if current_loop < (count * 2) - 1 {
+                                        // Toggle between initial and target values
+                                        let new_target = if self.reverse().cloned() {
+                                            self.initial().cloned()
+                                        } else {
+                                            target
+                                        };
+                                        let new_initial = if self.reverse().cloned() {
+                                            target
+                                        } else {
+                                            self.initial().cloned()
+                                        };
+
+                                        // Update target and initial for next iteration
+                                        self.target().set(new_target);
+                                        self.initial().set(new_initial);
+                                        // Don't jump current position - let it animate smoothly to new target
+                                        self.reverse().set(!self.reverse().cloned());
+                                        self.elapsed().set(Duration::default());
+                                        self.current_loop().set(current_loop + 1);
+                                        true
+                                    } else {
+                                        // All loops complete, stop animation
+                                        self.stop();
+                                        false
+                                    }
+                                }
+                                LoopMode::None => {
+                                    // No loop, stop animation
+                                    self.stop();
+                                    false
+                                }
+                            }
+                        } else {
+                            // No loop mode specified, stop animation
+                            self.stop();
+                            false
+                        }
                     } else {
                         true
                     }
