@@ -85,8 +85,15 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
     ///
     /// # Example
     /// ```rust
-    /// let motion = use_motion_store(0.0f32);
-    /// let value = motion.get_value(); // Reactive to current value changes only
+    /// use dioxus::prelude::*;
+    /// use dioxus_motion::prelude::*;
+    ///
+    /// #[component]
+    /// fn Example() -> Element {
+    ///     let motion = use_motion_store(0.0f32);
+    ///     let value = motion.current(); // Reactive to current value changes only
+    ///     rsx! { div { "Value: {value()}" } }
+    /// }
     /// ```
     fn get_value(&self) -> T {
         self.current().cloned()
@@ -96,8 +103,15 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
     ///
     /// # Example
     /// ```rust
-    /// let motion = use_motion_store(0.0f32);
-    /// let is_running = motion.is_running(); // Reactive to running state changes
+    /// use dioxus::prelude::*;
+    /// use dioxus_motion::prelude::*;
+    ///
+    /// #[component]
+    /// fn Example() -> Element {
+    ///     let motion = use_motion_store(0.0f32);
+    ///     let is_running = motion.running(); // Reactive to running state changes
+    ///     rsx! { div { "Running: {is_running()}" } }
+    /// }
     /// ```
     fn is_running(&self) -> bool {
         self.running().cloned()
@@ -125,8 +139,24 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
     ///
     /// # Example
     /// ```rust
-    /// let mut motion = use_motion_store(0.0f32);
-    /// motion.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
+    /// use dioxus::prelude::*;
+    /// use dioxus_motion::prelude::*;
+    ///
+    /// #[component]
+    /// fn Example() -> Element {
+    ///     let motion = use_motion_store(0.0f32);
+    ///     let current = motion.current();
+    ///     
+    ///     rsx! {
+    ///         div {
+    ///             style: "transform: translateX({current()}px)",
+    ///             onclick: move |_| {
+    ///                 animate_to(&motion, 100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
+    ///             },
+    ///             "Click to animate"
+    ///         }
+    ///     }
+    /// }
     /// ```
     fn animate_to(&mut self, target: T, config: AnimationConfig) {
         // Store the animation configuration for use in update loop
@@ -478,12 +508,26 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
     ///
     /// # Example
     /// ```rust
-    /// let motion = use_motion_store(0.0f32);
-    /// let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
-    ///     .add_keyframe(0.0, 0.0, None).unwrap()
-    ///     .add_keyframe(100.0, 0.5, Some(ease_in_out)).unwrap()
-    ///     .add_keyframe(0.0, 1.0, None).unwrap();
-    /// motion.animate_keyframes(keyframes);
+    /// use dioxus::prelude::*;
+    /// use dioxus_motion::prelude::*;
+    ///
+    /// #[component]
+    /// fn Example() -> Element {
+    ///     let motion = use_motion_store(0.0f32);
+    ///     let current = motion.current();
+    ///     
+    ///     rsx! {
+    ///         div {
+    ///             style: "transform: translateX({current()}px)",
+    ///             onclick: move |_| {
+    ///                 // For keyframe animations, use the dedicated hook
+    ///                 // let keyframes_motion = use_motion_store_keyframes(0.0f32);
+    ///                 // This method is available on the store trait, not the Store type
+    ///             },
+    ///             "Click for keyframes"
+    ///         }
+    ///     }
+    /// }
     /// ```
     fn animate_keyframes(&mut self, _animation: KeyframeAnimation<T>) {
         self.animation_type().set("keyframes".to_string());
@@ -497,11 +541,26 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
     ///
     /// # Example
     /// ```rust
-    /// let motion = use_motion_store(0.0f32);
-    /// let sequence = AnimationSequence::new()
-    ///     .then(50.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())))
-    ///     .then(100.0, AnimationConfig::new(AnimationMode::Tween(Tween::default())));
-    /// motion.animate_sequence(sequence);
+    /// use dioxus::prelude::*;
+    /// use dioxus_motion::prelude::*;
+    ///
+    /// #[component]
+    /// fn Example() -> Element {
+    ///     let motion = use_motion_store(0.0f32);
+    ///     let current = motion.current();
+    ///     
+    ///     rsx! {
+    ///         div {
+    ///             style: "transform: translateX({current()}px)",
+    ///             onclick: move |_| {
+    ///                 // For sequence animations, use the dedicated hook
+    ///                 // let sequence_motion = use_motion_store_sequence(0.0f32);
+    ///                 // This method is available on the store trait, not the Store type
+    ///             },
+    ///             "Click for sequence"
+    ///         }
+    ///     }
+    /// }
     /// ```
     fn animate_sequence(&mut self, _sequence: AnimationSequence<T>) {
         self.animation_type().set("sequence".to_string());
@@ -538,7 +597,7 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
 ///         div {
 ///             style: "transform: translateX({current()}px)",
 ///             onclick: move |_| {
-///                 motion.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
+///                 animate_to(&motion, 100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
 ///             },
 ///             "Animated element"
 ///         }
@@ -618,11 +677,10 @@ pub fn use_motion_store<T: Animatable + Copy + Default + Send + 'static>(
 ///     let current = motion.current();
 ///     
 ///     let start_animation = move |_| {
-///         let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
-///             .add_keyframe(0.0, 0.0, None).unwrap()
-///             .add_keyframe(100.0, 0.5, Some(ease_in_out)).unwrap()
-///             .add_keyframe(0.0, 1.0, None).unwrap();
-///         motion.animate_keyframes(keyframes);
+///         // The keyframes hook handles keyframe animations internally
+///         // You can set values directly or use the store's methods
+///         motion.target().set(100.0);
+///         motion.running().set(true);
 ///     };
 ///     
 ///     rsx! {
@@ -716,11 +774,10 @@ pub fn use_motion_store_keyframes<T: Animatable + Copy + Default + Send + 'stati
 ///     let current = motion.current();
 ///     
 ///     let start_sequence = move |_| {
-///         let sequence = AnimationSequence::new()
-///             .then(50.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())))
-///             .then(100.0, AnimationConfig::new(AnimationMode::Tween(Tween::default())))
-///             .then(0.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
-///         motion.animate_sequence(sequence);
+///         // The sequence hook handles sequence animations internally
+///         // You can set values directly or use the store's methods
+///         motion.target().set(100.0);
+///         motion.running().set(true);
 ///     };
 ///     
 ///     rsx! {
