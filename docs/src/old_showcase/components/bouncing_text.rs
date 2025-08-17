@@ -29,8 +29,7 @@ fn BouncingLetter(letter: char, delay: f32) -> Element {
         span {
             class: "text-4xl font-bold text-indigo-600 inline-block origin-bottom
                    transition-transform duration-300",
-            style: "transform: translateY({transform.current()().y}px)
-                            scale({transform.current()().scale})",
+            style: "transform: translateY({transform.current()().y}px) scale({transform.current()().scale})",
             "{letter}"
         }
     }

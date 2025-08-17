@@ -13,16 +13,6 @@ use dioxus::prelude::*;
 /// # Returns
 ///
 /// Returns an `Element` representing the rendered "Page not found" user interface.
-///
-/// # Examples
-///
-/// ```
-/// use dioxus::prelude::*;
-///
-/// fn App(cx: Scope) -> Element {
-///     PageNotFound(vec!["nonexistent".to_string(), "path".to_string()])
-/// }
-/// ```
 pub fn PageNotFound(route: Vec<String>) -> Element {
     rsx! {
         div { class: "max-w-4xl mx-auto px-6 py-12",

@@ -7,19 +7,6 @@ use dioxus::prelude::*;
 /// - A "Made with love" message
 /// - Copyright information
 /// - Social and documentation links
-///
-/// # Examples
-///
-/// ```rust
-/// use dioxus::prelude::*;
-///
-/// fn app() -> Element {
-///     rsx! {
-///         // Your page content
-///         Footer {}
-///     }
-/// }
-/// ```
 pub fn Footer() -> Element {
     rsx! {
         footer { class: "relative z-10 border-t border-primary/10 mt-auto py-8",

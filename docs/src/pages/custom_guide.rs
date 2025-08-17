@@ -225,11 +225,7 @@ animate_to(
                     div { class: "relative h-32 w-32 mx-auto",
                         div {
                             class: "absolute w-16 h-16 bg-primary/50 rounded-lg",
-                            style: "
-                                transform: translate({petal.current().translate_x}px, {petal.current().translate_y}px)
-                                rotate({petal.current().rotate}deg)
-                                scale({petal.current().scale})
-                            "
+                            style: "transform: translate({petal.current().translate_x}px, {petal.current().translate_y}px) rotate({petal.current().rotate}deg) scale({petal.current().scale})"
                         }
                     }
 
@@ -400,11 +396,7 @@ animate_keyframes(keyframes);"#.to_string(),
                     div { class: "relative h-32 w-32 mx-auto",
                         div {
                             class: "absolute w-16 h-16 bg-primary/50 rounded-lg",
-                            style: "
-                                transform: translate({petal_sequence.current().translate_x}px, {petal_sequence.current().translate_y}px)
-                                rotate({petal_sequence.current().rotate}deg)
-                                scale({petal_sequence.current().scale})
-                            "
+                            style: "transform: translate({petal_sequence.current().translate_x}px, {petal_sequence.current().translate_y}px) rotate({petal_sequence.current().rotate}deg) scale({petal_sequence.current().scale})"
                         }
                     }
 

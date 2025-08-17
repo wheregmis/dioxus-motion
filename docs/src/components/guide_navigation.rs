@@ -31,24 +31,15 @@ fn guide_sections() -> Vec<GuideSection> {
 }
 
 #[component]
-/// Renders a navigation component for moving between guide sections.
+/// Renders a navigation component for guide pages with previous/next navigation.
 ///
 /// This component displays previous and next links based on the current route,
 /// allowing users to navigate sequentially through the documentation.
 /// It's designed to be responsive and mobile-friendly.
 ///
-/// # Examples
+/// # Returns
 ///
-/// ```rust
-/// use dioxus::prelude::*;
-///
-/// fn app() -> Element {
-///     rsx! {
-///         // Your page content
-///         GuideNavigation {}
-///     }
-/// }
-/// ```
+/// Returns an `Element` representing the guide navigation interface.
 pub fn GuideNavigation() -> Element {
     let current_route = use_route::<Route>();
     let sections = guide_sections();

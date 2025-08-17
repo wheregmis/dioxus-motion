@@ -27,8 +27,7 @@ pub fn PathAnimation(path: &'static str, duration: f32) -> Element {
                     stroke: "url(#gradient)",
                     stroke_width: "4",
                     stroke_dasharray: "1000",
-                    style: "stroke-dashoffset: {dash_offset.current()};
-                            transition: stroke-dashoffset 0.1s linear;",
+                    style: "stroke-dashoffset: {dash_offset.current()}; transition: stroke-dashoffset 0.1s linear;",
                 }
                 defs {
                     linearGradient {

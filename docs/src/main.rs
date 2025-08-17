@@ -17,24 +17,7 @@ const MAIN_CSS: Asset = asset!("/assets/main.css");
 /// external fonts from Google Fonts and a local stylesheet via the `MAIN_CSS` asset, as well as a
 /// Router component parameterized with the `Route` type to handle navigation.
 ///
-/// # Examples
-///
-/// ```no_run``
-/// fn main() {
-///     dioxus::launch(|| {
-///         rsx! {
-///             head {
-///                 link {
-///                     rel: "stylesheet",
-///                     href: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap",
-///                 }
-///                 link { rel: "stylesheet", href: MAIN_CSS }
-///             }
-///             Router::<Route> {}
-///         }
-///     });
-/// }
-/// ```
+
 fn main() {
     dioxus::launch(|| {
         // Dynamic transition resolver for Home, Docs, ShowcaseGallery

@@ -6,22 +6,6 @@ use dioxus::prelude::*;
 /// Renders a card component showcasing a transition effect.
 ///
 /// This component displays the transition's name, description, and an example usage. It is ideal for demonstrating various transition effects in a Dioxus-based application.
-///
-/// # Examples
-///
-/// ```
-/// use dioxus::prelude::*;
-///
-/// fn app(cx: Scope) -> Element {
-///     render! {
-///         TransitionCard(
-///             "Fade",
-///             "Smoothly fades an element in or out.",
-///             "example: use for modal transitions"
-///         )
-///     }
-/// }
-/// ```
 fn TransitionCard(name: &'static str, description: &'static str, example: &'static str) -> Element {
     rsx! {
         div { class: "p-6 rounded-xl bg-dark-200/50 backdrop-blur-xs
@@ -41,14 +25,6 @@ fn TransitionCard(name: &'static str, description: &'static str, example: &'stat
 /// - **Quick Start**: Offers step-by-step instructions on enabling transitions, including adding the transitions feature in Cargo.toml, applying the MotionTransitions derive macro, and replacing Outlet with AnimatedOutlet.
 /// - **Available Transitions**: Displays a grid of transition effects using individual TransitionCard components, with each card showing the transition's name, description, and a brief example.
 /// - **Example with Nested Routes**: Provides a code sample illustrating how to configure nested routes with transitions.
-///
-/// # Examples
-///
-/// ```
-/// // Create the PageTransition component to render the transitions guide.
-/// let page = PageTransition();
-/// // Typically, you would integrate this element within your Dioxus app's view.
-/// ```
 pub fn PageTransition() -> Element {
     rsx! {
         div { class: "space-y-12",

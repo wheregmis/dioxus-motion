@@ -42,9 +42,7 @@ pub fn Card3DFlip() -> Element {
         div { class: "perspective-1000",
             div {
                 class: "relative w-64 h-64 cursor-pointer",
-                style: "transform-style: preserve-3d;
-                        transform: rotateY({transform.current()().rotation}deg)
-                                 scale({transform.current()().scale});",
+                style: "transform-style: preserve-3d; transform: rotateY({transform.current()().rotation}deg) scale({transform.current()().scale});",
                 onclick: animate_flip,
 
                 // Front

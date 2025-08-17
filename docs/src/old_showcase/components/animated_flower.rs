@@ -96,64 +96,10 @@ pub fn AnimatedFlower() -> Element {
     let leaf_transform = use_motion_store(PetalTransform::default());
     let center_scale = use_motion_store(1.0f32); // Start from 1.0 instead of 0.0
     let center_rotate = use_motion_store(0.0f32);
+    let mut is_leaves_grown = use_signal_sync(|| false);
     let stem_length = use_motion_store(100.0f32);
     let stem_sway = use_motion_store(0.0f32);
     let glow_opacity = use_motion_store(0.0f32);
-
-    let animate_petals = move || {
-        // Start all petal animations immediately and continuously
-        // More dynamic petal animation
-        animate_to(
-            &petal_transform,
-            PetalTransform::new(PI / 3.5, 1.3, 4.0, 4.0),
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 45.0,
-                damping: 7.0,
-                mass: 0.4,
-                velocity: 1.5,
-            }))
-            .with_loop(LoopMode::Alternate),
-        );
-
-        // Add rotation to center
-        animate_to(
-            &center_rotate,
-            360.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 20.0,
-                damping: 5.0,
-                mass: 0.3,
-                velocity: 0.5,
-            }))
-            .with_loop(LoopMode::Infinite),
-        );
-
-        // Modified center scaling animation
-        animate_to(
-            &center_scale,
-            1.4,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 60.0, // Reduced stiffness
-                damping: 12.0,   // Increased damping
-                mass: 1.0,       // Increased mass
-                velocity: 0.0,   // Start with zero velocity
-            }))
-            .with_loop(LoopMode::Alternate),
-        );
-
-        // Add subtle glow effect
-        animate_to(
-            &glow_opacity,
-            0.6,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 40.0,
-                damping: 6.0,
-                mass: 0.5,
-                velocity: 0.0,
-            }))
-            .with_loop(LoopMode::Alternate),
-        );
-    };
 
     let animate_leaves = move |_: Event<MountedData>| {
         // Enhanced stem animation with natural growth
@@ -165,8 +111,7 @@ pub fn AnimatedFlower() -> Element {
                 damping: 8.0,
                 mass: 0.4,
                 velocity: 0.5,
-            }))
-            .with_loop(LoopMode::Alternate), // Make stem sway continuously
+            })),
         );
 
         // Add gentle stem sway
@@ -197,18 +142,70 @@ pub fn AnimatedFlower() -> Element {
                 mass: 0.4,
                 velocity: 2.5,
             }))
-            .with_loop(LoopMode::Alternate), // Make leaves continuously animate
+            .with_on_complete(move || {
+                is_leaves_grown.set(true);
+            }),
         );
     };
 
-    // Watch for when leaves are grown to start petal animations
-    use_effect(move || {
-        let leaf_current = leaf_transform.current()();
-        let leaf_target = PetalTransform::new(PI / 5.0, 1.2, 2.0, -22.0);
-        let diff = (leaf_current - leaf_target).magnitude();
+    let animate_petals = move || {
+        if *is_leaves_grown.read() {
+            // More dynamic petal animation
+            animate_to(
+                &petal_transform,
+                PetalTransform::new(PI / 3.5, 1.3, 4.0, 4.0),
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 45.0,
+                    damping: 7.0,
+                    mass: 0.4,
+                    velocity: 1.5,
+                }))
+                .with_loop(LoopMode::Alternate),
+            );
 
-        // If leaves are close to target, start petal animations
-        if diff < 0.1 {
+            // Add rotation to center
+            animate_to(
+                &center_rotate,
+                360.0,
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 20.0,
+                    damping: 5.0,
+                    mass: 0.3,
+                    velocity: 0.5,
+                }))
+                .with_loop(LoopMode::Infinite),
+            );
+
+            // Modified center scaling animation
+            animate_to(
+                &center_scale,
+                1.4,
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 60.0, // Reduced stiffness
+                    damping: 12.0,   // Increased damping
+                    mass: 1.0,       // Increased mass
+                    velocity: 0.0,   // Start with zero velocity
+                }))
+                .with_loop(LoopMode::Alternate),
+            );
+
+            // Add subtle glow effect
+            animate_to(
+                &glow_opacity,
+                0.6,
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 40.0,
+                    damping: 6.0,
+                    mass: 0.5,
+                    velocity: 0.0,
+                }))
+                .with_loop(LoopMode::Alternate),
+            );
+        }
+    };
+
+    use_effect(move || {
+        if *is_leaves_grown.read() {
             animate_petals();
         }
     });
@@ -247,8 +244,8 @@ pub fn AnimatedFlower() -> Element {
                                     d: "M 0 0 C 5 -3, 8 0, 5 5 C 8 0, 5 -3, 0 0",
                                     fill: "url(#leaf_gradient)",
                                     transform: "translate(0 {25.0 + leaf_transform.current()().translate_y + (i as f32 * 5.0)})
-                    rotate({leaf_transform.current()().rotate}deg)
-                    scale({leaf_transform.current()().scale})",
+                                                                                                                                                                                                          rotate({-20.0 + (i as f32 * 15.0) + stem_sway.current()()})
+                                                                                                                                                                                                          scale({leaf_transform.current()().scale})",
                                     opacity: "0.95",
                                     style: "filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2))",
                                 }
