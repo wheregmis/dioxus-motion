@@ -24,14 +24,14 @@ pub fn BasicAnimationGuide() -> Element {
                         div { class: "p-3 bg-dark-200/50 rounded-lg",
                             p { class: "font-medium text-text-primary mb-1", "1. Create a motion value" }
                             code { class: "text-sm text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm",
-                                "let mut value = use_motion(0.0f32);"
+                                "let value = use_motion_store(0.0f32);"
                             }
                         }
                         // Key concept 2
                         div { class: "p-3 bg-dark-200/50 rounded-lg",
                             p { class: "font-medium text-text-primary mb-1", "2. Animate the value" }
                             code { class: "text-sm text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm",
-                                "value.animate_to(100.0, config);"
+                                "animate_to(&value, 100.0, config);"
                             }
                         }
                     }
@@ -52,10 +52,11 @@ pub fn BasicAnimationGuide() -> Element {
 
 #[component]
 fn StepOne() -> Element {
-    let mut value = use_motion(0.0f32);
+    let value = use_motion_store(0.0f32);
 
     let animate = move |_| {
-        value.animate_to(
+        animate_to(
+            &value,
             100.0,
             AnimationConfig::new(AnimationMode::Tween(Tween {
                 duration: Duration::from_millis(1000),
@@ -65,7 +66,8 @@ fn StepOne() -> Element {
     };
 
     let reset = move |_| {
-        value.animate_to(
+        animate_to(
+            &value,
             0.0,
             AnimationConfig::new(AnimationMode::Tween(Tween::default())),
         );
@@ -92,10 +94,11 @@ fn StepOne() -> Element {
 use dioxus_motion::prelude::*;
 
 // 2. Create a motion value
-let mut value = use_motion(0.0f32);
+let value = use_motion_store(0.0f32);
 
 // 3. Animate the value
-value.animate_to(
+animate_to(
+    &value,
     100.0,
     AnimationConfig::new(AnimationMode::Tween(Tween {
         duration: Duration::from_millis(1000),
@@ -125,13 +128,13 @@ value.animate_to(
                         div { class: "relative h-16 bg-dark-200/30 rounded-lg overflow-hidden",
                             div {
                                 class: "absolute h-16 bg-primary/50 rounded-lg",
-                                style: "width: {value.get_value()}%"
+                                style: "width: {value.current()}%"
                             }
                         }
 
                         // Value display
                         div { class: "text-sm text-text-secondary",
-                            "Current value: {value.get_value():.1}"
+                            "Current value: {value.current():.1}"
                         }
 
                         // Controls
@@ -161,7 +164,7 @@ value.animate_to(
                     }
                     li {
                         span { class: "font-medium", "Reading values: " }
-                        "Use ", code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm", "value.get_value()" }, " to access the current value at any time."
+                        "Use ", code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm", "value.current()" }, " to access the current value at any time."
                     }
                 }
             }
@@ -171,11 +174,12 @@ value.animate_to(
 
 #[component]
 fn StepTwo() -> Element {
-    let mut tween_value = use_motion(0.0f32);
-    let mut spring_value = use_motion(0.0f32);
+    let tween_value = use_motion_store(0.0f32);
+    let spring_value = use_motion_store(0.0f32);
 
     let animate_tween = move |_| {
-        tween_value.animate_to(
+        animate_to(
+            &tween_value,
             100.0,
             AnimationConfig::new(AnimationMode::Tween(Tween {
                 duration: Duration::from_millis(1000),
@@ -185,7 +189,8 @@ fn StepTwo() -> Element {
     };
 
     let animate_spring = move |_| {
-        spring_value.animate_to(
+        animate_to(
+            &spring_value,
             100.0,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 100.0,
@@ -200,11 +205,11 @@ fn StepTwo() -> Element {
     let reset_both = move |_| {
         // Reset tween value
         let tween_config = AnimationConfig::new(AnimationMode::Tween(Tween::default()));
-        tween_value.animate_to(0.0, tween_config);
+        animate_to(&tween_value, 0.0, tween_config);
 
         // Reset spring value
         let spring_config = AnimationConfig::new(AnimationMode::Spring(Spring::default()));
-        spring_value.animate_to(0.0, spring_config);
+        animate_to(&spring_value, 0.0, spring_config);
     };
 
     rsx! {
@@ -260,7 +265,7 @@ fn StepTwo() -> Element {
                     div { class: "relative h-12 bg-dark-200/30 rounded-lg overflow-hidden",
                         div {
                             class: "absolute h-12 bg-primary/50 rounded-lg",
-                            style: "width: {tween_value.get_value()}%"
+                            style: "width: {tween_value.current()}%"
                         }
                     }
 
@@ -286,7 +291,7 @@ fn StepTwo() -> Element {
                     div { class: "relative h-12 bg-dark-200/30 rounded-lg overflow-hidden",
                         div {
                             class: "absolute h-12 bg-primary/50 rounded-lg",
-                            style: "width: {spring_value.get_value()}%"
+                            style: "width: {spring_value.current()}%"
                         }
                     }
 

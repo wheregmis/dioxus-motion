@@ -13,8 +13,8 @@ struct ShapeConfig {
 #[component]
 pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
     let mut current_shape = use_signal(|| 0);
-    let mut transform = use_motion(Transform::identity());
-    let mut scale_pulse = use_motion(1.0f32);
+    let transform = use_motion_store(Transform::identity());
+    let scale_pulse = use_motion_store(1.0f32);
 
     let shape_configs = [
         ShapeConfig {
@@ -70,7 +70,8 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
 
     use_effect(move || {
         // Main rotation and scale animation
-        transform.animate_to(
+        animate_to(
+            &transform,
             Transform {
                 rotation: 360.0,
                 scale: 1.2,
@@ -87,7 +88,8 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
         );
 
         // Additional scale pulse animation
-        scale_pulse.animate_to(
+        animate_to(
+            &scale_pulse,
             1.15,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 25.0,
@@ -117,8 +119,8 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
                 class: "absolute inset-0 bg-linear-to-r from-pink-500 to-orange-500
                        hover:from-purple-500 hover:to-blue-500 rounded-lg",
                 style: "clip-path: {current_config.path};
-                       transform: rotate({transform.get_value().rotation}deg)
-                                scale({transform.get_value().scale * scale_pulse.get_value()});
+                       transform: rotate({transform.current()().rotation}deg)
+                                scale({transform.current()().scale * scale_pulse.current()()});
                        transition: clip-path 0.8s cubic-bezier(0.4, 0, 0.2, 1);
                        filter: brightness(1.2) contrast(1.1) saturate(1.2);",
                 // Lighter inner glow effect

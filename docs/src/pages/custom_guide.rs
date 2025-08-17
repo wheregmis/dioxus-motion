@@ -164,10 +164,11 @@ impl std::ops::Add for PetalTransform {
 
 #[component]
 fn StepTwo() -> Element {
-    let mut petal = use_motion(PetalTransform::zero());
+    let petal = use_motion_store(PetalTransform::zero());
 
     let animate = move |_| {
-        petal.animate_to(
+        animate_to(
+            &petal,
             PetalTransform::new(45.0, 1.2, 10.0, -10.0),
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 100.0,
@@ -179,7 +180,8 @@ fn StepTwo() -> Element {
     };
 
     let reset = move |_| {
-        petal.animate_to(
+        animate_to(
+            &petal,
             PetalTransform::zero(),
             AnimationConfig::new(AnimationMode::Spring(Spring::default())),
         );
@@ -198,10 +200,11 @@ fn StepTwo() -> Element {
                 // Code example
                 div { class: "bg-dark-200/50 p-3 rounded-lg",
                     CodeBlock {
-                        code: r#"let mut petal = use_motion(PetalTransform::zero());
+                        code: r#"let petal = use_motion_store(PetalTransform::zero());
 
 // Animate to new values
-petal.animate_to(
+animate_to(
+    &petal,
     PetalTransform::new(45.0, 1.2, 10.0, -10.0),
     AnimationConfig::new(AnimationMode::Spring(Spring {
         stiffness: 100.0,
@@ -223,19 +226,19 @@ petal.animate_to(
                         div {
                             class: "absolute w-16 h-16 bg-primary/50 rounded-lg",
                             style: "
-                                transform: translate({petal.get_value().translate_x}px, {petal.get_value().translate_y}px)
-                                rotate({petal.get_value().rotate}deg)
-                                scale({petal.get_value().scale})
+                                transform: translate({petal.current().translate_x}px, {petal.current().translate_y}px)
+                                rotate({petal.current().rotate}deg)
+                                scale({petal.current().scale})
                             "
                         }
                     }
 
                     // Current values
                     div { class: "text-sm text-text-secondary space-y-1",
-                        p { "Rotation: {petal.get_value().rotate:.1}°" }
-                        p { "Scale: {petal.get_value().scale:.2}" }
-                        p { "X: {petal.get_value().translate_x:.1}px" }
-                        p { "Y: {petal.get_value().translate_y:.1}px" }
+                        p { "Rotation: {petal.current().rotate:.1}°" }
+                        p { "Scale: {petal.current().scale:.2}" }
+                        p { "X: {petal.current().translate_x:.1}px" }
+                        p { "Y: {petal.current().translate_y:.1}px" }
                     }
 
                     // Controls
@@ -259,9 +262,12 @@ petal.animate_to(
 
 #[component]
 fn StepThree() -> Element {
-    let mut petal = use_motion(PetalTransform::zero());
+    let (petal_sequence, mut animate_sequence) =
+        use_motion_store_with_sequences(PetalTransform::zero());
+    let (petal_keyframes, mut animate_keyframes) =
+        use_motion_store_with_keyframes(PetalTransform::zero());
 
-    let animate_sequence = move |_| {
+    let start_sequence = move |_| {
         let sequence = AnimationSequence::new()
             .then(
                 PetalTransform::new(45.0, 1.2, 10.0, -10.0),
@@ -291,10 +297,10 @@ fn StepThree() -> Element {
                 })),
             );
 
-        petal.animate_sequence(sequence);
+        animate_sequence(sequence);
     };
 
-    let animate_keyframes = move |_| {
+    let start_keyframes = move |_| {
         let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
             .add_keyframe(
                 PetalTransform::zero(),
@@ -317,7 +323,7 @@ fn StepThree() -> Element {
                 Some(easer::functions::Back::ease_in_out),
             );
 
-        petal.animate_keyframes(keyframes);
+        animate_keyframes(keyframes);
     };
 
     rsx! {
@@ -334,7 +340,8 @@ fn StepThree() -> Element {
                 div { class: "bg-dark-200/50 p-3 rounded-lg",
                     h3 { class: "font-medium mb-2", "Sequence Animation" }
                     CodeBlock {
-                        code: r#"let sequence = AnimationSequence::new()
+                        code: r#"let (petal, animate_sequence) = use_motion_store_with_sequences(PetalTransform::zero());
+let sequence = AnimationSequence::new()
     .then(
         PetalTransform::new(45.0, 1.2, 10.0, -10.0),
         spring_config.clone(),
@@ -348,7 +355,7 @@ fn StepThree() -> Element {
         spring_config,
     );
 
-petal.animate_sequence(sequence);"#.to_string(),
+animate_sequence(sequence);"#.to_string(),
                         language: "rust".to_string(),
                     }
                 }
@@ -357,7 +364,8 @@ petal.animate_sequence(sequence);"#.to_string(),
                 div { class: "bg-dark-200/50 p-3 rounded-lg mt-4",
                     h3 { class: "font-medium mb-2", "Keyframe Animation" }
                     CodeBlock {
-                        code: r#"let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
+                        code: r#"let (petal, animate_keyframes) = use_motion_store_with_keyframes(PetalTransform::zero());
+let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
     .add_keyframe(
         PetalTransform::zero(),
         0.0,
@@ -379,7 +387,7 @@ petal.animate_sequence(sequence);"#.to_string(),
         Some(easer::functions::Back::ease_in_out),
     );
 
-petal.animate_keyframes(keyframes);"#.to_string(),
+animate_keyframes(keyframes);"#.to_string(),
                         language: "rust".to_string(),
                     }
                 }
@@ -393,31 +401,31 @@ petal.animate_keyframes(keyframes);"#.to_string(),
                         div {
                             class: "absolute w-16 h-16 bg-primary/50 rounded-lg",
                             style: "
-                                transform: translate({petal.get_value().translate_x}px, {petal.get_value().translate_y}px)
-                                rotate({petal.get_value().rotate}deg)
-                                scale({petal.get_value().scale})
+                                transform: translate({petal_sequence.current().translate_x}px, {petal_sequence.current().translate_y}px)
+                                rotate({petal_sequence.current().rotate}deg)
+                                scale({petal_sequence.current().scale})
                             "
                         }
                     }
 
                     // Current values
                     div { class: "text-sm text-text-secondary space-y-1",
-                        p { "Rotation: {petal.get_value().rotate:.1}°" }
-                        p { "Scale: {petal.get_value().scale:.2}" }
-                        p { "X: {petal.get_value().translate_x:.1}px" }
-                        p { "Y: {petal.get_value().translate_y:.1}px" }
+                        p { "Rotation: {petal_sequence.current().rotate:.1}°" }
+                        p { "Scale: {petal_sequence.current().scale:.2}" }
+                        p { "X: {petal_sequence.current().translate_x:.1}px" }
+                        p { "Y: {petal_sequence.current().translate_y:.1}px" }
                     }
 
                     // Controls
                     div { class: "flex gap-2",
                         button {
                             class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
-                            onclick: animate_sequence,
+                            onclick: start_sequence,
                             "Sequence"
                         }
                         button {
                             class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
-                            onclick: animate_keyframes,
+                            onclick: start_keyframes,
                             "Keyframes"
                         }
                     }

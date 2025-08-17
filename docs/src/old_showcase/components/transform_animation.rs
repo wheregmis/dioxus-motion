@@ -3,10 +3,11 @@ use dioxus_motion::prelude::*;
 
 #[component]
 pub fn TransformAnimationShowcase() -> Element {
-    let mut transform = use_motion(Transform::identity());
+    let transform = use_motion_store(Transform::identity());
 
     let animate_hover = move |_| {
-        transform.animate_to(
+        animate_to(
+            &transform,
             Transform::new(
                 0.0,                                  // x
                 -20.0,                                // y
@@ -23,7 +24,8 @@ pub fn TransformAnimationShowcase() -> Element {
     };
 
     let animate_reset = move |_| {
-        transform.animate_to(
+        animate_to(
+            &transform,
             Transform::identity(),
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 200.0,
@@ -37,19 +39,19 @@ pub fn TransformAnimationShowcase() -> Element {
     let transform_style = use_memo(move || {
         format!(
             "transform: translate({}px, {}px) scale({}) rotate({}deg); transform-style: preserve-3d; will-change: transform;",
-            transform.get_value().x,
-            transform.get_value().y,
-            transform.get_value().scale,
-            transform.get_value().rotation * 180.0 / std::f32::consts::PI
+            transform.current()().x,
+            transform.current()().y,
+            transform.current()().scale,
+            transform.current()().rotation * 180.0 / std::f32::consts::PI
         )
     });
 
     let glow_style = use_memo(move || {
         format!(
             "transform: translate({}px, {}px) scale(1.2); opacity: {};",
-            transform.get_value().x,
-            transform.get_value().y,
-            if transform.get_value().y < 0.0 {
+            transform.current()().x,
+            transform.current()().y,
+            if transform.current()().y < 0.0 {
                 0.6
             } else {
                 0.0

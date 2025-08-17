@@ -21,9 +21,9 @@ fn build_keyframes<T: dioxus_motion::animations::core::Animatable>(
 // A playful button that bounces on click
 #[component]
 pub fn RotatingButton() -> Element {
-    let mut scale = use_motion(1.0f32);
-    let mut rotation = use_motion(0.0f32);
-    let mut glow = use_motion(0.0f32);
+    let scale = use_motion_store(1.0f32);
+    let rotation = use_motion_store(0.0f32);
+    let glow = use_motion_store(0.0f32);
 
     let onclick = move |_| {
         // Smooth scale keyframe animation for bounce effect
@@ -59,14 +59,35 @@ pub fn RotatingButton() -> Element {
         );
 
         // Only animate if keyframe creation succeeded
-        if let Ok(scale_anim) = scale_keyframes {
-            scale.animate_keyframes(scale_anim);
+        if let Ok(_scale_anim) = scale_keyframes {
+            animate_to(
+                &scale,
+                1.15,
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_millis(800),
+                    easing: easer::functions::Expo::ease_out,
+                })),
+            );
         }
-        if let Ok(rotation_anim) = rotation_keyframes {
-            rotation.animate_keyframes(rotation_anim);
+        if let Ok(_rotation_anim) = rotation_keyframes {
+            animate_to(
+                &rotation,
+                360.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_millis(800),
+                    easing: easer::functions::Cubic::ease_in_out,
+                })),
+            );
         }
-        if let Ok(glow_anim) = glow_keyframes {
-            glow.animate_keyframes(glow_anim);
+        if let Ok(_glow_anim) = glow_keyframes {
+            animate_to(
+                &glow,
+                1.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_millis(600),
+                    easing: easer::functions::Expo::ease_out,
+                })),
+            );
         }
     };
 
@@ -75,12 +96,12 @@ pub fn RotatingButton() -> Element {
             class: "relative px-8 py-4 bg-linear-to-r from-purple-500 to-pink-500
                    text-white rounded-xl font-bold text-lg overflow-hidden
                    transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/20",
-            style: "transform: scale({scale.get_value()}) rotate({rotation.get_value()}deg)",
+            style: "transform: scale({scale.current()()}) rotate({rotation.current()()}deg)",
             onclick,
             // Enhanced glow effect
             div {
                 class: "absolute inset-0 bg-white/30 blur-xl",
-                style: "opacity: {glow.get_value()}",
+                style: "opacity: {glow.current()()}",
             }
             "Click me!"
         }
