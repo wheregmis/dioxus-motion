@@ -617,7 +617,6 @@ pub fn use_motion_store<T: Animatable + Copy + Default + Send + 'static>(
     let idle_poll_rate = Duration::from_millis(16); // ~60 FPS when idle
 
     use_effect({
-        let store = store.clone();
         move || {
             spawn(async move {
                 let mut last_frame = crate::MotionTime::now();
@@ -706,8 +705,6 @@ pub fn use_motion_store_keyframes<T: Animatable + Copy + Default + Send + 'stati
     let idle_poll_rate = Duration::from_millis(16);
 
     use_effect({
-        let store = store.clone();
-        let keyframes_ref = keyframes_ref.clone();
         move || {
             spawn(async move {
                 let mut last_frame = crate::MotionTime::now();
@@ -803,8 +800,6 @@ pub fn use_motion_store_sequence<T: Animatable + Copy + Default + Send + 'static
     let idle_poll_rate = Duration::from_millis(16);
 
     use_effect({
-        let store = store.clone();
-        let sequence_ref = sequence_ref.clone();
         move || {
             spawn(async move {
                 let mut last_frame = crate::MotionTime::now();

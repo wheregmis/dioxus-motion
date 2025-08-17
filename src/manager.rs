@@ -6,7 +6,7 @@ use crate::prelude::AnimationConfig;
 use crate::sequence::AnimationSequence;
 
 use dioxus::{
-    prelude::{Readable, Signal, Writable},
+    prelude::Signal,
     signals::{ReadableExt, WritableExt},
 };
 

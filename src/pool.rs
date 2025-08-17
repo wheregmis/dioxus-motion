@@ -540,6 +540,7 @@ impl MotionResourcePools {
         // Rough estimates based on typical struct sizes
         const CONFIG_SIZE: usize = std::mem::size_of::<AnimationConfig>();
         const INTEGRATOR_SIZE: usize = 256; // Rough estimate for SpringIntegrator<f32>
+        #[allow(dead_code)]
         const CLOSURE_SIZE: usize = 64; // Rough estimate for web closures
 
         let config_savings = self.config_pool.available_count() * CONFIG_SIZE;

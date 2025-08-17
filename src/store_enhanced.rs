@@ -23,8 +23,6 @@ pub fn use_motion_store_with_keyframes<T: Animatable + Copy + Default + Send + '
 
     // Animation loop for keyframes
     use_effect({
-        let store = store.clone();
-        let keyframes_ref = keyframes_ref.clone();
         move || {
             spawn(async move {
                 let mut last_frame = crate::MotionTime::now();
@@ -84,8 +82,7 @@ pub fn use_motion_store_with_keyframes<T: Animatable + Copy + Default + Send + '
 
     // Function to start keyframe animation
     let animate_keyframes = {
-        let store = store.clone();
-        let mut keyframes_ref = keyframes_ref.clone();
+        let mut keyframes_ref = keyframes_ref;
         move |animation: KeyframeAnimation<T>| {
             keyframes_ref.set(Some(Arc::new(animation)));
             store.animation_type().set("keyframes".to_string());
@@ -109,8 +106,6 @@ pub fn use_motion_store_with_sequences<T: Animatable + Copy + Default + Send + '
 
     // Animation loop for sequences
     use_effect({
-        let store = store.clone();
-        let sequence_ref = sequence_ref.clone();
         move || {
             spawn(async move {
                 let mut last_frame = crate::MotionTime::now();
@@ -165,8 +160,7 @@ pub fn use_motion_store_with_sequences<T: Animatable + Copy + Default + Send + '
 
     // Function to start sequence animation
     let animate_sequence = {
-        let store = store.clone();
-        let mut sequence_ref = sequence_ref.clone();
+        let mut sequence_ref = sequence_ref;
         move |sequence: AnimationSequence<T>| {
             sequence_ref.set(Some(Arc::new(sequence.clone())));
             store.animation_type().set("sequence".to_string());
