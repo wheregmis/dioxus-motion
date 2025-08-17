@@ -8,7 +8,7 @@ pub mod utils;
 
 use easer::functions::Easing;
 
-const MAIN_CSS: Asset = asset!("/assets/main.css");
+const MAIN_CSS: Asset = asset!("./assets/tailwind.css");
 
 /// Launches the Dioxus web application.
 ///

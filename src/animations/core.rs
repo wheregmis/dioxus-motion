@@ -159,10 +159,10 @@ impl AnimationConfig {
 
     /// Execute the completion callback if it exists
     pub fn execute_completion(&mut self) {
-        if let Some(on_complete) = &self.on_complete {
-            if let Ok(mut callback) = on_complete.lock() {
-                callback();
-            }
+        if let Some(on_complete) = &self.on_complete
+            && let Ok(mut callback) = on_complete.lock()
+        {
+            callback();
         }
     }
 }

@@ -257,10 +257,10 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                             true
                         } else {
                             // All loops complete, stop animation and execute completion callback
-                            if let Some(on_complete) = &config.on_complete {
-                                if let Ok(mut callback) = on_complete.lock() {
-                                    callback();
-                                }
+                            if let Some(on_complete) = &config.on_complete
+                                && let Ok(mut callback) = on_complete.lock()
+                            {
+                                callback();
                             }
                             self.stop();
                             false
@@ -313,10 +313,10 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                             true
                         } else {
                             // All loops complete, stop animation and execute completion callback
-                            if let Some(on_complete) = &config.on_complete {
-                                if let Ok(mut callback) = on_complete.lock() {
-                                    callback();
-                                }
+                            if let Some(on_complete) = &config.on_complete
+                                && let Ok(mut callback) = on_complete.lock()
+                            {
+                                callback();
                             }
                             self.stop();
                             false
@@ -324,10 +324,10 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                     }
                     LoopMode::None => {
                         // No loop, stop animation and execute completion callback
-                        if let Some(on_complete) = &config.on_complete {
-                            if let Ok(mut callback) = on_complete.lock() {
-                                callback();
-                            }
+                        if let Some(on_complete) = &config.on_complete
+                            && let Ok(mut callback) = on_complete.lock()
+                        {
+                            callback();
                         }
                         self.stop();
                         false
@@ -335,10 +335,10 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                 }
             } else {
                 // No loop mode specified, stop animation and execute completion callback
-                if let Some(on_complete) = &config.on_complete {
-                    if let Ok(mut callback) = on_complete.lock() {
-                        callback();
-                    }
+                if let Some(on_complete) = &config.on_complete
+                    && let Ok(mut callback) = on_complete.lock()
+                {
+                    callback();
                 }
                 self.stop();
                 false
@@ -410,10 +410,10 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                                         true
                                     } else {
                                         // All loops complete, stop animation and execute completion callback
-                                        if let Some(on_complete) = &config.on_complete {
-                                            if let Ok(mut callback) = on_complete.lock() {
-                                                callback();
-                                            }
+                                        if let Some(on_complete) = &config.on_complete
+                                            && let Ok(mut callback) = on_complete.lock()
+                                        {
+                                            callback();
                                         }
                                         self.stop();
                                         false
@@ -466,6 +466,7 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                                         true
                                     } else {
                                         // All loops complete, stop animation and execute completion callback
+                                        #[allow(clippy::collapsible_if)]
                                         if let Some(on_complete) = &config.on_complete {
                                             if let Ok(mut callback) = on_complete.lock() {
                                                 callback();
@@ -477,6 +478,7 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                                 }
                                 LoopMode::None => {
                                     // No loop, stop animation and execute completion callback
+                                    #[allow(clippy::collapsible_if)]
                                     if let Some(on_complete) = &config.on_complete {
                                         if let Ok(mut callback) = on_complete.lock() {
                                             callback();
@@ -488,6 +490,7 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                             }
                         } else {
                             // No loop mode specified, stop animation and execute completion callback
+                            #[allow(clippy::collapsible_if)]
                             if let Some(on_complete) = &config.on_complete {
                                 if let Ok(mut callback) = on_complete.lock() {
                                     callback();

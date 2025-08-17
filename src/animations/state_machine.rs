@@ -480,12 +480,11 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
             }
         };
 
-        if !should_continue {
-            if let Some(ref f) = config.on_complete {
-                if let Ok(mut guard) = f.lock() {
-                    guard();
-                }
-            }
+        if !should_continue
+            && let Some(ref f) = config.on_complete
+            && let Ok(mut guard) = f.lock()
+        {
+            guard();
         }
 
         should_continue

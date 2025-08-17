@@ -32,6 +32,7 @@ pub fn use_motion_store_with_keyframes<T: Animatable + Copy + Default + Send + '
                     let dt = (now.duration_since(last_frame).as_secs_f32()).min(0.1);
                     last_frame = now;
 
+                    #[allow(clippy::collapsible_if)]
                     if store.running()() && store.animation_type()() == "keyframes" {
                         if let Some(keyframes) = keyframes_ref.read().as_ref() {
                             let elapsed = store.elapsed()();
@@ -115,6 +116,7 @@ pub fn use_motion_store_with_sequences<T: Animatable + Copy + Default + Send + '
                     let dt = (now.duration_since(last_frame).as_secs_f32()).min(0.1);
                     last_frame = now;
 
+                    #[allow(clippy::collapsible_if)]
                     if store.running()() && store.animation_type()() == "sequence" {
                         if let Some(sequence) = sequence_ref.read().as_ref() {
                             let current_step_index = store.current_sequence_step()() as usize;

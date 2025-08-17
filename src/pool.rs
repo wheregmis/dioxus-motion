@@ -469,11 +469,10 @@ impl GlobalIntegratorPools {
     /// Updates stats for a specific type (called when integrators are returned)
     pub fn update_stats<T: Animatable + Send + 'static>(&mut self) {
         let type_id = TypeId::of::<T>();
-        if let Some(pool) = self.pools.get(&type_id) {
-            if let Some(pool) = pool.downcast_ref::<SpringIntegratorPool<T>>() {
-                let stats = pool.stats();
-                self.stats_tracker.insert(type_id, stats);
-            }
+        if let Some(pool) = self.pools.get(&type_id)
+            && let Some(pool) = pool.downcast_ref::<SpringIntegratorPool<T>>() {
+            let stats = pool.stats();
+            self.stats_tracker.insert(type_id, stats);
         }
     }
 }
