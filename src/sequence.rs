@@ -172,7 +172,8 @@ impl<T: Animatable> AnimationSequence<T> {
     /// This method is thread-safe and can be called without ownership
     pub fn execute_completion(&self) {
         if let Ok(mut guard) = self.on_complete.lock()
-            && let Some(callback) = guard.take() {
+            && let Some(callback) = guard.take()
+        {
             callback();
         }
     }

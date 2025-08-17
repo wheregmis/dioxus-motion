@@ -137,7 +137,8 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         // If the cache is valid for this frame, return it
         let now = crate::Time::now().elapsed().as_secs_f32();
         if let Some((ref cached, cached_time)) = self.value_cache
-            && (now - cached_time).abs() < 0.001 {
+            && (now - cached_time).abs() < 0.001
+        {
             return *cached;
         }
         // Not cached or outdated, so cache and return current value
