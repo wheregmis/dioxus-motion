@@ -172,6 +172,22 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
             return false;
         }
 
+        // Check if we're still in delay phase
+        let delay_elapsed = self.delay_elapsed().cloned();
+        if delay_elapsed > Duration::default() {
+            // Still delaying, reduce delay time
+            let dt_duration = Duration::from_secs_f32(dt);
+            if dt_duration >= delay_elapsed {
+                // Delay complete, start animation
+                self.delay_elapsed().set(Duration::default());
+            } else {
+                // Still delaying, reduce delay time safely
+                let new_delay = delay_elapsed - dt_duration;
+                self.delay_elapsed().set(new_delay);
+                return true;
+            }
+        }
+
         // Update elapsed time
         let new_elapsed = self.elapsed().cloned() + Duration::from_secs_f32(dt);
         self.elapsed().set(new_elapsed);
@@ -210,7 +226,12 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                             self.current_loop().set(current_loop + 1);
                             true
                         } else {
-                            // All loops complete, stop animation
+                            // All loops complete, stop animation and execute completion callback
+                            if let Some(on_complete) = &config.on_complete {
+                                if let Ok(mut callback) = on_complete.lock() {
+                                    callback();
+                                }
+                            }
                             self.stop();
                             false
                         }
@@ -261,19 +282,34 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                             self.current_loop().set(current_loop + 1);
                             true
                         } else {
-                            // All loops complete, stop animation
+                            // All loops complete, stop animation and execute completion callback
+                            if let Some(on_complete) = &config.on_complete {
+                                if let Ok(mut callback) = on_complete.lock() {
+                                    callback();
+                                }
+                            }
                             self.stop();
                             false
                         }
                     }
                     LoopMode::None => {
-                        // No loop, stop animation
+                        // No loop, stop animation and execute completion callback
+                        if let Some(on_complete) = &config.on_complete {
+                            if let Ok(mut callback) = on_complete.lock() {
+                                callback();
+                            }
+                        }
                         self.stop();
                         false
                     }
                 }
             } else {
-                // No loop mode specified, stop animation
+                // No loop mode specified, stop animation and execute completion callback
+                if let Some(on_complete) = &config.on_complete {
+                    if let Ok(mut callback) = on_complete.lock() {
+                        callback();
+                    }
+                }
                 self.stop();
                 false
             }
@@ -343,7 +379,12 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                                         self.current_loop().set(current_loop + 1);
                                         true
                                     } else {
-                                        // All loops complete, stop animation
+                                        // All loops complete, stop animation and execute completion callback
+                                        if let Some(on_complete) = &config.on_complete {
+                                            if let Ok(mut callback) = on_complete.lock() {
+                                                callback();
+                                            }
+                                        }
                                         self.stop();
                                         false
                                     }
@@ -394,19 +435,34 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                                         self.current_loop().set(current_loop + 1);
                                         true
                                     } else {
-                                        // All loops complete, stop animation
+                                        // All loops complete, stop animation and execute completion callback
+                                        if let Some(on_complete) = &config.on_complete {
+                                            if let Ok(mut callback) = on_complete.lock() {
+                                                callback();
+                                            }
+                                        }
                                         self.stop();
                                         false
                                     }
                                 }
                                 LoopMode::None => {
-                                    // No loop, stop animation
+                                    // No loop, stop animation and execute completion callback
+                                    if let Some(on_complete) = &config.on_complete {
+                                        if let Ok(mut callback) = on_complete.lock() {
+                                            callback();
+                                        }
+                                    }
                                     self.stop();
                                     false
                                 }
                             }
                         } else {
-                            // No loop mode specified, stop animation
+                            // No loop mode specified, stop animation and execute completion callback
+                            if let Some(on_complete) = &config.on_complete {
+                                if let Ok(mut callback) = on_complete.lock() {
+                                    callback();
+                                }
+                            }
                             self.stop();
                             false
                         }
@@ -884,10 +940,10 @@ pub fn animate_to<T: Animatable + Copy + Default>(
     target: T,
     config: AnimationConfig,
 ) {
-    motion.config().set(config);
+    motion.config().set(config.clone());
     motion.target().set(target);
     motion.running().set(true);
     motion.elapsed().set(Duration::default());
-    motion.delay_elapsed().set(Duration::default());
+    motion.delay_elapsed().set(config.delay); // Set the delay from config
     motion.current_loop().set(0);
 }

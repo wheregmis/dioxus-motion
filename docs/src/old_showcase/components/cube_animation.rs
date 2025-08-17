@@ -1,6 +1,5 @@
 use dioxus::prelude::*;
 use dioxus_motion::{animations::core::Animatable, prelude::*};
-use std::f32::consts::PI;
 use wide::f32x4;
 
 #[derive(Debug, Clone, Copy)]
@@ -231,7 +230,7 @@ pub fn SwingingCube() -> Element {
     let highlight_opacity = use_motion_store(0.0f32);
 
     let animate = move |_| {
-        // Main swing animation
+        // Main swing animation - continuous loop
         animate_to(
             &transform,
             Transform3D::new(45.0, 90.0, 0.0, 0.0, 0.0, 1.2),
@@ -240,10 +239,11 @@ pub fn SwingingCube() -> Element {
                 damping: 8.0,
                 mass: 1.0,
                 velocity: 15.0,
-            })),
+            }))
+            .with_loop(LoopMode::Alternate), // Add continuous alternating loop
         );
 
-        // Glow effect
+        // Glow effect - continuous loop
         animate_to(
             &glow_scale,
             1.5,
@@ -252,10 +252,11 @@ pub fn SwingingCube() -> Element {
                 damping: 10.0,
                 mass: 0.8,
                 velocity: 8.0,
-            })),
+            }))
+            .with_loop(LoopMode::Alternate), // Add continuous alternating loop
         );
 
-        // Pulse effect
+        // Pulse effect - continuous loop
         animate_to(
             &pulse_scale,
             1.3,
@@ -264,10 +265,11 @@ pub fn SwingingCube() -> Element {
                 damping: 12.0,
                 mass: 0.6,
                 velocity: 10.0,
-            })),
+            }))
+            .with_loop(LoopMode::Alternate), // Add continuous alternating loop
         );
 
-        // Highlight effect
+        // Highlight effect - continuous loop
         animate_to(
             &highlight_opacity,
             0.8,
@@ -276,7 +278,8 @@ pub fn SwingingCube() -> Element {
                 damping: 8.0,
                 mass: 0.5,
                 velocity: 5.0,
-            })),
+            }))
+            .with_loop(LoopMode::Alternate), // Add continuous alternating loop
         );
     };
 
