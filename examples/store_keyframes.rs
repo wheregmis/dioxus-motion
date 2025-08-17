@@ -4,8 +4,8 @@
 //! for fine-grained reactivity and smooth complex motion paths.
 
 use dioxus::prelude::*;
-use dioxus_motion::prelude::*;
 use dioxus_motion::KeyframeAnimation;
+use dioxus_motion::prelude::*;
 
 fn main() {
     launch(app);
@@ -45,16 +45,21 @@ fn F32KeyframeDemo() -> Element {
     let (motion, mut animate_keyframes) = use_motion_store_with_keyframes(0.0f32);
     let current = motion.current();
     let is_running = motion.running();
-    
+
     let start_animation = move |_| {
         // Create a complex keyframe animation with different easing
         let keyframes = KeyframeAnimation::new(Duration::from_millis(3000))
-            .add_keyframe(0.0, 0.0, None).unwrap()                     // Start
-            .add_keyframe(150.0, 0.25, Some(ease_out_quad)).unwrap()   // Fast start
-            .add_keyframe(200.0, 0.5, Some(ease_in_out_back)).unwrap() // Overshoot
-            .add_keyframe(50.0, 0.75, Some(ease_out_bounce)).unwrap()  // Bounce
-            .add_keyframe(0.0, 1.0, Some(ease_in_cubic)).unwrap();     // Smooth return
-        
+            .add_keyframe(0.0, 0.0, None)
+            .unwrap() // Start
+            .add_keyframe(150.0, 0.25, Some(ease_out_quad))
+            .unwrap() // Fast start
+            .add_keyframe(200.0, 0.5, Some(ease_in_out_back))
+            .unwrap() // Overshoot
+            .add_keyframe(50.0, 0.75, Some(ease_out_bounce))
+            .unwrap() // Bounce
+            .add_keyframe(0.0, 1.0, Some(ease_in_cubic))
+            .unwrap(); // Smooth return
+
         animate_keyframes(keyframes);
     };
 
@@ -116,13 +121,35 @@ fn TransformKeyframeDemo() -> Element {
     let start_animation = move |_| {
         // Complex transform animation with rotation, scale, and position
         let keyframes = KeyframeAnimation::new(Duration::from_millis(4000))
-            .add_keyframe(Transform::identity(), 0.0, None).unwrap()
-            .add_keyframe(Transform::new(100.0, 0.0, 1.0, 0.0), 0.2, Some(ease_out_quad)).unwrap()
-            .add_keyframe(Transform::new(100.0, 50.0, 1.5, std::f32::consts::PI / 2.0), 0.4, Some(ease_in_out_cubic)).unwrap()
-            .add_keyframe(Transform::new(50.0, 50.0, 0.8, std::f32::consts::PI), 0.6, Some(ease_out_bounce)).unwrap()
-            .add_keyframe(Transform::new(0.0, 25.0, 1.2, std::f32::consts::PI * 1.5), 0.8, Some(ease_in_out_back)).unwrap()
-            .add_keyframe(Transform::identity(), 1.0, Some(ease_out_cubic)).unwrap();
-        
+            .add_keyframe(Transform::identity(), 0.0, None)
+            .unwrap()
+            .add_keyframe(
+                Transform::new(100.0, 0.0, 1.0, 0.0),
+                0.2,
+                Some(ease_out_quad),
+            )
+            .unwrap()
+            .add_keyframe(
+                Transform::new(100.0, 50.0, 1.5, std::f32::consts::PI / 2.0),
+                0.4,
+                Some(ease_in_out_cubic),
+            )
+            .unwrap()
+            .add_keyframe(
+                Transform::new(50.0, 50.0, 0.8, std::f32::consts::PI),
+                0.6,
+                Some(ease_out_bounce),
+            )
+            .unwrap()
+            .add_keyframe(
+                Transform::new(0.0, 25.0, 1.2, std::f32::consts::PI * 1.5),
+                0.8,
+                Some(ease_in_out_back),
+            )
+            .unwrap()
+            .add_keyframe(Transform::identity(), 1.0, Some(ease_out_cubic))
+            .unwrap();
+
         animate_keyframes(keyframes);
     };
 
@@ -177,21 +204,29 @@ fn TransformKeyframeDemo() -> Element {
 
 #[component]
 fn ColorKeyframeDemo() -> Element {
-        let (motion, mut animate_keyframes) = use_motion_store_with_keyframes(Color::new(1.0, 0.0, 0.0, 1.0));
+    let (motion, mut animate_keyframes) =
+        use_motion_store_with_keyframes(Color::new(1.0, 0.0, 0.0, 1.0));
     let current = motion.current();
     let is_running = motion.running();
-    
+
     let start_animation = move |_| {
         // Rainbow color animation through keyframes
         let keyframes = KeyframeAnimation::new(Duration::from_millis(3500))
-            .add_keyframe(Color::new(1.0, 0.0, 0.0, 1.0), 0.0, None).unwrap()    // Red
-            .add_keyframe(Color::new(1.0, 0.5, 0.0, 1.0), 0.16, Some(ease_in_out_sine)).unwrap() // Orange
-            .add_keyframe(Color::new(1.0, 1.0, 0.0, 1.0), 0.33, Some(ease_in_out_sine)).unwrap() // Yellow
-            .add_keyframe(Color::new(0.0, 1.0, 0.0, 1.0), 0.5, Some(ease_in_out_sine)).unwrap()  // Green
-            .add_keyframe(Color::new(0.0, 0.0, 1.0, 1.0), 0.66, Some(ease_in_out_sine)).unwrap() // Blue
-            .add_keyframe(Color::new(0.5, 0.0, 1.0, 1.0), 0.83, Some(ease_in_out_sine)).unwrap() // Indigo
-            .add_keyframe(Color::new(1.0, 0.0, 1.0, 1.0), 1.0, Some(ease_in_out_sine)).unwrap(); // Violet
-        
+            .add_keyframe(Color::new(1.0, 0.0, 0.0, 1.0), 0.0, None)
+            .unwrap() // Red
+            .add_keyframe(Color::new(1.0, 0.5, 0.0, 1.0), 0.16, Some(ease_in_out_sine))
+            .unwrap() // Orange
+            .add_keyframe(Color::new(1.0, 1.0, 0.0, 1.0), 0.33, Some(ease_in_out_sine))
+            .unwrap() // Yellow
+            .add_keyframe(Color::new(0.0, 1.0, 0.0, 1.0), 0.5, Some(ease_in_out_sine))
+            .unwrap() // Green
+            .add_keyframe(Color::new(0.0, 0.0, 1.0, 1.0), 0.66, Some(ease_in_out_sine))
+            .unwrap() // Blue
+            .add_keyframe(Color::new(0.5, 0.0, 1.0, 1.0), 0.83, Some(ease_in_out_sine))
+            .unwrap() // Indigo
+            .add_keyframe(Color::new(1.0, 0.0, 1.0, 1.0), 1.0, Some(ease_in_out_sine))
+            .unwrap(); // Violet
+
         animate_keyframes(keyframes);
     };
 

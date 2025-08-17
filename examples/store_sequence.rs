@@ -49,12 +49,27 @@ fn F32SequenceDemo() -> Element {
     let start_animation = move |_| {
         // Create a sequence of animations with different configurations
         let sequence = AnimationSequence::new()
-            .then(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())))
-            .then(200.0, AnimationConfig::new(AnimationMode::Tween(Tween::default())))
-            .then(150.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())))
-            .then(50.0, AnimationConfig::new(AnimationMode::Tween(Tween::default())))
-            .then(0.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
-        
+            .then(
+                100.0,
+                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+            )
+            .then(
+                200.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween::default())),
+            )
+            .then(
+                150.0,
+                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+            )
+            .then(
+                50.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween::default())),
+            )
+            .then(
+                0.0,
+                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+            );
+
         animate_sequence(sequence);
     };
 
@@ -140,7 +155,7 @@ fn TransformSequenceDemo() -> Element {
     let is_running = motion.running();
     let current_step = motion.current_sequence_step();
 
-        let start_animation = move |_| {
+    let start_animation = move |_| {
         // Create a complex transform sequence
         let sequence = AnimationSequence::new()
             .then(
@@ -244,12 +259,13 @@ fn TransformSequenceDemo() -> Element {
 
 #[component]
 fn ColorSequenceDemo() -> Element {
-    let (motion, mut animate_sequence) = use_motion_store_with_sequences(Color::new(1.0, 0.0, 0.0, 1.0));
+    let (motion, mut animate_sequence) =
+        use_motion_store_with_sequences(Color::new(1.0, 0.0, 0.0, 1.0));
     let current = motion.current();
     let is_running = motion.running();
     let current_step = motion.current_sequence_step();
 
-        let start_animation = move |_| {
+    let start_animation = move |_| {
         // Create a color sequence through the spectrum
         let sequence = AnimationSequence::new()
             .then(
