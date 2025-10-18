@@ -1,15 +1,17 @@
-//! Unified Motion Store API with fine-grained reactivity
+//! Motion Store API - The primary animation interface for Dioxus Motion
 //!
-//! This module provides a store-based animation API that enables fine-grained
-//! reactivity where components can subscribe to specific fields of the animation
-//! state rather than the entire Motion struct. This reduces unnecessary re-renders.
+//! This module provides the main animation API for Dioxus Motion. It offers a
+//! store-based approach with fine-grained reactivity, allowing components to
+//! subscribe to specific fields of the animation state rather than the entire
+//! animation object. This reduces unnecessary re-renders and provides optimal
+//! performance.
 //!
 //! # Features
 //! - Fine-grained reactivity via Dioxus Store
 //! - Support for simple animations, keyframes, and sequences
 //! - Event callbacks (on_complete, on_update)
 //! - Unified animation loop (no duplicate spawns)
-//! - Performance optimizations (pooling, caching)
+//! - Platform-specific optimizations
 
 use crate::Duration;
 use crate::animations::core::{Animatable, AnimationConfig, AnimationMode, LoopMode};

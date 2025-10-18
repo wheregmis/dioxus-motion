@@ -98,8 +98,6 @@ pub use instant::Duration;
 
 pub mod animations;
 pub mod keyframes;
-pub mod motion;
-pub mod pool;
 pub mod sequence;
 pub mod store;
 #[cfg(feature = "transitions")]
@@ -111,7 +109,6 @@ pub use dioxus_motion_transitions_macro;
 pub use animations::platform::{MotionTime, TimeProvider};
 
 pub use keyframes::{Keyframe, KeyframeAnimation};
-
 
 // Re-exports
 pub mod prelude {
@@ -131,9 +128,6 @@ pub mod prelude {
         use_animated_router,
     };
     pub use crate::{Duration, Time, TimeProvider};
-
-    // Optimization exports
-    pub use crate::motion::MotionOptimizationStats;
 }
 
 pub type Time = MotionTime;

@@ -6,9 +6,6 @@
 use instant::{Duration, Instant};
 use std::future::Future;
 
-#[cfg(feature = "web")]
-use wasm_bindgen::prelude::*;
-
 /// Provides platform-agnostic timing operations
 ///
 /// Abstracts timing functionality across different platforms,
