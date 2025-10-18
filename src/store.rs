@@ -19,6 +19,32 @@ use crate::sequence::AnimationSequence;
 use dioxus::prelude::*;
 use std::sync::Arc;
 
+/// Helper function to calculate the appropriate delay for the animation loop
+fn calculate_delay(dt: f32, running_frames: u32) -> Duration {
+    #[cfg(feature = "web")]
+    {
+        // running_frames is not used in web builds but kept for API consistency
+        let _ = running_frames;
+        match dt {
+            x if x < 0.008 => Duration::from_millis(8),  // ~120fps
+            x if x < 0.016 => Duration::from_millis(16), // ~60fps
+            _ => Duration::from_millis(32),              // ~30fps
+        }
+    }
+    #[cfg(not(feature = "web"))]
+    {
+        if running_frames <= 200 {
+            Duration::from_micros(8333) // ~120fps
+        } else {
+            match dt {
+                x if x < 0.005 => Duration::from_millis(8),  // ~120fps
+                x if x < 0.011 => Duration::from_millis(16), // ~60fps
+                _ => Duration::from_millis(33),              // ~30fps
+            }
+        }
+    }
+}
+
 /// Animation type discriminant
 #[derive(Clone, Debug, PartialEq)]
 enum AnimationType {
@@ -466,14 +492,14 @@ pub fn use_motion_store<T: Animatable + Copy + Default + Send + 'static>(
                         if (new_value - prev_value).magnitude() > epsilon || updated {
                             // Continue with normal frame timing
                         } else {
-                            let delay = crate::calculate_delay(dt, running_frames);
+                            let delay = calculate_delay(dt, running_frames);
                             crate::MotionTime::delay(delay).await;
                             continue;
                         }
 
                         // Maintain minimum frame time
-                        let delay = crate::calculate_delay(dt, running_frames)
-                            .max(Duration::from_millis(8)); // Max ~120 FPS
+                        let delay =
+                            calculate_delay(dt, running_frames).max(Duration::from_millis(8)); // Max ~120 FPS
                         crate::MotionTime::delay(delay).await;
                     } else {
                         running_frames = 0;

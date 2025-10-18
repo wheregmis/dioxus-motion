@@ -181,7 +181,7 @@ Replace `MyType::zero()` calls with `MyType::default()`.
 
 ### Color Animations
 ```rust
-let color = use_motion(Color::from_rgba(59, 130, 246, 255));
+let color = use_motion_store(Color::from_rgba(59, 130, 246, 255));
 color.animate_to(
     Color::from_rgba(168, 85, 247, 255),
     AnimationConfig::new(AnimationMode::Spring(Spring::default()))

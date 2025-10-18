@@ -14,11 +14,11 @@ use crate::utils::router::Route;
 ///
 
 pub fn Home() -> Element {
-    let hero_opacity = use_motion(1.0f32); // Changed from 0.0 to 1.0
-    let mut demo_scale = use_motion(1.0f32);
+    let hero_opacity = use_motion_store(1.0f32); // Changed from 0.0 to 1.0
+    let mut demo_scale = use_motion_store(1.0f32);
     // Remove these animations since we don't want them
-    // let mut title_y = use_motion(-20.0f32);
-    // let mut subtitle_y = use_motion(20.0f32);
+    // let mut title_y = use_motion_store(-20.0f32);
+    // let mut subtitle_y = use_motion_store(20.0f32);
 
     use_effect(move || {
         {
@@ -190,8 +190,8 @@ pub fn Home() -> Element {
 ///
 
 fn FeatureCard(title: &'static str, description: &'static str, icon: &'static str) -> Element {
-    let mut card_scale = use_motion(1.0f32);
-    let mut card_y = use_motion(0.0f32);
+    let mut card_scale = use_motion_store(1.0f32);
+    let mut card_y = use_motion_store(0.0f32);
 
     rsx! {
         div {

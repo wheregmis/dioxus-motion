@@ -284,7 +284,7 @@ use dioxus_motion::prelude::*;
 
 #[component]
 fn AnimatedButton() -> Element {
-    let mut scale = use_motion(1.0f32);
+    let mut scale = use_motion_store(1.0f32);
 
     let hover = move |_| {
         scale.animate_to(

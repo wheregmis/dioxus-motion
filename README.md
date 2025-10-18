@@ -83,7 +83,7 @@ use dioxus_motion::prelude::*;
 
 #[component]
 fn PulseEffect() -> Element {
-    let scale = use_motion(1.0f32);
+    let scale = use_motion_store(1.0f32);
 
     use_effect(move || {
         scale.animate_to(
@@ -112,7 +112,7 @@ fn PulseEffect() -> Element {
 Chain multiple animations together with different configurations:
 
 ```rust
-let scale = use_motion(1.0f32);
+let scale = use_motion_store(1.0f32);
 
 // Create a bouncy sequence
 let sequence = AnimationSequence::new()
@@ -257,7 +257,7 @@ impl Animatable for Point3D {
 }
 
 // Now you can animate 3D points!
-let mut position = use_motion(Point3D::default());
+let mut position = use_motion_store(Point3D::default());
 position.animate_to(
     Point3D { x: 10.0, y: 5.0, z: -2.0 },
     AnimationConfig::new(AnimationMode::Spring(Spring::default()))
@@ -287,16 +287,16 @@ position.animate_to(
 use dioxus_motion::prelude::*;
 
 // ✅ This works - f32 is Send + 'static
-let motion = use_motion(0.0f32);
+let motion = use_motion_store(0.0f32);
 
 // ✅ This works - custom type with Send + 'static
 #[derive(Copy, Clone, Default)]
 struct Point { x: f32, y: f32 } // Send + 'static automatically derived
 
-let point_motion = use_motion(Point::default());
+let point_motion = use_motion_store(Point::default());
 
 // ❌ This won't compile - Rc<T> is not Send
-// let bad_motion = use_motion(std::rc::Rc::new(0.0f32));
+// let bad_motion = use_motion_store(std::rc::Rc::new(0.0f32));
 
 // ✅ Use Arc<T> instead for shared ownership
 // Note: The type inside Arc must implement Animatable
@@ -334,10 +334,10 @@ impl dioxus_motion::animations::core::Animatable for SharedValue {
     }
 }
 
-let shared_motion = use_motion(SharedValue { value: 0.0 });
+let shared_motion = use_motion_store(SharedValue { value: 0.0 });
 
 // ✅ Alternative: Use Arc to share the motion itself (not the value)
-let shared_motion_handle = std::sync::Arc::new(use_motion(0.0f32));
+let shared_motion_handle = std::sync::Arc::new(use_motion_store(0.0f32));
 // Now you can clone the Arc and share the motion across components
 let motion_clone = shared_motion_handle.clone();
 ```
@@ -360,7 +360,7 @@ use dioxus_motion::prelude::*;
 let mut motion = use_value_animation(Motion::new(0.0).to(100.0));
 
 // After (v0.2.x)
-let mut value = use_motion(0.0f32);
+let mut value = use_motion_store(0.0f32);
 value.animate_to(
     100.0,
     AnimationConfig::new(AnimationMode::Tween(Tween {
@@ -373,7 +373,7 @@ value.animate_to(
 let mut transform = use_transform_animation(Transform::default());
 
 // After (v0.2.x)
-let mut transform = use_motion(Transform::default());
+let mut transform = use_motion_store(Transform::default());
 transform.animate_to(
     Transform::new(100.0, 0.0, 1.2, 45.0),
     AnimationConfig::new(AnimationMode::Spring(Spring {
@@ -388,7 +388,7 @@ transform.animate_to(
 ### If you were using transform.get_style(), that function is removed to make the library more generic so I recommend building something like
 
 ```rust
-    let transform = use_motion(Transform::default());
+    let transform = use_motion_store(Transform::default());
 
     let transform_style = use_memo(move || {
         format!(

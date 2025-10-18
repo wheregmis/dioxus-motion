@@ -32,7 +32,7 @@ fn AnimationStep(title: String, description: String, code: String, children: Ele
 
 #[component]
 fn BasicValueAnimation() -> Element {
-    let mut opacity = use_motion(0.0f32);
+    let mut opacity = use_motion_store(0.0f32);
     let mut is_visible = use_signal(|| false);
 
     use_effect(move || {
@@ -72,7 +72,7 @@ fn BasicValueAnimation() -> Element {
 
 #[component]
 fn TransformAnimation() -> Element {
-    let mut transform = use_motion(Transform::new(0.0, 0.0, 1.0, 0.0));
+    let mut transform = use_motion_store(Transform::new(0.0, 0.0, 1.0, 0.0));
     let mut is_animated = use_signal(|| false);
 
     use_effect(move || {
@@ -186,7 +186,7 @@ impl Animatable for ColorValue {
 
 #[component]
 fn CustomColorAnimation() -> Element {
-    let mut color = use_motion(ColorValue {
+    let mut color = use_motion_store(ColorValue {
         r: 0.2,
         g: 0.5,
         b: 0.8,
@@ -251,8 +251,8 @@ fn CustomColorAnimation() -> Element {
 
 #[component]
 fn SequenceAnimation() -> Element {
-    let mut value = use_motion(0.0f32);
-    let mut scale = use_motion(1.0f32);
+    let mut value = use_motion_store(0.0f32);
+    let mut scale = use_motion_store(1.0f32);
     let mut count = use_signal(|| 0);
 
     let onclick = move |_| {
@@ -342,7 +342,7 @@ pub fn Animations() -> Element {
                 title: "1. Basic Tween Animation".to_string(),
                 description: "Time-based animations with precise control over duration and easing. Perfect for fade effects and smooth transitions.".to_string(),
                 code: r#"// Initialize the motion value
-let mut opacity = use_motion(0.0f32);
+let mut opacity = use_motion_store(0.0f32);
 
 // Option 1: Trigger on mount
 use_effect(move || {
@@ -385,7 +385,7 @@ rsx! {
 
 #[component]
 fn TransformAnimation() -> Element {
-    let mut transform = use_motion(Transform::new(0.0, 0.0, 1.0, 0.0));
+    let mut transform = use_motion_store(Transform::new(0.0, 0.0, 1.0, 0.0));
     let mut is_animated = use_signal(|| false);
 
     use_effect(move || {
@@ -448,7 +448,7 @@ fn TransformAnimation() -> Element {
 // - x, y: Position
 // - scale: Size
 // - rotation: Angle in radians
-let mut transform = use_motion(Transform::new(0.0, 0.0, 1.0, 0.0));
+let mut transform = use_motion_store(Transform::new(0.0, 0.0, 1.0, 0.0));
 
 // Animate with spring for natural motion
 transform.animate_to(
@@ -533,7 +533,7 @@ impl Animatable for ColorValue {
 }
 
 // Use it like any other motion value
-let mut color = use_motion(ColorValue { r: 0.2, g: 0.5, b: 0.8 });
+let mut color = use_motion_store(ColorValue { r: 0.2, g: 0.5, b: 0.8 });
 color.animate_to(
     ColorValue { r: 0.8, g: 0.3, b: 0.2 },
     AnimationConfig::new(AnimationMode::Spring(Spring::default())),
@@ -546,8 +546,8 @@ color.animate_to(
                 title: "5. Animation Sequences".to_string(),
                 description: "Chain multiple animations together to create complex, coordinated motion. Perfect for multi-step animations and interactive counters.".to_string(),
                 code: r#"// Initialize multiple motion values
-let mut value = use_motion(0.0f32);
-let mut scale = use_motion(1.0f32);
+let mut value = use_motion_store(0.0f32);
+let mut scale = use_motion_store(1.0f32);
 let mut count = use_signal(|| 0);
 
 // Create and trigger a sequence on button click
@@ -652,9 +652,9 @@ value.animate_to(
 
 #[component]
 fn AdvancedFeaturesAnimation() -> Element {
-    let mut infinite_value = use_motion(0.0f32);
-    let mut delayed_value = use_motion(0.0f32);
-    let mut callback_value = use_motion(0.0f32);
+    let mut infinite_value = use_motion_store(0.0f32);
+    let mut delayed_value = use_motion_store(0.0f32);
+    let mut callback_value = use_motion_store(0.0f32);
     // Infinite loop animation
     let start_infinite = move |_| {
         infinite_value.animate_to(

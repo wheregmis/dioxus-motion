@@ -28,7 +28,7 @@ dioxus-motion is built on two foundational animation concepts:
 
 ### Core Animation Example
 ```rust
-let mut position = use_motion(0.0f32);
+let mut position = use_motion_store(0.0f32);
 position.animate_to(
     100.0,
     AnimationConfig::new(AnimationMode::Spring(Spring {
@@ -100,7 +100,7 @@ struct Transform3D {
 
 #[component]
 fn SwingingCube() -> Element {
-    let mut transform = use_motion(Transform3D::zero());
+    let mut transform = use_motion_store(Transform3D::zero());
     
     // Animate the cube with spring physics
     transform.animate_to(
@@ -138,8 +138,8 @@ struct PetalTransform {
 
 #[component]
 fn AnimatedFlower() -> Element {
-    let mut petal_transform = use_motion(PetalTransform::zero());
-    let mut center_scale = use_motion(0.0f32);
+    let mut petal_transform = use_motion_store(PetalTransform::zero());
+    let mut center_scale = use_motion_store(0.0f32);
     
     // Animate petals blooming
     petal_transform.animate_to(

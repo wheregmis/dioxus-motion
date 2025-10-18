@@ -11,8 +11,8 @@ use crate::utils::router::Route;
 /// It displays a logo, navigation links, and buttons for GitHub and Crates.io. On smaller viewports,
 /// a mobile menu can be toggled to show similar navigation links with an overlay effect.
 pub fn NavBar() -> Element {
-    let mut nav_bg = use_motion(Transform::new(0.0, -100.0, 1.0, 0.0));
-    let mut nav_opacity = use_motion(0.0f32);
+    let mut nav_bg = use_motion_store(Transform::new(0.0, -100.0, 1.0, 0.0));
+    let mut nav_opacity = use_motion_store(0.0f32);
     let mut is_menu_open = use_signal(|| false);
 
     use_effect(move || {

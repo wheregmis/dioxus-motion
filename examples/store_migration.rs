@@ -202,7 +202,7 @@ fn PerformanceComparison() -> Element {
                 div {
                     h4 { style: "color: #f44336;", "❌ Old Signal-based Approach" }
                     pre { style: "background: #ffebee; padding: 10px; border-radius: 4px; font-size: 12px;",
-                        "let motion = use_motion(0.0f32);\n\n"
+                        "let motion = use_motion_store(0.0f32);\n\n"
                         "// ALL components re-render when\n"
                         "// ANY motion property changes:\n"
                         "// - Position updates\n"
