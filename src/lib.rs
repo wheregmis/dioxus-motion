@@ -108,7 +108,6 @@ pub mod motion;
 pub mod pool;
 pub mod sequence;
 pub mod store;
-pub mod store_enhanced;
 #[cfg(feature = "transitions")]
 pub mod transitions;
 
@@ -131,13 +130,7 @@ pub mod prelude {
     #[cfg(feature = "transitions")]
     pub use crate::dioxus_motion_transitions_macro::MotionTransitions;
     pub use crate::sequence::AnimationSequence;
-    pub use crate::store::{
-        MotionStore, MotionStoreStoreExt, animate_to, use_motion_store, use_motion_store_keyframes,
-        use_motion_store_sequence,
-    };
-    pub use crate::store_enhanced::{
-        use_motion_store_with_keyframes, use_motion_store_with_sequences,
-    };
+    pub use crate::store::{MotionHandle, MotionStore, MotionStoreStoreExt, use_motion_store};
     #[cfg(feature = "transitions")]
     pub use crate::transitions::config::TransitionVariant;
     #[cfg(feature = "transitions")]

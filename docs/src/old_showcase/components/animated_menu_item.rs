@@ -4,41 +4,35 @@ use dioxus_motion::prelude::*;
 // An interactive menu item with smooth transitions
 #[component]
 pub fn AnimatedMenuItem(label: String) -> Element {
-    let x_offset = use_motion_store(0.0f32);
-    let scale = use_motion_store(1.0f32);
-    let glow = use_motion_store(0.0f32);
+    let mut x_offset = use_motion_store(0.0f32);
+    let mut scale = use_motion_store(1.0f32);
+    let mut glow = use_motion_store(0.0f32);
 
     let onmouseenter = move |_| {
-        animate_to(
-            &x_offset,
+        x_offset.animate_to(
             20.0,
             AnimationConfig::new(AnimationMode::Spring(Spring::default())),
         );
-        animate_to(
-            &scale,
+        scale.animate_to(
             1.1,
             AnimationConfig::new(AnimationMode::Spring(Spring::default())),
         );
-        animate_to(
-            &glow,
+        glow.animate_to(
             1.0,
             AnimationConfig::new(AnimationMode::Spring(Spring::default())),
         );
     };
 
     let onmouseleave = move |_| {
-        animate_to(
-            &x_offset,
+        x_offset.animate_to(
             0.0,
             AnimationConfig::new(AnimationMode::Spring(Spring::default())),
         );
-        animate_to(
-            &scale,
+        scale.animate_to(
             1.0,
             AnimationConfig::new(AnimationMode::Spring(Spring::default())),
         );
-        animate_to(
-            &glow,
+        glow.animate_to(
             0.0,
             AnimationConfig::new(AnimationMode::Spring(Spring::default())),
         );
@@ -47,13 +41,13 @@ pub fn AnimatedMenuItem(label: String) -> Element {
     rsx! {
         div {
             class: "relative p-4 cursor-pointer bg-linear-to-r from-gray-800 to-gray-900 text-white rounded-xl overflow-hidden group",
-            style: "transform: translateX({x_offset.current()}px) scale({scale.current()})",
+            style: "transform: translateX({x_offset.store().current()}px) scale({scale.store().current()})",
             onmouseenter,
             onmouseleave,
             // Glow effect
             div {
                 class: "absolute inset-0 bg-linear-to-r from-blue-500/30 to-purple-500/30 transition-opacity duration-300",
-                style: "opacity: {glow.current()}",
+                style: "opacity: {glow.store().current()}",
             }
             // Content
             div { class: "relative z-10 flex items-center gap-2",

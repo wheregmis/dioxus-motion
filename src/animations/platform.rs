@@ -95,7 +95,7 @@ impl TimeProvider for MotionTime {
         receiver.map(|_| ())
     }
 
-    #[cfg(not(feature = "web"))]
+    #[cfg(all(not(feature = "web"), feature = "desktop"))]
     fn delay(duration: Duration) -> impl Future<Output = ()> {
         Box::pin(async move {
             // Threshold-based sleep optimization
@@ -116,6 +116,16 @@ impl TimeProvider for MotionTime {
                 // For very short durations, skip sleep entirely to avoid CPU waste
                 // This prevents unnecessary context switching for sub-millisecond delays
                 tokio::task::yield_now().await;
+            }
+        })
+    }
+
+    #[cfg(all(not(feature = "web"), not(feature = "desktop")))]
+    fn delay(duration: Duration) -> impl Future<Output = ()> {
+        Box::pin(async move {
+            // Use spin_sleep directly when tokio is not available
+            if duration > Duration::from_micros(100) {
+                spin_sleep::sleep(duration);
             }
         })
     }

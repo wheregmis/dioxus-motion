@@ -100,6 +100,33 @@ impl AnimationConfig {
         }
     }
 
+    /// Creates a spring animation configuration with default spring parameters
+    pub fn spring() -> Self {
+        Self::new(AnimationMode::Spring(Spring::default()))
+    }
+
+    /// Creates a tween animation configuration with default tween parameters
+    pub fn tween() -> Self {
+        Self::new(AnimationMode::Tween(Tween::default()))
+    }
+
+    /// Creates a custom spring animation configuration
+    pub fn custom_spring(stiffness: f32, damping: f32, mass: f32) -> Self {
+        Self::new(AnimationMode::Spring(Spring {
+            stiffness,
+            damping,
+            mass,
+            velocity: 0.0,
+        }))
+    }
+
+    /// Creates a custom tween animation configuration
+    pub fn custom_tween(duration: Duration, easing: fn(f32, f32, f32, f32) -> f32) -> Self {
+        Self::new(AnimationMode::Tween(
+            Tween::new(duration).with_easing(easing),
+        ))
+    }
+
     /// Sets the loop mode for the animation
     pub fn with_loop(mut self, loop_mode: LoopMode) -> Self {
         self.loop_mode = Some(loop_mode);

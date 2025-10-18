@@ -220,19 +220,18 @@ impl Animatable for WaxTransform {
 
 #[component]
 pub fn CandleAnimation() -> Element {
-    let flame_transform = use_motion_store(FlameTransform::default());
-    let inner_flame_transform = use_motion_store(FlameTransform::default());
-    let glow_scale = use_motion_store(1.0f32);
-    let wax_transform = use_motion_store(WaxTransform::default());
-    let drip_opacity = use_motion_store(0.0f32);
-    let ambient_glow = use_motion_store(0.3f32);
-    let smoke_opacity = use_motion_store(0.0f32);
-    let wick_glow = use_motion_store(0.0f32);
+    let mut flame_transform = use_motion_store(FlameTransform::default());
+    let mut inner_flame_transform = use_motion_store(FlameTransform::default());
+    let mut glow_scale = use_motion_store(1.0f32);
+    let mut wax_transform = use_motion_store(WaxTransform::default());
+    let mut drip_opacity = use_motion_store(0.0f32);
+    let mut ambient_glow = use_motion_store(0.3f32);
+    let mut smoke_opacity = use_motion_store(0.0f32);
+    let mut wick_glow = use_motion_store(0.0f32);
 
     let animate_flame = move |_: Event<MountedData>| {
         // Main flame flickering animation - more realistic
-        animate_to(
-            &flame_transform,
+        flame_transform.animate_to(
             FlameTransform::new(1.15, 1.05, 1.5, 0.3, -0.5, 0.95),
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 180.0,
@@ -244,8 +243,7 @@ pub fn CandleAnimation() -> Element {
         );
 
         // Inner flame animation (more intense flickering)
-        animate_to(
-            &inner_flame_transform,
+        inner_flame_transform.animate_to(
             FlameTransform::new(1.25, 1.15, 2.0, 0.4, -0.8, 0.85),
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 220.0,
@@ -257,8 +255,7 @@ pub fn CandleAnimation() -> Element {
         );
 
         // Glow effect - subtle pulsing
-        animate_to(
-            &glow_scale,
+        glow_scale.animate_to(
             1.2,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 120.0,
@@ -270,8 +267,7 @@ pub fn CandleAnimation() -> Element {
         );
 
         // Wax melting effect - gradual
-        animate_to(
-            &wax_transform,
+        wax_transform.animate_to(
             WaxTransform::new(0.92, 3.0, 0.85, 8.0),
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 25.0,
@@ -283,8 +279,7 @@ pub fn CandleAnimation() -> Element {
         );
 
         // Drip effect - intermittent
-        animate_to(
-            &drip_opacity,
+        drip_opacity.animate_to(
             0.7,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 60.0,
@@ -296,8 +291,7 @@ pub fn CandleAnimation() -> Element {
         );
 
         // Ambient glow - warm light
-        animate_to(
-            &ambient_glow,
+        ambient_glow.animate_to(
             0.5,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 80.0,
@@ -309,8 +303,7 @@ pub fn CandleAnimation() -> Element {
         );
 
         // Smoke effect - subtle
-        animate_to(
-            &smoke_opacity,
+        smoke_opacity.animate_to(
             0.3,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 40.0,
@@ -322,8 +315,7 @@ pub fn CandleAnimation() -> Element {
         );
 
         // Wick glow effect
-        animate_to(
-            &wick_glow,
+        wick_glow.animate_to(
             0.8,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 150.0,
@@ -340,7 +332,7 @@ pub fn CandleAnimation() -> Element {
             // Background ambient glow - warm candlelight
             div {
                 class: "absolute",
-                style: "filter: blur(25px); opacity: {ambient_glow.current()()}",
+                style: "filter: blur(25px); opacity: {ambient_glow.store().current()()}",
                 svg {
                     width: "250",
                     height: "250",
@@ -454,7 +446,7 @@ pub fn CandleAnimation() -> Element {
                                 cy: "{-45.0 - (i as f32 * 6.0)}",
                                 r: "{4.0 + (i as f32 * 1.0)}",
                                 fill: "url(#smoke_gradient)",
-                                opacity: "{smoke_opacity.current()() * (1.0 - i as f32 * 0.3)}",
+                                opacity: "{smoke_opacity.store().current()() * (1.0 - i as f32 * 0.3)}",
                                 style: "filter: blur(1px)",
                             }
                         }
@@ -465,7 +457,7 @@ pub fn CandleAnimation() -> Element {
                 circle {
                     cx: "0",
                     cy: "-35",
-                    r: "{15.0 * glow_scale.current()()}",
+                    r: "{15.0 * glow_scale.store().current()()}",
                     fill: "url(#ambient_gradient)",
                     filter: "url(#glow)",
                 }
@@ -475,11 +467,11 @@ pub fn CandleAnimation() -> Element {
                     x: "-8",
                     y: "-40",
                     width: "16",
-                    height: "{70.0 * wax_transform.current()().scale_y}",
+                    height: "{70.0 * wax_transform.store().current()().scale_y}",
                     fill: "url(#candle_gradient)",
                     stroke: "#d97706",
                     stroke_width: "0.3",
-                    opacity: "{wax_transform.current()().opacity}",
+                    opacity: "{wax_transform.store().current()().opacity}",
                     style: "filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
                 }
 
@@ -500,7 +492,7 @@ pub fn CandleAnimation() -> Element {
                     cy: "-40",
                     r: "2",
                     fill: "url(#wick_glow)",
-                    opacity: "{wick_glow.current()()}",
+                    opacity: "{wick_glow.store().current()()}",
                     style: "filter: blur(0.5px)",
                 }
 
@@ -515,7 +507,7 @@ pub fn CandleAnimation() -> Element {
                                 stroke: "#fbbf24",
                                 stroke_width: "1",
                                 fill: "none",
-                                opacity: "{drip_opacity.current()() * (0.9 - i as f32 * 0.2)}",
+                                opacity: "{drip_opacity.store().current()() * (0.9 - i as f32 * 0.2)}",
                                 style: "filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1))",
                             }
                         }
@@ -526,10 +518,10 @@ pub fn CandleAnimation() -> Element {
                 path {
                     d: "M -4 -35 Q 0 -45 4 -35 Q 3 -30 0 -28 Q -3 -30 -4 -35",
                     fill: "url(#flame_outer)",
-                    opacity: "{flame_transform.current()().opacity}",
-                    transform: "translate({flame_transform.current()().translate_x} {flame_transform.current()().translate_y})
-                                rotate({flame_transform.current()().rotate})
-                                scale({flame_transform.current()().scale_x} {flame_transform.current()().scale_y})",
+                    opacity: "{flame_transform.store().current()().opacity}",
+                    transform: "translate({flame_transform.store().current()().translate_x} {flame_transform.store().current()().translate_y})
+                                rotate({flame_transform.store().current()().rotate})
+                                scale({flame_transform.store().current()().scale_x} {flame_transform.store().current()().scale_y})",
                     style: "filter: drop-shadow(0 1px 3px rgba(251,191,36,0.3))",
                 }
 
@@ -537,10 +529,10 @@ pub fn CandleAnimation() -> Element {
                 path {
                     d: "M -3 -35 Q 0 -42 3 -35 Q 2 -31 0 -29 Q -2 -31 -3 -35",
                     fill: "url(#flame_inner)",
-                    opacity: "{inner_flame_transform.current()().opacity}",
-                    transform: "translate({inner_flame_transform.current()().translate_x} {inner_flame_transform.current()().translate_y})
-                                rotate({inner_flame_transform.current()().rotate})
-                                scale({inner_flame_transform.current()().scale_x} {inner_flame_transform.current()().scale_y})",
+                    opacity: "{inner_flame_transform.store().current()().opacity}",
+                    transform: "translate({inner_flame_transform.store().current()().translate_x} {inner_flame_transform.store().current()().translate_y})
+                                rotate({inner_flame_transform.store().current()().rotate})
+                                scale({inner_flame_transform.store().current()().scale_x} {inner_flame_transform.store().current()().scale_y})",
                     style: "filter: drop-shadow(0 1px 2px rgba(254,243,199,0.4))",
                 }
 
@@ -550,7 +542,7 @@ pub fn CandleAnimation() -> Element {
                     cy: "-42",
                     r: "1.5",
                     fill: "#fef3c7",
-                    opacity: "{0.9 * flame_transform.current()().opacity}",
+                    opacity: "{0.9 * flame_transform.store().current()().opacity}",
                     style: "filter: blur(0.3px)",
                 }
 

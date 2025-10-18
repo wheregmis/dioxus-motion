@@ -1171,11 +1171,12 @@ dependencies = [
 
 [[package]]
 name = "dioxus-motion"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "dioxus",
  "dioxus-motion",
  "dioxus-motion-transitions-macro",
+ "dioxus-router",
  "easer",
  "futures-channel",
  "futures-util",

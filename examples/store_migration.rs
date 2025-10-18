@@ -48,14 +48,14 @@ fn AnimationDemo() -> Element {
             div { style: "display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;",
 
                 // Animated element - only re-renders when position changes
-                AnimatedElement { motion }
+                AnimatedElement { motion: motion.store().clone() }
 
                 // Control panel - only re-renders when running state or target changes
-                ControlPanel { motion }
+                ControlPanel { motion: motion.store().clone() }
             }
 
             // Debug info - only re-renders when debug data changes
-            DebugInfo { motion }
+            DebugInfo { motion: motion.store().clone() }
         }
     }
 }

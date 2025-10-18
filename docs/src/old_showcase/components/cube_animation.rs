@@ -224,15 +224,14 @@ const FACES: [[usize; 4]; 6] = [
 
 #[component]
 pub fn SwingingCube() -> Element {
-    let transform = use_motion_store(Transform3D::default());
-    let glow_scale = use_motion_store(1.0f32);
-    let pulse_scale = use_motion_store(1.0f32);
-    let highlight_opacity = use_motion_store(0.0f32);
+    let mut transform = use_motion_store(Transform3D::default());
+    let mut glow_scale = use_motion_store(1.0f32);
+    let mut pulse_scale = use_motion_store(1.0f32);
+    let mut highlight_opacity = use_motion_store(0.0f32);
 
     let animate = move |_| {
         // Main swing animation - continuous loop
-        animate_to(
-            &transform,
+        transform.animate_to(
             Transform3D::new(45.0, 90.0, 0.0, 0.0, 0.0, 1.2),
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 80.0,
@@ -244,8 +243,7 @@ pub fn SwingingCube() -> Element {
         );
 
         // Glow effect - continuous loop
-        animate_to(
-            &glow_scale,
+        glow_scale.animate_to(
             1.5,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 120.0,
@@ -257,8 +255,7 @@ pub fn SwingingCube() -> Element {
         );
 
         // Pulse effect - continuous loop
-        animate_to(
-            &pulse_scale,
+        pulse_scale.animate_to(
             1.3,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 200.0,
@@ -270,8 +267,7 @@ pub fn SwingingCube() -> Element {
         );
 
         // Highlight effect - continuous loop
-        animate_to(
-            &highlight_opacity,
+        highlight_opacity.animate_to(
             0.8,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 150.0,
@@ -286,14 +282,14 @@ pub fn SwingingCube() -> Element {
     let projected_vertices: Vec<(f32, f32)> = VERTICES
         .iter()
         .map(|v| {
-            v.rotate_x(transform.current()().rotate_x)
-                .rotate_y(transform.current()().rotate_y)
-                .rotate_z(transform.current()().rotate_z)
+            v.rotate_x(transform.store().current()().rotate_x)
+                .rotate_y(transform.store().current()().rotate_y)
+                .rotate_z(transform.store().current()().rotate_z)
                 .translate(
-                    transform.current()().translate_x,
-                    transform.current()().translate_y,
+                    transform.store().current()().translate_x,
+                    transform.store().current()().translate_y,
                 )
-                .project(50.0 * transform.current()().scale * pulse_scale.current()())
+                .project(50.0 * transform.store().current()().scale * pulse_scale.store().current()())
         })
         .collect();
 
@@ -351,7 +347,7 @@ pub fn SwingingCube() -> Element {
                 circle {
                     cx: "100.0",
                     cy: "100.0",
-                    r: "{40.0 * glow_scale.current()()}",
+                    r: "{40.0 * glow_scale.store().current()()}",
                     fill: "url(#cube-gradient)",
                     filter: "url(#glow)",
                     opacity: "0.4",
@@ -404,7 +400,7 @@ pub fn SwingingCube() -> Element {
                                     path {
                                         d: "{path}",
                                         fill: "url(#highlight)",
-                                        opacity: "{highlight_opacity.current()()}",
+                                        opacity: "{highlight_opacity.store().current()()}",
                                     }
                                 }
                             }

@@ -92,19 +92,18 @@ impl Animatable for PetalTransform {
 
 #[component]
 pub fn AnimatedFlower() -> Element {
-    let petal_transform = use_motion_store(PetalTransform::default());
-    let leaf_transform = use_motion_store(PetalTransform::default());
-    let center_scale = use_motion_store(1.0f32); // Start from 1.0 instead of 0.0
-    let center_rotate = use_motion_store(0.0f32);
+    let mut petal_transform = use_motion_store(PetalTransform::default());
+    let mut leaf_transform = use_motion_store(PetalTransform::default());
+    let mut center_scale = use_motion_store(1.0f32); // Start from 1.0 instead of 0.0
+    let mut center_rotate = use_motion_store(0.0f32);
     let mut is_leaves_grown = use_signal_sync(|| false);
-    let stem_length = use_motion_store(100.0f32);
-    let stem_sway = use_motion_store(0.0f32);
-    let glow_opacity = use_motion_store(0.0f32);
+    let mut stem_length = use_motion_store(100.0f32);
+    let mut stem_sway = use_motion_store(0.0f32);
+    let mut glow_opacity = use_motion_store(0.0f32);
 
     let animate_leaves = move |_: Event<MountedData>| {
         // Enhanced stem animation with natural growth
-        animate_to(
-            &stem_length,
+        stem_length.animate_to(
             0.0,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 25.0, // Slower for more organic movement
@@ -115,8 +114,7 @@ pub fn AnimatedFlower() -> Element {
         );
 
         // Add gentle stem sway
-        animate_to(
-            &stem_sway,
+        stem_sway.animate_to(
             5.0,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 15.0,
@@ -128,8 +126,7 @@ pub fn AnimatedFlower() -> Element {
         );
 
         // Enhanced leaf growth animation
-        animate_to(
-            &leaf_transform,
+        leaf_transform.animate_to(
             PetalTransform::new(
                 PI / 5.0,
                 1.2,   // Slightly larger scale
@@ -148,11 +145,10 @@ pub fn AnimatedFlower() -> Element {
         );
     };
 
-    let animate_petals = move || {
+    let mut animate_petals = move || {
         if *is_leaves_grown.read() {
             // More dynamic petal animation
-            animate_to(
-                &petal_transform,
+            petal_transform.animate_to(
                 PetalTransform::new(PI / 3.5, 1.3, 4.0, 4.0),
                 AnimationConfig::new(AnimationMode::Spring(Spring {
                     stiffness: 45.0,
@@ -164,8 +160,7 @@ pub fn AnimatedFlower() -> Element {
             );
 
             // Add rotation to center
-            animate_to(
-                &center_rotate,
+            center_rotate.animate_to(
                 360.0,
                 AnimationConfig::new(AnimationMode::Spring(Spring {
                     stiffness: 20.0,
@@ -177,8 +172,7 @@ pub fn AnimatedFlower() -> Element {
             );
 
             // Modified center scaling animation
-            animate_to(
-                &center_scale,
+            center_scale.animate_to(
                 1.4,
                 AnimationConfig::new(AnimationMode::Spring(Spring {
                     stiffness: 60.0, // Reduced stiffness
@@ -190,8 +184,7 @@ pub fn AnimatedFlower() -> Element {
             );
 
             // Add subtle glow effect
-            animate_to(
-                &glow_opacity,
+            glow_opacity.animate_to(
                 0.6,
                 AnimationConfig::new(AnimationMode::Spring(Spring {
                     stiffness: 40.0,
@@ -215,7 +208,7 @@ pub fn AnimatedFlower() -> Element {
             // Add subtle glow behind the flower
             div {
                 class: "absolute",
-                style: "filter: blur(20px); opacity: {glow_opacity.current()()}",
+                style: "filter: blur(20px); opacity: {glow_opacity.store().current()()}",
                 svg {
                     width: "300",
                     height: "300",
@@ -243,9 +236,9 @@ pub fn AnimatedFlower() -> Element {
                                     key: "leaf_{i}",
                                     d: "M 0 0 C 5 -3, 8 0, 5 5 C 8 0, 5 -3, 0 0",
                                     fill: "url(#leaf_gradient)",
-                                    transform: "translate(0 {25.0 + leaf_transform.current()().translate_y + (i as f32 * 5.0)})
-                                                                                                                                                                                                          rotate({-20.0 + (i as f32 * 15.0) + stem_sway.current()()})
-                                                                                                                                                                                                          scale({leaf_transform.current()().scale})",
+                                    transform: "translate(0 {25.0 + leaf_transform.store().current()().translate_y + (i as f32 * 5.0)})
+                                                                                                                                                                                                          rotate({-20.0 + (i as f32 * 15.0) + stem_sway.store().current()()})
+                                                                                                                                                                                                          scale({leaf_transform.store().current()().scale})",
                                     opacity: "0.95",
                                     style: "filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2))",
                                 }
@@ -255,12 +248,12 @@ pub fn AnimatedFlower() -> Element {
 
                 // Enhanced stem with dynamic curve
                 path {
-                    d: "M 0 25 C {-4.0 + stem_sway.current()()} 20, {4.0 - stem_sway.current()()} 15, {-2.0 + stem_sway.current()()} 10 C {4.0 - stem_sway.current()()} 5, {-4.0 + stem_sway.current()()} 0, 0 -2",
+                    d: "M 0 25 C {-4.0 + stem_sway.store().current()()} 20, {4.0 - stem_sway.store().current()()} 15, {-2.0 + stem_sway.store().current()()} 10 C {4.0 - stem_sway.store().current()()} 5, {-4.0 + stem_sway.store().current()()} 0, 0 -2",
                     stroke: "#2F855A",
                     stroke_width: "1.4",
                     fill: "none",
                     stroke_dasharray: "100",
-                    stroke_dashoffset: "{stem_length.current()()}",
+                    stroke_dashoffset: "{stem_length.store().current()()}",
                     style: "filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1))",
                 }
 
@@ -268,9 +261,9 @@ pub fn AnimatedFlower() -> Element {
                 circle {
                     cx: "0",
                     cy: "0",
-                    r: "{(3.0 * center_scale.current()()).max(0.1)}", // Added minimum radius
+                    r: "{(3.0 * center_scale.store().current()()).max(0.1)}", // Added minimum radius
                     fill: "url(#center_gradient)",
-                    transform: "rotate({center_rotate.current()()})",
+                    transform: "rotate({center_rotate.store().current()()})",
                     style: "filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2))",
                 }
 
@@ -279,7 +272,7 @@ pub fn AnimatedFlower() -> Element {
                     (0..8)
                         .map(|i| {
                             let base_angle = (i as f32) * PI / 4.0;
-                            let transform_value = petal_transform.current()();
+                            let transform_value = petal_transform.store().current()();
                             let hue = 340.0 + (i as f32 * 8.0);
                             rsx! {
                                 path {

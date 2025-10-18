@@ -67,71 +67,67 @@ pub fn IntermediateAnimationGuide() -> Element {
 
 #[component]
 fn StepOne() -> Element {
-    let infinite_value = use_motion_store(0.0f32);
-    let times_value = use_motion_store(0.0f32);
-    let alternate_value = use_motion_store(0.0f32);
-    let alternate_times_value = use_motion_store(0.0f32);
+    let mut infinite_value = use_motion_store(0.0f32);
+    let mut times_value = use_motion_store(0.0f32);
+    let mut alternate_value = use_motion_store(0.0f32);
+    let mut alternate_times_value = use_motion_store(0.0f32);
 
     let start_infinite = move |_| {
-        animate_to(
-            &infinite_value,
+        infinite_value.animate_to(
             100.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(1000),
-                easing: easer::functions::Cubic::ease_in_out,
-            }))
+            AnimationConfig::custom_tween(
+                Duration::from_millis(1000),
+                easer::functions::Cubic::ease_in_out,
+            )
             .with_loop(LoopMode::Infinite),
         );
     };
 
     let start_times = move |_| {
-        animate_to(
-            &times_value,
+        times_value.animate_to(
             100.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(1000),
-                easing: easer::functions::Cubic::ease_in_out,
-            }))
+            AnimationConfig::custom_tween(
+                Duration::from_millis(1000),
+                easer::functions::Cubic::ease_in_out,
+            )
             .with_loop(LoopMode::Times(3)),
         );
     };
 
     let start_alternate = move |_| {
-        animate_to(
-            &alternate_value,
+        alternate_value.animate_to(
             100.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(1000),
-                easing: easer::functions::Cubic::ease_in_out,
-            }))
+            AnimationConfig::custom_tween(
+                Duration::from_millis(1000),
+                easer::functions::Cubic::ease_in_out,
+            )
             .with_loop(LoopMode::Alternate),
         );
     };
 
     let start_alternate_times = move |_| {
-        animate_to(
-            &alternate_times_value,
+        alternate_times_value.animate_to(
             100.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(1000),
-                easing: easer::functions::Cubic::ease_in_out,
-            }))
+            AnimationConfig::custom_tween(
+                Duration::from_millis(1000),
+                easer::functions::Cubic::ease_in_out,
+            )
             .with_loop(LoopMode::AlternateTimes(3)),
         );
     };
 
     let stop_all = move |_| {
-        infinite_value.running().set(false);
-        times_value.running().set(false);
-        alternate_value.running().set(false);
-        alternate_times_value.running().set(false);
+        infinite_value.store().running().set(false);
+        times_value.store().running().set(false);
+        alternate_value.store().running().set(false);
+        alternate_times_value.store().running().set(false);
     };
 
     let reset_all = move |_| {
-        infinite_value.current().set(0.0);
-        times_value.current().set(0.0);
-        alternate_value.current().set(0.0);
-        alternate_times_value.current().set(0.0);
+        infinite_value.store().current().set(0.0);
+        times_value.store().current().set(0.0);
+        alternate_value.store().current().set(0.0);
+        alternate_times_value.store().current().set(0.0);
     };
 
     rsx! {
@@ -186,7 +182,7 @@ fn StepOne() -> Element {
                     div { class: "relative h-12 bg-dark-200/30 rounded-lg overflow-hidden mb-3",
                         div {
                             class: "absolute h-12 bg-primary/50 rounded-lg",
-                            style: "width: {infinite_value.current()}%"
+                            style: "width: {infinite_value.store().current()}%"
                         }
                     }
                     button {
@@ -202,7 +198,7 @@ fn StepOne() -> Element {
                     div { class: "relative h-12 bg-dark-200/30 rounded-lg overflow-hidden mb-3",
                         div {
                             class: "absolute h-12 bg-primary/50 rounded-lg",
-                            style: "width: {times_value.current()}%"
+                            style: "width: {times_value.store().current()}%"
                         }
                     }
                     button {
@@ -218,7 +214,7 @@ fn StepOne() -> Element {
                     div { class: "relative h-12 bg-dark-200/30 rounded-lg overflow-hidden mb-3",
                         div {
                             class: "absolute h-12 bg-primary/50 rounded-lg",
-                            style: "width: {alternate_value.current()}%"
+                            style: "width: {alternate_value.store().current()}%"
                         }
                     }
                     button {
@@ -234,7 +230,7 @@ fn StepOne() -> Element {
                     div { class: "relative h-12 bg-dark-200/30 rounded-lg overflow-hidden mb-3",
                         div {
                             class: "absolute h-12 bg-primary/50 rounded-lg",
-                            style: "width: {alternate_times_value.current()}%"
+                            style: "width: {alternate_times_value.store().current()}%"
                         }
                     }
                     button {
@@ -264,28 +260,18 @@ fn StepOne() -> Element {
 
 #[component]
 fn StepTwo() -> Element {
-    let value = use_motion_store(0.0f32);
+    let mut value = use_motion_store(0.0f32);
 
     let start = move |_| {
-        animate_to(
-            &value,
+        value.animate_to(
             100.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 100.0,
-                damping: 10.0,
-                mass: 1.0,
-                velocity: 0.0,
-            }))
-            .with_delay(Duration::from_millis(1000)),
+            AnimationConfig::custom_spring(100.0, 10.0, 1.0)
+                .with_delay(Duration::from_millis(1000)),
         );
     };
 
     let reset = move |_| {
-        animate_to(
-            &value,
-            0.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-        );
+        value.animate_to(0.0, AnimationConfig::spring());
     };
 
     rsx! {
@@ -300,8 +286,7 @@ fn StepTwo() -> Element {
             div { class: "space-y-2",
                 div { class: "bg-dark-200/50 p-3 rounded-lg",
                     CodeBlock {
-                        code: r#"animate_to(
-    &value,
+                        code: r#"value.animate_to(
     100.0,
     AnimationConfig::new(AnimationMode::Spring(Spring::default()))
         .with_delay(Duration::from_millis(1000))  // 1 second delay
@@ -317,7 +302,7 @@ fn StepTwo() -> Element {
                     div { class: "relative h-16 bg-dark-200/30 rounded-lg overflow-hidden",
                         div {
                             class: "absolute h-16 bg-primary/50 rounded-lg",
-                            style: "width: {value.current()}%"
+                            style: "width: {value.store().current()}%"
                         }
                     }
 
@@ -341,8 +326,8 @@ fn StepTwo() -> Element {
 
 #[component]
 fn StepThree() -> Element {
-    let (sequence_value, mut animate_sequence) = use_motion_store_with_sequences(0.0f32);
-    let (keyframe_value, mut animate_keyframes) = use_motion_store_with_keyframes(0.0f32);
+    let mut sequence_value = use_motion_store(0.0f32);
+    let mut keyframe_value = use_motion_store(0.0f32);
 
     let start_sequence = move |_| {
         let sequence = AnimationSequence::new()
@@ -374,7 +359,7 @@ fn StepThree() -> Element {
                 })),
             );
 
-        animate_sequence(sequence);
+        sequence_value.animate_sequence(sequence);
     };
 
     let start_keyframes = move |_| {
@@ -385,14 +370,14 @@ fn StepThree() -> Element {
             .and_then(|kf| kf.add_keyframe(0.0, 1.0, Some(easer::functions::Back::ease_in_out)))
             .unwrap();
 
-        animate_keyframes(keyframes);
+        keyframe_value.animate_keyframes(keyframes);
     };
 
     // Simplify with a single reset function
     let reset = move |_| {
         // Reset both values
-        sequence_value.current().set(0.0);
-        keyframe_value.current().set(0.0);
+        sequence_value.reset();
+        keyframe_value.reset();
     };
 
     rsx! {
@@ -409,22 +394,22 @@ fn StepThree() -> Element {
                 div { class: "bg-dark-200/50 p-3 rounded-lg",
                     CodeBlock {
                         code: r#"// Sequence animation
-let (motion, animate_sequence) = use_motion_store_with_sequences(0.0f32);
+let mut motion = use_motion_store(0.0f32);
 let sequence = AnimationSequence::new()
     .then(100.0, spring_config.clone())
     .then(50.0, spring_config.clone())
     .then(0.0, spring_config);
-animate_sequence(sequence);
+motion.animate_sequence(sequence);
 
 // Keyframe animation
-let (motion, animate_keyframes) = use_motion_store_with_keyframes(0.0f32);
+let mut motion = use_motion_store(0.0f32);
 let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
     .add_keyframe(0.0, 0.0, Some(easer::functions::Cubic::ease_in))
     .and_then(|kf| kf.add_keyframe(100.0, 0.3, Some(easer::functions::Elastic::ease_out)))
     .and_then(|kf| kf.add_keyframe(50.0, 0.7, Some(easer::functions::Bounce::ease_out)))
     .and_then(|kf| kf.add_keyframe(0.0, 1.0, Some(easer::functions::Back::ease_in_out)))
     .unwrap();
-animate_keyframes(keyframes);"#.to_string(),
+motion.animate_keyframes(keyframes);"#.to_string(),
                         language: "rust".to_string(),
                     }
                 }
@@ -439,12 +424,12 @@ animate_keyframes(keyframes);"#.to_string(),
                         div { class: "relative h-8 bg-dark-200/30 rounded-lg overflow-hidden",
                             div {
                                 class: "absolute h-8 bg-primary/50 rounded-lg",
-                                style: "width: {sequence_value.current()}%"
+                                style: "width: {sequence_value.store().current()}%"
                             }
                         }
                         // Add value display
                         div { class: "text-sm text-text-secondary mt-1",
-                            "Current value: {sequence_value.current():.1}"
+                            "Current value: {sequence_value.store().current():.1}"
                         }
                         button {
                             class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
@@ -459,12 +444,12 @@ animate_keyframes(keyframes);"#.to_string(),
                         div { class: "relative h-8 bg-dark-200/30 rounded-lg overflow-hidden",
                             div {
                                 class: "absolute h-8 bg-primary/50 rounded-lg",
-                                style: "width: {keyframe_value.current()}%"
+                                style: "width: {keyframe_value.store().current()}%"
                             }
                         }
                         // Add value display
                         div { class: "text-sm text-text-secondary mt-1",
-                            "Current value: {keyframe_value.current():.1}"
+                            "Current value: {keyframe_value.store().current():.1}"
                         }
                         button {
                             class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
@@ -489,14 +474,10 @@ animate_keyframes(keyframes);"#.to_string(),
 
 #[component]
 fn StepFour() -> Element {
-    let (sequence_transform, mut animate_transform_sequence) =
-        use_motion_store_with_sequences(Transform::identity());
-    let (sequence_color, mut animate_color_sequence) =
-        use_motion_store_with_sequences(Color::from_rgba(59, 130, 246, 255));
-    let (keyframe_transform, mut animate_transform_keyframes) =
-        use_motion_store_with_keyframes(Transform::identity());
-    let (keyframe_color, mut animate_color_keyframes) =
-        use_motion_store_with_keyframes(Color::from_rgba(59, 130, 246, 255));
+    let mut sequence_transform = use_motion_store(Transform::identity());
+    let mut sequence_color = use_motion_store(Color::from_rgba(59, 130, 246, 255));
+    let mut keyframe_transform = use_motion_store(Transform::identity());
+    let mut keyframe_color = use_motion_store(Color::from_rgba(59, 130, 246, 255));
 
     let start_sequence = move |_| {
         let transform_sequence = AnimationSequence::new()
@@ -542,17 +523,17 @@ fn StepFour() -> Element {
                 AnimationConfig::new(AnimationMode::Spring(Spring::default())),
             );
 
-        animate_transform_sequence(transform_sequence);
-        animate_color_sequence(color_sequence);
+        sequence_transform.animate_sequence(transform_sequence);
+        sequence_color.animate_sequence(color_sequence);
     };
 
     let start_keyframes = move |_| {
         match create_transform_keyframes() {
-            Ok(transform_keyframes) => animate_transform_keyframes(transform_keyframes),
+            Ok(transform_keyframes) => keyframe_transform.animate_keyframes(transform_keyframes),
             Err(e) => error!("Failed to create transform keyframes: {e}"),
         }
         match create_color_keyframes() {
-            Ok(color_keyframes) => animate_color_keyframes(color_keyframes),
+            Ok(color_keyframes) => keyframe_color.animate_keyframes(color_keyframes),
             Err(e) => error!("Failed to create color keyframes: {e}"),
         }
     };
@@ -563,10 +544,16 @@ fn StepFour() -> Element {
         let initial_color = Color::from_rgba(59, 130, 246, 255); // Blue
 
         // Reset all values directly
-        sequence_transform.current().set(Transform::identity());
-        sequence_color.current().set(initial_color);
-        keyframe_transform.current().set(Transform::identity());
-        keyframe_color.current().set(initial_color);
+        sequence_transform
+            .store()
+            .current()
+            .set(Transform::identity());
+        sequence_color.store().current().set(initial_color);
+        keyframe_transform
+            .store()
+            .current()
+            .set(Transform::identity());
+        keyframe_color.store().current().set(initial_color);
     };
 
     rsx! {
@@ -589,12 +576,12 @@ fn StepFour() -> Element {
                 div { class: "bg-dark-200/50 p-3 rounded-lg",
                     CodeBlock {
                         code: r#"// Create a transform motion value
-let (transform, animate_transform) = use_motion_store_with_sequences(Transform::identity());
+let mut transform = use_motion_store(Transform::identity());
 
 // Animate to new position, scale, and rotation
-animate_transform(
+transform.animate_to(
     Transform::new(100.0, 50.0, 1.2, 45.0), // x, y, scale, rotation(deg)
-    AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+    AnimationConfig::spring()
 );"#.to_string(),
                         language: "rust".to_string(),
                     }
@@ -610,12 +597,12 @@ animate_transform(
                 div { class: "bg-dark-200/50 p-3 rounded-lg",
                     CodeBlock {
                         code: r#"// Create a color motion value (RGBA format)
-let (color, animate_color) = use_motion_store_with_sequences(Color::from_rgba(59, 130, 246, 255)); // Blue
+let mut color = use_motion_store(Color::from_rgba(59, 130, 246, 255)); // Blue
 
 // Animate to a new color
-animate_color(
+color.animate_to(
     Color::from_rgba(236, 72, 153, 255), // Pink
-    AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+    AnimationConfig::spring()
 );"#.to_string(),
                         language: "rust".to_string(),
                     }
@@ -642,7 +629,7 @@ animate_color(
             div { class: "bg-dark-200/50 p-3 rounded-lg mb-4",
                 CodeBlock {
                     code: r#"// Transform sequence
-let (transform, animate_transform) = use_motion_store_with_sequences(Transform::identity());
+let mut transform = use_motion_store(Transform::identity());
 let transform_sequence = AnimationSequence::new()
     .then(
         Transform::new(100.0, 0.0, 1.2, 45.0),
@@ -656,15 +643,15 @@ let transform_sequence = AnimationSequence::new()
         Transform::identity(),
         spring_config,
     );
-animate_transform(transform_sequence);
+transform.animate_sequence(transform_sequence);
 
 // Color sequence
-let (color, animate_color) = use_motion_store_with_sequences(Color::from_rgba(59, 130, 246, 255));
+let mut color = use_motion_store(Color::from_rgba(59, 130, 246, 255));
 let color_sequence = AnimationSequence::new()
     .then(Color::from_rgba(236, 72, 153, 255), spring_config.clone())
     .then(Color::from_rgba(34, 197, 94, 255), spring_config.clone())
     .then(Color::from_rgba(59, 130, 246, 255), spring_config);
-animate_color(color_sequence);"#.to_string(),
+color.animate_sequence(color_sequence);"#.to_string(),
                         language: "rust".to_string(),
                     }
                 }
@@ -677,15 +664,15 @@ animate_color(color_sequence);"#.to_string(),
                     div {
                         class: "w-16 h-16 rounded-lg",
                         style: {
-                            let (r, g, b, _) = sequence_color.current()().to_rgba();
+                            let (r, g, b, _) = sequence_color.store().current()().to_rgba();
                             format!("background-color: rgb({r}, {g}, {b}); \
                                     transform: translate({}px, {}px) \
                                               rotate({}deg) \
                                               scale({})",
-                                    sequence_transform.current()().x,
-                                    sequence_transform.current()().y,
-                                    sequence_transform.current()().rotation,
-                                    sequence_transform.current()().scale)
+                                    sequence_transform.store().current()().x,
+                                    sequence_transform.store().current()().y,
+                                    sequence_transform.store().current()().rotation,
+                                    sequence_transform.store().current()().scale)
                         }
                     }
                 }
@@ -762,15 +749,15 @@ animate_color(color_keyframes);"#.to_string(),
                     div {
                         class: "w-16 h-16 rounded-lg",
                         style: {
-                            let (r, g, b, _) = keyframe_color.current()().to_rgba();
+                            let (r, g, b, _) = keyframe_color.store().current()().to_rgba();
                             format!("background-color: rgb({r}, {g}, {b}); \
                                     transform: translate({}px, {}px) \
                                               rotate({}deg) \
                                               scale({})",
-                                    keyframe_transform.current()().x,
-                                    keyframe_transform.current()().y,
-                                    keyframe_transform.current()().rotation,
-                                    keyframe_transform.current()().scale)
+                                    keyframe_transform.store().current()().x,
+                                    keyframe_transform.store().current()().y,
+                                    keyframe_transform.store().current()().rotation,
+                                    keyframe_transform.store().current()().scale)
                         }
                     }
                 }

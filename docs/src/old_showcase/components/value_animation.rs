@@ -4,27 +4,22 @@ use easer::functions::Easing;
 
 #[component]
 pub fn ValueAnimationShowcase() -> Element {
-    let value = use_motion_store(0.0f32);
+    let mut value = use_motion_store(0.0f32);
 
     let start_animation = move |_| {
-        animate_to(
-            &value,
+        value.animate_to(
             100.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_secs(10),
-                easing: easer::functions::Sine::ease_in_out,
-            })),
+            AnimationConfig::custom_tween(
+                Duration::from_secs(10),
+                easer::functions::Sine::ease_in_out,
+            ),
         );
     };
 
     let reset_animation = move |_| {
-        animate_to(
-            &value,
+        value.animate_to(
             0.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_secs(3),
-                easing: easer::functions::Sine::ease_out,
-            })),
+            AnimationConfig::custom_tween(Duration::from_secs(3), easer::functions::Sine::ease_out),
         );
     };
 
@@ -32,12 +27,12 @@ pub fn ValueAnimationShowcase() -> Element {
         div { class: "h-[400px] flex items-center justify-center",
             div { class: "flex flex-col items-center justify-center p-6 bg-linear-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg",
                 // Counter with smaller font
-                div { class: "text-4xl font-bold text-white mb-3", "{value.current()() as i32}%" }
+                div { class: "text-4xl font-bold text-white mb-3", "{value.store().current()() as i32}%" }
 
                 // Smaller progress circle
                 div {
                     class: "relative w-24 h-24",
-                    style: "background: conic-gradient(from 0deg, #ffffff {value.current()()}%, transparent 0)",
+                    style: "background: conic-gradient(from 0deg, #ffffff {value.store().current()()}%, transparent 0)",
                     div { class: "absolute inset-2 bg-blue-600 rounded-full" }
                 }
 

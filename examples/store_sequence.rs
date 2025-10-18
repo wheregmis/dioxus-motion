@@ -1,6 +1,6 @@
 //! Store-based Sequence Animation Example
 //!
-//! This example demonstrates sequence animations using the store-based API
+//! This example demonstrates sequence animations using the unified store-based API
 //! for chaining multiple animation steps with fine-grained reactivity.
 
 use dioxus::prelude::*;
@@ -15,10 +15,10 @@ fn app() -> Element {
         div {
             style: "padding: 20px; font-family: Arial, sans-serif;",
 
-            h1 { "Store-based Sequence Animations" }
+            h1 { "Unified Store Sequence Animations" }
 
             p {
-                "This demo shows sequence animations with the store API. "
+                "This demo shows sequence animations with the unified store API. "
                 "Each sequence chains multiple animation steps together "
                 "with different timing and easing for complex motion patterns."
             }
@@ -41,36 +41,21 @@ fn app() -> Element {
 
 #[component]
 fn F32SequenceDemo() -> Element {
-    let (motion, mut animate_sequence) = use_motion_store_with_sequences(0.0f32);
-    let current = motion.current();
-    let is_running = motion.running();
-    let current_step = motion.current_sequence_step();
+    let mut motion = use_motion_store(0.0f32);
+    let current = motion.store().current();
+    let is_running = motion.store().running();
+    let current_step = motion.store().current_sequence_step();
 
     let start_animation = move |_| {
         // Create a sequence of animations with different configurations
         let sequence = AnimationSequence::new()
-            .then(
-                100.0,
-                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-            )
-            .then(
-                200.0,
-                AnimationConfig::new(AnimationMode::Tween(Tween::default())),
-            )
-            .then(
-                150.0,
-                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-            )
-            .then(
-                50.0,
-                AnimationConfig::new(AnimationMode::Tween(Tween::default())),
-            )
-            .then(
-                0.0,
-                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-            );
+            .then(100.0, AnimationConfig::spring())
+            .then(200.0, AnimationConfig::tween())
+            .then(150.0, AnimationConfig::spring())
+            .then(50.0, AnimationConfig::tween())
+            .then(0.0, AnimationConfig::spring());
 
-        animate_sequence(sequence);
+        motion.animate_sequence(sequence);
     };
 
     rsx! {
@@ -107,10 +92,7 @@ fn F32SequenceDemo() -> Element {
 
                 button {
                     onclick: move |_| {
-                        motion.target().set(0.0);
-                        motion.current().set(0.0);
-                        motion.running().set(false);
-                        motion.current_sequence_step().set(0);
+                        motion.reset();
                     },
                     "Reset"
                 }
@@ -150,36 +132,33 @@ fn F32SequenceDemo() -> Element {
 
 #[component]
 fn TransformSequenceDemo() -> Element {
-    let (motion, mut animate_sequence) = use_motion_store_with_sequences(Transform::identity());
-    let current = motion.current();
-    let is_running = motion.running();
-    let current_step = motion.current_sequence_step();
+    let mut motion = use_motion_store(Transform::identity());
+    let current = motion.store().current();
+    let is_running = motion.store().running();
+    let current_step = motion.store().current_sequence_step();
 
     let start_animation = move |_| {
         // Create a complex transform sequence
         let sequence = AnimationSequence::new()
             .then(
                 Transform::new(80.0, 0.0, 1.0, 0.0),
-                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+                AnimationConfig::spring(),
             )
             .then(
                 Transform::new(80.0, 60.0, 1.5, std::f32::consts::PI / 2.0),
-                AnimationConfig::new(AnimationMode::Tween(Tween::default())),
+                AnimationConfig::tween(),
             )
             .then(
                 Transform::new(0.0, 60.0, 0.8, std::f32::consts::PI),
-                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+                AnimationConfig::spring(),
             )
             .then(
                 Transform::new(0.0, 0.0, 1.2, std::f32::consts::PI * 1.5),
-                AnimationConfig::new(AnimationMode::Tween(Tween::default())),
+                AnimationConfig::tween(),
             )
-            .then(
-                Transform::identity(),
-                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-            );
+            .then(Transform::identity(), AnimationConfig::spring());
 
-        animate_sequence(sequence);
+        motion.animate_sequence(sequence);
     };
 
     rsx! {
@@ -216,10 +195,7 @@ fn TransformSequenceDemo() -> Element {
 
                 button {
                     onclick: move |_| {
-                        motion.target().set(Transform::identity());
-                        motion.current().set(Transform::identity());
-                        motion.running().set(false);
-                        motion.current_sequence_step().set(0);
+                        motion.reset();
                     },
                     "Reset"
                 }
@@ -259,41 +235,40 @@ fn TransformSequenceDemo() -> Element {
 
 #[component]
 fn ColorSequenceDemo() -> Element {
-    let (motion, mut animate_sequence) =
-        use_motion_store_with_sequences(Color::new(1.0, 0.0, 0.0, 1.0));
-    let current = motion.current();
-    let is_running = motion.running();
-    let current_step = motion.current_sequence_step();
+    let mut motion = use_motion_store(Color::new(1.0, 0.0, 0.0, 1.0));
+    let current = motion.store().current();
+    let is_running = motion.store().running();
+    let current_step = motion.store().current_sequence_step();
 
     let start_animation = move |_| {
         // Create a color sequence through the spectrum
         let sequence = AnimationSequence::new()
             .then(
                 Color::new(1.0, 0.5, 0.0, 1.0), // Orange
-                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+                AnimationConfig::spring(),
             )
             .then(
                 Color::new(1.0, 1.0, 0.0, 1.0), // Yellow
-                AnimationConfig::new(AnimationMode::Tween(Tween::default())),
+                AnimationConfig::tween(),
             )
             .then(
                 Color::new(0.0, 1.0, 0.0, 1.0), // Green
-                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+                AnimationConfig::spring(),
             )
             .then(
                 Color::new(0.0, 0.0, 1.0, 1.0), // Blue
-                AnimationConfig::new(AnimationMode::Tween(Tween::default())),
+                AnimationConfig::tween(),
             )
             .then(
                 Color::new(0.5, 0.0, 1.0, 1.0), // Purple
-                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+                AnimationConfig::spring(),
             )
             .then(
                 Color::new(1.0, 0.0, 0.0, 1.0), // Back to Red
-                AnimationConfig::new(AnimationMode::Tween(Tween::default())),
+                AnimationConfig::tween(),
             );
 
-        animate_sequence(sequence);
+        motion.animate_sequence(sequence);
     };
 
     rsx! {
@@ -330,10 +305,7 @@ fn ColorSequenceDemo() -> Element {
 
                 button {
                     onclick: move |_| {
-                        motion.target().set(Color::new(1.0, 0.0, 0.0, 1.0));
-                        motion.current().set(Color::new(1.0, 0.0, 0.0, 1.0));
-                        motion.running().set(false);
-                        motion.current_sequence_step().set(0);
+                        motion.reset();
                     },
                     "Reset"
                 }

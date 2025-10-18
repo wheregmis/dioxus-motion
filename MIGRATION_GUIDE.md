@@ -1,317 +1,187 @@
-# Migration Guide: Signal-based to Store-based Motion
+# Migration Guide: dioxus-motion 0.3.x → 0.4.0
 
-This guide shows how to migrate from `use_motion()` to `use_motion_store()` for better performance through fine-grained reactivity. The store-based API supports all `Animatable` types: `f32`, `Transform`, `Color`, and custom types.
+This guide helps you migrate from the old store API to the new unified motion store API.
 
-## 🚀 Quick Migration
+## Breaking Changes Summary
 
-### Before (Signal-based)
+1. **Unified Store API**: `use_motion_store()` now handles all animation types (simple, keyframes, sequences)
+2. **MotionHandle**: Returns a handle instead of separate hooks/tuples
+3. **Removed APIs**: `use_motion_store_keyframes`, `use_motion_store_sequence`, `use_motion_store_with_keyframes`, `use_motion_store_with_sequences`
+4. **Helper Functions**: `animate_to`, `animate_keyframes`, `animate_sequence` are now methods on `MotionHandle`
+5. **AnimationConfig Helpers**: Added `.spring()` and `.tween()` convenience constructors
+
+## Migration Examples
+
+### Basic Animations
+
+**Before (0.3.x)**:
 ```rust
-use dioxus_motion::prelude::*;
+let motion = use_motion_store(0.0);
+let current = motion.current();
 
-let mut motion = use_motion(0.0f32);
-motion.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
-let value = motion.get_value();
-let is_running = motion.is_running();
+// Animate via helper function
+animate_to(&motion, 100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
 ```
 
-### After (Store-based with fine-grained reactivity)
+**After (0.4.0)**:
 ```rust
-use dioxus_motion::prelude::*;
+let motion = use_motion_store(0.0);
+let current = motion.store().current();
 
-let motion = use_motion_store_f32(0.0);
-
-// Method 1: Direct animation control (similar to old API)
-motion.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
-let value = motion.get_value();
-let is_running = motion.is_running();
-
-// Method 2: Fine-grained access (NEW - better performance)
-let current = motion.current();  // Subscribe only to animated value
-let running = motion.running();  // Subscribe only to running state
-motion.target().set(100.0);     // Direct manipulation
-motion.running().set(true);
+// Animate via handle method
+motion.animate_to(100.0, AnimationConfig::spring());
 ```
 
-## 📊 Performance Benefits
+### Keyframe Animations
 
-### Signal-based (Old) - Coarse Reactivity
+**Before (0.3.x)**:
 ```rust
-let motion = use_motion(0.0f32);
+let (motion, mut animate_keyframes) = use_motion_store_with_keyframes(0.0f32);
+let current = motion.current();
 
-#[component]
-fn AnimationDisplay(motion: impl AnimationManager<f32>) -> Element {
-    // ❌ Re-renders on ALL motion changes (value, velocity, state, etc.)
-    rsx! { 
-        div { "Value: {motion.get_value():.1}" }
-    }
-}
-
-#[component] 
-fn AnimationControls(motion: impl AnimationManager<f32>) -> Element {
-    // ❌ ALSO re-renders on ALL motion changes, even just position updates
-    rsx! { 
-        button { 
-            disabled: motion.is_running(),
-            onclick: move |_| motion.animate_to(100.0, config),
-            "Animate" 
-        } 
-    }
-}
+let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
+    .add_keyframe(0.0, 0.0, None).unwrap()
+    .add_keyframe(100.0, 1.0, None).unwrap();
+    
+animate_keyframes(keyframes);
 ```
 
-### Store-based (New) - Fine-grained Reactivity
+**After (0.4.0)**:
 ```rust
-let motion = use_motion_store_f32(0.0);
+let motion = use_motion_store(0.0f32);
+let current = motion.store().current();
 
-#[component]
-fn AnimationDisplay(motion: Store<MotionStoreF32>) -> Element {
-    let current = motion.current(); // ✅ Only re-renders when animated value changes
-    rsx! { 
-        div { "Value: {current():.1}" }
-    }
-}
-
-#[component]
-fn AnimationControls(motion: Store<MotionStoreF32>) -> Element {
-    let is_running = motion.running(); // ✅ Only re-renders when running state changes
-    rsx! { 
-        button { 
-            disabled: is_running(),
-            onclick: move |_| {
-                motion.target().set(100.0);
-                motion.running().set(true);
-            },
-            "Animate" 
-        } 
-    }
-}
+let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
+    .add_keyframe(0.0, 0.0, None).unwrap()
+    .add_keyframe(100.0, 1.0, None).unwrap();
+    
+motion.animate_keyframes(keyframes);
 ```
 
-## 🔧 Store Field Access
+### Sequence Animations
 
-The store provides direct access to all animation properties:
-
+**Before (0.3.x)**:
 ```rust
-let motion = use_motion_store_f32(0.0);
+let (motion, mut animate_sequence) = use_motion_store_with_sequences(0.0f32);
+let current = motion.current();
 
-// Reactive subscriptions (only re-render when these specific values change)
-let current = motion.current();        // Current animated value
-let target = motion.target();          // Target value
-let velocity = motion.velocity();      // Current velocity
-let running = motion.running();        // Animation running state
-let elapsed = motion.elapsed();        // Time elapsed
-let initial = motion.initial();        // Initial value
-
-// Computed properties (also reactive)
-let value = motion.get_value();                    // Same as current()
-let is_running = motion.is_running();             // Same as running()
-let is_at_target = motion.is_at_target();         // Is animation complete?
-let velocity_mag = motion.get_velocity_magnitude(); // Absolute velocity
-
-// Direct manipulation
-motion.target().set(200.0);           // Set new target
-motion.running().set(true);           // Start animation
-motion.current().set(50.0);           // Jump to value
-motion.velocity().set(0.0);           // Reset velocity
-
-// Animation control methods (same as before)
-motion.animate_to(100.0, config);     // Animate to target
-motion.stop();                        // Stop animation
-motion.reset();                       // Reset to initial
-motion.delay(Duration::from_millis(500)); // Add delay
+let sequence = AnimationSequence::new()
+    .then(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())))
+    .then(200.0, AnimationConfig::new(AnimationMode::Tween(Tween::default())));
+    
+animate_sequence(sequence);
 ```
 
-## 🎯 Migration Patterns
+**After (0.4.0)**:
+```rust
+let motion = use_motion_store(0.0f32);
+let current = motion.store().current();
 
-### 1. Simple Animation
+let sequence = AnimationSequence::new()
+    .then(100.0, AnimationConfig::spring())
+    .then(200.0, AnimationConfig::tween());
+    
+motion.animate_sequence(sequence);
+```
+
+### Accessing Store Fields
+
+**Before (0.3.x)**:
+```rust
+let motion = use_motion_store(0.0);
+let current = motion.current();  // Direct access
+let running = motion.running();
+```
+
+**After (0.4.0)**:
+```rust
+let motion = use_motion_store(0.0);
+let current = motion.store().current();  // Access via .store()
+let running = motion.store().running();
+```
+
+### Control Methods
+
+**Before (0.3.x)**:
+```rust
+motion.target().set(100.0);
+motion.running().set(false);
+```
+
+**After (0.4.0)**:
+```rust
+// Use handle methods instead of direct field access
+motion.animate_to(100.0, AnimationConfig::spring());
+motion.stop();
+motion.reset();
+```
+
+## AnimationConfig Convenience Methods
+
+New convenience constructors make creating configs easier:
+
 ```rust
 // Before
-fn simple_animation() -> Element {
-    let mut motion = use_motion(0.0f32);
-    
-    rsx! {
-        div {
-            style: "transform: translateX({motion.get_value()}px)",
-            onclick: move |_| motion.animate_to(100.0, config),
-            "Click me"
-        }
-    }
-}
+AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+AnimationConfig::new(AnimationMode::Tween(Tween::default()))
 
 // After
-fn simple_animation() -> Element {
-    let motion = use_motion_store_f32(0.0);
-    let current = motion.current(); // Fine-grained subscription
-    
-    rsx! {
-        div {
-            style: "transform: translateX({current()}px)",
-            onclick: move |_| motion.animate_to(100.0, config),
-            "Click me"
-        }
-    }
-}
+AnimationConfig::spring()
+AnimationConfig::tween()
+
+// Custom parameters
+AnimationConfig::custom_spring(200.0, 20.0, 1.0)
+AnimationConfig::custom_tween(Duration::from_secs(1), easing_fn)
 ```
 
-### 2. Complex UI with Multiple Components
+## Component Prop Changes
+
+If you're passing motion stores to components:
+
+**Before (0.3.x)**:
 ```rust
-// After - Each component subscribes only to what it needs
-fn complex_animation_ui() -> Element {
-    let motion = use_motion_store_f32(0.0);
-    
-    rsx! {
-        div {
-            // Only re-renders when animated value changes
-            AnimatedElement { motion }
-            
-            // Only re-renders when control state changes  
-            ControlPanel { motion }
-            
-            // Only re-renders when debug info changes
-            DebugPanel { motion }
-        }
-    }
-}
-
 #[component]
-fn AnimatedElement(motion: Store<MotionStoreF32>) -> Element {
-    let current = motion.current(); // Subscribes only to position
-    rsx! {
-        div {
-            style: "transform: translateX({current()}px); width: 50px; height: 50px; background: blue;",
-        }
-    }
-}
-
-#[component]
-fn ControlPanel(motion: Store<MotionStoreF32>) -> Element {
-    let is_running = motion.running(); // Subscribes only to running state
-    let target = motion.target();      // Subscribes only to target
-    
-    rsx! {
-        div {
-            button {
-                disabled: is_running(),
-                onclick: move |_| motion.animate_to(100.0, config),
-                "Animate to 100"
-            }
-            button {
-                disabled: is_running(),
-                onclick: move |_| motion.animate_to(0.0, config),
-                "Animate to 0"
-            }
-            p { "Target: {target():.1}" }
-        }
-    }
-}
-
-#[component]
-fn DebugPanel(motion: Store<MotionStoreF32>) -> Element {
-    let velocity = motion.velocity();     // Subscribes only to velocity
-    let elapsed = motion.elapsed();       // Subscribes only to elapsed time
-    let current_loop = motion.current_loop(); // Subscribes only to loop count
-    
-    rsx! {
-        div { style: "font-family: monospace; font-size: 12px;",
-            p { "Velocity: {velocity():.2}" }
-            p { "Elapsed: {elapsed().as_millis()}ms" }
-            p { "Loop: {current_loop()}" }
-        }
-    }
-}
-```
-
-### 3. Direct Store Manipulation
-```rust
-// New capability: Direct manipulation without animation
-fn direct_control() -> Element {
-    let motion = use_motion_store_f32(0.0);
+fn MyComponent(motion: Store<MotionStore<f32>>) -> Element {
     let current = motion.current();
-    
-    rsx! {
-        div {
-            div {
-                style: "transform: translateX({current()}px); width: 50px; height: 50px; background: red;",
-            }
-            
-            // Direct value control
-            input {
-                r#type: "range",
-                min: "0",
-                max: "200", 
-                value: "{current()}",
-                oninput: move |e| {
-                    if let Ok(value) = e.value().parse::<f32>() {
-                        motion.current().set(value); // Direct manipulation
-                        motion.running().set(false);  // Stop any running animation
-                    }
-                }
-            }
-            
-            // Animation controls
-            button {
-                onclick: move |_| {
-                    motion.target().set(200.0);
-                    motion.running().set(true);
-                },
-                "Animate"
-            }
-            
-            button {
-                onclick: move |_| motion.stop(),
-                "Stop"
-            }
-        }
-    }
+    // ...
 }
 ```
 
-## ⚠️ Important Changes
-
-### 1. Component Props
+**After (0.4.0)**:
 ```rust
-// Before
+// Option 1: Pass the handle
 #[component]
-fn MyComponent(motion: impl AnimationManager<f32>) -> Element { /* */ }
+fn MyComponent(motion_handle: MotionHandle<f32>) -> Element {
+    let current = motion_handle.store().current();
+    // ...
+}
 
-// After
+// Option 2: Pass just the store (for read-only components)
 #[component]
-fn MyComponent(motion: Store<MotionStoreF32>) -> Element { /* */ }
+fn MyComponent(motion: Store<MotionStore<f32>>) -> Element {
+    let current = motion.current();
+    // ...
+}
 ```
 
-### 2. Store Extension Trait
-Make sure to import the store extension trait:
-```rust
-use dioxus_motion::prelude::*; // Includes MotionStoreF32StoreExt
-// or explicitly:
-use dioxus_motion::store::MotionStoreF32StoreExt;
-```
+## Key Takeaways
 
-### 3. Reactive Values
-```rust
-// Store fields return reactive values that need to be called
-let current = motion.current(); // This is a ReadOnlySignal<f32>
-let value = current();          // Call it to get the actual f32 value
+1. **One Hook**: `use_motion_store()` replaces all previous store hooks
+2. **Handle Pattern**: The handle provides methods for animation control
+3. **Store Access**: Use `.store()` to access reactive fields for subscriptions
+4. **Cleaner API**: Convenience methods on `AnimationConfig` reduce boilerplate
+5. **Type Safety**: The unified approach maintains full type safety with better ergonomics
 
-// In rsx!, you can call directly
-rsx! { div { "{motion.current()}" } }
-```
+## Performance Benefits
 
-## 🎉 Benefits Summary
+The unified API brings:
+- **Single animation loop** per motion store (no duplicate spawns)
+- **Unified dispatch** for all animation types
+- **Better resource management** with shared signals
+- **Same fine-grained reactivity** as before
 
-✅ **Fine-grained reactivity**: Components only re-render when their subscribed data changes  
-✅ **Better performance**: Eliminates unnecessary re-renders in complex UIs  
-✅ **Direct manipulation**: Set values directly without going through animation API  
-✅ **Same animation API**: All existing animation methods still work  
-✅ **Easier debugging**: Access individual animation properties  
-✅ **Cleaner code**: Less prop drilling, more targeted subscriptions  
+## Need Help?
 
-## 🔄 Gradual Migration Strategy
-
-1. **Start simple**: Replace `use_motion(0.0f32)` with `use_motion_store_f32(0.0)`
-2. **Identify hot spots**: Find components that re-render too often
-3. **Add fine-grained subscriptions**: Use `motion.current()`, `motion.running()`, etc.
-4. **Optimize component props**: Pass the store instead of individual values
-5. **Use direct manipulation**: Set values directly where appropriate
-
-This migration provides significant performance improvements for animation-heavy UIs while keeping the API familiar and easy to use!
+- Check the updated examples in `examples/` directory
+- See the inline documentation in `src/store.rs`
+- Open an issue on GitHub for migration questions

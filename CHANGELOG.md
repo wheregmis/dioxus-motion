@@ -6,6 +6,53 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.4.0] - 2024-XX-XX
+### BREAKING CHANGES: Unified Motion Store API
+
+This release unifies the motion store API for better ergonomics and performance.
+
+#### API Changes
+- **Unified Hook**: `use_motion_store()` now handles all animation types (simple, keyframes, sequences)
+- **Removed Hooks**: 
+  - `use_motion_store_keyframes()` - merged into unified hook
+  - `use_motion_store_sequence()` - merged into unified hook  
+  - `use_motion_store_with_keyframes()` - merged into unified hook
+  - `use_motion_store_with_sequences()` - merged into unified hook
+- **MotionHandle**: New handle type returned by `use_motion_store()` with methods:
+  - `.animate_to(target, config)` - Start simple animation
+  - `.animate_keyframes(animation)` - Start keyframe animation
+  - `.animate_sequence(sequence)` - Start sequence animation
+  - `.stop()` - Stop current animation
+  - `.reset()` - Reset to initial value
+  - `.store()` - Access the underlying reactive store
+- **Store Access**: Use `.store()` to access reactive fields for fine-grained subscriptions
+- **Removed Helper**: `animate_to()` free function deprecated (use `MotionHandle.animate_to()`)
+
+#### New Features
+- **AnimationConfig Helpers**: Convenient constructors for common configurations
+  - `AnimationConfig::spring()` - Default spring animation
+  - `AnimationConfig::tween()` - Default tween animation
+  - `AnimationConfig::custom_spring(stiffness, damping, mass)` - Custom spring
+  - `AnimationConfig::custom_tween(duration, easing)` - Custom tween
+- **Unified Animation Loop**: Single loop per motion store handles all animation types
+- **Better Performance**: Reduced spawns, unified dispatch, shared signal management
+
+#### Migration
+See `MIGRATION_GUIDE.md` for detailed migration instructions with code examples.
+
+Quick migration pattern:
+```rust
+// Before (0.3.x)
+let (motion, mut animate_keyframes) = use_motion_store_with_keyframes(0.0);
+animate_keyframes(keyframes);
+
+// After (0.4.0)
+let motion = use_motion_store(0.0);
+motion.animate_keyframes(keyframes);
+```
+
+## [0.3.x]
 ### BREAKING CHANGES:
 - **Major Simplification: Simplified Animatable Trait**
   - Reduced from 7 required methods to just 2: `interpolate()` and `magnitude()`

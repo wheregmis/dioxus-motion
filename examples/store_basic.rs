@@ -1,6 +1,6 @@
-//! Basic example demonstrating the store-based Motion API
+//! Basic example demonstrating the unified Motion Store API
 //!
-//! This example shows how to use the new store-based API for fine-grained reactivity.
+//! This example shows how to use the new unified store-based API for fine-grained reactivity.
 //! Multiple components can subscribe to different aspects of the animation state
 //! without causing unnecessary re-renders.
 
@@ -12,28 +12,28 @@ fn main() {
 }
 
 fn app() -> Element {
-    // Store-based motion for fine-grained reactivity
+    // Unified motion store for all animation types
     let motion = use_motion_store(0.0);
 
     rsx! {
         div {
             style: "padding: 20px; font-family: Arial, sans-serif;",
 
-            h1 { "Store-based Motion API Demo" }
+            h1 { "Unified Motion Store API Demo" }
 
-            p { "This demo shows fine-grained reactivity with the new store-based API." }
+            p { "This demo shows fine-grained reactivity with the new unified store API." }
 
             // Animated element - only re-renders when current value changes
-            AnimatedElement { motion }
+            AnimatedElement { motion: motion.store().clone() }
 
             // Control panel - only re-renders when running state changes
-            ControlPanel { motion }
+            ControlPanel { motion: motion.store().clone(), motion_handle: motion }
 
             // Value display - only re-renders when current value changes
-            ValueDisplay { motion }
+            ValueDisplay { motion: motion.store().clone() }
 
             // Progress display - only re-renders when relevant state changes
-            ProgressDisplay { motion }
+            ProgressDisplay { motion: motion.store().clone() }
         }
     }
 }
@@ -70,7 +70,7 @@ fn AnimatedElement(motion: Store<MotionStore<f32>>) -> Element {
 }
 
 #[component]
-fn ControlPanel(motion: Store<MotionStore<f32>>) -> Element {
+fn ControlPanel(motion: Store<MotionStore<f32>>, mut motion_handle: MotionHandle<f32>) -> Element {
     // This component only subscribes to the running state
     // It won't re-render when the animated value changes every frame
     let is_running = motion.running();
@@ -96,8 +96,7 @@ fn ControlPanel(motion: Store<MotionStore<f32>>) -> Element {
             div { style: "margin: 10px 0;",
                 button {
                     onclick: move |_| {
-                        motion.target().set(200.0);
-                        motion.running().set(true);
+                        motion_handle.animate_to(200.0, AnimationConfig::spring());
                     },
                     disabled: is_running(),
                     style: "margin-right: 10px; padding: 8px 16px;",
@@ -105,26 +104,20 @@ fn ControlPanel(motion: Store<MotionStore<f32>>) -> Element {
                 }
                 button {
                     onclick: move |_| {
-                        motion.target().set(0.0);
-                        motion.running().set(true);
+                        motion_handle.animate_to(0.0, AnimationConfig::spring());
                     },
                     disabled: is_running(),
                     style: "margin-right: 10px; padding: 8px 16px;",
                     "Move Left"
                 }
                 button {
-                    onclick: move |_| motion.running().set(false),
+                    onclick: move |_| motion_handle.stop(),
                     disabled: !is_running(),
                     style: "margin-right: 10px; padding: 8px 16px; background: #ff6b6b; color: white;",
                     "Stop"
                 }
                 button {
-                    onclick: move |_| {
-                        let initial = motion.initial()();
-                        motion.current().set(initial);
-                        motion.target().set(initial);
-                        motion.running().set(false);
-                    },
+                    onclick: move |_| motion_handle.reset(),
                     style: "padding: 8px 16px;",
                     "Reset"
                 }

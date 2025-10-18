@@ -3,55 +3,43 @@ use dioxus_motion::prelude::*;
 
 #[component]
 pub fn TransformAnimationShowcase() -> Element {
-    let transform = use_motion_store(Transform::identity());
+    let mut transform = use_motion_store(Transform::identity());
 
     let animate_hover = move |_| {
-        animate_to(
-            &transform,
+        transform.animate_to(
             Transform::new(
                 0.0,                                  // x
                 -20.0,                                // y
                 1.1,                                  // scale
                 5.0 * (std::f32::consts::PI / 180.0), // rotation in radians
             ),
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 180.0, // Softer spring
-                damping: 12.0,    // Less damping for bounce
-                mass: 1.0,
-                ..Default::default()
-            })),
+            AnimationConfig::custom_spring(180.0, 12.0, 1.0),
         );
     };
 
     let animate_reset = move |_| {
-        animate_to(
-            &transform,
+        transform.animate_to(
             Transform::identity(),
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 200.0,
-                damping: 20.0,
-                mass: 1.0,
-                ..Default::default()
-            })),
+            AnimationConfig::custom_spring(200.0, 20.0, 1.0),
         );
     };
 
     let transform_style = use_memo(move || {
         format!(
             "transform: translate({}px, {}px) scale({}) rotate({}deg); transform-style: preserve-3d; will-change: transform;",
-            transform.current()().x,
-            transform.current()().y,
-            transform.current()().scale,
-            transform.current()().rotation * 180.0 / std::f32::consts::PI
+            transform.store().current()().x,
+            transform.store().current()().y,
+            transform.store().current()().scale,
+            transform.store().current()().rotation * 180.0 / std::f32::consts::PI
         )
     });
 
     let glow_style = use_memo(move || {
         format!(
             "transform: translate({}px, {}px) scale(1.2); opacity: {};",
-            transform.current()().x,
-            transform.current()().y,
-            if transform.current()().y < 0.0 {
+            transform.store().current()().x,
+            transform.store().current()().y,
+            if transform.store().current()().y < 0.0 {
                 0.6
             } else {
                 0.0

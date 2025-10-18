@@ -6,17 +6,16 @@ const PERSPECTIVE: f32 = 800.0; // Increased perspective for more dramatic 3D ef
 
 #[component]
 pub fn InteractiveCube() -> Element {
-    let rotation_x = use_motion_store(0.0f32);
-    let rotation_y = use_motion_store(0.0f32);
-    let rotation_z = use_motion_store(0.0f32); // Added Z rotation for more dynamics
-    let scale = use_motion_store(1.0f32);
-    let glow = use_motion_store(0.2f32); // Initial subtle glow
-    let hover_lift = use_motion_store(0.0f32); // New hover effect
+    let mut rotation_x = use_motion_store(0.0f32);
+    let mut rotation_y = use_motion_store(0.0f32);
+    let mut rotation_z = use_motion_store(0.0f32); // Added Z rotation for more dynamics
+    let mut scale = use_motion_store(1.0f32);
+    let mut glow = use_motion_store(0.2f32); // Initial subtle glow
+    let mut hover_lift = use_motion_store(0.0f32); // New hover effect
 
     let onclick = move |_e: Event<MouseData>| {
         // Use animate_to for sequences since animate_sequence is not available
-        animate_to(
-            &scale,
+        scale.animate_to(
             1.3,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 400.0,
@@ -26,9 +25,8 @@ pub fn InteractiveCube() -> Element {
             })),
         );
 
-        animate_to(
-            &rotation_y,
-            rotation_y.current()() + 360.0,
+        rotation_y.animate_to(
+            rotation_y.store().current()() + 360.0,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 150.0,
                 damping: 12.0,
@@ -37,8 +35,7 @@ pub fn InteractiveCube() -> Element {
             })),
         );
 
-        animate_to(
-            &rotation_z,
+        rotation_z.animate_to(
             15.0,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 200.0,
@@ -49,8 +46,7 @@ pub fn InteractiveCube() -> Element {
         );
 
         // Enhanced glow effect
-        animate_to(
-            &glow,
+        glow.animate_to(
             1.0,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 300.0,
@@ -61,8 +57,7 @@ pub fn InteractiveCube() -> Element {
         );
 
         // Reset glow after animation
-        animate_to(
-            &glow,
+        glow.animate_to(
             0.2,
             AnimationConfig::new(AnimationMode::Spring(Spring::default()))
                 .with_delay(std::time::Duration::from_millis(500)),
@@ -75,8 +70,7 @@ pub fn InteractiveCube() -> Element {
         let y = (rect.y as f32 - CONTAINER_SIZE / 2.0) / (CONTAINER_SIZE / 2.0);
 
         // Smoother rotation response
-        animate_to(
-            &rotation_x,
+        rotation_x.animate_to(
             -y * 30.0, // Inverted for natural movement
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 150.0,
@@ -86,8 +80,7 @@ pub fn InteractiveCube() -> Element {
             })),
         );
 
-        animate_to(
-            &rotation_y,
+        rotation_y.animate_to(
             x * 30.0,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 150.0,
@@ -99,8 +92,7 @@ pub fn InteractiveCube() -> Element {
     };
 
     let onmouseenter = move |_| {
-        animate_to(
-            &hover_lift,
+        hover_lift.animate_to(
             20.0,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 200.0,
@@ -112,8 +104,7 @@ pub fn InteractiveCube() -> Element {
     };
 
     let onmouseleave = move |_| {
-        animate_to(
-            &hover_lift,
+        hover_lift.animate_to(
             0.0,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 200.0,
@@ -124,8 +115,7 @@ pub fn InteractiveCube() -> Element {
         );
 
         // Reset rotations
-        animate_to(
-            &rotation_x,
+        rotation_x.animate_to(
             0.0,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 150.0,
@@ -135,8 +125,7 @@ pub fn InteractiveCube() -> Element {
             })),
         );
 
-        animate_to(
-            &rotation_y,
+        rotation_y.animate_to(
             0.0,
             AnimationConfig::new(AnimationMode::Spring(Spring {
                 stiffness: 150.0,
@@ -154,13 +143,13 @@ pub fn InteractiveCube() -> Element {
             // Enhanced glow background
             div {
                 class: "absolute inset-0 bg-linear-to-r from-blue-500/30 to-purple-500/30 blur-3xl -z-10 transition-all duration-300",
-                style: "opacity: {glow.current()()}; transform: scale({1.0 + glow.current()() * 0.2})",
+                style: "opacity: {glow.store().current()()}; transform: scale({1.0 + glow.store().current()() * 0.2})",
             }
 
             // Shadow
             div {
                 class: "absolute bottom-0 left-1/2 -translate-x-1/2 bg-black/20 blur-xl rounded-full transition-all duration-300",
-                style: "width: {CONTAINER_SIZE * 0.8}px; height: {CONTAINER_SIZE * 0.1}px; transform: translateY({20.0 + hover_lift.current()()}px) scale({scale.current()()}, 1.0)",
+                style: "width: {CONTAINER_SIZE * 0.8}px; height: {CONTAINER_SIZE * 0.1}px; transform: translateY({20.0 + hover_lift.store().current()()}px) scale({scale.store().current()()}, 1.0)",
             }
 
             div {
@@ -169,7 +158,7 @@ pub fn InteractiveCube() -> Element {
                 onmouseenter,
                 onmouseleave,
                 class: "relative w-full h-full items-center justify-center transform-style-3d transition-all duration-100",
-                style: "transform: translateY(-{hover_lift.current()()}px) rotateX({rotation_x.current()()}deg) rotateY({rotation_y.current()()}deg) rotateZ({rotation_z.current()()}deg) scale({scale.current()()})",
+                style: "transform: translateY(-{hover_lift.store().current()()}px) rotateX({rotation_x.store().current()()}deg) rotateY({rotation_y.store().current()()}deg) rotateZ({rotation_z.store().current()()}deg) scale({scale.store().current()()})",
                 // Front face with enhanced gradient
                 div {
                     class: "absolute w-full h-full flex items-center justify-center text-2xl font-bold text-white bg-linear-to-br from-blue-500 to-blue-600 shadow-lg transform translate-z-[100px] opacity-90 hover:opacity-100 transition-all duration-300",

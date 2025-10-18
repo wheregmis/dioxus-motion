@@ -1,8 +1,15 @@
-//! Store-based Motion API for fine-grained reactivity
+//! Unified Motion Store API with fine-grained reactivity
 //!
-//! This module provides a store-based alternative to the signal-based Motion API,
-//! enabling fine-grained reactivity where components can subscribe to specific
-//! fields of the animation state rather than the entire Motion struct.
+//! This module provides a store-based animation API that enables fine-grained
+//! reactivity where components can subscribe to specific fields of the animation
+//! state rather than the entire Motion struct. This reduces unnecessary re-renders.
+//!
+//! # Features
+//! - Fine-grained reactivity via Dioxus Store
+//! - Support for simple animations, keyframes, and sequences
+//! - Event callbacks (on_complete, on_update)
+//! - Unified animation loop (no duplicate spawns)
+//! - Performance optimizations (pooling, caching)
 
 use crate::Duration;
 use crate::animations::core::{Animatable, AnimationConfig, AnimationMode, LoopMode};
@@ -11,6 +18,20 @@ use crate::keyframes::KeyframeAnimation;
 use crate::sequence::AnimationSequence;
 use dioxus::prelude::*;
 use std::sync::Arc;
+
+/// Animation type discriminant
+#[derive(Clone, Debug, PartialEq)]
+enum AnimationType {
+    Simple,
+    Keyframes,
+    Sequence,
+}
+
+impl Default for AnimationType {
+    fn default() -> Self {
+        Self::Simple
+    }
+}
 
 /// Store-based Motion struct with fine-grained reactivity
 ///
@@ -42,8 +63,6 @@ pub struct MotionStore<T> {
     /// Whether the animation is running in reverse
     pub reverse: bool,
 
-    /// Animation type: "simple", "keyframes", or "sequence"
-    pub animation_type: String,
     /// Current keyframe index for keyframe animations
     pub current_keyframe: u8,
     /// Current sequence step for sequence animations
@@ -65,11 +84,92 @@ impl<T: Animatable + Copy + Default> MotionStore<T> {
             delay_elapsed: Duration::default(),
             current_loop: 0,
             reverse: false,
-            animation_type: "simple".to_string(),
             current_keyframe: 0,
             current_sequence_step: 0,
             config: AnimationConfig::default(),
         }
+    }
+}
+
+/// Handle for controlling a motion store animation
+///
+/// This provides methods for starting different animation types while maintaining
+/// access to the internal signals needed for keyframes and sequences.
+#[derive(Clone, Copy, PartialEq)]
+pub struct MotionHandle<T: Animatable + Copy + Default + Send + 'static> {
+    pub store: Store<MotionStore<T>>,
+    keyframes_ref: Signal<Option<Arc<KeyframeAnimation<T>>>>,
+    sequence_ref: Signal<Option<Arc<AnimationSequence<T>>>>,
+    animation_type: Signal<AnimationType>,
+}
+
+impl<T: Animatable + Copy + Default + Send + 'static> MotionHandle<T> {
+    /// Get the underlying store for field subscriptions
+    pub fn store(&self) -> &Store<MotionStore<T>> {
+        &self.store
+    }
+
+    /// Animate to a target value with the given configuration
+    pub fn animate_to(&mut self, target: T, config: AnimationConfig) {
+        self.animation_type.set(AnimationType::Simple);
+        self.store.config().set(config.clone());
+        self.store.target().set(target);
+        self.store.running().set(true);
+        self.store.elapsed().set(Duration::default());
+        self.store.delay_elapsed().set(config.delay);
+        self.store.current_loop().set(0);
+        self.store.current_keyframe().set(0);
+        self.store.current_sequence_step().set(0);
+    }
+
+    /// Start a keyframe animation
+    pub fn animate_keyframes(&mut self, animation: KeyframeAnimation<T>) {
+        self.animation_type.set(AnimationType::Keyframes);
+        self.keyframes_ref.set(Some(Arc::new(animation)));
+        self.store.running().set(true);
+        self.store.elapsed().set(Duration::default());
+        self.store.current_keyframe().set(0);
+    }
+
+    /// Start a sequence animation
+    pub fn animate_sequence(&mut self, sequence: AnimationSequence<T>) {
+        self.animation_type.set(AnimationType::Sequence);
+        self.sequence_ref.set(Some(Arc::new(sequence.clone())));
+
+        if let Some(first_step) = sequence.steps().first() {
+            self.store.target().set(first_step.target);
+            self.store.config().set((*first_step.config).clone());
+            self.store.running().set(true);
+            self.store.elapsed().set(Duration::default());
+            self.store.current_sequence_step().set(0);
+        }
+    }
+
+    /// Stop the current animation
+    pub fn stop(&mut self) {
+        self.store.running().set(false);
+        self.store.velocity().set(T::default());
+        self.animation_type.set(AnimationType::Simple);
+    }
+
+    /// Reset to initial value
+    pub fn reset(&mut self) {
+        let initial = self.store.initial()();
+        self.store.current().set(initial);
+        self.store.target().set(initial);
+        self.store.running().set(false);
+        self.store.velocity().set(T::default());
+        self.animation_type.set(AnimationType::Simple);
+    }
+
+    /// Get the current value
+    pub fn get_value(&self) -> T {
+        self.store.current()()
+    }
+
+    /// Check if animation is running
+    pub fn is_running(&self) -> bool {
+        self.store.running()()
     }
 }
 
@@ -78,126 +178,32 @@ impl<T: Animatable + Copy + Default> MotionStore<T> {
 #[store]
 impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
     /// Get the current animated value
-    ///
-    /// This is the most commonly used method. Components that only need
-    /// the animated value should subscribe to this to avoid unnecessary
-    /// re-renders when internal animation state changes.
-    ///
-    /// # Example
-    /// ```rust
-    /// use dioxus::prelude::*;
-    /// use dioxus_motion::prelude::*;
-    ///
-    /// #[component]
-    /// fn Example() -> Element {
-    ///     let motion = use_motion_store(0.0f32);
-    ///     let value = motion.current(); // Reactive to current value changes only
-    ///     rsx! { div { "Value: {value()}" } }
-    /// }
-    /// ```
     fn get_value(&self) -> T {
         self.current().cloned()
     }
 
     /// Check if animation is currently running
-    ///
-    /// # Example
-    /// ```rust
-    /// use dioxus::prelude::*;
-    /// use dioxus_motion::prelude::*;
-    ///
-    /// #[component]
-    /// fn Example() -> Element {
-    ///     let motion = use_motion_store(0.0f32);
-    ///     let is_running = motion.running(); // Reactive to running state changes
-    ///     rsx! { div { "Running: {is_running()}" } }
-    /// }
-    /// ```
     fn is_running(&self) -> bool {
         self.running().cloned()
     }
 
     /// Check if animation has reached its target value (within epsilon)
-    ///
-    /// This is a computed property that automatically updates when
-    /// the current value or target value changes.
     fn is_at_target(&self) -> bool {
         let current = self.current().cloned();
         let target = self.target().cloned();
         let diff = current - target;
-        diff.magnitude() < T::epsilon() // Use type-specific epsilon
+        diff.magnitude() < T::epsilon()
     }
 
     /// Get the magnitude of the current velocity
-    ///
-    /// Useful for determining how fast the animation is moving.
     fn get_velocity_magnitude(&self) -> f32 {
         self.velocity().cloned().magnitude()
     }
 
-    /// Animate to a target value with the given configuration
-    ///
-    /// # Example
-    /// ```rust
-    /// use dioxus::prelude::*;
-    /// use dioxus_motion::prelude::*;
-    ///
-    /// #[component]
-    /// fn Example() -> Element {
-    ///     let motion = use_motion_store(0.0f32);
-    ///     let current = motion.current();
-    ///     
-    ///     rsx! {
-    ///         div {
-    ///             style: "transform: translateX({current()}px)",
-    ///             onclick: move |_| {
-    ///                 animate_to(&motion, 100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
-    ///             },
-    ///             "Click to animate"
-    ///         }
-    ///     }
-    /// }
-    /// ```
-    fn animate_to(&mut self, target: T, config: AnimationConfig) {
-        // Store the animation configuration for use in update loop
-        self.config().set(config);
-        self.target().set(target);
-        self.running().set(true);
-        self.elapsed().set(Duration::default());
-        self.delay_elapsed().set(Duration::default());
-        self.current_loop().set(0);
-    }
-
-    /// Stop the animation
-    fn stop(&mut self) {
-        self.running().set(false);
-        self.velocity().set(T::default());
-        self.current_loop().set(0);
-    }
-
-    /// Reset animation to initial state
-    fn reset(&mut self) {
-        let initial = self.initial().cloned();
-        self.current().set(initial);
-        self.target().set(initial);
-        self.animation_type().set("simple".to_string());
-        self.current_keyframe().set(0);
-        self.current_sequence_step().set(0);
-        self.config().set(AnimationConfig::default());
-        self.stop();
-    }
-
-    /// Add a delay before the animation starts
-    fn delay(&mut self, duration: Duration) {
-        self.delay_elapsed().set(duration);
-    }
-
-    /// Update the animation by the given delta time
+    /// Update the animation by the given delta time (for simple animations)
     ///
     /// Returns true if the animation is still running, false if it completed
-    ///
-    /// This implementation uses proper spring physics or tween interpolation based on the stored AnimationConfig.
-    fn update(&mut self, dt: f32) -> bool {
+    fn update_simple(&mut self, dt: f32) -> bool {
         if !self.running().cloned() {
             return false;
         }
@@ -205,15 +211,11 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
         // Check if we're still in delay phase
         let delay_elapsed = self.delay_elapsed().cloned();
         if delay_elapsed > Duration::default() {
-            // Still delaying, reduce delay time
             let dt_duration = Duration::from_secs_f32(dt);
             if dt_duration >= delay_elapsed {
-                // Delay complete, start animation
                 self.delay_elapsed().set(Duration::default());
             } else {
-                // Still delaying, reduce delay time safely
-                let new_delay = delay_elapsed - dt_duration;
-                self.delay_elapsed().set(new_delay);
+                self.delay_elapsed().set(delay_elapsed - dt_duration);
                 return true;
             }
         }
@@ -228,121 +230,13 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
         let current_velocity = self.velocity().cloned();
         let diff = target - current;
         let config = self.config().cloned();
-
-        // Use type-specific epsilon for stopping condition
         let epsilon = T::epsilon();
 
         if diff.magnitude() < epsilon {
             // Close enough to target, snap to target
             self.current().set(target);
             self.velocity().set(T::default());
-
-            // Handle loop modes
-            if let Some(loop_mode) = config.loop_mode {
-                match loop_mode {
-                    LoopMode::Infinite => {
-                        // Restart animation from initial to target
-                        self.current().set(self.initial().cloned());
-                        self.elapsed().set(Duration::default());
-                        self.current_loop().set(self.current_loop().cloned() + 1);
-                        true
-                    }
-                    LoopMode::Times(count) => {
-                        let current_loop = self.current_loop().cloned();
-                        if current_loop < count - 1 {
-                            // Restart animation for next loop
-                            self.current().set(self.initial().cloned());
-                            self.elapsed().set(Duration::default());
-                            self.current_loop().set(current_loop + 1);
-                            true
-                        } else {
-                            // All loops complete, stop animation and execute completion callback
-                            if let Some(on_complete) = &config.on_complete
-                                && let Ok(mut callback) = on_complete.lock()
-                            {
-                                callback();
-                            }
-                            self.stop();
-                            false
-                        }
-                    }
-                    LoopMode::Alternate => {
-                        // Toggle between initial and target values
-                        let new_target = if self.reverse().cloned() {
-                            self.initial().cloned()
-                        } else {
-                            target
-                        };
-                        let new_initial = if self.reverse().cloned() {
-                            target
-                        } else {
-                            self.initial().cloned()
-                        };
-
-                        // Update target and initial for next iteration
-                        self.target().set(new_target);
-                        self.initial().set(new_initial);
-                        // Don't jump current position - let it animate smoothly to new target
-                        self.reverse().set(!self.reverse().cloned());
-                        self.elapsed().set(Duration::default());
-                        self.current_loop().set(self.current_loop().cloned() + 1);
-                        true
-                    }
-                    LoopMode::AlternateTimes(count) => {
-                        let current_loop = self.current_loop().cloned();
-                        if current_loop < (count * 2) - 1 {
-                            // Toggle between initial and target values
-                            let new_target = if self.reverse().cloned() {
-                                self.initial().cloned()
-                            } else {
-                                target
-                            };
-                            let new_initial = if self.reverse().cloned() {
-                                target
-                            } else {
-                                self.initial().cloned()
-                            };
-
-                            // Update target and initial for next iteration
-                            self.target().set(new_target);
-                            self.initial().set(new_initial);
-                            // Don't jump current position - let it animate smoothly to new target
-                            self.reverse().set(!self.reverse().cloned());
-                            self.elapsed().set(Duration::default());
-                            self.current_loop().set(current_loop + 1);
-                            true
-                        } else {
-                            // All loops complete, stop animation and execute completion callback
-                            if let Some(on_complete) = &config.on_complete
-                                && let Ok(mut callback) = on_complete.lock()
-                            {
-                                callback();
-                            }
-                            self.stop();
-                            false
-                        }
-                    }
-                    LoopMode::None => {
-                        // No loop, stop animation and execute completion callback
-                        if let Some(on_complete) = &config.on_complete
-                            && let Ok(mut callback) = on_complete.lock()
-                        {
-                            callback();
-                        }
-                        self.stop();
-                        false
-                    }
-                }
-            } else {
-                // No loop mode specified, stop animation and execute completion callback
-                if let Some(on_complete) = &config.on_complete
-                    && let Ok(mut callback) = on_complete.lock()
-                {
-                    callback();
-                }
-                self.stop();
-                false
-            }
+            self.handle_loop_completion()
         } else {
             match config.mode {
                 AnimationMode::Spring(spring) => {
@@ -351,16 +245,12 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                     let damping_ratio = spring.damping;
                     let mass = spring.mass;
 
-                    // Calculate spring force and damping force
                     let spring_force = diff * stiffness;
                     let damping_force = current_velocity * damping_ratio;
                     let net_force = spring_force - damping_force;
 
-                    // Calculate acceleration and new velocity
                     let acceleration = net_force * (1.0 / mass);
                     let new_velocity = current_velocity + acceleration * dt;
-
-                    // Update position
                     let new_current = current + new_velocity * dt;
 
                     self.current().set(new_current);
@@ -375,11 +265,9 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                     // Apply easing function
                     let eased_progress = (tween.easing)(progress, 0.0, 1.0, 1.0);
 
-                    // Simple tween: just move towards target based on time-based progress
+                    // Interpolate towards target
                     let step = diff * eased_progress;
                     let new_current = current + step;
-
-                    // Calculate velocity for smooth transitions
                     let new_velocity = step * (1.0 / dt);
 
                     self.current().set(new_current);
@@ -389,116 +277,7 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                     if progress >= 1.0 {
                         self.current().set(target);
                         self.velocity().set(T::default());
-
-                        // Handle loop modes for tween animations
-                        if let Some(loop_mode) = config.loop_mode {
-                            match loop_mode {
-                                LoopMode::Infinite => {
-                                    // Restart animation from initial to target
-                                    self.current().set(self.initial().cloned());
-                                    self.elapsed().set(Duration::default());
-                                    self.current_loop().set(self.current_loop().cloned() + 1);
-                                    true
-                                }
-                                LoopMode::Times(count) => {
-                                    let current_loop = self.current_loop().cloned();
-                                    if current_loop < count - 1 {
-                                        // Restart animation for next loop
-                                        self.current().set(self.initial().cloned());
-                                        self.elapsed().set(Duration::default());
-                                        self.current_loop().set(current_loop + 1);
-                                        true
-                                    } else {
-                                        // All loops complete, stop animation and execute completion callback
-                                        if let Some(on_complete) = &config.on_complete
-                                            && let Ok(mut callback) = on_complete.lock()
-                                        {
-                                            callback();
-                                        }
-                                        self.stop();
-                                        false
-                                    }
-                                }
-                                LoopMode::Alternate => {
-                                    // Toggle between initial and target values
-                                    let new_target = if self.reverse().cloned() {
-                                        self.initial().cloned()
-                                    } else {
-                                        target
-                                    };
-                                    let new_initial = if self.reverse().cloned() {
-                                        target
-                                    } else {
-                                        self.initial().cloned()
-                                    };
-
-                                    // Update target and initial for next iteration
-                                    self.target().set(new_target);
-                                    self.initial().set(new_initial);
-                                    // Don't jump current position - let it animate smoothly to new target
-                                    self.reverse().set(!self.reverse().cloned());
-                                    self.elapsed().set(Duration::default());
-                                    self.current_loop().set(self.current_loop().cloned() + 1);
-                                    true
-                                }
-                                LoopMode::AlternateTimes(count) => {
-                                    let current_loop = self.current_loop().cloned();
-                                    if current_loop < (count * 2) - 1 {
-                                        // Toggle between initial and target values
-                                        let new_target = if self.reverse().cloned() {
-                                            self.initial().cloned()
-                                        } else {
-                                            target
-                                        };
-                                        let new_initial = if self.reverse().cloned() {
-                                            target
-                                        } else {
-                                            self.initial().cloned()
-                                        };
-
-                                        // Update target and initial for next iteration
-                                        self.target().set(new_target);
-                                        self.initial().set(new_initial);
-                                        // Don't jump current position - let it animate smoothly to new target
-                                        self.reverse().set(!self.reverse().cloned());
-                                        self.elapsed().set(Duration::default());
-                                        self.current_loop().set(current_loop + 1);
-                                        true
-                                    } else {
-                                        // All loops complete, stop animation and execute completion callback
-                                        #[allow(clippy::collapsible_if)]
-                                        if let Some(on_complete) = &config.on_complete {
-                                            if let Ok(mut callback) = on_complete.lock() {
-                                                callback();
-                                            }
-                                        }
-                                        self.stop();
-                                        false
-                                    }
-                                }
-                                LoopMode::None => {
-                                    // No loop, stop animation and execute completion callback
-                                    #[allow(clippy::collapsible_if)]
-                                    if let Some(on_complete) = &config.on_complete {
-                                        if let Ok(mut callback) = on_complete.lock() {
-                                            callback();
-                                        }
-                                    }
-                                    self.stop();
-                                    false
-                                }
-                            }
-                        } else {
-                            // No loop mode specified, stop animation and execute completion callback
-                            #[allow(clippy::collapsible_if)]
-                            if let Some(on_complete) = &config.on_complete {
-                                if let Ok(mut callback) = on_complete.lock() {
-                                    callback();
-                                }
-                            }
-                            self.stop();
-                            false
-                        }
+                        self.handle_loop_completion()
                     } else {
                         true
                     }
@@ -507,83 +286,111 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
         }
     }
 
-    /// Start a keyframe animation
-    ///
-    /// # Example
-    /// ```rust
-    /// use dioxus::prelude::*;
-    /// use dioxus_motion::prelude::*;
-    ///
-    /// #[component]
-    /// fn Example() -> Element {
-    ///     let motion = use_motion_store(0.0f32);
-    ///     let current = motion.current();
-    ///     
-    ///     rsx! {
-    ///         div {
-    ///             style: "transform: translateX({current()}px)",
-    ///             onclick: move |_| {
-    ///                 // For keyframe animations, use the dedicated hook
-    ///                 // let keyframes_motion = use_motion_store_keyframes(0.0f32);
-    ///                 // This method is available on the store trait, not the Store type
-    ///             },
-    ///             "Click for keyframes"
-    ///         }
-    ///     }
-    /// }
-    /// ```
-    fn animate_keyframes(&mut self, _animation: KeyframeAnimation<T>) {
-        self.animation_type().set("keyframes".to_string());
-        self.running().set(true);
-        self.elapsed().set(Duration::default());
-        self.current_keyframe().set(0);
-        // Store keyframes data would go here (see use_motion_store for full implementation)
+    /// Handle loop completion logic
+    fn handle_loop_completion(&mut self) -> bool {
+        let config = self.config().cloned();
+        let target = self.target().cloned();
+
+        if let Some(loop_mode) = config.loop_mode {
+            match loop_mode {
+                LoopMode::Infinite => {
+                    self.current().set(self.initial().cloned());
+                    self.elapsed().set(Duration::default());
+                    self.current_loop().set(self.current_loop().cloned() + 1);
+                    true
+                }
+                LoopMode::Times(count) => {
+                    let current_loop = self.current_loop().cloned();
+                    if current_loop < count - 1 {
+                        self.current().set(self.initial().cloned());
+                        self.elapsed().set(Duration::default());
+                        self.current_loop().set(current_loop + 1);
+                        true
+                    } else {
+                        self.execute_on_complete();
+                        false
+                    }
+                }
+                LoopMode::Alternate => {
+                    let new_target = if self.reverse().cloned() {
+                        self.initial().cloned()
+                    } else {
+                        target
+                    };
+                    let new_initial = if self.reverse().cloned() {
+                        target
+                    } else {
+                        self.initial().cloned()
+                    };
+
+                    self.target().set(new_target);
+                    self.initial().set(new_initial);
+                    self.reverse().set(!self.reverse().cloned());
+                    self.elapsed().set(Duration::default());
+                    self.current_loop().set(self.current_loop().cloned() + 1);
+                    true
+                }
+                LoopMode::AlternateTimes(count) => {
+                    let current_loop = self.current_loop().cloned();
+                    if current_loop < (count * 2) - 1 {
+                        let new_target = if self.reverse().cloned() {
+                            self.initial().cloned()
+                        } else {
+                            target
+                        };
+                        let new_initial = if self.reverse().cloned() {
+                            target
+                        } else {
+                            self.initial().cloned()
+                        };
+
+                        self.target().set(new_target);
+                        self.initial().set(new_initial);
+                        self.reverse().set(!self.reverse().cloned());
+                        self.elapsed().set(Duration::default());
+                        self.current_loop().set(current_loop + 1);
+                        true
+                    } else {
+                        self.execute_on_complete();
+                        false
+                    }
+                }
+                LoopMode::None => {
+                    self.execute_on_complete();
+                    false
+                }
+            }
+        } else {
+            self.execute_on_complete();
+            false
+        }
     }
 
-    /// Start a sequence animation
-    ///
-    /// # Example
-    /// ```rust
-    /// use dioxus::prelude::*;
-    /// use dioxus_motion::prelude::*;
-    ///
-    /// #[component]
-    /// fn Example() -> Element {
-    ///     let motion = use_motion_store(0.0f32);
-    ///     let current = motion.current();
-    ///     
-    ///     rsx! {
-    ///         div {
-    ///             style: "transform: translateX({current()}px)",
-    ///             onclick: move |_| {
-    ///                 // For sequence animations, use the dedicated hook
-    ///                 // let sequence_motion = use_motion_store_sequence(0.0f32);
-    ///                 // This method is available on the store trait, not the Store type
-    ///             },
-    ///             "Click for sequence"
-    ///         }
-    ///     }
-    /// }
-    /// ```
-    fn animate_sequence(&mut self, _sequence: AnimationSequence<T>) {
-        self.animation_type().set("sequence".to_string());
-        self.running().set(true);
-        self.elapsed().set(Duration::default());
-        self.current_sequence_step().set(0);
-        // Store sequence data would go here (see use_motion_store for full implementation)
+    /// Execute the on_complete callback if present
+    fn execute_on_complete(&self) {
+        let config = self.config().cloned();
+        #[allow(clippy::collapsible_if)]
+        if let Some(on_complete) = &config.on_complete {
+            if let Ok(mut callback) = on_complete.lock() {
+                callback();
+            }
+        }
     }
 }
 
-/// Hook that creates a motion store with fine-grained reactivity for any animatable type
+/// Hook that creates a unified motion store for any animatable type
 ///
-/// This is the store-based alternative to `use_motion()` that provides
-/// better performance for complex UIs where multiple components need
-/// different aspects of the animation state.
+/// This is the primary hook for store-based animations. It supports:
+/// - Simple spring/tween animations
+/// - Keyframe animations
+/// - Sequence animations
+///
+/// All animation types use the same unified loop for efficiency.
 ///
 /// # Benefits
-/// - **Fine-grained reactivity**: Components only re-render when their subscribed data changes
+/// - **Fine-grained reactivity**: Components only re-render when subscribed data changes
 /// - **Better performance**: Eliminates unnecessary re-renders in complex UIs
-/// - **Direct manipulation**: Set values directly without going through animation API
+/// - **Unified API**: One hook for all animation types
 /// - **Type safety**: Works with any type implementing `Animatable`
 ///
 /// # Example
@@ -593,14 +400,14 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
 ///
 /// #[component]
 /// fn AnimatedComponent() -> Element {
-///     let motion = use_motion_store(0.0f32);
-///     let current = motion.current(); // Fine-grained subscription to position only
+///     let mut motion = use_motion_store(0.0f32);
+///     let current = motion.store().current();
 ///     
 ///     rsx! {
 ///         div {
 ///             style: "transform: translateX({current()}px)",
 ///             onclick: move |_| {
-///                 animate_to(&motion, 100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
+///                 motion.animate_to(100.0, AnimationConfig::spring());
 ///             },
 ///             "Animated element"
 ///         }
@@ -609,10 +416,15 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
 /// ```
 pub fn use_motion_store<T: Animatable + Copy + Default + Send + 'static>(
     initial: T,
-) -> Store<MotionStore<T>> {
+) -> MotionHandle<T> {
     let store = use_store(|| MotionStore::new(initial));
 
-    // Set up the animation loop with smoother frame rates
+    // Refs for keyframe and sequence data (shared across the loop)
+    let keyframes_ref = use_signal(|| None::<Arc<KeyframeAnimation<T>>>);
+    let sequence_ref = use_signal(|| None::<Arc<AnimationSequence<T>>>);
+    let animation_type = use_signal(|| AnimationType::Simple);
+
+    // Unified animation loop with smoother frame rates
     #[cfg(feature = "web")]
     let idle_poll_rate = Duration::from_millis(32); // ~30 FPS when idle
 
@@ -633,7 +445,20 @@ pub fn use_motion_store<T: Animatable + Copy + Default + Send + 'static>(
                     if store.is_running() {
                         running_frames += 1;
                         let prev_value = store.get_value();
-                        let updated = store.clone().update(dt);
+
+                        // Dispatch to appropriate update based on animation type
+                        let updated = match *animation_type.read() {
+                            AnimationType::Simple => store.clone().update_simple(dt),
+                            AnimationType::Keyframes => keyframes_ref.read().as_ref().map_or_else(
+                                || store.clone().update_simple(dt),
+                                |keyframes| update_keyframes(&store, keyframes, dt),
+                            ),
+                            AnimationType::Sequence => sequence_ref.read().as_ref().map_or_else(
+                                || store.clone().update_simple(dt),
+                                |sequence| update_sequence(&store, sequence, dt),
+                            ),
+                        };
+
                         let new_value = store.get_value();
                         let epsilon = T::epsilon();
 
@@ -641,13 +466,12 @@ pub fn use_motion_store<T: Animatable + Copy + Default + Send + 'static>(
                         if (new_value - prev_value).magnitude() > epsilon || updated {
                             // Continue with normal frame timing
                         } else {
-                            // Skip this frame to avoid unnecessary updates
                             let delay = crate::calculate_delay(dt, running_frames);
                             crate::MotionTime::delay(delay).await;
                             continue;
                         }
 
-                        // Maintain minimum frame time to prevent excessive updates
+                        // Maintain minimum frame time
                         let delay = crate::calculate_delay(dt, running_frames)
                             .max(Duration::from_millis(8)); // Max ~120 FPS
                         crate::MotionTime::delay(delay).await;
@@ -660,197 +484,12 @@ pub fn use_motion_store<T: Animatable + Copy + Default + Send + 'static>(
         }
     });
 
-    store
-}
-
-/// Hook that creates a motion store specifically for keyframe animations
-///
-/// This provides the same fine-grained reactivity as `use_motion_store` but with
-/// support for complex keyframe animations with easing and multiple waypoints.
-///
-/// # Example
-/// ```rust
-/// use dioxus::prelude::*;
-/// use dioxus_motion::prelude::*;
-///
-/// #[component]
-/// fn KeyframeComponent() -> Element {
-///     let motion = use_motion_store_keyframes(0.0f32);
-///     let current = motion.current();
-///     
-///     let start_animation = move |_| {
-///         // The keyframes hook handles keyframe animations internally
-///         // You can set values directly or use the store's methods
-///         motion.target().set(100.0);
-///         motion.running().set(true);
-///     };
-///     
-///     rsx! {
-///         div {
-///             style: "transform: translateX({current()}px)",
-///             onclick: start_animation,
-///             "Animated element"
-///         }
-///     }
-/// }
-/// ```
-pub fn use_motion_store_keyframes<T: Animatable + Copy + Default + Send + 'static>(
-    initial: T,
-) -> Store<MotionStore<T>> {
-    let store = use_store(|| MotionStore::new(initial));
-    let keyframes_ref = use_signal(|| None::<Arc<KeyframeAnimation<T>>>);
-
-    // Set up the animation loop with keyframe support
-    #[cfg(feature = "web")]
-    let idle_poll_rate = Duration::from_millis(32);
-
-    #[cfg(not(feature = "web"))]
-    let idle_poll_rate = Duration::from_millis(16);
-
-    use_effect({
-        move || {
-            spawn(async move {
-                let mut last_frame = crate::MotionTime::now();
-                let mut running_frames = 0u32;
-
-                loop {
-                    let now = crate::MotionTime::now();
-                    let dt = (now.duration_since(last_frame).as_secs_f32()).min(0.1);
-                    last_frame = now;
-
-                    if store.is_running() {
-                        running_frames += 1;
-                        let animation_type = store.animation_type()();
-                        let prev_value = store.get_value();
-
-                        let updated = if animation_type == "keyframes" {
-                            keyframes_ref.read().as_ref().map_or_else(
-                                || store.clone().update(dt),
-                                |keyframes| update_keyframes(&store, keyframes, dt),
-                            )
-                        } else {
-                            store.clone().update(dt)
-                        };
-
-                        let new_value = store.get_value();
-                        let epsilon = T::epsilon();
-
-                        if (new_value - prev_value).magnitude() > epsilon || updated {
-                            // Continue with normal frame timing
-                        } else {
-                            let delay = crate::calculate_delay(dt, running_frames);
-                            crate::MotionTime::delay(delay).await;
-                            continue;
-                        }
-
-                        let delay = crate::calculate_delay(dt, running_frames)
-                            .max(Duration::from_millis(8));
-                        crate::MotionTime::delay(delay).await;
-                    } else {
-                        running_frames = 0;
-                        crate::MotionTime::delay(idle_poll_rate).await;
-                    }
-                }
-            });
-        }
-    });
-
-    store
-}
-
-/// Hook that creates a motion store specifically for sequence animations
-///
-/// This provides the same fine-grained reactivity as `use_motion_store` but with
-/// support for chaining multiple animation steps together.
-///
-/// # Example
-/// ```rust
-/// use dioxus::prelude::*;
-/// use dioxus_motion::prelude::*;
-///
-/// #[component]
-/// fn SequenceComponent() -> Element {
-///     let motion = use_motion_store_sequence(0.0f32);
-///     let current = motion.current();
-///     
-///     let start_sequence = move |_| {
-///         // The sequence hook handles sequence animations internally
-///         // You can set values directly or use the store's methods
-///         motion.target().set(100.0);
-///         motion.running().set(true);
-///     };
-///     
-///     rsx! {
-///         div {
-///             style: "transform: translateX({current()}px)",
-///             onclick: start_sequence,
-///             "Animated element"
-///         }
-///     }
-/// }
-/// ```
-pub fn use_motion_store_sequence<T: Animatable + Copy + Default + Send + 'static>(
-    initial: T,
-) -> Store<MotionStore<T>> {
-    let store = use_store(|| MotionStore::new(initial));
-    let sequence_ref = use_signal(|| None::<Arc<AnimationSequence<T>>>);
-
-    // Set up the animation loop with sequence support
-    #[cfg(feature = "web")]
-    let idle_poll_rate = Duration::from_millis(32);
-
-    #[cfg(not(feature = "web"))]
-    let idle_poll_rate = Duration::from_millis(16);
-
-    use_effect({
-        move || {
-            spawn(async move {
-                let mut last_frame = crate::MotionTime::now();
-                let mut running_frames = 0u32;
-
-                loop {
-                    let now = crate::MotionTime::now();
-                    let dt = (now.duration_since(last_frame).as_secs_f32()).min(0.1);
-                    last_frame = now;
-
-                    if store.is_running() {
-                        running_frames += 1;
-                        let animation_type = store.animation_type()();
-                        let prev_value = store.get_value();
-
-                        let updated = if animation_type == "sequence" {
-                            sequence_ref.read().as_ref().map_or_else(
-                                || store.clone().update(dt),
-                                |sequence| update_sequence(&store, sequence, dt),
-                            )
-                        } else {
-                            store.clone().update(dt)
-                        };
-
-                        let new_value = store.get_value();
-                        let epsilon = T::epsilon();
-
-                        if (new_value - prev_value).magnitude() > epsilon || updated {
-                            // Continue with normal frame timing
-                        } else {
-                            let delay = crate::calculate_delay(dt, running_frames);
-                            crate::MotionTime::delay(delay).await;
-                            continue;
-                        }
-
-                        let delay = crate::calculate_delay(dt, running_frames)
-                            .max(Duration::from_millis(8));
-                        crate::MotionTime::delay(delay).await;
-                    } else {
-                        running_frames = 0;
-                        crate::MotionTime::delay(idle_poll_rate).await;
-                    }
-                }
-            });
-        }
-    });
-
-    store
+    MotionHandle {
+        store,
+        keyframes_ref,
+        sequence_ref,
+        animation_type,
+    }
 }
 
 /// Update function for keyframe animations
@@ -907,6 +546,7 @@ fn update_keyframes<T: Animatable + Copy + Default>(
 
     // Check if animation is complete
     if progress >= 1.0 {
+        store.execute_on_complete();
         store.running().set(false);
         false
     } else {
@@ -937,59 +577,43 @@ fn update_sequence<T: Animatable + Copy + Default>(
 
             if diff.magnitude() < epsilon {
                 // Reached current step target, advance to next step
-                if current_step_index + 1 < sequence.total_steps() {
-                    store
-                        .current_sequence_step()
-                        .set((current_step_index + 1) as u8);
-                    store
-                        .target()
-                        .set(sequence.steps()[current_step_index + 1].target);
-                    true
+                let next_index = current_step_index + 1;
+                if next_index < sequence.total_steps() {
+                    sequence.steps().get(next_index).map_or_else(
+                        || {
+                            // Should not happen, but handle gracefully
+                            store.running().set(false);
+                            false
+                        },
+                        |next_step| {
+                            store.current_sequence_step().set(next_index as u8);
+                            store.target().set(next_step.target);
+                            store.config().set((*next_step.config).clone());
+                            store.elapsed().set(Duration::default());
+                            true
+                        },
+                    )
                 } else {
                     // Sequence complete
+                    sequence.execute_completion();
                     store.running().set(false);
                     false
                 }
             } else {
                 // Continue animating towards current step target
                 store.target().set(target);
-                store.clone().update(dt)
+                store.config().set((*current_step.config).clone());
+                store.clone().update_simple(dt)
             }
         },
     )
 }
 
-/// Helper function to easily animate a motion store to a target value with configuration
-///
-/// This is a convenience function that handles setting the target, config, and starting the animation.
-/// It's easier than manually calling `motion.target().set()`, `motion.config().set()`, and `motion.running().set()`.
-///
-/// # Example
-/// ```rust
-/// use dioxus::prelude::*;
-/// use dioxus_motion::prelude::*;
-///
-/// #[component]
-/// fn AnimatedComponent() -> Element {
-///     let motion = use_motion_store(0.0f32);
-///     let current = motion.current();
-///
-///     let start_animation = move |_| {
-///         // Easy way to animate with spring physics
-///         animate_to(&motion, 100.0, AnimationConfig::new(
-///             AnimationMode::Spring(Spring::default())
-///         ));
-///     };
-///
-///     rsx! {
-///         div {
-///             style: "transform: translateX({current()}px)",
-///             onclick: start_animation,
-///             "Click to animate"
-///         }
-///     }
-/// }
-/// ```
+// Legacy compatibility: keep old names for a migration period
+pub use MotionHandle as MotionStoreHandle;
+
+/// Legacy helper (deprecated - use MotionHandle.animate_to instead)
+#[deprecated(since = "0.6.0", note = "Use MotionHandle.animate_to() instead")]
 pub fn animate_to<T: Animatable + Copy + Default>(
     motion: &Store<MotionStore<T>>,
     target: T,
@@ -999,6 +623,8 @@ pub fn animate_to<T: Animatable + Copy + Default>(
     motion.target().set(target);
     motion.running().set(true);
     motion.elapsed().set(Duration::default());
-    motion.delay_elapsed().set(config.delay); // Set the delay from config
+    motion.delay_elapsed().set(config.delay);
     motion.current_loop().set(0);
+    motion.current_keyframe().set(0);
+    motion.current_sequence_step().set(0);
 }

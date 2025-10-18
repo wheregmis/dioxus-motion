@@ -41,7 +41,7 @@ fn app() -> Element {
 #[component]
 fn F32Animation() -> Element {
     let motion = use_motion_store(0.0f32);
-    let current = motion.current();
+    let current = motion.store().current();
 
     rsx! {
         div {
@@ -70,23 +70,23 @@ fn F32Animation() -> Element {
             div { style: "display: flex; gap: 10px; margin: 10px 0;",
                 button {
                     onclick: move |_| {
-                        motion.target().set(150.0);
-                        motion.running().set(true);
+                        motion.store().target().set(150.0);
+                        motion.store().running().set(true);
                     },
                     "Animate to 150px"
                 }
 
                 button {
                     onclick: move |_| {
-                        motion.target().set(0.0);
-                        motion.running().set(true);
+                        motion.store().target().set(0.0);
+                        motion.store().running().set(true);
                     },
                     "Reset"
                 }
             }
 
             p { style: "font-family: monospace; font-size: 12px;",
-                "Current: {current():.1}px | Target: {motion.target()():.1}px | Running: {motion.running()()}"
+                "Current: {current():.1}px | Target: {motion.store().target()():.1}px | Running: {motion.store().running()()}"
             }
         }
     }
@@ -95,7 +95,7 @@ fn F32Animation() -> Element {
 #[component]
 fn TransformAnimation() -> Element {
     let motion = use_motion_store(Transform::identity());
-    let current = motion.current();
+    let current = motion.store().current();
 
     rsx! {
         div {
@@ -124,32 +124,32 @@ fn TransformAnimation() -> Element {
             div { style: "display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0;",
                 button {
                     onclick: move |_| {
-                        motion.target().set(Transform::new(100.0, 50.0, 1.0, 0.0));
-                        motion.running().set(true);
+                        motion.store().target().set(Transform::new(100.0, 50.0, 1.0, 0.0));
+                        motion.store().running().set(true);
                     },
                     "Move"
                 }
 
                 button {
                     onclick: move |_| {
-                        motion.target().set(Transform::new(0.0, 0.0, 1.5, 0.0));
-                        motion.running().set(true);
+                        motion.store().target().set(Transform::new(0.0, 0.0, 1.5, 0.0));
+                        motion.store().running().set(true);
                     },
                     "Scale"
                 }
 
                 button {
                     onclick: move |_| {
-                        motion.target().set(Transform::new(0.0, 0.0, 1.0, std::f32::consts::PI / 4.0));
-                        motion.running().set(true);
+                        motion.store().target().set(Transform::new(0.0, 0.0, 1.0, std::f32::consts::PI / 4.0));
+                        motion.store().running().set(true);
                     },
                     "Rotate"
                 }
 
                 button {
                     onclick: move |_| {
-                        motion.target().set(Transform::identity());
-                        motion.running().set(true);
+                        motion.store().target().set(Transform::identity());
+                        motion.store().running().set(true);
                     },
                     "Reset"
                 }
@@ -165,7 +165,7 @@ fn TransformAnimation() -> Element {
 #[component]
 fn ColorAnimation() -> Element {
     let motion = use_motion_store(Color::new(1.0, 0.0, 0.0, 1.0)); // Start with red
-    let current = motion.current();
+    let current = motion.store().current();
 
     rsx! {
         div {
@@ -194,40 +194,40 @@ fn ColorAnimation() -> Element {
             div { style: "display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0;",
                 button {
                     onclick: move |_| {
-                        motion.target().set(Color::new(1.0, 0.0, 0.0, 1.0)); // Red
-                        motion.running().set(true);
+                        motion.store().target().set(Color::new(1.0, 0.0, 0.0, 1.0)); // Red
+                        motion.store().running().set(true);
                     },
                     "Red"
                 }
 
                 button {
                     onclick: move |_| {
-                        motion.target().set(Color::new(0.0, 1.0, 0.0, 1.0)); // Green
-                        motion.running().set(true);
+                        motion.store().target().set(Color::new(0.0, 1.0, 0.0, 1.0)); // Green
+                        motion.store().running().set(true);
                     },
                     "Green"
                 }
 
                 button {
                     onclick: move |_| {
-                        motion.target().set(Color::new(0.0, 0.0, 1.0, 1.0)); // Blue
-                        motion.running().set(true);
+                        motion.store().target().set(Color::new(0.0, 0.0, 1.0, 1.0)); // Blue
+                        motion.store().running().set(true);
                     },
                     "Blue"
                 }
 
                 button {
                     onclick: move |_| {
-                        motion.target().set(Color::new(1.0, 1.0, 0.0, 1.0)); // Yellow
-                        motion.running().set(true);
+                        motion.store().target().set(Color::new(1.0, 1.0, 0.0, 1.0)); // Yellow
+                        motion.store().running().set(true);
                     },
                     "Yellow"
                 }
 
                 button {
                     onclick: move |_| {
-                        motion.target().set(Color::new(1.0, 0.0, 1.0, 1.0)); // Magenta
-                        motion.running().set(true);
+                        motion.store().target().set(Color::new(1.0, 0.0, 1.0, 1.0)); // Magenta
+                        motion.store().running().set(true);
                     },
                     "Magenta"
                 }

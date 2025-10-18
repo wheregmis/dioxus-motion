@@ -1,6 +1,6 @@
 //! Store-based Keyframe Animation Example
 //!
-//! This example demonstrates keyframe animations using the store-based API
+//! This example demonstrates keyframe animations using the unified store-based API
 //! for fine-grained reactivity and smooth complex motion paths.
 
 use dioxus::prelude::*;
@@ -16,10 +16,10 @@ fn app() -> Element {
         div {
             style: "padding: 20px; font-family: Arial, sans-serif;",
 
-            h1 { "Store-based Keyframe Animations" }
+            h1 { "Unified Store Keyframe Animations" }
 
             p {
-                "This demo shows keyframe animations with the store API. "
+                "This demo shows keyframe animations with the unified store API. "
                 "Each animation uses multiple keyframes with different easing functions "
                 "and fine-grained reactivity."
             }
@@ -42,9 +42,9 @@ fn app() -> Element {
 
 #[component]
 fn F32KeyframeDemo() -> Element {
-    let (motion, mut animate_keyframes) = use_motion_store_with_keyframes(0.0f32);
-    let current = motion.current();
-    let is_running = motion.running();
+    let mut motion = use_motion_store(0.0f32);
+    let current = motion.store().current();
+    let is_running = motion.store().running();
 
     let start_animation = move |_| {
         // Create a complex keyframe animation with different easing
@@ -60,7 +60,7 @@ fn F32KeyframeDemo() -> Element {
             .add_keyframe(0.0, 1.0, Some(ease_in_cubic))
             .unwrap(); // Smooth return
 
-        animate_keyframes(keyframes);
+        motion.animate_keyframes(keyframes);
     };
 
     rsx! {
@@ -97,9 +97,7 @@ fn F32KeyframeDemo() -> Element {
 
                 button {
                     onclick: move |_| {
-                        motion.target().set(0.0);
-                        motion.current().set(0.0);
-                        motion.running().set(false);
+                        motion.reset();
                     },
                     "Reset"
                 }
@@ -114,9 +112,9 @@ fn F32KeyframeDemo() -> Element {
 
 #[component]
 fn TransformKeyframeDemo() -> Element {
-    let (motion, mut animate_keyframes) = use_motion_store_with_keyframes(Transform::identity());
-    let current = motion.current();
-    let is_running = motion.running();
+    let mut motion = use_motion_store(Transform::identity());
+    let current = motion.store().current();
+    let is_running = motion.store().running();
 
     let start_animation = move |_| {
         // Complex transform animation with rotation, scale, and position
@@ -150,7 +148,7 @@ fn TransformKeyframeDemo() -> Element {
             .add_keyframe(Transform::identity(), 1.0, Some(ease_out_cubic))
             .unwrap();
 
-        animate_keyframes(keyframes);
+        motion.animate_keyframes(keyframes);
     };
 
     rsx! {
@@ -187,9 +185,7 @@ fn TransformKeyframeDemo() -> Element {
 
                 button {
                     onclick: move |_| {
-                        motion.target().set(Transform::identity());
-                        motion.current().set(Transform::identity());
-                        motion.running().set(false);
+                        motion.reset();
                     },
                     "Reset"
                 }
@@ -204,10 +200,9 @@ fn TransformKeyframeDemo() -> Element {
 
 #[component]
 fn ColorKeyframeDemo() -> Element {
-    let (motion, mut animate_keyframes) =
-        use_motion_store_with_keyframes(Color::new(1.0, 0.0, 0.0, 1.0));
-    let current = motion.current();
-    let is_running = motion.running();
+    let mut motion = use_motion_store(Color::new(1.0, 0.0, 0.0, 1.0));
+    let current = motion.store().current();
+    let is_running = motion.store().running();
 
     let start_animation = move |_| {
         // Rainbow color animation through keyframes
@@ -227,7 +222,7 @@ fn ColorKeyframeDemo() -> Element {
             .add_keyframe(Color::new(1.0, 0.0, 1.0, 1.0), 1.0, Some(ease_in_out_sine))
             .unwrap(); // Violet
 
-        animate_keyframes(keyframes);
+        motion.animate_keyframes(keyframes);
     };
 
     rsx! {
@@ -264,9 +259,7 @@ fn ColorKeyframeDemo() -> Element {
 
                 button {
                     onclick: move |_| {
-                        motion.target().set(Color::new(1.0, 0.0, 0.0, 1.0));
-                        motion.current().set(Color::new(1.0, 0.0, 0.0, 1.0));
-                        motion.running().set(false);
+                        motion.reset();
                     },
                     "Reset"
                 }
