@@ -12,10 +12,10 @@
 - Parallel computation of x, y, scale components
 - ~2-4x faster than scalar operations for transform interpolation
 
-### 3. **Web Closure Pooling**
-- `src/animations/closure_pool.rs` provides reusable JavaScript closures
-- Reduces GC pressure on web platform
-- Configurable pool size (default: 16 closures)
+### 3. **Web Platform Optimizations**
+- Direct closure creation for `requestAnimationFrame` and `setTimeout` callbacks
+- Modern browsers handle closure creation efficiently
+- Simplified code without pooling overhead
 
 ### 4. **Platform-Specific Spring Integration**
 - **Web**: Fixed timestep (120 Hz) with semi-implicit Euler integration
@@ -188,7 +188,7 @@ Infinite loops keep animation active; stop them explicitly when done to free res
 Dioxus Motion v0.4.0 is already highly optimized:
 - ✅ SIMD-optimized transforms
 - ✅ Platform-specific spring integration  
-- ✅ Web closure pooling
+- ✅ Web platform optimizations
 - ✅ Unified animation loop
 - ✅ Smart epsilon handling
 - ✅ Zero-copy reactivity

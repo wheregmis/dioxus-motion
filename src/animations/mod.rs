@@ -1,10 +1,8 @@
 pub mod benchmarks;
-pub mod closure_pool;
 pub mod colors;
 pub mod core;
 pub mod epsilon;
 pub mod platform;
 pub mod spring;
-pub mod state_machine;
 pub mod transform;
 pub mod tween;

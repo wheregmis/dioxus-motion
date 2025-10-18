@@ -5,26 +5,22 @@
 //!
 //! # Features
 //! - **Simplified Animatable trait** - Uses standard Rust operators (`+`, `-`, `*`) for math operations
-//! - **High-performance optimizations** - Automatic memory pooling, state machine dispatch, and resource management
-//! - Spring physics animations with optimized integration
+//! - **Clean architecture** - Simple, maintainable code without over-optimization
+//! - Spring physics animations with RK4 integration
 //! - Tween animations with custom easing
 //! - Color interpolation
 //! - Transform animations
 //! - Configurable animation loops
 //! - Animation sequences with atomic step management
 //! - Single default epsilon (0.01) for consistent animation completion
-//! - Automatic resource pool management for maximum performance
 //!
 //! # Example
 //! ```rust,no_run
 //! use dioxus_motion::prelude::*;
 //!
-//! // Optional: Configure resource pools for optimal performance (recommended for production)
-//! resource_pools::init_high_performance();
-//!
 //! let mut motion = use_motion_store(0.0f32);
 //!
-//! // Basic animation - automatically uses all optimizations
+//! // Basic animation
 //! motion.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
 //!
 //! // Animation with custom epsilon for fine-tuned performance (optional)
@@ -116,7 +112,6 @@ pub use animations::platform::{MotionTime, TimeProvider};
 
 pub use keyframes::{Keyframe, KeyframeAnimation};
 
-use motion::Motion;
 
 // Re-exports
 pub mod prelude {
@@ -137,10 +132,8 @@ pub mod prelude {
     };
     pub use crate::{Duration, Time, TimeProvider};
 
-    // Performance optimization exports
+    // Optimization exports
     pub use crate::motion::MotionOptimizationStats;
-    pub use crate::pool::resource_pools;
-    pub use crate::pool::{PoolConfig, PoolStats};
 }
 
 pub type Time = MotionTime;
