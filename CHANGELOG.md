@@ -38,6 +38,9 @@ This release unifies the motion store API for better ergonomics and performance.
 - **Unified Animation Loop**: Single loop per motion store handles all animation types
 - **Better Performance**: Reduced spawns, unified dispatch, shared signal management
 
+#### Bug Fixes
+- **Page Transitions**: Fixed page transition animations not displaying properly by adding absolute positioning to transition containers
+
 #### Migration
 See `MIGRATION_GUIDE.md` for detailed migration instructions with code examples.
 

@@ -135,7 +135,7 @@ pub mod prelude {
     pub use crate::transitions::config::TransitionVariant;
     #[cfg(feature = "transitions")]
     pub use crate::transitions::page_transitions::{
-        AnimatableRoute, AnimatedOutlet, AnimatedRouterStore, TransitionVariantResolver,
+        AnimatableRoute, AnimatedOutlet, AnimatedRouterContext, TransitionVariantResolver,
         use_animated_router,
     };
     pub use crate::{AnimationManager, Duration, Time, TimeProvider, use_motion};

@@ -1,13 +1,15 @@
 use std::marker::PhantomData;
 
-use dioxus::prelude::*;
-#[cfg(feature = "transitions")]
-use dioxus_router::{Outlet, OutletContext, Routable, use_outlet_context, use_route};
+use dioxus::{
+    prelude::*,
+    router::{OutletContext, use_outlet_context},
+};
 use std::rc::Rc;
 
 use crate::{
-    prelude::{AnimationConfig, AnimationMode, MotionStoreStoreExt, Spring, Tween},
-    store::use_motion_store,
+    AnimationManager,
+    prelude::{AnimationConfig, AnimationMode, Spring, Tween}, // Add Tween
+    use_motion,
 };
 
 use super::config::TransitionVariant;
@@ -48,89 +50,6 @@ impl<R: Routable + PartialEq> AnimatedRouterContext<R> {
         if let Self::FromTo(_, to) = self {
             *self = Self::In(to.clone())
         }
-    }
-}
-
-/// Store-based router context for fine-grained reactivity
-///
-/// Unlike the signal-based `AnimatedRouterContext`, components can subscribe
-/// to specific fields to avoid unnecessary re-renders:
-/// - `to_route()` - Subscribe only to destination route changes
-/// - `from_route()` - Subscribe only to source route changes  
-/// - `is_transitioning()` - Subscribe only to transition state changes
-#[derive(Store)]
-pub struct AnimatedRouterStore<R> {
-    /// The route we're transitioning from (None if settled)
-    pub from_route: Option<R>,
-    /// The route we're transitioning to (current destination)
-    pub to_route: R,
-    /// Whether we're currently in a transition
-    pub is_transitioning: bool,
-}
-
-impl<R: Routable + PartialEq + Clone + 'static> AnimatedRouterStore<R> {
-    /// Create a new router store in settled state
-    pub fn new(route: R) -> Self {
-        Self {
-            from_route: None,
-            to_route: route,
-            is_transitioning: false,
-        }
-    }
-}
-
-/// Store methods for AnimatedRouterStore
-#[store]
-impl<R: Routable + PartialEq + Clone + 'static> Store<AnimatedRouterStore<R>> {
-    /// Get the current destination route
-    ///
-    /// Components can subscribe to this to react only to destination changes
-    fn target_route(&self) -> R {
-        self.to_route().cloned()
-    }
-
-    /// Check if we're currently transitioning between routes
-    ///
-    /// Components can subscribe to this to react only to transition state changes
-    fn is_in_transition(&self) -> bool {
-        self.is_transitioning().cloned()
-    }
-
-    /// Get the route pair if transitioning, None if settled
-    ///
-    /// Returns (from, to) tuple if transitioning, None if settled
-    fn get_transition_routes(&self) -> Option<(R, R)> {
-        if self.is_transitioning().cloned() {
-            self.from_route()
-                .cloned()
-                .map(|from| (from, self.to_route().cloned()))
-        } else {
-            None
-        }
-    }
-
-    /// Update the destination route and manage transition state
-    fn set_target_route(&mut self, new_route: R) {
-        let current_to = self.to_route().cloned();
-
-        if current_to != new_route {
-            if self.is_transitioning().cloned() {
-                // Already transitioning, update the chain: old_from -> old_to -> new_to
-                self.from_route().set(Some(current_to));
-            } else {
-                // Starting new transition: current -> new
-                self.from_route().set(Some(current_to));
-                self.is_transitioning().set(true);
-            }
-
-            self.to_route().set(new_route);
-        }
-    }
-
-    /// Settle the transition - move to non-transitioning state
-    fn settle(&mut self) {
-        self.from_route().set(None);
-        self.is_transitioning().set(false);
     }
 }
 
@@ -269,21 +188,24 @@ impl Animatable for PageTransitionAnimation {
 /// ```
 pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
     let route = use_route::<R>();
-    // Create router store for fine-grained reactivity
-    let mut router_store = use_store(|| AnimatedRouterStore::new(route.clone()));
-    use_context_provider(move || router_store);
+    // Create router context only if we're the root AnimatedOutlet
+    let mut prev_route = use_signal(|| AnimatedRouterContext::In(route.clone()));
+    use_context_provider(move || prev_route);
 
     use_effect(move || {
-        let current_route = use_route::<R>();
-        if router_store.target_route() != current_route {
-            router_store.set_target_route(current_route.clone());
+        if prev_route.peek().target_route() != &use_route::<R>() {
+            prev_route
+                .write()
+                .set_target_route(use_route::<R>().clone());
         }
     });
 
     let outlet: OutletContext<R> = use_outlet_context();
 
-    // Get transition routes using store method for fine-grained reactivity
-    let from_route: Option<(R, R)> = router_store.get_transition_routes();
+    let from_route: Option<(R, R)> = match prev_route() {
+        AnimatedRouterContext::FromTo(from, to) => Some((from, to)),
+        _ => None,
+    };
 
     if let Some((from, to)) = from_route {
         // Get the layout depth of both the previous and current routes
@@ -327,9 +249,8 @@ pub trait AnimatableRoute: Routable + Clone + PartialEq {
     fn get_layout_depth(&self) -> usize;
 }
 
-/// Shortcut to get access to the AnimatedRouterStore for fine-grained reactivity.
-pub fn use_animated_router<Route: Routable + PartialEq + Clone + 'static>()
--> Store<AnimatedRouterStore<Route>> {
+/// Shortcut to get access to the [AnimatedRouterContext].
+pub fn use_animated_router<Route: Routable + PartialEq>() -> Signal<AnimatedRouterContext<Route>> {
     use_context()
 }
 
@@ -345,8 +266,8 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     let transition_variant =
         resolver.map_or_else(|| to.get_transition(), |resolver| resolver(&from, &to));
     let config = transition_variant.get_config();
-    let mut from_anim = use_motion_store(PageTransitionAnimation::from_exit_start(&config));
-    let mut to_anim = use_motion_store(PageTransitionAnimation::from_enter_start(&config));
+    let mut from_anim = use_motion(PageTransitionAnimation::from_exit_start(&config));
+    let mut to_anim = use_motion(PageTransitionAnimation::from_enter_start(&config));
 
     // Try to get a Tween from context, otherwise use Spring
     let tween = try_use_context::<Signal<Tween>>();
@@ -375,19 +296,18 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
                 )
             },
         );
-        // Use the new MotionHandle API
         from_anim.animate_to(PageTransitionAnimation::from_exit_end(&config), from_config);
         to_anim.animate_to(PageTransitionAnimation::from_enter_end(&config), to_config);
     });
 
     use_effect(move || {
-        if !from_anim.store().running()() && !to_anim.store().running()() {
-            animated_router.settle();
+        if !from_anim.is_running() && !to_anim.is_running() {
+            animated_router.write().settle();
         }
     });
 
-    let from_val = from_anim.store().current()();
-    let to_val = to_anim.store().current()();
+    let from_val = from_anim.get_value();
+    let to_val = to_anim.get_value();
 
     rsx! {
         div {
