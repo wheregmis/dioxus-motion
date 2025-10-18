@@ -6,6 +6,7 @@ use dioxus_router::{Outlet, OutletContext, Routable, use_outlet_context, use_rou
 use std::rc::Rc;
 
 use crate::{
+    MotionTime, TimeProvider,
     prelude::{AnimationConfig, AnimationMode, MotionStoreStoreExt, Spring, Tween},
     store::use_motion_store,
 };
@@ -186,9 +187,22 @@ impl Animatable for PageTransitionAnimation {
 /// ```
 pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
     let route = use_route::<R>();
-    // Create router context only if we're the root AnimatedOutlet
-    let mut prev_route = use_signal(|| AnimatedRouterContext::In(route.clone()));
-    use_context_provider(move || prev_route);
+    let outlet: OutletContext<R> = use_outlet_context();
+
+    // Only create router context if we're the root outlet (level 0)
+    // Nested outlets should use the existing context
+    let mut prev_route = if outlet.level() == 0 {
+        let context = use_signal(|| AnimatedRouterContext::In(route.clone()));
+        use_context_provider(move || context);
+        context
+    } else {
+        // Try to get existing context, fallback to creating a new one if not found
+        try_use_context::<Signal<AnimatedRouterContext<R>>>().unwrap_or_else(|| {
+            let context = use_signal(|| AnimatedRouterContext::In(route.clone()));
+            use_context_provider(move || context);
+            context
+        })
+    };
 
     use_effect(move || {
         if prev_route.peek().target_route() != &use_route::<R>() {
@@ -197,8 +211,6 @@ pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
                 .set_target_route(use_route::<R>().clone());
         }
     });
-
-    let outlet: OutletContext<R> = use_outlet_context();
 
     let from_route: Option<(R, R)> = match prev_route() {
         AnimatedRouterContext::FromTo(from, to) => Some((from, to)),
@@ -219,11 +231,14 @@ pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
         // Check if the depth hasn't changed and the outlet level matches
         let is_same_depth_and_matching_level = from_depth == to_depth && current_level == to_depth;
 
-        // If we're transitioning from/to root, or the outlet is at the same depth,
+        // Use the original logic: if we're transitioning from/to root, or the outlet is at the same depth,
         // render the animated transition between routes
         if involves_root || is_same_depth_and_matching_level {
+            let transition_key =
+                format!("transition-{}-{}-{}", from_depth, to_depth, current_level);
             return rsx! {
                 FromRouteToCurrent::<R> {
+                    key: "{transition_key}",
                     route_type: PhantomData,
                     from: from.clone(),
                     to: to.clone(),
@@ -271,8 +286,14 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     let tween = try_use_context::<Signal<Tween>>();
     let spring = try_use_context::<Signal<Spring>>();
 
+    // Track if we've already settled to prevent multiple settlements
+    let mut has_settled = use_signal(|| false);
+
     // Start the animations - run once on mount
     use_effect(use_reactive((&from, &to), move |(_from, _to)| {
+        // Reset the settled flag for new transitions
+        has_settled.set(false);
+
         // Reset the stores to initial positions
         from_anim
             .store()
@@ -310,10 +331,25 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     }));
 
     use_effect(move || {
-        if !from_anim.store().running()() && !to_anim.store().running()() {
+        let from_running = from_anim.store().running()();
+        let to_running = to_anim.store().running()();
+
+        if !from_running && !to_running && !has_settled() {
+            has_settled.set(true);
             animated_router.write().settle();
         }
     });
+
+    // Add a timeout to ensure transitions don't get stuck
+    use_effect(use_reactive((&from, &to), move |(_from, _to)| {
+        spawn(async move {
+            MotionTime::delay(std::time::Duration::from_millis(200)).await;
+            if !has_settled() {
+                has_settled.set(true);
+                animated_router.write().settle();
+            }
+        });
+    }));
 
     let from_val = from_anim.store().current()();
     let to_val = to_anim.store().current()();
