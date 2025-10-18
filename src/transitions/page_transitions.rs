@@ -1,15 +1,13 @@
 use std::marker::PhantomData;
 
-use dioxus::{
-    prelude::*,
-    router::{OutletContext, use_outlet_context},
-};
+use dioxus::prelude::*;
+#[cfg(feature = "transitions")]
+use dioxus_router::{Outlet, OutletContext, Routable, use_outlet_context, use_route};
 use std::rc::Rc;
 
 use crate::{
-    AnimationManager,
-    prelude::{AnimationConfig, AnimationMode, Spring, Tween}, // Add Tween
-    use_motion,
+    prelude::{AnimationConfig, AnimationMode, MotionStoreStoreExt, Spring, Tween},
+    store::use_motion_store,
 };
 
 use super::config::TransitionVariant;
@@ -266,14 +264,25 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     let transition_variant =
         resolver.map_or_else(|| to.get_transition(), |resolver| resolver(&from, &to));
     let config = transition_variant.get_config();
-    let mut from_anim = use_motion(PageTransitionAnimation::from_exit_start(&config));
-    let mut to_anim = use_motion(PageTransitionAnimation::from_enter_start(&config));
+    let mut from_anim = use_motion_store(PageTransitionAnimation::from_exit_start(&config));
+    let mut to_anim = use_motion_store(PageTransitionAnimation::from_enter_start(&config));
 
     // Try to get a Tween from context, otherwise use Spring
     let tween = try_use_context::<Signal<Tween>>();
     let spring = try_use_context::<Signal<Spring>>();
 
-    use_effect(move || {
+    // Start the animations - run once on mount
+    use_effect(use_reactive((&from, &to), move |(_from, _to)| {
+        // Reset the stores to initial positions
+        from_anim
+            .store()
+            .current()
+            .set(PageTransitionAnimation::from_exit_start(&config));
+        to_anim
+            .store()
+            .current()
+            .set(PageTransitionAnimation::from_enter_start(&config));
+
         let (from_config, to_config) = tween.map_or_else(
             || {
                 let spring = spring.unwrap_or_else(|| {
@@ -298,16 +307,16 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
         );
         from_anim.animate_to(PageTransitionAnimation::from_exit_end(&config), from_config);
         to_anim.animate_to(PageTransitionAnimation::from_enter_end(&config), to_config);
-    });
+    }));
 
     use_effect(move || {
-        if !from_anim.is_running() && !to_anim.is_running() {
+        if !from_anim.store().running()() && !to_anim.store().running()() {
             animated_router.write().settle();
         }
     });
 
-    let from_val = from_anim.get_value();
-    let to_val = to_anim.get_value();
+    let from_val = from_anim.store().current()();
+    let to_val = to_anim.store().current()();
 
     rsx! {
         div {
