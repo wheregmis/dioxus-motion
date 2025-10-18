@@ -1,8 +1,8 @@
 use crate::components::footer::Footer;
 use crate::old_showcase::components::{
-    AnimatedCounter, AnimatedFlower, AnimatedMenuItem, BouncingText, Card3DFlip, InteractiveCube,
-    MorphingShape, PathAnimation, ProgressBar, PulseEffect, RotatingButton, SwingingCube,
-    TransformAnimationShowcase, TypewriterEffect, ValueAnimationShowcase,
+    AnimatedCounter, AnimatedFlower, AnimatedMenuItem, BouncingText, CandleAnimation, Card3DFlip,
+    InteractiveCube, MorphingShape, PathAnimation, ProgressBar, PulseEffect, RotatingButton,
+    SwingingCube, TransformAnimationShowcase, TypewriterEffect, ValueAnimationShowcase,
 };
 
 use dioxus::prelude::*;
@@ -106,6 +106,11 @@ fn showcase_items() -> Vec<(&'static str, Element, &'static str)> {
             "Flower Animation",
             rsx!(AnimatedFlower {}),
             "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/animated_flower.rs",
+        ),
+        (
+            "Candle Animation",
+            rsx!(CandleAnimation {}),
+            "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/candle_animation.rs",
         ),
         (
             "Morphing Shape",

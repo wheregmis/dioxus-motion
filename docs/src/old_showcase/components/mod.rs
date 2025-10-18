@@ -42,3 +42,6 @@ pub use animated_counter::AnimatedCounter;
 
 pub mod cube_animation;
 pub use cube_animation::SwingingCube;
+
+pub mod candle_animation;
+pub use candle_animation::CandleAnimation;
