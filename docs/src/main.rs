@@ -16,8 +16,6 @@ const MAIN_CSS: Asset = asset!("/assets/tailwind.css");
 /// with an HTML layout defined using the `rsx!` macro. The layout includes a head section that loads
 /// external fonts from Google Fonts and a local stylesheet via the `MAIN_CSS` asset, as well as a
 /// Router component parameterized with the `Route` type to handle navigation.
-///
-
 fn main() {
     dioxus::launch(|| {
         // Dynamic transition resolver for Home, Docs, ShowcaseGallery

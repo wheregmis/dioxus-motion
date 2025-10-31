@@ -6,8 +6,6 @@ use dioxus::prelude::*;
 /// string literals (enclosed in unescaped `"` characters), and token separators. It wraps detected
 /// comments in a gray-colored span and string literals in a green-colored span, while other tokens
 /// are processed to apply additional styling relevant to Dioxus patterns.
-///
-
 fn highlight_rust_syntax(code: &str) -> String {
     // Create a more robust token-based approach rather than simple replacement
     let mut result = String::new();
@@ -120,8 +118,6 @@ fn highlight_rust_syntax(code: &str) -> String {
 /// - Tokens starting with `Route::` are split so that the `"Route::"` prefix appears in green and the rest in orange.
 /// - Tokens ending with a colon are styled in a lighter blue.
 /// - Numeric tokens (including decimals) are styled in orange.
-///
-
 fn highlight_token(token: &str, in_string: bool) -> String {
     if in_string {
         return token.to_string();
@@ -198,8 +194,6 @@ fn highlight_token(token: &str, in_string: bool) -> String {
 /// string literals, and various separators. It wraps comments (starting with `#`)
 /// in a span with a gray color, string literals in a span with a green color,
 /// and brackets in a span with blue coloring.
-///
-
 fn highlight_toml_syntax(code: &str) -> String {
     let mut result = String::new();
     let mut in_string = false;
@@ -312,7 +306,6 @@ fn highlight_toml_syntax(code: &str) -> String {
 /// - Tokens ending with '=' (indicating keys) are highlighted in purple.
 /// - Tokens consisting solely of digits, dots, or quotes (e.g., version numbers or literals) are styled with an orange class.
 ///   If the token is empty after trimming or if `in_string` is true, the original token is returned unmodified.
-
 fn highlight_toml_token(token: &str, in_string: bool) -> String {
     if in_string {
         return token.to_string();
@@ -365,8 +358,6 @@ fn highlight_toml_token(token: &str, in_string: bool) -> String {
 /// Boolean values ("true" or "false") and numerically formatted values are highlighted with an orange color,
 /// while quoted strings are highlighted with a green color. If the value does not match any of these patterns,
 /// it is returned unmodified.
-///
-
 fn highlight_toml_value(value: &str) -> String {
     // Handle boolean values
     if value == "true" || value == "false" {

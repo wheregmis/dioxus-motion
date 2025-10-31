@@ -48,17 +48,12 @@ fn calculate_delay(dt: f32, running_frames: u32) -> Duration {
 }
 
 /// Animation type discriminant
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 enum AnimationType {
+    #[default]
     Simple,
     Keyframes,
     Sequence,
-}
-
-impl Default for AnimationType {
-    fn default() -> Self {
-        Self::Simple
-    }
 }
 
 /// Store-based Motion struct with fine-grained reactivity
