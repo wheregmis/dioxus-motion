@@ -259,24 +259,21 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
         let config = self.config().cloned();
         let epsilon = T::epsilon();
 
-        if diff.magnitude() < epsilon {
-            // Close enough to target, snap to target
-            self.current().set(target);
-            self.velocity().set(T::default());
-            self.handle_loop_completion()
-        } else {
-            match config.mode {
-                AnimationMode::Spring(spring) => {
-                    // Spring physics: F = -kx - cv
-                    let stiffness = spring.stiffness;
-                    let damping_ratio = spring.damping;
-                    let mass = spring.mass;
-
-                    let spring_force = diff * stiffness;
-                    let damping_force = current_velocity * damping_ratio;
+        match config.mode {
+            AnimationMode::Spring(spring) => {
+                // For spring animations, check if close enough to target
+                if diff.magnitude() < epsilon {
+                    // Close enough to target, snap to target
+                    self.current().set(target);
+                    self.velocity().set(T::default());
+                    self.handle_loop_completion()
+                } else {
+                    // Continue with spring physics
+                    let spring_force = diff * spring.stiffness;
+                    let damping_force = current_velocity * spring.damping;
                     let net_force = spring_force - damping_force;
 
-                    let acceleration = net_force * (1.0 / mass);
+                    let acceleration = net_force * (1.0 / spring.mass);
                     let new_velocity = current_velocity + acceleration * dt;
                     let new_current = current + new_velocity * dt;
 
@@ -284,37 +281,37 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                     self.velocity().set(new_velocity);
                     true
                 }
-                AnimationMode::Tween(tween) => {
-                    // Tween interpolation based on elapsed time and duration
-                    let progress =
-                        (new_elapsed.as_secs_f32() / tween.duration.as_secs_f32()).clamp(0.0, 1.0);
+            }
+            AnimationMode::Tween(tween) => {
+                // Tween animations use time-based progress, skip epsilon check
+                let progress =
+                    (new_elapsed.as_secs_f32() / tween.duration.as_secs_f32()).clamp(0.0, 1.0);
 
-                    // Apply easing function
-                    let eased_progress = (tween.easing)(progress, 0.0, 1.0, 1.0);
+                // Apply easing function
+                let eased_progress = (tween.easing)(progress, 0.0, 1.0, 1.0);
 
-                    // Interpolate from initial value to target
-                    let initial = self.initial().cloned();
-                    let new_current = initial.interpolate(&target, eased_progress);
+                // Interpolate from initial value to target
+                let initial = self.initial().cloned();
+                let new_current = initial.interpolate(&target, eased_progress);
 
-                    // Guard against dt == 0.0 when computing velocity
-                    let new_velocity = if dt > 0.0 {
-                        let delta = new_current - current;
-                        delta * (1.0 / dt)
-                    } else {
-                        T::default()
-                    };
+                // Guard against dt == 0.0 when computing velocity
+                let new_velocity = if dt > 0.0 {
+                    let delta = new_current - current;
+                    delta * (1.0 / dt)
+                } else {
+                    T::default()
+                };
 
-                    self.current().set(new_current);
-                    self.velocity().set(new_velocity);
+                self.current().set(new_current);
+                self.velocity().set(new_velocity);
 
-                    // Check if tween is complete
-                    if progress >= 1.0 {
-                        self.current().set(target);
-                        self.velocity().set(T::default());
-                        self.handle_loop_completion()
-                    } else {
-                        true
-                    }
+                // Check if tween is complete
+                if progress >= 1.0 {
+                    self.current().set(target);
+                    self.velocity().set(T::default());
+                    self.handle_loop_completion()
+                } else {
+                    true
                 }
             }
         }
@@ -330,6 +327,8 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                 LoopMode::Infinite => {
                     self.current().set(self.initial().cloned());
                     self.elapsed().set(Duration::default());
+                    // Reset delay for the next loop iteration
+                    self.delay_elapsed().set(config.delay);
                     self.current_loop().set(self.current_loop().cloned() + 1);
                     true
                 }
@@ -338,6 +337,8 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                     if current_loop < count - 1 {
                         self.current().set(self.initial().cloned());
                         self.elapsed().set(Duration::default());
+                        // Reset delay for the next loop iteration
+                        self.delay_elapsed().set(config.delay);
                         self.current_loop().set(current_loop + 1);
                         true
                     } else {
@@ -361,6 +362,8 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                     self.initial().set(new_initial);
                     self.reverse().set(!self.reverse().cloned());
                     self.elapsed().set(Duration::default());
+                    // Reset delay for the next loop iteration
+                    self.delay_elapsed().set(config.delay);
                     self.current_loop().set(self.current_loop().cloned() + 1);
                     true
                 }
@@ -382,6 +385,8 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                         self.initial().set(new_initial);
                         self.reverse().set(!self.reverse().cloned());
                         self.elapsed().set(Duration::default());
+                        // Reset delay for the next loop iteration
+                        self.delay_elapsed().set(config.delay);
                         self.current_loop().set(current_loop + 1);
                         true
                     } else {

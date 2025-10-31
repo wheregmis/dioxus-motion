@@ -19,7 +19,7 @@ fn BouncingLetter(letter: char, delay: f32) -> Element {
                 duration: Duration::from_secs(1),
                 easing: easer::functions::Sine::ease_in_out,
             }))
-            .with_loop(LoopMode::Infinite)
+            .with_loop(LoopMode::Alternate)
             .with_delay(delay),
         );
     });
