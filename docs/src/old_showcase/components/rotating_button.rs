@@ -59,32 +59,14 @@ pub fn RotatingButton() -> Element {
         );
 
         // Only animate if keyframe creation succeeded
-        if let Ok(_scale_anim) = scale_keyframes {
-            scale.animate_to(
-                1.15,
-                AnimationConfig::new(AnimationMode::Tween(Tween {
-                    duration: Duration::from_millis(800),
-                    easing: easer::functions::Expo::ease_out,
-                })),
-            );
+        if let Ok(scale_anim) = scale_keyframes {
+            scale.animate_keyframes(scale_anim);
         }
-        if let Ok(_rotation_anim) = rotation_keyframes {
-            rotation.animate_to(
-                360.0,
-                AnimationConfig::new(AnimationMode::Tween(Tween {
-                    duration: Duration::from_millis(800),
-                    easing: easer::functions::Cubic::ease_in_out,
-                })),
-            );
+        if let Ok(rotation_anim) = rotation_keyframes {
+            rotation.animate_keyframes(rotation_anim);
         }
-        if let Ok(_glow_anim) = glow_keyframes {
-            glow.animate_to(
-                1.0,
-                AnimationConfig::new(AnimationMode::Tween(Tween {
-                    duration: Duration::from_millis(600),
-                    easing: easer::functions::Expo::ease_out,
-                })),
-            );
+        if let Ok(glow_anim) = glow_keyframes {
+            glow.animate_keyframes(glow_anim);
         }
     };
 

@@ -391,16 +391,16 @@ petal.animate_keyframes(keyframes);"#.to_string(),
                     div { class: "relative h-32 w-32 mx-auto",
                         div {
                             class: "absolute w-16 h-16 bg-primary/50 rounded-lg",
-                            style: "transform: translate({petal_sequence.store().current()().translate_x}px, {petal_sequence.store().current()().translate_y}px) rotate({petal_sequence.store().current()().rotate}deg) scale({petal_sequence.store().current()().scale})"
+                            style: "transform: translate({petal_sequence.store().current().translate_x}px, {petal_sequence.store().current().translate_y}px) rotate({petal_sequence.store().current().rotate}deg) scale({petal_sequence.store().current().scale})"
                         }
                     }
 
                     // Current values
                     div { class: "text-sm text-text-secondary space-y-1",
-                        p { "Rotation: {petal_sequence.store().current()().rotate:.1}°" }
-                        p { "Scale: {petal_sequence.store().current()().scale:.2}" }
-                        p { "X: {petal_sequence.store().current()().translate_x:.1}px" }
-                        p { "Y: {petal_sequence.store().current()().translate_y:.1}px" }
+                        p { "Rotation: {petal_sequence.store().current().rotate:.1}°" }
+                        p { "Scale: {petal_sequence.store().current().scale:.2}" }
+                        p { "X: {petal_sequence.store().current().translate_x:.1}px" }
+                        p { "Y: {petal_sequence.store().current().translate_y:.1}px" }
                     }
 
                     // Controls

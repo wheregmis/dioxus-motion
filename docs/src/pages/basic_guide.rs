@@ -125,13 +125,13 @@ value.animate_to(
                         div { class: "relative h-16 bg-dark-200/30 rounded-lg overflow-hidden",
                             div {
                                 class: "absolute h-16 bg-primary/50 rounded-lg",
-                                style: "width: {value.store().current()()}%"
+                                style: "width: {value.store().current()}%"
                             }
                         }
 
                         // Value display
                         div { class: "text-sm text-text-secondary",
-                            "Current value: {value.store().current()():.1}"
+                            "Current value: {value.store().current():.1}"
                         }
 
                         // Controls
@@ -250,7 +250,7 @@ fn StepTwo() -> Element {
                     div { class: "relative h-12 bg-dark-200/30 rounded-lg overflow-hidden",
                         div {
                             class: "absolute h-12 bg-primary/50 rounded-lg",
-                            style: "width: {tween_value.store().current()()}%"
+                            style: "width: {tween_value.store().current()}%"
                         }
                     }
 
@@ -276,7 +276,7 @@ fn StepTwo() -> Element {
                     div { class: "relative h-12 bg-dark-200/30 rounded-lg overflow-hidden",
                         div {
                             class: "absolute h-12 bg-primary/50 rounded-lg",
-                            style: "width: {spring_value.store().current()()}%"
+                            style: "width: {spring_value.store().current()}%"
                         }
                     }
 

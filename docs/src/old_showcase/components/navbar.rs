@@ -30,10 +30,10 @@ pub fn Navbar() -> Element {
                     transition-all duration-300 z-50
                     hover:shadow-xl",
             style: "transform: translate({}px, {}px) scale({}) rotate({}deg); transform-style: preserve-3d; will-change: transform;",
-            transform.store().current()().x,
-            transform.store().current()().y,
-            transform.store().current()().scale,
-            transform.store().current()().rotation,
+            transform.store().current().x,
+            transform.store().current().y,
+            transform.store().current().scale,
+            transform.store().current().rotation,
             div { class: "max-w-6xl mx-auto px-4",
                 div { class: "flex justify-between items-center h-28",
                     // Logo
