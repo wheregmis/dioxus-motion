@@ -15,6 +15,7 @@ pub fn AnimatedCounter() -> Element {
         );
 
         scale.animate_to(1.2, AnimationConfig::spring());
+        scale.animate_to(1.0, AnimationConfig::spring());
         sequence_value.animate_sequence(sequence);
         count.set((*count)() + 1);
     };

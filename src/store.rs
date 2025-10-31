@@ -135,8 +135,12 @@ impl<T: Animatable + Copy + Default + Send + 'static> MotionHandle<T> {
     /// Animate to a target value with the given configuration
     pub fn animate_to(&mut self, target: T, config: AnimationConfig) {
         self.animation_type.set(AnimationType::Simple);
+        // Capture current value as the starting point for this animation
+        self.store.initial().set(self.store.current()());
         self.store.config().set(config.clone());
         self.store.target().set(target);
+        // Reset velocity to prevent bleed from previous animations
+        self.store.velocity().set(T::default());
         self.store.running().set(true);
         self.store.elapsed().set(Duration::default());
         self.store.delay_elapsed().set(config.delay);
@@ -288,10 +292,17 @@ impl<T: Animatable + Copy + Default> Store<MotionStore<T>> {
                     // Apply easing function
                     let eased_progress = (tween.easing)(progress, 0.0, 1.0, 1.0);
 
-                    // Interpolate towards target
-                    let step = diff * eased_progress;
-                    let new_current = current + step;
-                    let new_velocity = step * (1.0 / dt);
+                    // Interpolate from initial value to target
+                    let initial = self.initial().cloned();
+                    let new_current = initial.interpolate(&target, eased_progress);
+
+                    // Guard against dt == 0.0 when computing velocity
+                    let new_velocity = if dt > 0.0 {
+                        let delta = new_current - current;
+                        delta * (1.0 / dt)
+                    } else {
+                        T::default()
+                    };
 
                     self.current().set(new_current);
                     self.velocity().set(new_velocity);

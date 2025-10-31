@@ -25,6 +25,13 @@ pub fn InteractiveCube() -> Element {
             })),
         );
 
+        // Reset scale after animation
+        scale.animate_to(
+            1.0,
+            AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+                .with_delay(std::time::Duration::from_millis(500)),
+        );
+
         rotation_y.animate_to(
             rotation_y.store().current()() + 360.0,
             AnimationConfig::new(AnimationMode::Spring(Spring {

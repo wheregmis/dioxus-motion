@@ -125,13 +125,13 @@ value.animate_to(
                         div { class: "relative h-16 bg-dark-200/30 rounded-lg overflow-hidden",
                             div {
                                 class: "absolute h-16 bg-primary/50 rounded-lg",
-                                style: "width: {value.store().current()}%"
+                                style: "width: {value.store().current()()}%"
                             }
                         }
 
                         // Value display
                         div { class: "text-sm text-text-secondary",
-                            "Current value: {value.store().current():.1}"
+                            "Current value: {value.store().current()():.1}"
                         }
 
                         // Controls
