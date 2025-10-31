@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/wheregmis/dioxus-motion/blob/main/LICENSE)
 [![Crates.io](https://img.shields.io/crates/v/dioxus-motion.svg)](https://crates.io/crates/dioxus-motion)
-[![Docs](https://docs.rs/dioxus-motion/badge.svg)](https://docs.rs/dioxus-motion/0.1.4/dioxus_motion/)
+[![Docs](https://docs.rs/dioxus-motion/badge.svg)](https://docs.rs/dioxus-motion/0.4.0/dioxus_motion/)
 
 A lightweight, cross-platform animation library for Dioxus, designed to bring smooth, flexible animations to your Rust web, desktop, and mobile applications.
 
@@ -12,7 +12,7 @@ This repository follows Dioxus's main branch for the latest features and improve
 
 ```toml
 # Recommended: Stable version from crates.io
-dioxus-motion = "0.3.1"
+dioxus-motion = "0.4.0"
 
 # Development version: Follows Dioxus main branch
 dioxus-motion = { git = "https://github.com/wheregmis/dioxus-motion.git", branch = "main" }
@@ -160,7 +160,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-motion = { version = "0.3.0", optional = true, default-features = false }
+dioxus-motion = { version = "0.4.0", optional = true, default-features = false }
 
 [features]
 default = ["web"]
@@ -173,7 +173,7 @@ If you want to use page transiton dependency will look like,
 
 ```toml
 [dependencies]
-dioxus-motion = { version = "0.3.0", optional = true, default-features = false }
+dioxus-motion = { version = "0.4.0", optional = true, default-features = false }
 
 [features]
 default = ["web"]

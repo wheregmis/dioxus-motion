@@ -1,6 +1,7 @@
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use criterion::{Criterion, criterion_group, criterion_main};
 use dioxus_motion::prelude::*;
 use easer::functions::Easing;
+use std::hint::black_box;
 use std::time::Duration;
 
 fn bench_animation_config_creation(c: &mut Criterion) {
@@ -82,16 +83,21 @@ fn bench_transform_operations(c: &mut Criterion) {
 }
 
 fn bench_color_operations(c: &mut Criterion) {
-    c.bench_function("color_rgb", |b| {
+    c.bench_function("color_new", |b| {
         b.iter(|| {
-            let color = Color::rgb(black_box(255), black_box(128), black_box(64));
+            let color = Color::new(
+                black_box(1.0),
+                black_box(0.5),
+                black_box(0.25),
+                black_box(1.0),
+            );
             black_box(color);
         });
     });
 
-    c.bench_function("color_rgba", |b| {
+    c.bench_function("color_from_rgba", |b| {
         b.iter(|| {
-            let color = Color::rgba(
+            let color = Color::from_rgba(
                 black_box(255),
                 black_box(128),
                 black_box(64),
@@ -101,8 +107,8 @@ fn bench_color_operations(c: &mut Criterion) {
         });
     });
 
-    let c1 = Color::rgb(255, 0, 0);
-    let c2 = Color::rgb(0, 255, 0);
+    let c1 = Color::from_rgba(255, 0, 0, 255);
+    let c2 = Color::from_rgba(0, 255, 0, 255);
 
     c.bench_function("color_add", |b| {
         b.iter(|| {

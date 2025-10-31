@@ -289,7 +289,9 @@ pub fn SwingingCube() -> Element {
                     transform.store().current()().translate_x,
                     transform.store().current()().translate_y,
                 )
-                .project(50.0 * transform.store().current()().scale * pulse_scale.store().current()())
+                .project(
+                    50.0 * transform.store().current()().scale * pulse_scale.store().current()(),
+                )
         })
         .collect();
 
