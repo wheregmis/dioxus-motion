@@ -52,6 +52,13 @@ pub fn InteractiveCube() -> Element {
             })),
         );
 
+        // Reset rotation_z after animation
+        rotation_z.animate_to(
+            0.0,
+            AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+                .with_delay(std::time::Duration::from_millis(500)),
+        );
+
         // Enhanced glow effect
         glow.animate_to(
             1.0,
