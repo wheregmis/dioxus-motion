@@ -3,8 +3,8 @@ use dioxus_motion::prelude::*;
 
 #[component]
 pub fn PulseEffect(color: &'static str, size: &'static str) -> Element {
-    let mut scale = use_motion(1.0f32);
-    let mut opacity = use_motion(0.8f32);
+    let mut scale = use_motion_store(1.0f32);
+    let mut opacity = use_motion_store(0.8f32);
 
     use_effect(move || {
         // Main pulse animation
@@ -37,7 +37,7 @@ pub fn PulseEffect(color: &'static str, size: &'static str) -> Element {
             // Main circle
             div {
                 class: "{size} {color} rounded-full transition-all",
-                style: "transform: scale({scale.get_value()}); opacity: {opacity.get_value()}",
+                style: "transform: scale({scale.store().current()}); opacity: {opacity.store().current()}",
             }
             // Background pulse rings
             div { class: "absolute inset-0",

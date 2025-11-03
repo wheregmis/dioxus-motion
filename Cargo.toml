@@ -1,7 +1,7 @@
 [package]
 name = "dioxus-motion"
 description = "Animations library for Dioxus."
-version = "0.3.1"
+version = "0.4.0"
 edition = "2024"
 license = "MIT"
 authors = ["Sabin Regmi <get2sabin@gmail.com>"]
@@ -14,30 +14,41 @@ categories = ["graphics", "gui"]
 [dependencies]
 easer = "0.3.0"
 futures-util = { version = "0.3.31", default-features = false }
-instant = { version = "0.1.13", optional = true }
-wasm-bindgen = { version = "0.2.100", optional = true, default-features = false }
-web-sys = { version = "0.3.77", optional = true, default-features = false, features = [
+instant = "0.1.13"
+wasm-bindgen = { version = "0.2.105", optional = true, default-features = false }
+web-sys = { version = "0.3.82", optional = true, default-features = false, features = [
     "Window",
     "Performance",
     "Navigator",
 ] }
 futures-channel = { version = "0.3.31", default-features = false }
 # For desktop platforms
-tokio = { version = "1.43.0", optional = true, default-features = false, features = ["time"] }
+tokio = { version = "1.48.0", optional = true, default-features = false, features = [
+    "time",
+    "rt",
+] }
 # For transitions
 dioxus-motion-transitions-macro = { path = "packages/dioxus-motion-transitions-macro", version = "0.1.0", optional = true }
-dioxus = { version = "0.7.0-alpha.3", features = ["router"], optional = true }
-smallvec = "1.14.0"
-spin_sleep = "1.3.1"
+# Dioxus is required for store-based API
+dioxus = { version = "0.7.0", features = [] }
+# Router is only needed for transitions
+dioxus-router = { version = "0.7.0", optional = true }
+smallvec = "1.15.1"
+spin_sleep = "1.3.3"
 tracing = "0.1.41"
-thiserror = "2.0.12"
-wide = "0.7.33"
+thiserror = "2.0.17"
+wide = "0.8.1"
+
+[dev-dependencies]
+dioxus = { version = "0.7.0", features = ["router", "desktop"] }
+dioxus-motion = { path = ".", features = ["desktop"], default-features = false }
+criterion = { version = "0.7.0", features = ["html_reports"] }
 
 [features]
-default = ["web"]
-web = ["wasm-bindgen", "web-sys", "instant/wasm-bindgen", "dioxus"]
-desktop = ["tokio", "instant", "dioxus"]
-transitions = ["dioxus-motion-transitions-macro"]
+default = []
+web = ["wasm-bindgen", "web-sys", "instant/wasm-bindgen"]
+desktop = ["tokio"]
+transitions = ["dioxus-motion-transitions-macro", "dioxus-router"]
 
 
 [profile]
@@ -67,7 +78,12 @@ codegen-units = 1 # Allows LLVM to perform better optimization.
 lto = true        # Enables link-time-optimizations.
 opt-level = "s"   # Prioritizes small binary size. Use `3` if you prefer speed.
 panic = "abort"   # Higher performance by disabling panic handlers.
-strip = true      # Ensures debug symbols are removed.
+# strip = true      # Ensures debug symbols are removed.
+
+[[bench]]
+name = "animation_perf"
+harness = false
+required-features = ["desktop"]
 
 [workspace]
 members = ["packages/dioxus-motion-transitions-macro", ".", "docs"]

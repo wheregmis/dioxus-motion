@@ -164,7 +164,7 @@ impl std::ops::Add for PetalTransform {
 
 #[component]
 fn StepTwo() -> Element {
-    let mut petal = use_motion(PetalTransform::zero());
+    let mut petal = use_motion_store(PetalTransform::zero());
 
     let animate = move |_| {
         petal.animate_to(
@@ -198,7 +198,7 @@ fn StepTwo() -> Element {
                 // Code example
                 div { class: "bg-dark-200/50 p-3 rounded-lg",
                     CodeBlock {
-                        code: r#"let mut petal = use_motion(PetalTransform::zero());
+                        code: r#"let mut petal = use_motion_store(PetalTransform::zero());
 
 // Animate to new values
 petal.animate_to(
@@ -222,20 +222,16 @@ petal.animate_to(
                     div { class: "relative h-32 w-32 mx-auto",
                         div {
                             class: "absolute w-16 h-16 bg-primary/50 rounded-lg",
-                            style: "
-                                transform: translate({petal.get_value().translate_x}px, {petal.get_value().translate_y}px)
-                                rotate({petal.get_value().rotate}deg)
-                                scale({petal.get_value().scale})
-                            "
+                            style: "transform: translate({petal.store().current().translate_x}px, {petal.store().current().translate_y}px) rotate({petal.store().current().rotate}deg) scale({petal.store().current().scale})"
                         }
                     }
 
                     // Current values
                     div { class: "text-sm text-text-secondary space-y-1",
-                        p { "Rotation: {petal.get_value().rotate:.1}°" }
-                        p { "Scale: {petal.get_value().scale:.2}" }
-                        p { "X: {petal.get_value().translate_x:.1}px" }
-                        p { "Y: {petal.get_value().translate_y:.1}px" }
+                        p { "Rotation: {petal.store().current().rotate:.1}°" }
+                        p { "Scale: {petal.store().current().scale:.2}" }
+                        p { "X: {petal.store().current().translate_x:.1}px" }
+                        p { "Y: {petal.store().current().translate_y:.1}px" }
                     }
 
                     // Controls
@@ -259,9 +255,10 @@ petal.animate_to(
 
 #[component]
 fn StepThree() -> Element {
-    let mut petal = use_motion(PetalTransform::zero());
+    let mut petal_sequence = use_motion_store(PetalTransform::zero());
+    let mut petal_keyframes = use_motion_store(PetalTransform::zero());
 
-    let animate_sequence = move |_| {
+    let start_sequence = move |_| {
         let sequence = AnimationSequence::new()
             .then(
                 PetalTransform::new(45.0, 1.2, 10.0, -10.0),
@@ -291,10 +288,10 @@ fn StepThree() -> Element {
                 })),
             );
 
-        petal.animate_sequence(sequence);
+        petal_sequence.animate_sequence(sequence);
     };
 
-    let animate_keyframes = move |_| {
+    let start_keyframes = move |_| {
         let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
             .add_keyframe(
                 PetalTransform::zero(),
@@ -317,7 +314,7 @@ fn StepThree() -> Element {
                 Some(easer::functions::Back::ease_in_out),
             );
 
-        petal.animate_keyframes(keyframes);
+        petal_keyframes.animate_keyframes(keyframes);
     };
 
     rsx! {
@@ -334,7 +331,8 @@ fn StepThree() -> Element {
                 div { class: "bg-dark-200/50 p-3 rounded-lg",
                     h3 { class: "font-medium mb-2", "Sequence Animation" }
                     CodeBlock {
-                        code: r#"let sequence = AnimationSequence::new()
+                        code: r#"let mut petal = use_motion_store(PetalTransform::zero());
+let sequence = AnimationSequence::new()
     .then(
         PetalTransform::new(45.0, 1.2, 10.0, -10.0),
         spring_config.clone(),
@@ -357,7 +355,8 @@ petal.animate_sequence(sequence);"#.to_string(),
                 div { class: "bg-dark-200/50 p-3 rounded-lg mt-4",
                     h3 { class: "font-medium mb-2", "Keyframe Animation" }
                     CodeBlock {
-                        code: r#"let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
+                        code: r#"let mut petal = use_motion_store(PetalTransform::zero());
+let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
     .add_keyframe(
         PetalTransform::zero(),
         0.0,
@@ -392,32 +391,28 @@ petal.animate_keyframes(keyframes);"#.to_string(),
                     div { class: "relative h-32 w-32 mx-auto",
                         div {
                             class: "absolute w-16 h-16 bg-primary/50 rounded-lg",
-                            style: "
-                                transform: translate({petal.get_value().translate_x}px, {petal.get_value().translate_y}px)
-                                rotate({petal.get_value().rotate}deg)
-                                scale({petal.get_value().scale})
-                            "
+                            style: "transform: translate({petal_sequence.store().current().translate_x}px, {petal_sequence.store().current().translate_y}px) rotate({petal_sequence.store().current().rotate}deg) scale({petal_sequence.store().current().scale})"
                         }
                     }
 
                     // Current values
                     div { class: "text-sm text-text-secondary space-y-1",
-                        p { "Rotation: {petal.get_value().rotate:.1}°" }
-                        p { "Scale: {petal.get_value().scale:.2}" }
-                        p { "X: {petal.get_value().translate_x:.1}px" }
-                        p { "Y: {petal.get_value().translate_y:.1}px" }
+                        p { "Rotation: {petal_sequence.store().current().rotate:.1}°" }
+                        p { "Scale: {petal_sequence.store().current().scale:.2}" }
+                        p { "X: {petal_sequence.store().current().translate_x:.1}px" }
+                        p { "Y: {petal_sequence.store().current().translate_y:.1}px" }
                     }
 
                     // Controls
                     div { class: "flex gap-2",
                         button {
                             class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
-                            onclick: animate_sequence,
+                            onclick: start_sequence,
                             "Sequence"
                         }
                         button {
                             class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
-                            onclick: animate_keyframes,
+                            onclick: start_keyframes,
                             "Keyframes"
                         }
                     }

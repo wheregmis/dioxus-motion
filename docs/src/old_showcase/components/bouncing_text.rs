@@ -4,7 +4,7 @@ use easer::functions::Easing;
 
 #[component]
 fn BouncingLetter(letter: char, delay: f32) -> Element {
-    let mut transform = use_motion(Transform::identity());
+    let mut transform = use_motion_store(Transform::identity());
 
     use_effect(move || {
         let delay = Duration::from_secs_f32(delay);
@@ -19,7 +19,7 @@ fn BouncingLetter(letter: char, delay: f32) -> Element {
                 duration: Duration::from_secs(1),
                 easing: easer::functions::Sine::ease_in_out,
             }))
-            .with_loop(LoopMode::Infinite)
+            .with_loop(LoopMode::Alternate)
             .with_delay(delay),
         );
     });
@@ -28,8 +28,7 @@ fn BouncingLetter(letter: char, delay: f32) -> Element {
         span {
             class: "text-4xl font-bold text-indigo-600 inline-block origin-bottom
                    transition-transform duration-300",
-            style: "transform: translateY({transform.get_value().y}px)
-                            scale({transform.get_value().scale})",
+            style: "transform: translateY({transform.store().current()().y}px) scale({transform.store().current()().scale})",
             "{letter}"
         }
     }

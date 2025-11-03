@@ -67,18 +67,18 @@ pub fn IntermediateAnimationGuide() -> Element {
 
 #[component]
 fn StepOne() -> Element {
-    let mut infinite_value = use_motion(0.0f32);
-    let mut times_value = use_motion(0.0f32);
-    let mut alternate_value = use_motion(0.0f32);
-    let mut alternate_times_value = use_motion(0.0f32);
+    let mut infinite_value = use_motion_store(0.0f32);
+    let mut times_value = use_motion_store(0.0f32);
+    let mut alternate_value = use_motion_store(0.0f32);
+    let mut alternate_times_value = use_motion_store(0.0f32);
 
     let start_infinite = move |_| {
         infinite_value.animate_to(
             100.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(1000),
-                easing: easer::functions::Cubic::ease_in_out,
-            }))
+            AnimationConfig::custom_tween(
+                Duration::from_millis(1000),
+                easer::functions::Cubic::ease_in_out,
+            )
             .with_loop(LoopMode::Infinite),
         );
     };
@@ -86,10 +86,10 @@ fn StepOne() -> Element {
     let start_times = move |_| {
         times_value.animate_to(
             100.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(1000),
-                easing: easer::functions::Cubic::ease_in_out,
-            }))
+            AnimationConfig::custom_tween(
+                Duration::from_millis(1000),
+                easer::functions::Cubic::ease_in_out,
+            )
             .with_loop(LoopMode::Times(3)),
         );
     };
@@ -97,10 +97,10 @@ fn StepOne() -> Element {
     let start_alternate = move |_| {
         alternate_value.animate_to(
             100.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(1000),
-                easing: easer::functions::Cubic::ease_in_out,
-            }))
+            AnimationConfig::custom_tween(
+                Duration::from_millis(1000),
+                easer::functions::Cubic::ease_in_out,
+            )
             .with_loop(LoopMode::Alternate),
         );
     };
@@ -108,151 +108,150 @@ fn StepOne() -> Element {
     let start_alternate_times = move |_| {
         alternate_times_value.animate_to(
             100.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(1000),
-                easing: easer::functions::Cubic::ease_in_out,
-            }))
+            AnimationConfig::custom_tween(
+                Duration::from_millis(1000),
+                easer::functions::Cubic::ease_in_out,
+            )
             .with_loop(LoopMode::AlternateTimes(3)),
         );
     };
 
-    // Simplify by using a single reset function
-    let reset_all = move |_| {
-        // Create a default tween config
-        let config = AnimationConfig::new(AnimationMode::Tween(Tween::default()));
+    let stop_all = move |_| {
+        infinite_value.store().running().set(false);
+        times_value.store().running().set(false);
+        alternate_value.store().running().set(false);
+        alternate_times_value.store().running().set(false);
+    };
 
-        // Reset all values one by one
-        infinite_value.animate_to(0.0, config.clone());
-        times_value.animate_to(0.0, config.clone());
-        alternate_value.animate_to(0.0, config.clone());
-        alternate_times_value.animate_to(0.0, config);
+    let reset_all = move |_| {
+        infinite_value.store().current().set(0.0);
+        times_value.store().current().set(0.0);
+        alternate_value.store().current().set(0.0);
+        alternate_times_value.store().current().set(0.0);
     };
 
     rsx! {
-        section { class: "space-y-4",
+        section { class: "space-y-6",
+            // Title and description
             div {
-                h2 { class: "text-2xl font-semibold mb-2", "Step 1: Loop Modes" }
+                h2 { class: "text-xl font-semibold mb-2", "Step 1: Loop Modes" }
                 p { class: "text-text-secondary",
-                    "Animations can be configured to repeat in different ways using loop modes."
+                    "Learn how to create repeating animations with different loop behaviors."
                 }
             }
 
-            div { class: "space-y-2",
-                div { class: "bg-dark-200/50 p-3 rounded-lg",
-                    CodeBlock {
-                        code: r#"// Infinite loop (0 -> 100 -> 0 -> 100...)
-value.animate_to(
-    100.0,
-    config.with_loop(LoopMode::Infinite)
-);
-
-// Loop 3 times (0 -> 100) × 3
-value.animate_to(
-    100.0,
-    config.with_loop(LoopMode::Times(3))
-);
-
-// Alternate infinitely (0 -> 100 -> 0 -> 100...)
-value.animate_to(
-    100.0,
-    config.with_loop(LoopMode::Alternate)
-);
-
-// Alternate 3 times (0 -> 100 -> 0) × 3
-value.animate_to(
-    100.0,
-    config.with_loop(LoopMode::AlternateTimes(3))
-);"#.to_string(),
-                        language: "rust".to_string(),
+            // Loop modes explanation
+            div { class: "p-4 bg-dark-200/50 rounded-lg mb-6",
+                div { class: "grid grid-cols-1 md:grid-cols-2 gap-4",
+                    // Left column: Loop types
+                    div { class: "space-y-3",
+                        div { class: "p-3 bg-dark-200/80 rounded-lg",
+                            h3 { class: "font-medium text-primary mb-2", "Infinite" }
+                            p { class: "text-sm text-text-secondary", "Runs forever until stopped" }
+                        }
+                        div { class: "p-3 bg-dark-200/80 rounded-lg",
+                            h3 { class: "font-medium text-primary mb-2", "Times(n)" }
+                            p { class: "text-sm text-text-secondary", "Runs exactly n times then stops" }
+                        }
+                        div { class: "p-3 bg-dark-200/80 rounded-lg",
+                            h3 { class: "font-medium text-primary mb-2", "Alternate" }
+                            p { class: "text-sm text-text-secondary", "Bounces back and forth forever" }
+                        }
+                        div { class: "p-3 bg-dark-200/80 rounded-lg",
+                            h3 { class: "font-medium text-primary mb-2", "AlternateTimes(n)" }
+                            p { class: "text-sm text-text-secondary", "Bounces back and forth n times" }
+                        }
                     }
-                }
-
-                div { class: "space-y-3 p-4 bg-dark-200/30 rounded-lg",
-                    h3 { class: "font-medium", "Live Preview" }
-
-                    // Infinite loop preview
-                    div { class: "space-y-2",
-                        p { class: "text-sm text-text-secondary", "Infinite Loop:" }
-                        div { class: "relative h-8 bg-dark-200/30 rounded-lg overflow-hidden",
-                            div {
-                                class: "absolute h-8 bg-primary/50 rounded-lg",
-                                style: "width: {infinite_value.get_value()}%"
+                    // Right column: Code example
+                    div { class: "p-3 bg-dark-200/80 rounded-lg",
+                        h3 { class: "font-medium text-primary mb-2", "Code Example" }
+                        div { class: "bg-dark-200/50 p-2 rounded-lg text-xs",
+                            code { class: "text-primary/90",
+                                "AnimationConfig::new(AnimationMode::Tween(tween))\n  .with_loop(LoopMode::Infinite)"
                             }
-                        }
-                    }
-
-                    // Loop 3 times preview
-                    div { class: "space-y-2",
-                        p { class: "text-sm text-text-secondary", "Loop 3 Times:" }
-                        div { class: "relative h-8 bg-dark-200/30 rounded-lg overflow-hidden",
-                            div {
-                                class: "absolute h-8 bg-primary/50 rounded-lg",
-                                style: "width: {times_value.get_value()}%"
-                            }
-                        }
-                    }
-
-                    // Alternate preview
-                    div { class: "space-y-2",
-                        p { class: "text-sm text-text-secondary", "Alternate Infinite:" }
-                        div { class: "relative h-8 bg-dark-200/30 rounded-lg overflow-hidden",
-                            div {
-                                class: "absolute h-8 bg-primary/50 rounded-lg",
-                                style: "width: {alternate_value.get_value()}%"
-                            }
-                        }
-                    }
-
-                    // Alternate 3 times preview
-                    div { class: "space-y-2",
-                        p { class: "text-sm text-text-secondary", "Alternate 3 Times:" }
-                        div { class: "relative h-8 bg-dark-200/30 rounded-lg overflow-hidden",
-                            div {
-                                class: "absolute h-8 bg-primary/50 rounded-lg",
-                                style: "width: {alternate_times_value.get_value()}%"
-                            }
-                        }
-                    }
-
-                    // Controls
-                    div { class: "flex flex-wrap gap-2 mt-4",
-                        button {
-                            class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
-                            onclick: start_infinite,
-                            "Start Infinite"
-                        }
-                        button {
-                            class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
-                            onclick: start_times,
-                            "Loop 3 Times"
-                        }
-                        button {
-                            class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
-                            onclick: start_alternate,
-                            "Start Alternate"
-                        }
-                        button {
-                            class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
-                            onclick: start_alternate_times,
-                            "Alternate 3 Times"
-                        }
-                        button {
-                            class: "px-4 py-2 bg-dark-200 hover:bg-dark-300 rounded-lg text-text-secondary transition-colors",
-                            onclick: reset_all,
-                            "Reset All"
                         }
                     }
                 }
             }
 
-            // Key points
-            div { class: "space-y-2 mt-4",
-                h3 { class: "font-medium", "Key Points:" }
-                ul { class: "list-disc list-inside text-text-secondary space-y-1",
-                    li { "Use ", code { "LoopMode::Infinite" }, " for endless repetition" }
-                    li { "Use ", code { "LoopMode::Times(n)" }, " for a specific number of repetitions" }
-                    li { "Use ", code { "LoopMode::Alternate" }, " for back-and-forth animation" }
-                    li { "Use ", code { "LoopMode::AlternateTimes(n)" }, " for specific number of alternations" }
+            // Interactive examples
+            div { class: "grid grid-cols-1 md:grid-cols-2 gap-4",
+                // Infinite loop
+                div { class: "p-4 bg-dark-200/30 rounded-lg",
+                    h3 { class: "font-medium mb-3", "Infinite Loop" }
+                    div { class: "relative h-12 bg-dark-200/30 rounded-lg overflow-hidden mb-3",
+                        div {
+                            class: "absolute h-12 bg-primary/50 rounded-lg",
+                            style: "width: {infinite_value.store().current()}%"
+                        }
+                    }
+                    button {
+                        class: "w-full px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
+                        onclick: start_infinite,
+                        "Start Infinite"
+                    }
+                }
+
+                // Times loop
+                div { class: "p-4 bg-dark-200/30 rounded-lg",
+                    h3 { class: "font-medium mb-3", "Times Loop (3x)" }
+                    div { class: "relative h-12 bg-dark-200/30 rounded-lg overflow-hidden mb-3",
+                        div {
+                            class: "absolute h-12 bg-primary/50 rounded-lg",
+                            style: "width: {times_value.store().current()}%"
+                        }
+                    }
+                    button {
+                        class: "w-full px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
+                        onclick: start_times,
+                        "Start Times"
+                    }
+                }
+
+                // Alternate loop
+                div { class: "p-4 bg-dark-200/30 rounded-lg",
+                    h3 { class: "font-medium mb-3", "Alternate Loop" }
+                    div { class: "relative h-12 bg-dark-200/30 rounded-lg overflow-hidden mb-3",
+                        div {
+                            class: "absolute h-12 bg-primary/50 rounded-lg",
+                            style: "width: {alternate_value.store().current()}%"
+                        }
+                    }
+                    button {
+                        class: "w-full px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
+                        onclick: start_alternate,
+                        "Start Alternate"
+                    }
+                }
+
+                // Alternate times loop
+                div { class: "p-4 bg-dark-200/30 rounded-lg",
+                    h3 { class: "font-medium mb-3", "Alternate Times (3x)" }
+                    div { class: "relative h-12 bg-dark-200/30 rounded-lg overflow-hidden mb-3",
+                        div {
+                            class: "absolute h-12 bg-primary/50 rounded-lg",
+                            style: "width: {alternate_times_value.store().current()}%"
+                        }
+                    }
+                    button {
+                        class: "w-full px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
+                        onclick: start_alternate_times,
+                        "Start Alternate Times"
+                    }
+                }
+            }
+
+            // Control buttons
+            div { class: "flex justify-center gap-4 mt-6",
+                button {
+                    class: "px-6 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-500 transition-colors",
+                    onclick: stop_all,
+                    "Stop All"
+                }
+                button {
+                    class: "px-6 py-2 bg-dark-200 hover:bg-dark-300 rounded-lg text-text-secondary transition-colors",
+                    onclick: reset_all,
+                    "Reset All"
                 }
             }
         }
@@ -261,26 +260,18 @@ value.animate_to(
 
 #[component]
 fn StepTwo() -> Element {
-    let mut value = use_motion(0.0f32);
+    let mut value = use_motion_store(0.0f32);
 
     let start = move |_| {
         value.animate_to(
             100.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 100.0,
-                damping: 10.0,
-                mass: 1.0,
-                velocity: 0.0,
-            }))
-            .with_delay(Duration::from_millis(1000)),
+            AnimationConfig::custom_spring(100.0, 10.0, 1.0)
+                .with_delay(Duration::from_millis(1000)),
         );
     };
 
     let reset = move |_| {
-        value.animate_to(
-            0.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-        );
+        value.animate_to(0.0, AnimationConfig::spring());
     };
 
     rsx! {
@@ -311,7 +302,7 @@ fn StepTwo() -> Element {
                     div { class: "relative h-16 bg-dark-200/30 rounded-lg overflow-hidden",
                         div {
                             class: "absolute h-16 bg-primary/50 rounded-lg",
-                            style: "width: {value.get_value()}%"
+                            style: "width: {value.store().current()}%"
                         }
                     }
 
@@ -335,8 +326,8 @@ fn StepTwo() -> Element {
 
 #[component]
 fn StepThree() -> Element {
-    let mut sequence_value = use_motion(0.0f32);
-    let mut keyframe_value = use_motion(0.0f32);
+    let mut sequence_value = use_motion_store(0.0f32);
+    let mut keyframe_value = use_motion_store(0.0f32);
 
     let start_sequence = move |_| {
         let sequence = AnimationSequence::new()
@@ -384,12 +375,9 @@ fn StepThree() -> Element {
 
     // Simplify with a single reset function
     let reset = move |_| {
-        // Create a default spring config
-        let config = AnimationConfig::new(AnimationMode::Spring(Spring::default()));
-
         // Reset both values
-        sequence_value.animate_to(0.0, config.clone());
-        keyframe_value.animate_to(0.0, config);
+        sequence_value.reset();
+        keyframe_value.reset();
     };
 
     rsx! {
@@ -406,20 +394,22 @@ fn StepThree() -> Element {
                 div { class: "bg-dark-200/50 p-3 rounded-lg",
                     CodeBlock {
                         code: r#"// Sequence animation
+let mut motion = use_motion_store(0.0f32);
 let sequence = AnimationSequence::new()
     .then(100.0, spring_config.clone())
     .then(50.0, spring_config.clone())
     .then(0.0, spring_config);
-value.animate_sequence(sequence);
+motion.animate_sequence(sequence);
 
 // Keyframe animation
+let mut motion = use_motion_store(0.0f32);
 let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
     .add_keyframe(0.0, 0.0, Some(easer::functions::Cubic::ease_in))
     .and_then(|kf| kf.add_keyframe(100.0, 0.3, Some(easer::functions::Elastic::ease_out)))
     .and_then(|kf| kf.add_keyframe(50.0, 0.7, Some(easer::functions::Bounce::ease_out)))
     .and_then(|kf| kf.add_keyframe(0.0, 1.0, Some(easer::functions::Back::ease_in_out)))
     .unwrap();
-value.animate_keyframes(keyframes);"#.to_string(),
+motion.animate_keyframes(keyframes);"#.to_string(),
                         language: "rust".to_string(),
                     }
                 }
@@ -434,12 +424,12 @@ value.animate_keyframes(keyframes);"#.to_string(),
                         div { class: "relative h-8 bg-dark-200/30 rounded-lg overflow-hidden",
                             div {
                                 class: "absolute h-8 bg-primary/50 rounded-lg",
-                                style: "width: {sequence_value.get_value()}%"
+                                style: "width: {sequence_value.store().current()}%"
                             }
                         }
                         // Add value display
                         div { class: "text-sm text-text-secondary mt-1",
-                            "Current value: {sequence_value.get_value():.1}"
+                            "Current value: {sequence_value.store().current():.1}"
                         }
                         button {
                             class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
@@ -454,12 +444,12 @@ value.animate_keyframes(keyframes);"#.to_string(),
                         div { class: "relative h-8 bg-dark-200/30 rounded-lg overflow-hidden",
                             div {
                                 class: "absolute h-8 bg-primary/50 rounded-lg",
-                                style: "width: {keyframe_value.get_value()}%"
+                                style: "width: {keyframe_value.store().current()}%"
                             }
                         }
                         // Add value display
                         div { class: "text-sm text-text-secondary mt-1",
-                            "Current value: {keyframe_value.get_value():.1}"
+                            "Current value: {keyframe_value.store().current():.1}"
                         }
                         button {
                             class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
@@ -484,10 +474,10 @@ value.animate_keyframes(keyframes);"#.to_string(),
 
 #[component]
 fn StepFour() -> Element {
-    let mut sequence_transform = use_motion(Transform::identity());
-    let mut sequence_color = use_motion(Color::from_rgba(59, 130, 246, 255));
-    let mut keyframe_transform = use_motion(Transform::identity());
-    let mut keyframe_color = use_motion(Color::from_rgba(59, 130, 246, 255));
+    let mut sequence_transform = use_motion_store(Transform::identity());
+    let mut sequence_color = use_motion_store(Color::from_rgba(59, 130, 246, 255));
+    let mut keyframe_transform = use_motion_store(Transform::identity());
+    let mut keyframe_color = use_motion_store(Color::from_rgba(59, 130, 246, 255));
 
     let start_sequence = move |_| {
         let transform_sequence = AnimationSequence::new()
@@ -550,111 +540,96 @@ fn StepFour() -> Element {
 
     // Simplify with a single reset function that handles one value at a time
     let reset = move |_| {
-        // Create a spring config
-        let config = AnimationConfig::new(AnimationMode::Spring(Spring {
-            stiffness: 200.0,
-            damping: 20.0,
-            mass: 1.0,
-            velocity: 0.0,
-        }));
-
         // Initial color
         let initial_color = Color::from_rgba(59, 130, 246, 255); // Blue
 
-        // Reset sequence transform
-        sequence_transform.animate_to(Transform::identity(), config.clone());
-
-        // Reset sequence color
-        sequence_color.animate_to(initial_color, config.clone());
-
-        // Create a new config for the next animations
-        let config2 = AnimationConfig::new(AnimationMode::Spring(Spring {
-            stiffness: 200.0,
-            damping: 20.0,
-            mass: 1.0,
-            velocity: 0.0,
-        }));
-
-        // Reset keyframe transform
-        keyframe_transform.animate_to(Transform::identity(), config2.clone());
-
-        // Reset keyframe color
-        keyframe_color.animate_to(initial_color, config2);
+        // Reset all values directly
+        sequence_transform
+            .store()
+            .current()
+            .set(Transform::identity());
+        sequence_color.store().current().set(initial_color);
+        keyframe_transform
+            .store()
+            .current()
+            .set(Transform::identity());
+        keyframe_color.store().current().set(initial_color);
     };
 
     rsx! {
-        section { class: "space-y-4",
-            div {
-                h2 { class: "text-2xl font-semibold mb-2", "Step 4: Transform and Color Animations" }
-                p { class: "text-text-secondary",
-                    "Learn how to animate more complex types like Transform for position/scale/rotation and Color for smooth color transitions."
-                }
+    section { class: "space-y-4",
+        div {
+            h2 { class: "text-2xl font-semibold mb-2", "Step 4: Transform and Color Animations" }
+            p { class: "text-text-secondary",
+                "Learn how to animate more complex types like Transform for position/scale/rotation and Color for smooth color transitions."
             }
+        }
 
-            // Introduction to Transform and Color
-            div { class: "space-y-4 mb-6",
-                // Transform introduction
-                div { class: "p-4 bg-dark-200/30 rounded-lg",
-                    h3 { class: "font-medium mb-2", "Transform Animation" }
-                    p { class: "text-text-secondary mb-3",
-                        "Transform combines position (x, y), scale, and rotation into a single animatable value."
-                    }
-                    div { class: "bg-dark-200/50 p-3 rounded-lg",
-                        CodeBlock {
-                            code: r#"// Create a transform motion value
-let mut transform = use_motion(Transform::identity());
+        // Introduction to Transform and Color
+        div { class: "space-y-4 mb-6",
+            // Transform introduction
+            div { class: "p-4 bg-dark-200/30 rounded-lg",
+                h3 { class: "font-medium mb-2", "Transform Animation" }
+                p { class: "text-text-secondary mb-3",
+                    "Transform combines position (x, y), scale, and rotation into a single animatable value."
+                }
+                div { class: "bg-dark-200/50 p-3 rounded-lg",
+                    CodeBlock {
+                        code: r#"// Create a transform motion value
+let mut transform = use_motion_store(Transform::identity());
 
 // Animate to new position, scale, and rotation
 transform.animate_to(
     Transform::new(100.0, 50.0, 1.2, 45.0), // x, y, scale, rotation(deg)
-    AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+    AnimationConfig::spring()
 );"#.to_string(),
-                            language: "rust".to_string(),
-                        }
-                    }
-                }
-
-                // Color introduction
-                div { class: "p-4 bg-dark-200/30 rounded-lg",
-                    h3 { class: "font-medium mb-2", "Color Animation" }
-                    p { class: "text-text-secondary mb-3",
-                        "Smoothly interpolate between colors in RGB space."
-                    }
-                    div { class: "bg-dark-200/50 p-3 rounded-lg",
-                        CodeBlock {
-                            code: r#"// Create a color motion value (RGBA format)
-let mut color = use_motion(Color::from_rgba(59, 130, 246, 255)); // Blue
-
-// Animate to a new color
-color.animate_to(
-    Color::from_rgba(236, 72, 153, 255), // Pink
-    AnimationConfig::new(AnimationMode::Spring(Spring::default()))
-);"#.to_string(),
-                            language: "rust".to_string(),
-                        }
-                    }
-                }
-
-                // Key points about Transform and Color
-                div { class: "space-y-2 mt-4",
-                    h3 { class: "font-medium", "Key Points:" }
-                    ul { class: "list-disc list-inside text-text-secondary space-y-1",
-                        li { "Transform combines multiple properties into a single animation" }
-                        li { "Rotation is in radians internally, but typically specified in degrees for convenience" }
-                        li { "Colors are interpolated smoothly in RGB space" }
-                        li { "Both types work with all animation modes (Spring, Tween) and sequences" }
+                        language: "rust".to_string(),
                     }
                 }
             }
 
-            // Sequence Animations
-            div { class: "space-y-4 p-4 bg-dark-200/30 rounded-lg",
-                h3 { class: "font-medium", "Sequence Animations" }
-
-                // Code example
-                div { class: "bg-dark-200/50 p-3 rounded-lg mb-4",
+            // Color introduction
+            div { class: "p-4 bg-dark-200/30 rounded-lg",
+                h3 { class: "font-medium mb-2", "Color Animation" }
+                p { class: "text-text-secondary mb-3",
+                    "Smoothly interpolate between colors in RGB space."
+                }
+                div { class: "bg-dark-200/50 p-3 rounded-lg",
                     CodeBlock {
-                        code: r#"// Transform sequence
+                        code: r#"// Create a color motion value (RGBA format)
+let mut color = use_motion_store(Color::from_rgba(59, 130, 246, 255)); // Blue
+
+// Animate to a new color
+color.animate_to(
+    Color::from_rgba(236, 72, 153, 255), // Pink
+    AnimationConfig::spring()
+);"#.to_string(),
+                        language: "rust".to_string(),
+                    }
+                }
+            }
+
+            // Key points about Transform and Color
+            div { class: "space-y-2 mt-4",
+                h3 { class: "font-medium", "Key Points:" }
+                ul { class: "list-disc list-inside text-text-secondary space-y-1",
+                    li { "Transform combines multiple properties into a single animation" }
+                    li { "Rotation is in radians internally, but typically specified in degrees for convenience" }
+                    li { "Colors are interpolated smoothly in RGB space" }
+                    li { "Both types work with all animation modes (Spring, Tween) and sequences" }
+                }
+            }
+        }
+
+        // Sequence Animations
+        div { class: "space-y-4 p-4 bg-dark-200/30 rounded-lg",
+            h3 { class: "font-medium", "Sequence Animations" }
+
+            // Code example
+            div { class: "bg-dark-200/50 p-3 rounded-lg mb-4",
+                CodeBlock {
+                    code: r#"// Transform sequence
+let mut transform = use_motion_store(Transform::identity());
 let transform_sequence = AnimationSequence::new()
     .then(
         Transform::new(100.0, 0.0, 1.2, 45.0),
@@ -668,52 +643,57 @@ let transform_sequence = AnimationSequence::new()
         Transform::identity(),
         spring_config,
     );
+transform.animate_sequence(transform_sequence);
 
 // Color sequence
+let mut color = use_motion_store(Color::from_rgba(59, 130, 246, 255));
 let color_sequence = AnimationSequence::new()
     .then(Color::from_rgba(236, 72, 153, 255), spring_config.clone())
     .then(Color::from_rgba(34, 197, 94, 255), spring_config.clone())
-    .then(Color::from_rgba(59, 130, 246, 255), spring_config);"#.to_string(),
+    .then(Color::from_rgba(59, 130, 246, 255), spring_config);
+color.animate_sequence(color_sequence);"#.to_string(),
                         language: "rust".to_string(),
-                    }
-                }
-
-                // Preview
-                div { class: "space-y-4",
-                    // Transform preview
-                    div { class: "h-32 flex items-center justify-center bg-dark-200/30 rounded-lg",
-                        div {
-                            class: "w-16 h-16 rounded-lg",
-                            style: {
-                                let (r, g, b, _) = sequence_color.get_value().to_rgba();
-                                format!("background-color: rgb({r}, {g}, {b}); \
-                                        transform: translate({}px, {}px) \
-                                                  rotate({}deg) \
-                                                  scale({})",
-                                        sequence_transform.get_value().x,
-                                        sequence_transform.get_value().y,
-                                        sequence_transform.get_value().rotation,
-                                        sequence_transform.get_value().scale)
-                            }
-                        }
-                    }
-
-                    button {
-                        class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
-                        onclick: start_sequence,
-                        "Start Sequence"
                     }
                 }
             }
 
-            // Keyframe Animations
-            div { class: "space-y-4 p-4 bg-dark-200/30 rounded-lg",
-                h3 { class: "font-medium", "Keyframe Animations" }
+            // Preview
+            div { class: "space-y-4",
+                // Transform preview
+                div { class: "h-32 flex items-center justify-center bg-dark-200/30 rounded-lg",
+                    div {
+                        class: "w-16 h-16 rounded-lg",
+                        style: {
+                            let (r, g, b, _) = sequence_color.store().current()().to_rgba();
+                            format!("background-color: rgb({r}, {g}, {b}); \
+                                    transform: translate({}px, {}px) \
+                                              rotate({}deg) \
+                                              scale({})",
+                                    sequence_transform.store().current()().x,
+                                    sequence_transform.store().current()().y,
+                                    sequence_transform.store().current()().rotation,
+                                    sequence_transform.store().current()().scale)
+                        }
+                    }
+                }
 
-                // Code example
-                div { class: "bg-dark-200/50 p-3 rounded-lg mb-4",
-                    CodeBlock {
-                        code: r#"// Transform keyframes
+                button {
+                    class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
+                    onclick: start_sequence,
+                    "Start Sequence"
+                }
+            }
+        }
+
+        // Keyframe Animations
+        div { class: "space-y-4 p-4 bg-dark-200/30 rounded-lg",
+            h3 { class: "font-medium", "Keyframe Animations" }
+
+            // Code example
+            div { class: "bg-dark-200/50 p-3 rounded-lg mb-4",
+                CodeBlock {
+                    code: r#"// Transform keyframes
+let (transform, animate_transform) = use_motion_store_with_keyframes(Transform::identity());
 let transform_keyframes = KeyframeAnimation::new(Duration::from_secs(2))
     .add_keyframe(
         Transform::identity(),
@@ -736,8 +716,10 @@ let transform_keyframes = KeyframeAnimation::new(Duration::from_secs(2))
         Some(easer::functions::Back::ease_in_out),
     ))
     .unwrap();
+animate_transform(transform_keyframes);
 
 // Color keyframes
+let (color, animate_color) = use_motion_store_with_keyframes(Color::from_rgba(59, 130, 246, 255));
 let color_keyframes = KeyframeAnimation::new(Duration::from_secs(2))
     .add_keyframe(
         Color::from_rgba(59, 130, 246, 255),
@@ -754,46 +736,46 @@ let color_keyframes = KeyframeAnimation::new(Duration::from_secs(2))
         1.0,
         Some(easer::functions::Cubic::ease_in_out),
     ))
-    .unwrap();"#.to_string(),
-                        language: "rust".to_string(),
-                    }
-                }
-
-                // Preview
-                div { class: "space-y-4",
-                    // Transform preview
-                    div { class: "h-32 flex items-center justify-center bg-dark-200/30 rounded-lg",
-                        div {
-                            class: "w-16 h-16 rounded-lg",
-                            style: {
-                                let (r, g, b, _) = keyframe_color.get_value().to_rgba();
-                                format!("background-color: rgb({r}, {g}, {b}); \
-                                        transform: translate({}px, {}px) \
-                                                  rotate({}deg) \
-                                                  scale({})",
-                                        keyframe_transform.get_value().x,
-                                        keyframe_transform.get_value().y,
-                                        keyframe_transform.get_value().rotation,
-                                        keyframe_transform.get_value().scale)
-                            }
-                        }
-                    }
-
-                    button {
-                        class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
-                        onclick: start_keyframes,
-                        "Start Keyframes"
-                    }
+    .unwrap();
+animate_color(color_keyframes);"#.to_string(),
+                    language: "rust".to_string(),
                 }
             }
 
-            // Reset button
-            div { class: "mt-6",
-                button {
-                    class: "px-4 py-2 bg-dark-200 hover:bg-dark-300 rounded-lg text-text-secondary transition-colors",
-                    onclick: reset,
-                    "Reset All"
+            // Preview
+            div { class: "space-y-4",
+                // Transform preview
+                div { class: "h-32 flex items-center justify-center bg-dark-200/30 rounded-lg",
+                    div {
+                        class: "w-16 h-16 rounded-lg",
+                        style: {
+                            let (r, g, b, _) = keyframe_color.store().current()().to_rgba();
+                            format!("background-color: rgb({r}, {g}, {b}); \
+                                    transform: translate({}px, {}px) \
+                                              rotate({}deg) \
+                                              scale({})",
+                                    keyframe_transform.store().current()().x,
+                                    keyframe_transform.store().current()().y,
+                                    keyframe_transform.store().current()().rotation,
+                                    keyframe_transform.store().current()().scale)
+                        }
+                    }
                 }
+
+                button {
+                    class: "px-4 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg text-primary transition-colors",
+                    onclick: start_keyframes,
+                    "Start Keyframes"
+                }
+            }
+        }
+
+        // Reset button
+        div { class: "mt-6",
+            button {
+                class: "px-4 py-2 bg-dark-200 hover:bg-dark-300 rounded-lg text-text-secondary transition-colors",
+                onclick: reset,
+                "Reset All"
             }
         }
     }

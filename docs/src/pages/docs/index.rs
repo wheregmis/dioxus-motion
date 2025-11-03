@@ -12,19 +12,7 @@ use crate::utils::router::Route;
 /// the provided children elements in the central content area. It also configures left and right sidebars:
 /// the left one for section navigation and the right one for related links, all against a decorative gradient background.
 ///
-/// # Examples
-///
-/// ```rust
-/// use dioxus::prelude::*;
-///
-/// fn app(cx: Scope) -> Element {
-///     DocLayout("Documentation", "Learn how to use Dioxus components", rsx! {
-///         p { "Welcome to the docs!" }
-///     })
-/// }
-///
-/// // To render, pass `app` to the appropriate Dioxus launch method, e.g., `dioxus::desktop::launch(app);`.
-/// ```
+
 fn DocLayout(title: &'static str, description: &'static str, children: Element) -> Element {
     rsx! {
         div { class: "min-h-screen bg-gradient-dark relative overflow-hidden w-full",
@@ -108,16 +96,7 @@ fn DocLayout(title: &'static str, description: &'static str, children: Element) 
 /// This function constructs the documentation page using the DocLayout component with a preset
 /// title and description, and includes an AnimatedOutlet for rendering nested routes.
 ///
-/// # Examples
-///
-/// ```rust
-/// use crate::Docs;
-///
-/// // Create the documentation element
-/// let docs_page = Docs();
-///
-/// // Use `docs_page` within a Dioxus application renderer.
-/// ```
+
 pub fn Docs() -> Element {
     rsx! {
         DocLayout {
@@ -134,18 +113,7 @@ pub fn Docs() -> Element {
 /// with the current route. It uses this comparison to conditionally adjust its styling for active
 /// and inactive states, ensuring that the active link is highlighted.
 ///
-/// # Examples
-///
-/// ```
-/// # use dioxus::prelude::*;
-/// # use crate::Route;
-///
-/// fn Example(cx: Scope) -> Element {
-///     SectionLink(Route::Home, "🏠", "Home")
-/// }
-///
-/// // In an application, the returned element would be included in a sidebar navigation menu.
-/// ```
+
 fn SectionLink(to: Route, icon: &'static str, label: &'static str) -> Element {
     let current_route = use_route::<Route>();
     let is_active = current_route == to;
@@ -175,17 +143,7 @@ fn SectionLink(to: Route, icon: &'static str, label: &'static str) -> Element {
 ///
 /// The "Resources" section provides links for the GitHub repository, Crates.io, and API documentation, while the "Community" section contains links for joining Discord and reporting issues.
 ///
-/// # Examples
-///
-/// ```
-/// use dioxus::prelude::*;
-///
-/// fn main() {
-///     // Create the related links element and include it in your layout.
-///     let element = RelatedLinks();
-///     // Render the element as part of your component's tree.
-/// }
-/// ```
+
 fn RelatedLinks() -> Element {
     rsx! {
         div { class: "space-y-6",
@@ -242,14 +200,7 @@ fn RelatedLinks() -> Element {
 /// in a new tab with appropriate security attributes. It embeds the icon and label within separate
 /// `<span>` elements and applies predefined classes for consistent styling and hover effects.
 ///
-/// # Examples
-///
-/// ```
-/// use dioxus::prelude::*;
-///
-/// let link = ResourceLink("https://example.com", "Example Site", "🔗");
-/// // Render `link` in your Dioxus component as needed.
-/// ```
+
 fn ResourceLink(href: &'static str, label: &'static str, icon: &'static str) -> Element {
     rsx! {
         a {
@@ -273,16 +224,7 @@ fn ResourceLink(href: &'static str, label: &'static str, icon: &'static str) -> 
 /// examples for basic setup and setups with page transitions—as well as an overview of platform support.
 /// Additionally, it features guide cards that link to deeper topics like page transitions and interactive animations.
 ///
-/// # Examples
-///
-/// ```
-/// use your_crate::DocsLanding;
-///
-/// // Create the documentation landing page element.
-/// let landing_page = DocsLanding();
-///
-/// // Render `landing_page` using your Dioxus app as required.
-/// ```
+
 pub fn DocsLanding() -> Element {
     rsx! {
         div { class: "space-y-12",
@@ -342,7 +284,7 @@ use dioxus_motion::prelude::*;
 
 #[component]
 fn AnimatedButton() -> Element {
-    let mut scale = use_motion(1.0f32);
+    let mut scale = use_motion_store(1.0f32);
 
     let hover = move |_| {
         scale.animate_to(

@@ -3,7 +3,7 @@ use dioxus_motion::prelude::*;
 
 #[component]
 fn KeyframeExample() -> Element {
-    let mut transform = use_motion(Transform::default());
+    let mut transform = use_motion_store(Transform::default());
 
     let start = move |_| {
         let animation = KeyframeAnimation::new(Duration::from_secs(2))
@@ -36,10 +36,10 @@ fn KeyframeExample() -> Element {
         div {
             class: "demo-box",
             style: "transform: translate({}px, {}px) scale({}) rotate({}deg)",
-            transform.get_value().x,
-            transform.get_value().y,
-            transform.get_value().scale,
-            transform.get_value().rotation,
+            transform.store().current()().x,
+            transform.store().current()().y,
+            transform.store().current()().scale,
+            transform.store().current()().rotation,
             onclick: start,
             "Click to animate"
         }

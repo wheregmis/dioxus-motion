@@ -4,9 +4,9 @@ use dioxus_motion::prelude::*;
 // An interactive menu item with smooth transitions
 #[component]
 pub fn AnimatedMenuItem(label: String) -> Element {
-    let mut x_offset = use_motion(0.0f32);
-    let mut scale = use_motion(1.0f32);
-    let mut glow = use_motion(0.0f32);
+    let mut x_offset = use_motion_store(0.0f32);
+    let mut scale = use_motion_store(1.0f32);
+    let mut glow = use_motion_store(0.0f32);
 
     let onmouseenter = move |_| {
         x_offset.animate_to(
@@ -41,13 +41,13 @@ pub fn AnimatedMenuItem(label: String) -> Element {
     rsx! {
         div {
             class: "relative p-4 cursor-pointer bg-linear-to-r from-gray-800 to-gray-900 text-white rounded-xl overflow-hidden group",
-            style: "transform: translateX({x_offset.get_value()}px) scale({scale.get_value()})",
+            style: "transform: translateX({x_offset.store().current()()}px) scale({scale.store().current()()})",
             onmouseenter,
             onmouseleave,
             // Glow effect
             div {
                 class: "absolute inset-0 bg-linear-to-r from-blue-500/30 to-purple-500/30 transition-opacity duration-300",
-                style: "opacity: {glow.get_value()}",
+                style: "opacity: {glow.store().current()()}",
             }
             // Content
             div { class: "relative z-10 flex items-center gap-2",

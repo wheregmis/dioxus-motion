@@ -4,8 +4,8 @@ use easer::functions::Easing;
 
 #[component]
 pub fn TypewriterEffect(text: &'static str) -> Element {
-    let mut char_count = use_motion(0.0f32);
-    let mut cursor_opacity = use_motion(1.0f32);
+    let mut char_count = use_motion_store(0.0f32);
+    let mut cursor_opacity = use_motion_store(1.0f32);
     let text_len = text.len() as f32;
 
     use_effect(move || {
@@ -32,7 +32,7 @@ pub fn TypewriterEffect(text: &'static str) -> Element {
 
     let visible_text = text
         .chars()
-        .take(char_count.get_value() as usize)
+        .take(char_count.store().current()() as usize)
         .collect::<String>();
 
     rsx! {
@@ -42,7 +42,7 @@ pub fn TypewriterEffect(text: &'static str) -> Element {
             // Cursor
             span {
                 class: "absolute right-0 top-0",
-                style: "opacity: {cursor_opacity.get_value()};",
+                style: "opacity: {cursor_opacity.store().current()()};",
                 "|"
             }
         }

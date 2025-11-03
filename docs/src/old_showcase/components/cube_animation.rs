@@ -1,6 +1,5 @@
 use dioxus::prelude::*;
 use dioxus_motion::{animations::core::Animatable, prelude::*};
-use std::f32::consts::PI;
 use wide::f32x4;
 
 #[derive(Debug, Clone, Copy)]
@@ -225,77 +224,74 @@ const FACES: [[usize; 4]; 6] = [
 
 #[component]
 pub fn SwingingCube() -> Element {
-    let mut transform = use_motion(Transform3D::default());
-    let mut glow_scale = use_motion(1.0f32);
-    let mut pulse_scale = use_motion(1.0f32);
-    let mut highlight_opacity = use_motion(0.0f32);
+    let mut transform = use_motion_store(Transform3D::default());
+    let mut glow_scale = use_motion_store(1.0f32);
+    let mut pulse_scale = use_motion_store(1.0f32);
+    let mut highlight_opacity = use_motion_store(0.0f32);
 
     let animate = move |_| {
-        // More dynamic cube animation
+        // Main swing animation - continuous loop
         transform.animate_to(
-            Transform3D::new(
-                PI / 2.5, // More dramatic X rotation
-                PI,       // Full Y rotation
-                PI / 3.0, // Adjusted Z rotation
-                3.0,      // Larger X translation
-                -2.0,     // Larger Y translation
-                1.4,      // Larger scale
-            ),
+            Transform3D::new(45.0, 90.0, 0.0, 0.0, 0.0, 1.2),
             AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 25.0, // Softer spring for smoother motion
-                damping: 8.0,    // Adjusted damping for better bounce
-                mass: 1.2,       // Increased mass for more weight
-                velocity: 3.0,   // Faster initial velocity
+                stiffness: 80.0,
+                damping: 8.0,
+                mass: 1.0,
+                velocity: 15.0,
             }))
-            .with_loop(LoopMode::Alternate), // Makes the animation go back and forth
+            .with_loop(LoopMode::Alternate), // Add continuous alternating loop
         );
 
-        // Add glow and pulse animations
+        // Glow effect - continuous loop
         glow_scale.animate_to(
+            1.5,
+            AnimationConfig::new(AnimationMode::Spring(Spring {
+                stiffness: 120.0,
+                damping: 10.0,
+                mass: 0.8,
+                velocity: 8.0,
+            }))
+            .with_loop(LoopMode::Alternate), // Add continuous alternating loop
+        );
+
+        // Pulse effect - continuous loop
+        pulse_scale.animate_to(
             1.3,
             AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 30.0,
-                damping: 5.0,
-                mass: 1.0,
-                velocity: 0.0,
+                stiffness: 200.0,
+                damping: 12.0,
+                mass: 0.6,
+                velocity: 10.0,
             }))
-            .with_loop(LoopMode::Alternate),
+            .with_loop(LoopMode::Alternate), // Add continuous alternating loop
         );
 
-        pulse_scale.animate_to(
-            1.2,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 40.0,
-                damping: 6.0,
-                mass: 0.8,
-                velocity: 0.0,
-            }))
-            .with_loop(LoopMode::Alternate),
-        );
-
+        // Highlight effect - continuous loop
         highlight_opacity.animate_to(
-            0.6,
+            0.8,
             AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 35.0,
-                damping: 7.0,
+                stiffness: 150.0,
+                damping: 8.0,
                 mass: 0.5,
-                velocity: 0.0,
+                velocity: 5.0,
             }))
-            .with_loop(LoopMode::Alternate),
+            .with_loop(LoopMode::Alternate), // Add continuous alternating loop
         );
     };
 
     let projected_vertices: Vec<(f32, f32)> = VERTICES
         .iter()
         .map(|v| {
-            v.rotate_x(transform.get_value().rotate_x)
-                .rotate_y(transform.get_value().rotate_y)
-                .rotate_z(transform.get_value().rotate_z)
+            v.rotate_x(transform.store().current()().rotate_x)
+                .rotate_y(transform.store().current()().rotate_y)
+                .rotate_z(transform.store().current()().rotate_z)
                 .translate(
-                    transform.get_value().translate_x,
-                    transform.get_value().translate_y,
+                    transform.store().current()().translate_x,
+                    transform.store().current()().translate_y,
                 )
-                .project(50.0 * transform.get_value().scale * pulse_scale.get_value())
+                .project(
+                    50.0 * transform.store().current()().scale * pulse_scale.store().current()(),
+                )
         })
         .collect();
 
@@ -353,7 +349,7 @@ pub fn SwingingCube() -> Element {
                 circle {
                     cx: "100.0",
                     cy: "100.0",
-                    r: "{40.0 * glow_scale.get_value()}",
+                    r: "{40.0 * glow_scale.store().current()()}",
                     fill: "url(#cube-gradient)",
                     filter: "url(#glow)",
                     opacity: "0.4",
@@ -406,7 +402,7 @@ pub fn SwingingCube() -> Element {
                                     path {
                                         d: "{path}",
                                         fill: "url(#highlight)",
-                                        opacity: "{highlight_opacity.get_value()}",
+                                        opacity: "{highlight_opacity.store().current()()}",
                                     }
                                 }
                             }

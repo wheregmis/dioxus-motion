@@ -3,7 +3,7 @@ use dioxus_motion::prelude::*;
 
 #[component]
 pub fn Card3DFlip() -> Element {
-    let mut transform = use_motion(Transform::identity());
+    let mut transform = use_motion_store(Transform::identity());
     let mut is_flipped = use_signal(|| false);
 
     let animate_flip = move |_| {
@@ -40,9 +40,7 @@ pub fn Card3DFlip() -> Element {
         div { class: "perspective-1000",
             div {
                 class: "relative w-64 h-64 cursor-pointer",
-                style: "transform-style: preserve-3d;
-                        transform: rotateY({transform.get_value().rotation}deg)
-                                 scale({transform.get_value().scale});",
+                style: "transform-style: preserve-3d; transform: rotateY({transform.store().current()().rotation}deg) scale({transform.store().current()().scale});",
                 onclick: animate_flip,
 
                 // Front

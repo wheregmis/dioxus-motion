@@ -10,25 +10,9 @@ use crate::utils::router::Route;
 /// On mount, the component animates into view by sliding down from an off-screen position and fading in.
 /// It displays a logo, navigation links, and buttons for GitHub and Crates.io. On smaller viewports,
 /// a mobile menu can be toggled to show similar navigation links with an overlay effect.
-///
-/// # Examples
-///
-/// ```rust
-/// use dioxus::prelude::*;
-///
-/// fn main() {
-///     dioxus::web::launch(app);
-/// }
-///
-/// fn app(cx: Scope) -> Element {
-///     cx.render(rsx! {
-///         NavBar {}
-///     })
-/// }
-/// ```
 pub fn NavBar() -> Element {
-    let mut nav_bg = use_motion(Transform::new(0.0, -100.0, 1.0, 0.0));
-    let mut nav_opacity = use_motion(0.0f32);
+    let mut nav_bg = use_motion_store(Transform::new(0.0, -100.0, 1.0, 0.0));
+    let mut nav_opacity = use_motion_store(0.0f32);
     let mut is_menu_open = use_signal(|| false);
 
     use_effect(move || {
@@ -55,10 +39,7 @@ pub fn NavBar() -> Element {
         div { class: "w-full h-full bg-gradient-dark text-text-secondary",
             header {
                 class: "fixed top-0 w-full z-50 h-16 backdrop-blur-md border-b border-primary/10 rust-accent",
-                style: "
-                    transform: translateY({nav_bg.get_value().y}px);
-                    opacity: {nav_opacity.get_value()};
-                ",
+                style: "transform: translateY({nav_bg.get_value().y}px); opacity: {nav_opacity.get_value()};",
                 // Background elements
                 div { class: "absolute inset-0 overflow-hidden",
                     div { class: "absolute -top-1/2 -left-1/2 w-full h-full bg-primary/5 rounded-full blur-3xl" }
@@ -219,26 +200,6 @@ pub fn NavBar() -> Element {
 ///
 /// * `to` - The destination route for the link.
 /// * `children` - The content displayed within the link.
-///
-/// # Examples
-///
-/// ```
-/// use dioxus::prelude::*;
-///
-/// // Example route enum for demonstration.
-/// #[derive(PartialEq, Eq)]
-/// enum Route {
-///     Home,
-///     About,
-/// }
-///
-/// // An example component utilizing NavLink.
-/// fn App(cx: Scope) -> Element {
-///     cx.render(rsx! {
-///         NavLink(Route::Home, rsx! { "Home" })
-///     })
-/// }
-/// ```
 fn NavLink(to: Route, children: Element) -> Element {
     let current_route = use_route::<Route>();
     let is_active = current_route == to;

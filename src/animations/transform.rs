@@ -144,7 +144,9 @@ impl Animatable for Transform {
             .sqrt()
     }
 
-    // Uses default epsilon of 0.01 from the trait - no need for TRANSFORM_EPSILON
+    fn epsilon() -> f32 {
+        0.05 // Larger epsilon for Transform since it combines multiple components
+    }
 }
 
 #[cfg(test)]

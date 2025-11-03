@@ -6,9 +6,6 @@
 use instant::{Duration, Instant};
 use std::future::Future;
 
-#[cfg(feature = "web")]
-use crate::animations::closure_pool::{create_pooled_closure, register_pooled_callback};
-
 /// Provides platform-agnostic timing operations
 ///
 /// Abstracts timing functionality across different platforms,
@@ -51,6 +48,7 @@ impl TimeProvider for MotionTime {
         const RAF_THRESHOLD_MS: u8 = 16;
 
         let (sender, receiver) = futures_channel::oneshot::channel::<()>();
+        let sender = std::rc::Rc::new(std::cell::RefCell::new(Some(sender)));
 
         if let Some(window) = window() {
             // Choose timing method based on duration
@@ -58,11 +56,13 @@ impl TimeProvider for MotionTime {
                 // For frame-based timing, use requestAnimationFrame
                 // This is ideal for animation frames (typically 16ms at 60fps)
 
-                // Use pooled closure for better performance
-                let callback_id = register_pooled_callback(Box::new(move || {
-                    let _ = sender.send(());
-                }));
-                let cb = create_pooled_closure(callback_id);
+                // Create closure directly
+                let sender_clone = sender.clone();
+                let cb = Closure::wrap(Box::new(move || {
+                    if let Some(s) = sender_clone.borrow_mut().take() {
+                        let _ = s.send(());
+                    }
+                }) as Box<dyn FnMut()>);
 
                 window
                     .request_animation_frame(cb.as_ref().unchecked_ref())
@@ -72,11 +72,13 @@ impl TimeProvider for MotionTime {
             } else {
                 // For longer delays, use setTimeout which is more appropriate
 
-                // Use pooled closure for better performance
-                let callback_id = register_pooled_callback(Box::new(move || {
-                    let _ = sender.send(());
-                }));
-                let cb = create_pooled_closure(callback_id);
+                // Create closure directly
+                let sender_clone = sender.clone();
+                let cb = Closure::wrap(Box::new(move || {
+                    if let Some(s) = sender_clone.borrow_mut().take() {
+                        let _ = s.send(());
+                    }
+                }) as Box<dyn FnMut()>);
 
                 window
                     .set_timeout_with_callback_and_timeout_and_arguments_0(
@@ -89,13 +91,15 @@ impl TimeProvider for MotionTime {
             }
         } else {
             // Fallback: complete immediately if no window
-            let _ = sender.send(());
+            if let Some(s) = sender.borrow_mut().take() {
+                let _ = s.send(());
+            }
         }
 
         receiver.map(|_| ())
     }
 
-    #[cfg(not(feature = "web"))]
+    #[cfg(all(not(feature = "web"), feature = "desktop"))]
     fn delay(duration: Duration) -> impl Future<Output = ()> {
         Box::pin(async move {
             // Threshold-based sleep optimization
@@ -113,9 +117,23 @@ impl TimeProvider for MotionTime {
                     spin_sleep::sleep(remaining);
                 }
             } else {
-                // For very short durations, skip sleep entirely to avoid CPU waste
-                // This prevents unnecessary context switching for sub-millisecond delays
-                tokio::task::yield_now().await;
+                // For very short durations, use a minimal sleep to avoid CPU waste
+                // but still respect the requested duration
+                if duration > Duration::from_micros(100) {
+                    spin_sleep::sleep(duration);
+                } else {
+                    tokio::task::yield_now().await;
+                }
+            }
+        })
+    }
+
+    #[cfg(all(not(feature = "web"), not(feature = "desktop")))]
+    fn delay(duration: Duration) -> impl Future<Output = ()> {
+        Box::pin(async move {
+            // Use spin_sleep directly when tokio is not available
+            if duration > Duration::from_micros(100) {
+                spin_sleep::sleep(duration);
             }
         })
     }

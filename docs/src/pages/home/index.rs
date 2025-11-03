@@ -12,23 +12,13 @@ use crate::utils::router::Route;
 /// On mount, it triggers staggered spring and tween animations that animate the hero section, titles, and feature overlays,
 /// creating a dynamic and engaging home page layout.
 ///
-/// # Examples
-///
-/// ```
-/// use dioxus::prelude::*;
-/// // Adjust the import path below according to your project setup.
-/// use your_crate::Home;
-///
-/// fn main() {
-///     dioxus::web::launch(Home);
-/// }
-/// ```
+
 pub fn Home() -> Element {
-    let hero_opacity = use_motion(1.0f32); // Changed from 0.0 to 1.0
-    let mut demo_scale = use_motion(1.0f32);
+    let hero_opacity = use_motion_store(1.0f32); // Changed from 0.0 to 1.0
+    let mut demo_scale = use_motion_store(1.0f32);
     // Remove these animations since we don't want them
-    // let mut title_y = use_motion(-20.0f32);
-    // let mut subtitle_y = use_motion(20.0f32);
+    // let mut title_y = use_motion_store(-20.0f32);
+    // let mut subtitle_y = use_motion_store(20.0f32);
 
     use_effect(move || {
         {
@@ -198,20 +188,10 @@ pub fn Home() -> Element {
 ///
 /// A Dioxus `Element` representing the rendered feature card.
 ///
-/// # Examples
-///
-/// ```
-/// use dioxus::prelude::*;
-///
-/// fn app(cx: Scope) -> Element {
-///     cx.render(rsx! {
-///         FeatureCard("Efficiency", "Boosts performance significantly.", "⚡")
-///     })
-/// }
-/// ```
+
 fn FeatureCard(title: &'static str, description: &'static str, icon: &'static str) -> Element {
-    let mut card_scale = use_motion(1.0f32);
-    let mut card_y = use_motion(0.0f32);
+    let mut card_scale = use_motion_store(1.0f32);
+    let mut card_y = use_motion_store(0.0f32);
 
     rsx! {
         div {

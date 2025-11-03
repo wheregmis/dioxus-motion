@@ -4,7 +4,7 @@ use easer::functions::Easing;
 
 #[component]
 pub fn ProgressBar(title: &'static str) -> Element {
-    let mut progress = use_motion(0.0f32);
+    let mut progress = use_motion_store(0.0f32);
 
     use_effect(move || {
         progress.animate_to(
@@ -22,7 +22,7 @@ pub fn ProgressBar(title: &'static str) -> Element {
             // Title and percentage display
             div { class: "flex justify-between items-center mb-4",
                 span { class: "text-lg font-semibold", "{title}" }
-                span { class: "text-sm font-medium text-blue-600", "{progress.get_value() as i32}%" }
+                span { class: "text-sm font-medium text-blue-600", "{progress.store().current()() as i32}%" }
             }
 
             // Progress bar container
@@ -31,7 +31,7 @@ pub fn ProgressBar(title: &'static str) -> Element {
                 div {
                     class: "absolute top-0 left-0 h-full bg-linear-to-r from-blue-500 to-purple-600
                            rounded-full transition-all duration-300 ease-out",
-                    style: "width: {progress.get_value()}%",
+                    style: "width: {progress.store().current()()}%",
                 }
                 // Shimmer effect
                 div {

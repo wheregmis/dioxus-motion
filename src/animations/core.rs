@@ -51,9 +51,10 @@ impl Default for AnimationMode {
 }
 
 /// Defines how the animation should loop
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum LoopMode {
     /// Play animation once
+    #[default]
     None,
     /// Loop animation indefinitely
     Infinite,
@@ -63,12 +64,6 @@ pub enum LoopMode {
     Alternate,
     /// Loop animation back and forth a specific number of times
     AlternateTimes(u8),
-}
-
-impl Default for LoopMode {
-    fn default() -> Self {
-        Self::None
-    }
 }
 
 pub type OnComplete = Arc<Mutex<dyn FnMut() + Send + 'static>>;
@@ -98,6 +93,33 @@ impl AnimationConfig {
             on_complete: None,
             epsilon: None,
         }
+    }
+
+    /// Creates a spring animation configuration with default spring parameters
+    pub fn spring() -> Self {
+        Self::new(AnimationMode::Spring(Spring::default()))
+    }
+
+    /// Creates a tween animation configuration with default tween parameters
+    pub fn tween() -> Self {
+        Self::new(AnimationMode::Tween(Tween::default()))
+    }
+
+    /// Creates a custom spring animation configuration
+    pub fn custom_spring(stiffness: f32, damping: f32, mass: f32) -> Self {
+        Self::new(AnimationMode::Spring(Spring {
+            stiffness,
+            damping,
+            mass,
+            velocity: 0.0,
+        }))
+    }
+
+    /// Creates a custom tween animation configuration
+    pub fn custom_tween(duration: Duration, easing: fn(f32, f32, f32, f32) -> f32) -> Self {
+        Self::new(AnimationMode::Tween(
+            Tween::new(duration).with_easing(easing),
+        ))
     }
 
     /// Sets the loop mode for the animation
@@ -159,10 +181,10 @@ impl AnimationConfig {
 
     /// Execute the completion callback if it exists
     pub fn execute_completion(&mut self) {
-        if let Some(on_complete) = &self.on_complete {
-            if let Ok(mut callback) = on_complete.lock() {
-                callback();
-            }
+        if let Some(on_complete) = &self.on_complete
+            && let Ok(mut callback) = on_complete.lock()
+        {
+            callback();
         }
     }
 }

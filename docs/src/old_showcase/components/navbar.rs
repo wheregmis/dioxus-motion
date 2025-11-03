@@ -3,7 +3,7 @@ use dioxus_motion::prelude::*;
 
 #[component]
 pub fn Navbar() -> Element {
-    let mut transform = use_motion(Transform::new(0.0, -100.0, 1.0, 0.0));
+    let mut transform = use_motion_store(Transform::new(0.0, -100.0, 1.0, 0.0));
 
     use_effect(move || {
         // Animate transform with spring physics
@@ -30,10 +30,10 @@ pub fn Navbar() -> Element {
                     transition-all duration-300 z-50
                     hover:shadow-xl",
             style: "transform: translate({}px, {}px) scale({}) rotate({}deg); transform-style: preserve-3d; will-change: transform;",
-            transform.get_value().x,
-            transform.get_value().y,
-            transform.get_value().scale,
-            transform.get_value().rotation,
+            transform.store().current()().x,
+            transform.store().current()().y,
+            transform.store().current()().scale,
+            transform.store().current()().rotation,
             div { class: "max-w-6xl mx-auto px-4",
                 div { class: "flex justify-between items-center h-28",
                     // Logo

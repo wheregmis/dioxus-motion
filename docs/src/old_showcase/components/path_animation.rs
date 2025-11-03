@@ -4,7 +4,7 @@ use easer::functions::Easing;
 
 #[component]
 pub fn PathAnimation(path: &'static str, duration: f32) -> Element {
-    let mut dash_offset = use_motion(1000.0f32);
+    let mut dash_offset = use_motion_store(1000.0f32);
 
     use_effect(move || {
         dash_offset.animate_to(
@@ -26,8 +26,7 @@ pub fn PathAnimation(path: &'static str, duration: f32) -> Element {
                     stroke: "url(#gradient)",
                     stroke_width: "4",
                     stroke_dasharray: "1000",
-                    style: "stroke-dashoffset: {dash_offset.get_value()};
-                            transition: stroke-dashoffset 0.1s linear;",
+                    style: "stroke-dashoffset: {dash_offset.store().current()()}; transition: stroke-dashoffset 0.1s linear;",
                 }
                 defs {
                     linearGradient {
