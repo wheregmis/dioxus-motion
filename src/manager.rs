@@ -5,7 +5,10 @@ use crate::motion::Motion;
 use crate::prelude::AnimationConfig;
 use crate::sequence::AnimationSequence;
 
-use dioxus::prelude::{Readable, Signal, Writable};
+use dioxus::{
+    prelude::{Readable, Signal, Writable},
+    signals::{ReadableExt, WritableExt},
+};
 
 pub trait AnimationManager<T: Animatable + Send + 'static>: Clone + Copy {
     fn new(initial: T) -> Self;
