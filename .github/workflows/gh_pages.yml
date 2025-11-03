@@ -19,7 +19,7 @@ jobs:
       - uses: ilammy/setup-nasm@v1
       - uses: taiki-e/install-action@cargo-binstall
       - name: Install dioxus-cli
-        run: cargo binstall -y dioxus-cli@0.7.0-alpha.3 --force --locked
+        run: cargo binstall -y dioxus-cli@0.7.0 --force --locked
       - uses: actions/checkout@v2
       - name: Build
         run: |
