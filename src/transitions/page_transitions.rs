@@ -184,7 +184,6 @@ impl Animatable for PageTransitionAnimation {
 /// determine when an animated transition should occur. When a transition is detected and
 /// the layout depth or route conditions are met, it renders a transition component; otherwise,
 /// it renders a standard outlet.
-/// ```
 pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
     let route = use_route::<R>();
     let outlet: OutletContext<R> = use_outlet_context();
