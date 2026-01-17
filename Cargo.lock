@@ -1183,7 +1183,7 @@ dependencies = [
 
 [[package]]
 name = "dioxus-motion"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "dioxus",
  "dioxus-motion-transitions-macro",
