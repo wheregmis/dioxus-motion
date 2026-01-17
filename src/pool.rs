@@ -457,11 +457,11 @@ impl GlobalIntegratorPools {
     /// Updates stats for a specific type (called when integrators are returned)
     pub fn update_stats<T: Animatable + Send + 'static>(&mut self) {
         let type_id = TypeId::of::<T>();
-        if let Some(pool) = self.pools.get(&type_id)
-            && let Some(pool) = pool.downcast_ref::<SpringIntegratorPool<T>>()
-        {
-            let stats = pool.stats();
-            self.stats_tracker.insert(type_id, stats);
+        if let Some(pool) = self.pools.get(&type_id) {
+            if let Some(pool) = pool.downcast_ref::<SpringIntegratorPool<T>>() {
+                let stats = pool.stats();
+                self.stats_tracker.insert(type_id, stats);
+            }
         }
     }
 }
@@ -1095,7 +1095,7 @@ mod tests {
         // Velocity should be affected by spring force
         let expected_force_direction = target - current_pos;
         assert!(expected_force_direction > 0.0); // Force toward target
-        // With default spring settings, velocity should increase toward target
+                                                 // With default spring settings, velocity should increase toward target
         assert!(new_vel > current_vel);
     }
 
