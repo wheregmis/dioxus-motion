@@ -3,20 +3,21 @@
 //! This module implements a state machine pattern to replace complex nested conditionals
 //! in the animation update loop, providing better performance through efficient dispatch.
 
-use crate::Duration;
 use crate::animations::core::{Animatable, AnimationMode};
 use crate::animations::spring::{Spring, SpringState};
 use crate::keyframes::KeyframeAnimation;
-use crate::pool::{ConfigHandle, global};
+use crate::pool::{global, ConfigHandle};
 use crate::prelude::{AnimationConfig, LoopMode, Tween};
 use crate::sequence::AnimationSequence;
+use crate::Duration;
 use std::sync::Arc;
 
 /// Animation state enum that represents the current mode of animation
 /// This replaces complex branching logic with efficient state dispatch
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub enum AnimationState<T: Animatable> {
     /// Animation is not running
+    #[default]
     Idle,
     /// Single animation is running with specified mode
     Running {
@@ -508,23 +509,17 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
     }
 }
 
-impl<T: Animatable> Default for AnimationState<T> {
-    fn default() -> Self {
-        Self::Idle
-    }
-}
-
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used)]
     #![allow(clippy::arc_with_non_send_sync)]
     use super::*;
-    use crate::Motion;
     use crate::animations::core::AnimationMode;
     use crate::animations::spring::Spring;
     use crate::keyframes::KeyframeAnimation;
     use crate::prelude::Tween;
     use crate::sequence::{AnimationSequence, AnimationStep};
+    use crate::Motion;
     use std::sync::{Arc, Mutex};
 
     #[test]
@@ -646,9 +641,9 @@ mod tests {
 
     #[test]
     fn test_loop_mode_infinite() {
-        use crate::Motion;
         use crate::animations::core::AnimationMode;
         use crate::prelude::{AnimationConfig, LoopMode, Tween};
+        use crate::Motion;
 
         let mut motion = Motion::new(0.0f32);
 
@@ -689,9 +684,9 @@ mod tests {
 
     #[test]
     fn test_loop_mode_times() {
-        use crate::Motion;
         use crate::animations::core::AnimationMode;
         use crate::prelude::{AnimationConfig, LoopMode, Tween};
+        use crate::Motion;
 
         let mut motion = Motion::new(0.0f32);
 
@@ -754,9 +749,9 @@ mod tests {
 
     #[test]
     fn test_loop_mode_alternate() {
-        use crate::Motion;
         use crate::animations::core::AnimationMode;
         use crate::prelude::{AnimationConfig, LoopMode, Tween};
+        use crate::Motion;
 
         let mut motion = Motion::new(0.0f32);
 
@@ -829,9 +824,9 @@ mod tests {
 
     #[test]
     fn test_loop_mode_alternate_times() {
-        use crate::Motion;
         use crate::animations::core::AnimationMode;
         use crate::prelude::{AnimationConfig, LoopMode, Tween};
+        use crate::Motion;
 
         let mut motion = Motion::new(0.0f32);
 

@@ -152,18 +152,6 @@ impl ConfigPoolable for AnimationConfig {
     }
 }
 
-/// Trait for pools that can provide statistics
-#[allow(dead_code)]
-trait PoolStatsProvider {
-    fn stats(&self) -> (usize, usize);
-}
-
-impl<T: Animatable + Send> PoolStatsProvider for SpringIntegratorPool<T> {
-    fn stats(&self) -> (usize, usize) {
-        (self.in_use.len(), self.available.len())
-    }
-}
-
 // Thread-local config pool for efficient access
 thread_local! {
     static CONFIG_POOL: RefCell<ConfigPool> = RefCell::new(ConfigPool::new());
@@ -1107,7 +1095,7 @@ mod tests {
         // Velocity should be affected by spring force
         let expected_force_direction = target - current_pos;
         assert!(expected_force_direction > 0.0); // Force toward target
-        // With default spring settings, velocity should increase toward target
+                                                 // With default spring settings, velocity should increase toward target
         assert!(new_vel > current_vel);
     }
 
