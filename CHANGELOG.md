@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-v0.3.2...dioxus-motion-v0.3.3) - 2026-01-17
+
+### <!-- 3 -->Other
+
+- bump
+
 ## [0.3.2](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-v0.3.1...dioxus-motion-v0.3.2) - 2025-11-03
 
 ### <!-- 1 -->New features
