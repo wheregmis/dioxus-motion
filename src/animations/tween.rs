@@ -16,12 +16,18 @@ pub use instant::Duration;
 /// let tween = Tween::new(Duration::from_secs(1))
 ///     .with_easing(easer::functions::Cubic::ease_in_out);
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy)]
 pub struct Tween {
     /// Duration of the animation
     pub duration: Duration,
     /// Easing function for interpolation
     pub easing: fn(f32, f32, f32, f32) -> f32,
+}
+
+impl PartialEq for Tween {
+    fn eq(&self, other: &Self) -> bool {
+        self.duration == other.duration && core::ptr::fn_addr_eq(self.easing, other.easing)
+    }
 }
 
 /// Default tween configuration with 300ms duration and linear easing

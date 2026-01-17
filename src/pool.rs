@@ -152,18 +152,6 @@ impl ConfigPoolable for AnimationConfig {
     }
 }
 
-/// Trait for pools that can provide statistics
-#[allow(dead_code)]
-trait PoolStatsProvider {
-    fn stats(&self) -> (usize, usize);
-}
-
-impl<T: Animatable + Send> PoolStatsProvider for SpringIntegratorPool<T> {
-    fn stats(&self) -> (usize, usize) {
-        (self.in_use.len(), self.available.len())
-    }
-}
-
 // Thread-local config pool for efficient access
 thread_local! {
     static CONFIG_POOL: RefCell<ConfigPool> = RefCell::new(ConfigPool::new());
@@ -469,11 +457,11 @@ impl GlobalIntegratorPools {
     /// Updates stats for a specific type (called when integrators are returned)
     pub fn update_stats<T: Animatable + Send + 'static>(&mut self) {
         let type_id = TypeId::of::<T>();
-        if let Some(pool) = self.pools.get(&type_id) {
-            if let Some(pool) = pool.downcast_ref::<SpringIntegratorPool<T>>() {
-                let stats = pool.stats();
-                self.stats_tracker.insert(type_id, stats);
-            }
+        if let Some(pool) = self.pools.get(&type_id)
+            && let Some(pool) = pool.downcast_ref::<SpringIntegratorPool<T>>()
+        {
+            let stats = pool.stats();
+            self.stats_tracker.insert(type_id, stats);
         }
     }
 }

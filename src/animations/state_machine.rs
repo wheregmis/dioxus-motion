@@ -14,9 +14,10 @@ use std::sync::Arc;
 
 /// Animation state enum that represents the current mode of animation
 /// This replaces complex branching logic with efficient state dispatch
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub enum AnimationState<T: Animatable> {
     /// Animation is not running
+    #[default]
     Idle,
     /// Single animation is running with specified mode
     Running {
@@ -480,12 +481,11 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
             }
         };
 
-        if !should_continue {
-            if let Some(ref f) = config.on_complete {
-                if let Ok(mut guard) = f.lock() {
-                    guard();
-                }
-            }
+        if !should_continue
+            && let Some(ref f) = config.on_complete
+            && let Ok(mut guard) = f.lock()
+        {
+            guard();
         }
 
         should_continue
@@ -505,12 +505,6 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
         use crate::pool::SpringIntegrator;
         let mut integrator = SpringIntegrator::new();
         integrator.integrate_rk4(current_pos, current_vel, target, spring, dt)
-    }
-}
-
-impl<T: Animatable> Default for AnimationState<T> {
-    fn default() -> Self {
-        Self::Idle
     }
 }
 
