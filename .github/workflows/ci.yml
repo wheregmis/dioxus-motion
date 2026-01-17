@@ -2,9 +2,9 @@ name: CI
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
   push:
-    branches: [ main ]
+    branches: [main]
 
 env:
   CARGO_TERM_COLOR: always
@@ -211,4 +211,4 @@ jobs:
       - name: Check all workspace members
         run: |
           cargo check --workspace --all-features
-          cargo clippy --workspace --all-features -- -D warnings 
+          cargo clippy --workspace --all-features -- -D warnings
