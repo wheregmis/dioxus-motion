@@ -236,9 +236,9 @@ fn NavBar() -> Element {
                 }
             }
 
-            // Configurable Animation Context
+            // Store-backed Transition Configuration
             section { class: "space-y-6",
-                h2 { class: "text-2xl font-semibold text-text-primary", "Configurable Animation Context" }
+                h2 { class: "text-2xl font-semibold text-text-primary", "Store-backed Transition Configuration" }
                 p { class: "text-text-secondary",
                     "Dioxus Motion resolves transition timing from store-backed context. Provide a "
                     "Store<Tween> for duration-driven navigation, a Store<Spring> for physics-based motion, or nothing to use the built-in default spring."
@@ -252,17 +252,7 @@ fn NavBar() -> Element {
                     CodeBlock {
                         code: r#"use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
-
-fn main() {
-    dioxus::launch(|| {
-        rsx! {
-            head {
-                link { rel: "stylesheet", href: MAIN_CSS }
-            }
-            App {}
-        }
-    });
-}
+use instant::Duration;
 
 #[component]
 fn App() -> Element {
@@ -288,30 +278,30 @@ fn App() -> Element {
                 div { class: "grid grid-cols-1 md:grid-cols-2 gap-6",
                     // Spring Parameters
                     div { class: "space-y-4",
-                        h3 { class: "text-lg font-medium text-text-primary mb-3", "Spring Parameters" }
+                        h3 { class: "text-lg font-medium text-text-primary mb-3", "Spring store fields" }
                         div { class: "space-y-3",
                             div { class: "p-3 bg-dark-100/30 rounded-lg",
-                                h4 { class: "font-medium text-primary text-sm", "Stiffness (default: 160.0)" }
+                                h4 { class: "font-medium text-primary text-sm", "Stiffness (default transition store: 160.0)" }
                                 p { class: "text-xs text-text-secondary mt-1",
-                                    "Controls how quickly the animation reaches its target. Higher values = faster, more aggressive motion."
+                                    "Controls how quickly the animation reaches its target. Higher values create snappier route changes."
                                 }
                             }
                             div { class: "p-3 bg-dark-100/30 rounded-lg",
-                                h4 { class: "font-medium text-primary text-sm", "Damping (default: 25.0)" }
+                                h4 { class: "font-medium text-primary text-sm", "Damping (default transition store: 25.0)" }
                                 p { class: "text-xs text-text-secondary mt-1",
-                                    "Controls oscillation and bounce. Higher values = smoother, less bouncy motion."
+                                    "Controls oscillation and bounce. Higher values settle the page more quickly."
                                 }
                             }
                             div { class: "p-3 bg-dark-100/30 rounded-lg",
                                 h4 { class: "font-medium text-primary text-sm", "Mass (default: 1.0)" }
                                 p { class: "text-xs text-text-secondary mt-1",
-                                    "Controls inertia. Higher values = more sluggish, weighty motion."
+                                    "Controls inertia. Higher values make the page feel heavier during the transition."
                                 }
                             }
                             div { class: "p-3 bg-dark-100/30 rounded-lg",
                                 h4 { class: "font-medium text-primary text-sm", "Velocity (default: 0.0)" }
                                 p { class: "text-xs text-text-secondary mt-1",
-                                    "Initial velocity. Can create pre-existing motion effects."
+                                    "Adds starting momentum when the route enters or exits."
                                 }
                             }
                         }
@@ -319,7 +309,7 @@ fn App() -> Element {
 
                     // Preset Configurations
                     div { class: "space-y-4",
-                        h3 { class: "text-lg font-medium text-text-primary mb-3", "Common Configurations" }
+                        h3 { class: "text-lg font-medium text-text-primary mb-3", "Common spring presets" }
                         div { class: "space-y-3",
                             div { class: "p-3 bg-dark-100/30 rounded-lg",
                                 h4 { class: "font-medium text-green-400 text-sm", "Bouncy (Fun & Playful)" }
@@ -350,7 +340,7 @@ fn App() -> Element {
                 }
 
                 div { class: "bg-dark-200/50 backdrop-blur-xs rounded-xl p-6 border border-primary/10 mt-6",
-                    h3 { class: "text-lg font-medium text-text-primary mb-4", "Multiple Animation Contexts" }
+                    h3 { class: "text-lg font-medium text-text-primary mb-4", "Scope transition timing per layout" }
                     p { class: "text-text-secondary mb-4",
                         "You can provide different store-backed spring configurations for different parts of your application:"
                     }
@@ -396,7 +386,7 @@ fn UserSection() -> Element {
                     div { class: "flex items-start space-x-3",
                         div { class: "text-blue-400 text-lg", "💡" }
                         div {
-                            h4 { class: "font-medium text-blue-300 mb-1", "Pro Tip: Context Fallback" }
+                            h4 { class: "font-medium text-blue-300 mb-1", "Pro Tip: Store fallback order" }
                             p { class: "text-sm text-blue-200/80",
                                 "If no Store<Tween> or Store<Spring> context is provided, Dioxus Motion automatically falls back to its default spring. "
                                 "That means transitions work out of the box, and you can opt into custom timing only when a section needs it."

@@ -438,10 +438,12 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
                     }
                     div { class: "mt-3 p-3 bg-dark-200/80 rounded-lg text-sm text-text-secondary",
                         span { class: "text-primary font-medium", "Note: " }
-                        "After enabling the transitions feature, you'll need to add the ",
-                        code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm", "MotionTransitions" }, " derive macro to your Route enum "
-                        "and replace the standard ", code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm", "Outlet" }, " with ",
-                        code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm", "AnimatedOutlet" }, ". See the Page Transitions guide for details."
+                        "After enabling the transitions feature, add the ",
+                        code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm", "MotionTransitions" }, " derive macro to your Route enum, replace the standard ",
+                        code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm", "Outlet" }, " with ",
+                        code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm", "AnimatedOutlet" }, ", and optionally provide a ",
+                        code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm", "Store<Tween>" }, " or ",
+                        code { class: "text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm", "Store<Spring>" }, " via context to tune the route timing for that subtree."
                     }
                 }
 
