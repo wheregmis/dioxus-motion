@@ -105,7 +105,8 @@ pub mod animations;
 pub mod keyframes;
 pub mod manager;
 pub mod motion;
-pub mod pool;
+#[allow(dead_code)]
+pub(crate) mod pool;
 pub mod sequence;
 #[cfg(feature = "transitions")]
 pub mod transitions;
