@@ -144,15 +144,6 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         self.handle_completion()
     }
 
-    pub fn optimization_stats(&self) -> MotionOptimizationStats {
-        MotionOptimizationStats {
-            has_config_handle: false,
-            has_spring_integrator: false,
-            state_machine_active: false,
-            value_cache_active: false,
-        }
-    }
-
     fn start_animation(&mut self, target: T, config: AnimationConfig) {
         self.initial = self.current;
         self.target = target;
@@ -389,15 +380,6 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     }
 }
 
-/// Compatibility stats retained for callers that still read the old optimization surface.
-#[derive(Debug, Clone, PartialEq)]
-pub struct MotionOptimizationStats {
-    pub has_config_handle: bool,
-    pub has_spring_integrator: bool,
-    pub state_machine_active: bool,
-    pub value_cache_active: bool,
-}
-
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used)]
@@ -590,24 +572,5 @@ mod tests {
 
         motion.current = 42.0;
         assert_eq!(motion.get_value(), 42.0);
-    }
-
-    #[test]
-    fn test_motion_optimization_stats_are_inactive_after_cleanup() {
-        let mut motion = Motion::new(0.0f32);
-        let idle_stats = motion.optimization_stats();
-        assert_eq!(
-            idle_stats,
-            MotionOptimizationStats {
-                has_config_handle: false,
-                has_spring_integrator: false,
-                state_machine_active: false,
-                value_cache_active: false,
-            }
-        );
-
-        motion.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
-        let running_stats = motion.optimization_stats();
-        assert_eq!(running_stats, idle_stats);
     }
 }
