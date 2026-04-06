@@ -3,9 +3,8 @@
 use crate::animations::core::Animatable;
 use crate::prelude::AnimationConfig;
 
-use std::sync::Arc;
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::{Arc, MutexGuard};
 
 #[derive(Clone)]
 pub struct AnimationStep<T: Animatable> {
@@ -14,40 +13,57 @@ pub struct AnimationStep<T: Animatable> {
     pub predicted_next: Option<T>,
 }
 
-/// Optimized animation sequence that uses shared immutable data and atomic counters
-/// to avoid cloning sequences on step transitions
-pub struct AnimationSequence<T: Animatable> {
-    /// Immutable shared steps - no cloning needed
-    steps: Arc<[AnimationStep<T>]>,
-    /// Atomic counter for current step - thread-safe without locks
-    current_step: AtomicU8,
-    /// Completion callback - thread-safe with Mutex to allow execution without ownership
+struct SequenceState {
+    current_step: u8,
     #[allow(clippy::type_complexity)]
-    on_complete: Arc<Mutex<Option<Box<dyn FnOnce() + Send>>>>,
+    on_complete: Option<Box<dyn FnOnce() + Send>>,
+}
+
+/// Animation sequence that keeps step data simple and stores only the mutable
+/// execution state behind a mutex for shared access.
+pub struct AnimationSequence<T: Animatable> {
+    steps: Vec<AnimationStep<T>>,
+    state: Mutex<SequenceState>,
 }
 
 impl<T: Animatable> AnimationSequence<T> {
-    /// Creates a new empty animation sequence
-    pub fn new() -> Self {
-        Self {
-            steps: Arc::new([]),
-            current_step: AtomicU8::new(0),
-            on_complete: Arc::new(Mutex::new(None)),
+    fn lock_state(&self) -> MutexGuard<'_, SequenceState> {
+        match self.state.lock() {
+            Ok(state) => state,
+            Err(poisoned) => poisoned.into_inner(),
         }
     }
 
-    /// Creates a new animation sequence with specified capacity hint
-    /// Note: This is kept for API compatibility but doesn't pre-allocate since we use Arc<\[T\]>
-    pub fn with_capacity(_capacity: u8) -> Self {
-        Self::new()
+    /// Creates a new empty animation sequence
+    pub fn new() -> Self {
+        Self {
+            steps: Vec::new(),
+            state: Mutex::new(SequenceState {
+                current_step: 0,
+                on_complete: None,
+            }),
+        }
+    }
+
+    /// Creates a new animation sequence with specified capacity hint.
+    pub fn with_capacity(capacity: u8) -> Self {
+        Self {
+            steps: Vec::with_capacity(capacity as usize),
+            state: Mutex::new(SequenceState {
+                current_step: 0,
+                on_complete: None,
+            }),
+        }
     }
 
     /// Creates a new animation sequence from a vector of steps
     pub fn from_steps(steps: Vec<AnimationStep<T>>) -> Self {
         Self {
-            steps: steps.into(),
-            current_step: AtomicU8::new(0),
-            on_complete: Arc::new(Mutex::new(None)),
+            steps,
+            state: Mutex::new(SequenceState {
+                current_step: 0,
+                on_complete: None,
+            }),
         }
     }
 
@@ -57,20 +73,21 @@ impl<T: Animatable> AnimationSequence<T> {
         F: FnOnce() + Send + 'static,
     {
         Self {
-            steps: steps.into(),
-            current_step: AtomicU8::new(0),
-            on_complete: Arc::new(Mutex::new(Some(Box::new(on_complete)))),
+            steps,
+            state: Mutex::new(SequenceState {
+                current_step: 0,
+                on_complete: Some(Box::new(on_complete)),
+            }),
         }
     }
 
-    /// Reserve additional capacity (kept for API compatibility, but no-op since we use Arc<\[T\]>)
-    pub fn reserve(&mut self, _additional: u8) {
-        // No-op for Arc<[T]> - kept for backward compatibility
+    /// Reserve additional capacity for future steps.
+    pub fn reserve(&mut self, additional: u8) {
+        self.steps.reserve(additional as usize);
     }
 
     /// Adds a new step to the sequence and returns a new sequence
-    /// This creates a new Arc with all steps to maintain immutability
-    pub fn then(self, target: T, config: AnimationConfig) -> Self {
+    pub fn then(mut self, target: T, config: AnimationConfig) -> Self {
         let predicted_next = if self.steps.is_empty() {
             None
         } else {
@@ -85,33 +102,27 @@ impl<T: Animatable> AnimationSequence<T> {
             predicted_next,
         };
 
-        // Create new vector with existing steps plus the new one
-        let mut new_steps: Vec<AnimationStep<T>> = self.steps.iter().cloned().collect();
-        new_steps.push(new_step);
-
-        Self {
-            steps: new_steps.into(),
-            current_step: AtomicU8::new(self.current_step.load(Ordering::Relaxed)),
-            on_complete: self.on_complete,
-        }
+        self.steps.push(new_step);
+        self
     }
 
     /// Sets a completion callback
     pub fn on_complete<F: FnOnce() + Send + 'static>(self, f: F) -> Self {
-        if let Ok(mut guard) = self.on_complete.lock() {
-            *guard = Some(Box::new(f));
-        }
+        let mut state = self.lock_state();
+        state.on_complete = Some(Box::new(f));
+        drop(state);
         self
     }
 
     /// Advances to the next step in the sequence
     /// Returns true if advanced, false if already at the end
     pub fn advance_step(&self) -> bool {
-        let current = self.current_step.load(Ordering::Relaxed);
+        let mut state = self.lock_state();
+        let current = state.current_step;
         let total_steps = self.steps.len() as u8;
 
         if current < total_steps.saturating_sub(1) {
-            self.current_step.store(current + 1, Ordering::Relaxed);
+            state.current_step += 1;
             true
         } else {
             false
@@ -120,7 +131,7 @@ impl<T: Animatable> AnimationSequence<T> {
 
     /// Gets the current step index
     pub fn current_step_index(&self) -> u8 {
-        self.current_step.load(Ordering::Relaxed)
+        self.lock_state().current_step
     }
 
     /// Gets the current step index (kept for backward compatibility)
@@ -130,19 +141,19 @@ impl<T: Animatable> AnimationSequence<T> {
 
     /// Gets the configuration for the current step
     pub fn current_config(&self) -> Option<&AnimationConfig> {
-        let current = self.current_step.load(Ordering::Relaxed) as usize;
+        let current = self.current_step_index() as usize;
         self.steps.get(current).map(|step| step.config.as_ref())
     }
 
     /// Gets the target value for the current step
     pub fn current_target(&self) -> Option<T> {
-        let current = self.current_step.load(Ordering::Relaxed) as usize;
+        let current = self.current_step_index() as usize;
         self.steps.get(current).map(|step| step.target)
     }
 
     /// Gets the current step data
     pub fn current_step_data(&self) -> Option<&AnimationStep<T>> {
-        let current = self.current_step.load(Ordering::Relaxed) as usize;
+        let current = self.current_step_index() as usize;
         self.steps.get(current)
     }
 
@@ -153,7 +164,7 @@ impl<T: Animatable> AnimationSequence<T> {
 
     /// Checks if the sequence is complete (at the last step)
     pub fn is_complete(&self) -> bool {
-        let current = self.current_step.load(Ordering::Relaxed);
+        let current = self.current_step_index();
         let total_steps = self.steps.len() as u8;
         current >= total_steps.saturating_sub(1)
     }
@@ -165,26 +176,26 @@ impl<T: Animatable> AnimationSequence<T> {
 
     /// Resets the sequence to the first step
     pub fn reset(&self) {
-        self.current_step.store(0, Ordering::Relaxed);
+        self.lock_state().current_step = 0;
     }
 
     /// Executes the completion callback if present
-    /// This method is thread-safe and can be called without ownership
     pub fn execute_completion(&self) {
-        if let Ok(mut guard) = self.on_complete.lock() {
-            if let Some(callback) = guard.take() {
-                callback();
-            }
+        if let Some(callback) = self.lock_state().on_complete.take() {
+            callback();
         }
     }
 }
 
 impl<T: Animatable> Clone for AnimationSequence<T> {
     fn clone(&self) -> Self {
+        let current_step = self.current_step_index();
         Self {
-            steps: self.steps.clone(), // Arc clone is cheap
-            current_step: AtomicU8::new(self.current_step.load(Ordering::Relaxed)),
-            on_complete: Arc::new(Mutex::new(None)), // Callbacks can't be cloned
+            steps: self.steps.clone(),
+            state: Mutex::new(SequenceState {
+                current_step,
+                on_complete: None,
+            }),
         }
     }
 }
