@@ -428,7 +428,7 @@ fn UserSection() -> Element {
                         h3 { class: "text-lg font-medium text-primary mb-2", "Keep Transitions Short" }
                         p { class: "text-text-secondary",
                             "Aim for transitions between 200-300ms. Longer transitions can make your app feel sluggish, "
-                            "while shorter ones might be too abrupt. The default durations are optimized for most cases."
+                            "while shorter ones might be too abrupt. Start with the default durations, then tune them with a transition store if a flow needs a different feel."
                         }
                     }
 
