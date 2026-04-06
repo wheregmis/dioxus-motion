@@ -1,5 +1,4 @@
 use crate::Duration;
-use crate::TimeProvider;
 use crate::animations::core::Animatable;
 use crate::animations::state_machine::AnimationState;
 use crate::keyframes::KeyframeAnimation;
