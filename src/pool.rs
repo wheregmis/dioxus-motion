@@ -408,13 +408,6 @@ pub struct SpringIntegratorHandle {
     id: usize,
 }
 
-impl SpringIntegratorHandle {
-    /// Gets the ID of this handle
-    pub fn id(&self) -> usize {
-        self.id
-    }
-}
-
 /// Global integrator pool management using type-erased storage
 pub struct GlobalIntegratorPools {
     pools: HashMap<TypeId, Box<dyn Any + Send>>,

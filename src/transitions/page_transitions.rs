@@ -22,7 +22,7 @@ pub enum AnimatedRouterContext<R: Routable + PartialEq> {
     /// Transition from one route to another.
     FromTo(R, R),
     /// Settled in a route.
-    In(R),
+    Settled(R),
 }
 
 impl<R: Routable + PartialEq> AnimatedRouterContext<R> {
@@ -30,7 +30,7 @@ impl<R: Routable + PartialEq> AnimatedRouterContext<R> {
     pub fn target_route(&self) -> &R {
         match self {
             Self::FromTo(_, to) => to,
-            Self::In(to) => to,
+            Self::Settled(to) => to,
         }
     }
 
@@ -41,14 +41,14 @@ impl<R: Routable + PartialEq> AnimatedRouterContext<R> {
                 *old_from = old_to.clone();
                 *old_to = to
             }
-            Self::In(old_to) => *self = Self::FromTo(old_to.clone(), to),
+            Self::Settled(old_to) => *self = Self::FromTo(old_to.clone(), to),
         }
     }
 
     /// After the transition animation has finished, make the outlet only render the destination route.
     pub fn settle(&mut self) {
         if let Self::FromTo(_, to) = self {
-            *self = Self::In(to.clone())
+            *self = Self::Settled(to.clone())
         }
     }
 }
@@ -189,7 +189,7 @@ impl Animatable for PageTransitionAnimation {
 pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
     let route = use_route::<R>();
     // Create router context only if we're the root AnimatedOutlet
-    let mut prev_route = use_store(|| AnimatedRouterContext::In(route.clone()));
+    let mut prev_route = use_store(|| AnimatedRouterContext::Settled(route.clone()));
     use_context_provider(move || prev_route);
 
     use_effect(move || {
