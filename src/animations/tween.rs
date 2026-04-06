@@ -94,4 +94,13 @@ mod tests {
         let result = (tween.easing)(1.0, 0.0, 1.0, 1.0);
         assert!((result - 1.0).abs() < f32::EPSILON);
     }
+
+    #[test]
+    fn test_tween_partial_eq_uses_function_identity() {
+        let base = Tween::new(Duration::from_secs(1));
+
+        assert_eq!(base, Tween::new(Duration::from_secs(1)));
+        assert_ne!(base, Tween::new(Duration::from_secs(2)));
+        assert_ne!(base, base.with_easing(Cubic::ease_in_out));
+    }
 }

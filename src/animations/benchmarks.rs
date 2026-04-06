@@ -187,11 +187,8 @@ mod tests {
             "Total pool operations took too long: {total_time:?}"
         );
 
-        // Reuse should be faster than initial allocation (pool efficiency)
-        assert!(
-            reuse_time <= allocation_time,
-            "Config reuse should be at least as fast as initial allocation. Allocation: {allocation_time:?}, Reuse: {reuse_time:?}"
-        );
+        // Keep the benchmark honest without requiring one wall-clock sample to beat another.
+        // The pool behavior itself is covered by deterministic pool tests.
 
         // Clean up
         for handle in reuse_handles {
