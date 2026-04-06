@@ -105,7 +105,7 @@ pub mod animations;
 pub mod keyframes;
 pub mod manager;
 pub mod motion;
-#[cfg(any(not(feature = "web"), test))]
+#[allow(dead_code)]
 pub(crate) mod pool;
 pub mod sequence;
 #[cfg(feature = "transitions")]
