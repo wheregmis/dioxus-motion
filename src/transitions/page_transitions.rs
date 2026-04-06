@@ -294,10 +294,7 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     let spring_store = try_use_context::<Store<Spring>>();
 
     use_effect(move || {
-        let mode = tween_store
-            .map(|tween| AnimationMode::Tween(tween()))
-            .or_else(|| spring_store.map(|spring| AnimationMode::Spring(spring())))
-            .unwrap_or_else(|| AnimationMode::Spring(Spring::default()));
+        let mode = resolve_transition_mode(tween_store, spring_store, default_spring);
         let animation_config = AnimationConfig::new(mode);
 
         from_anim.animate_to(
