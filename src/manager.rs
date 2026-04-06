@@ -48,19 +48,19 @@ impl<T: Animatable + Send + 'static> MotionHandle<T> {
     }
 
     pub fn current(self) -> ReadStore<T> {
-        let scope = self
-            .state
-            .into_selector()
-            .child(CURRENT_SCOPE, current_ref::<T>, current_mut::<T>);
+        let scope =
+            self.state
+                .into_selector()
+                .child(CURRENT_SCOPE, current_ref::<T>, current_mut::<T>);
         let store: Store<T, _> = scope.into();
         store.into()
     }
 
     pub fn running(self) -> ReadStore<bool> {
-        let scope = self
-            .state
-            .into_selector()
-            .child(RUNNING_SCOPE, running_ref::<T>, running_mut::<T>);
+        let scope =
+            self.state
+                .into_selector()
+                .child(RUNNING_SCOPE, running_ref::<T>, running_mut::<T>);
         let store: Store<bool, _> = scope.into();
         store.into()
     }
