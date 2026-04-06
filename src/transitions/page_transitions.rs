@@ -391,8 +391,7 @@ mod tests {
     fn transition_mode_falls_back_to_default_spring_store() {
         let default_spring = default_transition_spring();
 
-        let mode =
-            resolve_transition_mode(None, None, Store::new(default_spring));
+        let mode = resolve_transition_mode(None, None, Store::new(default_spring));
 
         assert_eq!(mode, AnimationMode::Spring(default_spring));
     }

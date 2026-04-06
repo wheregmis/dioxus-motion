@@ -409,7 +409,10 @@ mod tests {
     #[test]
     fn test_motion_animate_to() {
         let mut motion = Motion::new(0.0f32);
-        motion.animate_to(100.0, AnimationConfig::new(AnimationMode::Tween(Tween::default())));
+        motion.animate_to(
+            100.0,
+            AnimationConfig::new(AnimationMode::Tween(Tween::default())),
+        );
 
         assert_eq!(motion.target, 100.0);
         assert!(motion.running);
@@ -464,7 +467,10 @@ mod tests {
     #[test]
     fn test_motion_stop() {
         let mut motion = Motion::new(0.0f32);
-        motion.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
+        motion.animate_to(
+            100.0,
+            AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+        );
 
         motion.stop();
 
@@ -490,7 +496,10 @@ mod tests {
     #[test]
     fn test_motion_delay_prevents_early_update() {
         let mut motion = Motion::new(0.0f32);
-        motion.animate_to(100.0, AnimationConfig::new(AnimationMode::Tween(Tween::default())));
+        motion.animate_to(
+            100.0,
+            AnimationConfig::new(AnimationMode::Tween(Tween::default())),
+        );
         motion.delay(Duration::from_millis(100));
 
         assert!(motion.update(1.0 / 60.0));
@@ -500,7 +509,10 @@ mod tests {
     #[test]
     fn test_motion_update_tween_changes_value() {
         let mut motion = Motion::new(0.0f32);
-        motion.animate_to(100.0, AnimationConfig::new(AnimationMode::Tween(Tween::default())));
+        motion.animate_to(
+            100.0,
+            AnimationConfig::new(AnimationMode::Tween(Tween::default())),
+        );
 
         assert!(motion.update(1.0 / 60.0));
         assert!(motion.current > 0.0);
@@ -510,7 +522,10 @@ mod tests {
     #[test]
     fn test_motion_spring_completes_when_already_settled() {
         let mut motion = Motion::new(0.0f32);
-        motion.animate_to(0.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
+        motion.animate_to(
+            0.0,
+            AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+        );
         motion.velocity = 0.0;
 
         assert!(!motion.update(1.0 / 60.0));
@@ -521,10 +536,7 @@ mod tests {
     #[test]
     fn test_motion_loop_mode_times() {
         let mut motion = Motion::new(0.0f32);
-        motion.animate_to(
-            100.0,
-            instant_tween().with_loop(LoopMode::Times(2)),
-        );
+        motion.animate_to(100.0, instant_tween().with_loop(LoopMode::Times(2)));
 
         assert!(motion.update(1.0 / 60.0));
         assert_eq!(motion.current, motion.initial);
@@ -537,10 +549,7 @@ mod tests {
     #[test]
     fn test_motion_loop_mode_alternate() {
         let mut motion = Motion::new(0.0f32);
-        motion.animate_to(
-            100.0,
-            instant_tween().with_loop(LoopMode::Alternate),
-        );
+        motion.animate_to(100.0, instant_tween().with_loop(LoopMode::Alternate));
 
         assert!(motion.update(1.0 / 60.0));
         assert!(motion.running);

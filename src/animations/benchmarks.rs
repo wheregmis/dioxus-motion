@@ -387,7 +387,9 @@ mod tests {
             ),
             (
                 "running_spring",
-                Some(AnimationConfig::new(AnimationMode::Spring(Spring::default()))),
+                Some(AnimationConfig::new(AnimationMode::Spring(
+                    Spring::default(),
+                ))),
             ),
         ];
 
