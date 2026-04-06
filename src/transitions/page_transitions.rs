@@ -269,31 +269,15 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     let mut from_anim = use_motion(PageTransitionAnimation::from_exit_start(&config));
     let mut to_anim = use_motion(PageTransitionAnimation::from_enter_start(&config));
 
-    // Try to get a Tween from context, otherwise use Spring
+    // Try to get a store-backed animation mode from context, otherwise use the default spring.
     let tween_store = try_use_context::<Store<Tween>>();
     let spring_store = try_use_context::<Store<Spring>>();
-    let tween_signal = try_use_context::<Signal<Tween>>();
-    let spring_signal = try_use_context::<Signal<Spring>>();
 
     use_effect(move || {
         let mode = tween_store
             .map(|tween| AnimationMode::Tween(tween()))
-            .or_else(|| tween_signal.map(|tween| AnimationMode::Tween(tween())))
-            .unwrap_or_else(|| {
-                if let Some(spring) = spring_store {
-                    return AnimationMode::Spring(spring());
-                }
-
-                let spring = spring_signal.unwrap_or_else(|| {
-                    use_signal(|| Spring {
-                        stiffness: 160.0,
-                        damping: 25.0,
-                        mass: 1.0,
-                        velocity: 0.0,
-                    })
-                });
-                AnimationMode::Spring(spring())
-            });
+            .or_else(|| spring_store.map(|spring| AnimationMode::Spring(spring())))
+            .unwrap_or_else(|| AnimationMode::Spring(Spring::default()));
         let animation_config = AnimationConfig::new(mode);
 
         from_anim.animate_to(
