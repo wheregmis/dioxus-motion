@@ -17,7 +17,7 @@ use crate::animations::core::Animatable;
 use crate::prelude::Transform;
 use wide::f32x4;
 
-#[derive(Clone)]
+#[derive(Store, Clone)]
 pub enum AnimatedRouterContext<R: Routable + PartialEq> {
     /// Transition from one route to another.
     FromTo(R, R),
@@ -189,7 +189,7 @@ impl Animatable for PageTransitionAnimation {
 pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
     let route = use_route::<R>();
     // Create router context only if we're the root AnimatedOutlet
-    let mut prev_route = use_signal(|| AnimatedRouterContext::In(route.clone()));
+    let mut prev_route = use_store(|| AnimatedRouterContext::In(route.clone()));
     use_context_provider(move || prev_route);
 
     use_effect(move || {
@@ -250,7 +250,7 @@ pub trait AnimatableRoute: Routable + Clone + PartialEq {
 }
 
 /// Shortcut to get access to the [AnimatedRouterContext].
-pub fn use_animated_router<Route: Routable + PartialEq>() -> Signal<AnimatedRouterContext<Route>> {
+pub fn use_animated_router<Route: Routable + PartialEq>() -> Store<AnimatedRouterContext<Route>> {
     use_context()
 }
 
@@ -270,13 +270,21 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     let mut to_anim = use_motion(PageTransitionAnimation::from_enter_start(&config));
 
     // Try to get a Tween from context, otherwise use Spring
-    let tween = try_use_context::<Signal<Tween>>();
-    let spring = try_use_context::<Signal<Spring>>();
+    let tween_store = try_use_context::<Store<Tween>>();
+    let spring_store = try_use_context::<Store<Spring>>();
+    let tween_signal = try_use_context::<Signal<Tween>>();
+    let spring_signal = try_use_context::<Signal<Spring>>();
 
     use_effect(move || {
-        let mode = tween.map_or_else(
-            || {
-                let spring = spring.unwrap_or_else(|| {
+        let mode = tween_store
+            .map(|tween| AnimationMode::Tween(tween()))
+            .or_else(|| tween_signal.map(|tween| AnimationMode::Tween(tween())))
+            .unwrap_or_else(|| {
+                if let Some(spring) = spring_store {
+                    return AnimationMode::Spring(spring());
+                }
+
+                let spring = spring_signal.unwrap_or_else(|| {
                     use_signal(|| Spring {
                         stiffness: 160.0,
                         damping: 25.0,
@@ -285,9 +293,7 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
                     })
                 });
                 AnimationMode::Spring(spring())
-            },
-            |tween| AnimationMode::Tween(tween()),
-        );
+            });
         let animation_config = AnimationConfig::new(mode);
 
         from_anim.animate_to(

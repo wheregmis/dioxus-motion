@@ -369,46 +369,38 @@ mod tests {
         );
     }
 
-    /// Test state machine CPU usage reduction
+    /// Test direct motion update CPU usage
     #[test]
-    fn test_state_machine_cpu_usage() {
+    fn test_motion_update_cpu_usage() {
         use crate::Motion;
         use crate::animations::core::AnimationMode;
-        use crate::animations::state_machine::AnimationState;
-        use crate::pool::global;
         use crate::prelude::{AnimationConfig, Spring, Tween};
 
         const ITERATIONS: usize = 1000;
         const DT: f32 = 1.0 / 60.0;
 
-        // Test different animation states
-        let test_cases = vec![
-            ("idle", AnimationState::<f32>::new_idle()),
-            ("running_tween", {
-                let config_handle = global::get_config();
-                global::modify_config(&config_handle, |config| {
-                    *config = AnimationConfig::new(AnimationMode::Tween(Tween::default()));
-                });
-                AnimationState::new_running(AnimationMode::Tween(Tween::default()), config_handle)
-            }),
-            ("running_spring", {
-                let config_handle = global::get_config();
-                global::modify_config(&config_handle, |config| {
-                    *config = AnimationConfig::new(AnimationMode::Spring(Spring::default()));
-                });
-                AnimationState::new_running(AnimationMode::Spring(Spring::default()), config_handle)
-            }),
+        let test_cases = [
+            ("idle", None),
+            (
+                "running_tween",
+                Some(AnimationConfig::new(AnimationMode::Tween(Tween::default()))),
+            ),
+            (
+                "running_spring",
+                Some(AnimationConfig::new(AnimationMode::Spring(Spring::default()))),
+            ),
         ];
 
-        for (name, mut state) in test_cases {
+        for (name, config) in test_cases {
             let mut motion = Motion::new(0.0f32);
-            motion.target = 100.0f32;
-            motion.running = true;
+            if let Some(config) = config {
+                motion.animate_to(100.0f32, config);
+            }
 
             let start = Instant::now();
 
             for _ in 0..ITERATIONS {
-                state.update(DT, &mut motion);
+                motion.update(DT);
             }
 
             let elapsed = start.elapsed();
@@ -425,9 +417,9 @@ mod tests {
         }
     }
 
-    /// Integration test to verify state machine maintains identical behavior
+    /// Integration test to verify the simplified motion loop remains deterministic
     #[test]
-    fn test_state_machine_behavior_consistency() {
+    fn test_motion_behavior_consistency() {
         use crate::Motion;
         use crate::animations::core::AnimationMode;
         use crate::prelude::{AnimationConfig, Tween};
@@ -490,27 +482,15 @@ mod tests {
         );
     }
 
-    /// Test state machine memory usage efficiency
+    /// Test motion memory usage efficiency
     #[test]
-    fn test_state_machine_memory_efficiency() {
+    fn test_motion_memory_efficiency() {
         use crate::Motion;
-        use crate::animations::state_machine::AnimationState;
         use std::mem;
 
-        // Verify that the state machine doesn't significantly increase memory usage
         let motion_size = mem::size_of::<Motion<f32>>();
-        let state_size = mem::size_of::<AnimationState<f32>>();
 
         println!("Motion<f32> size: {} bytes", motion_size);
-        println!("AnimationState<f32> size: {} bytes", state_size);
-
-        // State machine should not dominate the Motion struct size
-        let state_ratio = state_size as f64 / motion_size as f64;
-        assert!(
-            state_ratio <= 0.5,
-            "AnimationState is too large relative to Motion: {:.1}%",
-            state_ratio * 100.0
-        );
 
         // Total size should be reasonable
         assert!(

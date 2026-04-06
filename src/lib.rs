@@ -116,9 +116,9 @@ pub use dioxus_motion_transitions_macro;
 pub use animations::platform::{MotionTime, TimeProvider};
 
 pub use keyframes::{Keyframe, KeyframeAnimation};
-pub use manager::AnimationManager;
-
-use motion::Motion;
+pub use manager::{AnimationManager, MotionHandle};
+#[cfg(test)]
+pub(crate) use motion::Motion;
 
 // Re-exports
 pub mod prelude {
@@ -135,7 +135,7 @@ pub mod prelude {
     pub use crate::transitions::page_transitions::TransitionVariantResolver;
     #[cfg(feature = "transitions")]
     pub use crate::transitions::page_transitions::{AnimatableRoute, AnimatedOutlet};
-    pub use crate::{AnimationManager, Duration, Time, TimeProvider, use_motion};
+    pub use crate::{AnimationManager, Duration, MotionHandle, Time, TimeProvider, use_motion};
 
     // Performance optimization exports
     pub use crate::motion::MotionOptimizationStats;
@@ -201,8 +201,8 @@ fn calculate_delay(dt: f32, running_frames: u32) -> Duration {
 ///     }
 /// }
 /// ```
-pub fn use_motion<T: Animatable + Send + 'static>(initial: T) -> impl AnimationManager<T> {
-    let mut state = use_signal(|| Motion::new(initial));
+pub fn use_motion<T: Animatable + Send + 'static>(initial: T) -> MotionHandle<T> {
+    let mut state = MotionHandle::new_hook(initial);
 
     #[cfg(feature = "web")]
     let idle_poll_rate = Duration::from_millis(100);
@@ -222,12 +222,12 @@ pub fn use_motion<T: Animatable + Send + 'static>(initial: T) -> impl AnimationM
                 last_frame = now;
 
                 // Only check if running first, then write to the signal
-                if (*state.peek()).is_running() {
+                if state.is_running() {
                     running_frames += 1;
-                    let prev_value = (*state.peek()).get_value();
-                    let updated = (*state.write()).update(dt);
-                    let new_value = (*state.peek()).get_value();
-                    let epsilon = (*state.peek()).get_epsilon();
+                    let prev_value = state.get_value();
+                    let updated = state.update(dt);
+                    let new_value = state.get_value();
+                    let epsilon = state.epsilon();
                     // Only trigger a re-render if the value changed significantly
                     if (new_value - prev_value).magnitude() > epsilon || updated {
                         // State has changed enough, continue

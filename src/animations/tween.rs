@@ -3,6 +3,7 @@
 //! Provides time-based animation with customizable easing functions.
 //! Supports duration and interpolation control for smooth animations.
 
+use dioxus::prelude::Store;
 use easer::functions::{Easing, Linear};
 pub use instant::Duration;
 
@@ -16,7 +17,7 @@ pub use instant::Duration;
 /// let tween = Tween::new(Duration::from_secs(1))
 ///     .with_easing(easer::functions::Cubic::ease_in_out);
 /// ```
-#[derive(Debug, Clone, Copy)]
+#[derive(Store, Debug, Clone, Copy)]
 pub struct Tween {
     /// Duration of the animation
     pub duration: Duration,
