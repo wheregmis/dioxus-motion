@@ -10,110 +10,70 @@ use easer::functions::Easing;
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 
-/// Launches the Dioxus web application.
-///
-/// This function serves as the entry point of the application. It initializes the Dioxus framework
-/// with an HTML layout defined using the `rsx!` macro. The layout includes a head section that loads
-/// external fonts from Google Fonts and a local stylesheet via the `MAIN_CSS` asset, as well as a
-/// Router component parameterized with the `Route` type to handle navigation.
-///
-/// # Examples
-///
-/// ```no_run``
-/// fn main() {
-///     dioxus::launch(|| {
-///         rsx! {
-///             head {
-///                 link {
-///                     rel: "stylesheet",
-///                     href: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap",
-///                 }
-///                 link { rel: "stylesheet", href: MAIN_CSS }
-///             }
-///             Router::<Route> {}
-///         }
-///     });
-/// }
-/// ```
-fn main() {
-    dioxus::launch(|| {
-        // Dynamic transition resolver for Home, Docs, ShowcaseGallery
-        use dioxus_motion::prelude::TransitionVariant;
-        use dioxus_motion::transitions::page_transitions::TransitionVariantResolver;
-        use docs::utils::router::Route;
-        let resolver: TransitionVariantResolver<Route> = std::rc::Rc::new(|from, to| {
-            fn idx(route: &Route) -> i32 {
-                match route {
-                    Route::Home { .. } => 0,
-                    Route::DocsLanding { .. } => 1,
-                    Route::ShowcaseGallery { .. } => 2,
-                    _ => -1,
-                }
-            }
-            let from_idx = idx(from);
-            let to_idx = idx(to);
-            if from_idx != -1 && to_idx != -1 {
-                if to_idx > from_idx {
-                    TransitionVariant::SlideLeft
-                } else if to_idx < from_idx {
-                    TransitionVariant::SlideRight
-                } else {
-                    TransitionVariant::Fade
-                }
+fn route_index(route: &docs::utils::router::Route) -> i32 {
+    match route {
+        docs::utils::router::Route::Home { .. } => 0,
+        docs::utils::router::Route::DocsLanding { .. } => 1,
+        docs::utils::router::Route::ShowcaseGallery { .. } => 2,
+        _ => -1,
+    }
+}
+
+fn transition_resolver() -> TransitionVariantResolver<docs::utils::router::Route> {
+    std::rc::Rc::new(|from, to| {
+        let from_idx = route_index(from);
+        let to_idx = route_index(to);
+
+        if from_idx != -1 && to_idx != -1 {
+            if to_idx > from_idx {
+                TransitionVariant::SlideLeft
+            } else if to_idx < from_idx {
+                TransitionVariant::SlideRight
             } else {
-                to.get_transition()
+                TransitionVariant::Fade
             }
-        });
-        use_context_provider(|| resolver);
-
-        // To use a Tween for page transitions, provide it via context:
-        let tween = use_signal(|| Tween {
-            duration: std::time::Duration::from_millis(500),
-            easing: easer::functions::Cubic::ease_in_out,
-        });
-        use_context_provider(|| tween);
-
-        // To use a Spring instead, comment out the above and uncomment below:
-        // let spring = use_signal(|| Spring {
-        //     stiffness: 220.0,
-        //     damping: 30.0,
-        //     mass: 1.0,
-        //     velocity: 0.0,
-        // });
-        // use_context_provider(|| spring);
-
-        // Example: Provide a dynamic transition resolver for card navigation
-        // use dioxus_motion::transitions::page_transitions::{TransitionVariantResolver};
-        // use dioxus_motion::prelude::TransitionVariant;
-        //
-        // let resolver: TransitionVariantResolver<Route> = std::rc::Rc::new(|from, to| {
-        //     // Assuming Route::Card { idx } for cards
-        //     match (from, to) {
-        //         (Route::Card { idx: from_idx }, Route::Card { idx: to_idx }) => {
-        //             if to_idx > from_idx {
-        //                 TransitionVariant::SlideLeft
-        //             } else if to_idx < from_idx {
-        //                 TransitionVariant::SlideRight
-        //             } else {
-        //                 TransitionVariant::Fade
-        //             }
-        //         }
-        //         _ => to.get_transition(),
-        //     }
-        // });
-        // use_context_provider(|| resolver);
-
-        resource_pools::init_high_performance();
-
-        rsx! {
-            head {
-                link {
-                    rel: "stylesheet",
-                    href: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap",
-                }
-                link { rel: "stylesheet", href: MAIN_CSS }
-            }
-            Router::<Route> {}
+        } else {
+            to.get_transition()
         }
+    })
+}
+
+#[component]
+fn App() -> Element {
+    use_context_provider(transition_resolver);
+
+    // Provide the transition animation mode through store-backed context.
+    let tween = use_store(|| Tween {
+        duration: std::time::Duration::from_millis(500),
+        easing: easer::functions::Cubic::ease_in_out,
     });
+    use_context_provider(move || tween);
+
+    // Swap to a store-backed spring when you want physics-based transitions:
+    // let spring = use_store(|| Spring {
+    //     stiffness: 220.0,
+    //     damping: 30.0,
+    //     mass: 1.0,
+    //     velocity: 0.0,
+    // });
+    // use_context_provider(move || spring);
+
+    rsx! {
+        head {
+            link {
+                rel: "stylesheet",
+                href: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap",
+            }
+            link { rel: "stylesheet", href: MAIN_CSS }
+        }
+        Router::<docs::utils::router::Route> {}
+    }
+}
+
+/// Launches the Dioxus documentation app.
+///
+/// The docs site wires up a route transition resolver plus an optional store-backed
+/// tween or spring context, then renders the router and site stylesheet.
+fn main() {
+    dioxus::launch(App);
 }
