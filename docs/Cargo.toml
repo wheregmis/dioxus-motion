@@ -10,7 +10,7 @@ edition = "2024"
 dioxus = { version = "0.7.4", features = ["router"] }
 dioxus-motion = { path = "../", default-features = false, optional = true }
 easer = { version = "0.3.0", default-features = false }
-wide = "1.1.1"
+wide = "1.2.0"
 
 [features]
 default = ["web"]
