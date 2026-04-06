@@ -1,25 +1,51 @@
-# Development
+# Dioxus Motion Docs
 
-Your new bare-bones project includes minimal organization with a single `main.rs` file and a few assets.
+This crate contains the Dioxus Motion documentation site that lives under `docs/` in the repository. It is a standalone Dioxus app that uses the local `dioxus-motion` crate, Tailwind CSS, and the transitions feature to demonstrate the current store-backed motion API.
 
-### Tailwind
-1. Install npm: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
-2. Install the Tailwind CSS CLI: https://tailwindcss.com/docs/installation
-3. Run the following command in the root of the project to start the Tailwind CSS compiler:
+## Prerequisites
 
-```bash
-npx tailwindcss -i ./input.css -o ./assets/tailwind.css --watch
-```
+- Rust toolchain with `cargo`
+- Dioxus CLI (`cargo install dioxus-cli` if you do not already have `dx`)
+- Node.js + npm for the Tailwind build step
 
-### Serving Your App
-
-Run the following command in the root of your project to start developing with the default platform:
+## Install frontend dependencies
 
 ```bash
-dx serve
+cd docs
+npm install
 ```
 
-To run for a different platform, use the `--platform platform` flag. E.g.
+## Build CSS
+
+Tailwind compiles `input.css` into `assets/main.css`.
+
 ```bash
-dx serve --platform desktop
+cd docs
+npm run css
 ```
+
+For iterative work you can keep the CSS watcher running:
+
+```bash
+cd docs
+just css
+```
+
+## Run the docs app
+
+```bash
+cd docs
+dx serve --platform web
+```
+
+The checked-in `Dioxus.toml` sets `base_path = "dioxus-motion"`, matching the GitHub Pages deployment path.
+
+## Verification
+
+Run the docs crate against the local workspace dependency:
+
+```bash
+cargo check -p docs --features web
+```
+
+If you only changed prose or examples, you should still re-run the command above so the docs app stays aligned with the current library API.
