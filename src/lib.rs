@@ -105,7 +105,7 @@ pub mod animations;
 pub mod keyframes;
 pub mod manager;
 pub mod motion;
-mod pool;
+pub mod pool;
 pub mod sequence;
 #[cfg(feature = "transitions")]
 pub mod transitions;
