@@ -16,12 +16,18 @@ pub use instant::Duration;
 /// let tween = Tween::new(Duration::from_secs(1))
 ///     .with_easing(easer::functions::Cubic::ease_in_out);
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy)]
 pub struct Tween {
     /// Duration of the animation
     pub duration: Duration,
     /// Easing function for interpolation
     pub easing: fn(f32, f32, f32, f32) -> f32,
+}
+
+impl PartialEq for Tween {
+    fn eq(&self, other: &Self) -> bool {
+        self.duration == other.duration && std::ptr::fn_addr_eq(self.easing, other.easing)
+    }
 }
 
 /// Default tween configuration with 300ms duration and linear easing
@@ -87,5 +93,14 @@ mod tests {
         // Test end
         let result = (tween.easing)(1.0, 0.0, 1.0, 1.0);
         assert!((result - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_tween_partial_eq_uses_function_identity() {
+        let base = Tween::new(Duration::from_secs(1));
+
+        assert_eq!(base, Tween::new(Duration::from_secs(1)));
+        assert_ne!(base, Tween::new(Duration::from_secs(2)));
+        assert_ne!(base, base.with_easing(Cubic::ease_in_out));
     }
 }
