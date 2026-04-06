@@ -207,12 +207,7 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
             // Sequence is complete
             // Execute completion callback safely without requiring ownership
             sequence.execute_completion();
-            motion.running = false;
-            motion.current_loop = 0;
-            motion.velocity = T::default();
-            motion.sequence = None;
-            motion.keyframe_animation = None;
-            *self = Self::Idle;
+            self.finish_motion(motion);
         }
 
         None
@@ -416,65 +411,34 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
     ) -> bool {
         let should_continue = match config.loop_mode.unwrap_or(LoopMode::None) {
             LoopMode::None => {
-                motion.running = false;
-                *self = Self::Idle;
+                self.finish_motion(motion);
                 false
             }
             LoopMode::Infinite => {
-                motion.current = motion.initial;
-                motion.elapsed = Duration::default();
-                motion.velocity = T::default();
-                motion.running = true; // Ensure animation continues running
+                self.restart_motion(motion);
                 true
             }
             LoopMode::Times(count) => {
                 motion.current_loop += 1;
                 if motion.current_loop >= count {
-                    motion.running = false;
-                    motion.current_loop = 0;
-                    motion.velocity = T::default();
-                    motion.sequence = None;
-                    motion.keyframe_animation = None;
-                    *self = Self::Idle;
+                    self.finish_motion(motion);
                     false
                 } else {
-                    motion.current = motion.initial;
-                    motion.elapsed = Duration::default();
-                    motion.velocity = T::default();
-                    motion.running = true; // Ensure animation continues running
+                    self.restart_motion(motion);
                     true
                 }
             }
             LoopMode::Alternate => {
-                motion.reverse = !motion.reverse;
-                // Swap initial and target for the reverse direction
-                std::mem::swap(&mut motion.initial, &mut motion.target);
-                // Start the reverse animation from the current position
-                motion.current = motion.initial;
-                motion.elapsed = Duration::default();
-                motion.velocity = T::default();
-                motion.running = true; // Ensure animation continues running
+                self.reverse_motion(motion);
                 true
             }
             LoopMode::AlternateTimes(count) => {
                 motion.current_loop += 1;
                 if motion.current_loop >= count * 2 {
-                    motion.running = false;
-                    motion.current_loop = 0;
-                    motion.velocity = T::default();
-                    motion.sequence = None;
-                    motion.keyframe_animation = None;
-                    *self = Self::Idle;
+                    self.finish_motion(motion);
                     false
                 } else {
-                    motion.reverse = !motion.reverse;
-                    // Swap initial and target for the reverse direction
-                    std::mem::swap(&mut motion.initial, &mut motion.target);
-                    // Start the reverse animation from the current position
-                    motion.current = motion.initial;
-                    motion.elapsed = Duration::default();
-                    motion.velocity = T::default();
-                    motion.running = true; // Ensure animation continues running
+                    self.reverse_motion(motion);
                     true
                 }
             }
@@ -489,6 +453,28 @@ impl<T: Animatable + Send + 'static> AnimationState<T> {
         }
 
         should_continue
+    }
+
+    fn finish_motion(&mut self, motion: &mut crate::Motion<T>) {
+        motion.running = false;
+        motion.current_loop = 0;
+        motion.velocity = T::default();
+        motion.sequence = None;
+        motion.keyframe_animation = None;
+        *self = Self::Idle;
+    }
+
+    fn restart_motion(&self, motion: &mut crate::Motion<T>) {
+        motion.current = motion.initial;
+        motion.elapsed = Duration::default();
+        motion.velocity = T::default();
+        motion.running = true;
+    }
+
+    fn reverse_motion(&self, motion: &mut crate::Motion<T>) {
+        motion.reverse = !motion.reverse;
+        std::mem::swap(&mut motion.initial, &mut motion.target);
+        self.restart_motion(motion);
     }
 
     /// Performs RK4 integration using a local integrator

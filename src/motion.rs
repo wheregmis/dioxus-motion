@@ -31,9 +31,6 @@ pub struct Motion<T: Animatable + Send + 'static> {
     pub sequence: Option<Arc<AnimationSequence<T>>>,
     /// Current keyframe animation (if any)
     pub keyframe_animation: Option<Arc<KeyframeAnimation<T>>>,
-
-    // Internal value cache: (value, frame_time)
-    value_cache: Option<(T, f32)>,
 }
 
 impl<T: Animatable + Send + 'static> Drop for Motion<T> {
@@ -72,13 +69,10 @@ impl<T: Animatable + Send + 'static> Motion<T> {
             spring_integrator_handle: None,
             sequence: None,
             keyframe_animation: None,
-
-            value_cache: None,
         }
     }
 
     pub fn animate_to(&mut self, target: T, config: AnimationConfig) {
-        self.value_cache = None;
         self.sequence = None;
         self.initial = self.current;
         self.target = target;
@@ -107,7 +101,6 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     }
 
     pub fn animate_sequence(&mut self, sequence: AnimationSequence<T>) {
-        self.value_cache = None;
         if let Some(first_step) = sequence.steps().first() {
             let first_config = (*first_step.config).clone();
             self.animate_to(first_step.target, first_config);
@@ -122,7 +115,6 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     }
 
     pub fn animate_keyframes(&mut self, animation: KeyframeAnimation<T>) {
-        self.value_cache = None;
         self.keyframe_animation = Some(Arc::new(animation.clone()));
         self.running = true;
         self.elapsed = Duration::default();
@@ -134,17 +126,6 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     }
 
     pub fn get_value(&self) -> T {
-        // If the cache is valid for this frame, return it
-        let now = crate::Time::now().elapsed().as_secs_f32();
-        if let Some((ref cached, cached_time)) = self.value_cache {
-            if (now - cached_time).abs() < 0.001 {
-                return *cached;
-            }
-        }
-        // Not cached or outdated, so cache and return current value
-        // (In practice, current is always up to date, but this is where you'd compute if needed)
-        // Note: This requires &mut self, so we need to use interior mutability (e.g., RefCell) for full effect.
-        // For now, just return current.
         self.current
     }
 
@@ -153,14 +134,12 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     }
 
     pub fn reset(&mut self) {
-        self.value_cache = None;
         self.stop();
         self.current = self.initial;
         self.elapsed = Duration::default();
     }
 
     pub fn stop(&mut self) {
-        self.value_cache = None;
         self.running = false;
         self.current_loop = 0;
         self.velocity = T::default();
@@ -175,8 +154,6 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     }
 
     pub fn delay(&mut self, duration: Duration) {
-        self.value_cache = None;
-
         // Update config handle
         global::modify_config(&self.config_handle, |pooled_config| {
             pooled_config.delay = duration;
@@ -194,9 +171,6 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     }
 
     pub fn update(&mut self, dt: f32) -> bool {
-        // Invalidate value cache on update
-        self.value_cache = None;
-
         // Use state machine dispatch instead of complex branching
         // We need to temporarily take the state to avoid borrowing issues
         let mut state = std::mem::replace(&mut self.animation_state, AnimationState::new_idle());
@@ -221,7 +195,7 @@ impl<T: Animatable + Send + 'static> Motion<T> {
             has_config_handle: true, // Always true now
             has_spring_integrator: self.spring_integrator_handle.is_some(),
             state_machine_active: self.animation_state.is_active(),
-            value_cache_active: self.value_cache.is_some(),
+            value_cache_active: false,
         }
     }
 
@@ -500,6 +474,17 @@ mod tests {
         // Value should have changed
         assert!(motion.current > 0.0);
         assert!(motion.current < 100.0);
+    }
+
+    #[test]
+    fn test_motion_get_value_tracks_current_directly() {
+        let mut motion = Motion::new(0.0f32);
+
+        motion.current = 12.5;
+        assert_eq!(motion.get_value(), 12.5);
+
+        motion.current = 42.0;
+        assert_eq!(motion.get_value(), 42.0);
     }
 
     #[test]
