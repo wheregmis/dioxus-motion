@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 use crate::{
     AnimationManager,
-    prelude::{AnimationConfig, AnimationMode, Spring, Tween}, // Add Tween
+    prelude::{AnimationConfig, AnimationMode, Spring, Tween},
     use_motion,
 };
 
@@ -274,7 +274,7 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     let spring = try_use_context::<Signal<Spring>>();
 
     use_effect(move || {
-        let (from_config, to_config) = tween.map_or_else(
+        let mode = tween.map_or_else(
             || {
                 let spring = spring.unwrap_or_else(|| {
                     use_signal(|| Spring {
@@ -284,20 +284,20 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
                         velocity: 0.0,
                     })
                 });
-                (
-                    AnimationConfig::new(AnimationMode::Spring(spring())),
-                    AnimationConfig::new(AnimationMode::Spring(spring())),
-                )
+                AnimationMode::Spring(spring())
             },
-            |tween| {
-                (
-                    AnimationConfig::new(AnimationMode::Tween(tween())),
-                    AnimationConfig::new(AnimationMode::Tween(tween())),
-                )
-            },
+            |tween| AnimationMode::Tween(tween()),
         );
-        from_anim.animate_to(PageTransitionAnimation::from_exit_end(&config), from_config);
-        to_anim.animate_to(PageTransitionAnimation::from_enter_end(&config), to_config);
+        let animation_config = AnimationConfig::new(mode);
+
+        from_anim.animate_to(
+            PageTransitionAnimation::from_exit_end(&config),
+            animation_config.clone(),
+        );
+        to_anim.animate_to(
+            PageTransitionAnimation::from_enter_end(&config),
+            animation_config,
+        );
     });
 
     use_effect(move || {
