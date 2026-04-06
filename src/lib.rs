@@ -105,7 +105,7 @@ pub mod animations;
 pub mod keyframes;
 pub mod manager;
 pub mod motion;
-pub mod pool;
+mod pool;
 pub mod sequence;
 #[cfg(feature = "transitions")]
 pub mod transitions;
@@ -137,10 +137,6 @@ pub mod prelude {
     pub use crate::transitions::page_transitions::{AnimatableRoute, AnimatedOutlet};
     pub use crate::{AnimationManager, Duration, MotionHandle, Time, TimeProvider, use_motion};
 
-    // Performance optimization exports
-    pub use crate::motion::MotionOptimizationStats;
-    pub use crate::pool::resource_pools;
-    pub use crate::pool::{PoolConfig, PoolStats};
 }
 
 pub type Time = MotionTime;
