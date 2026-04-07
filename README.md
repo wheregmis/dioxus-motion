@@ -12,7 +12,7 @@ This repository follows Dioxus's main branch for the latest features and improve
 
 ```toml
 # Recommended: Stable version from crates.io
-dioxus-motion = "0.3.1"
+dioxus-motion = "0.3.4"
 
 # Development version: Follows Dioxus main branch
 dioxus-motion = { git = "https://github.com/wheregmis/dioxus-motion.git", branch = "main" }
@@ -160,7 +160,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-dioxus-motion = { version = "0.3.0", optional = true, default-features = false }
+dioxus-motion = { version = "0.3.4", optional = true, default-features = false }
 
 [features]
 default = ["web"]
@@ -173,7 +173,7 @@ If you want to use page transiton dependency will look like,
 
 ```toml
 [dependencies]
-dioxus-motion = { version = "0.3.0", optional = true, default-features = false }
+dioxus-motion = { version = "0.3.4", optional = true, default-features = false }
 
 [features]
 default = ["web"]
@@ -269,15 +269,24 @@ position.animate_to(
 - **After**: 2 required methods (`interpolate`, `magnitude`) + standard Rust operators
 - **Result**: ~70% less boilerplate, more idiomatic Rust code!
 
-## 🔄 Migration Guide (v0.3.0)
+## 🔄 Migration Guide
+
+### Upcoming Release Notes
+
+- **Dioxus compatibility stays on the published `0.7.4` line for this release prep**: `0.7.5` is not yet available on crates.io, so the release notes and manifests stay aligned with the latest publishable Dioxus release.
+- **`transitions` now implies `dioxus`**: If you enable `dioxus-motion/transitions`, you no longer need a separate `dioxus-motion/dioxus` feature edge.
+- **Core builds work with `default-features = false`**: The Dioxus hook/store surface is feature-gated, so non-Dioxus consumers can compile the core animation types without pulling in Dioxus.
 
 ### Breaking Changes
 
 - **`use_motion<T>` now requires `T: Send + 'static`**: The `use_motion<T>` function now requires types to implement `Send + 'static` in addition to `Animatable`. This enables better thread safety and resource management for animations.
+- **`use_motion`, `MotionHandle`, and `AnimationManager` remain Dioxus-only APIs**: They are now only exported when the `dioxus` feature is enabled, which is automatic for the `web`, `desktop`, and `transitions` feature paths.
 
 ### Migration Steps
 
 - Most built-in types (`f32`, `Transform`, `Color`) already satisfy these bounds
+- If you use the hook API, keep one of the Dioxus-backed feature sets enabled: `web`, `desktop`, or `transitions`
+- If you only need core animation data types, `default-features = false` now compiles cleanly without the Dioxus hook layer
 - For custom types, ensure they implement `Send + 'static`:
   - Types with non-Send fields (like `Rc<T>`) will need to be refactored
   - Use `Arc<T>` instead of `Rc<T>` for shared ownership in animatable types

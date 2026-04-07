@@ -395,7 +395,7 @@ fn AnimatedButton() -> Element {
                     div { class: "bg-dark-200/50 backdrop-blur-xs rounded-xl p-6 border border-primary/10",
                         CodeBlock {
                             code: r#"[dependencies]
-dioxus-motion = { version = "0.3.0", optional = true, default-features = false }
+dioxus-motion = { version = "0.3.4", optional = true, default-features = false }
 
 [features]
 default = ["web"]
@@ -422,7 +422,7 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop"]"#.to_string(),
                     div { class: "bg-dark-200/50 backdrop-blur-xs rounded-xl p-6 border border-primary/10",
                         CodeBlock {
                             code: r#"[dependencies]
-dioxus-motion = { version = "0.3.0", optional = true, default-features = false }
+dioxus-motion = { version = "0.3.4", optional = true, default-features = false }
 
 [features]
 default = ["web"]
