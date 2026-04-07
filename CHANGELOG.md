@@ -9,6 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.4](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-v0.3.3...dioxus-motion-v0.3.4) - 2026-04-07
 
+### <!-- 3 -->Other
+
+- Release 0.3.4: bump version and docs
+- Adjust features, thresholds, and dioxus gating
+- Remove resource_pools init call from docs
+- Make Store derives conditional & refine animation updates
+- Keep docs verification aligned with the final transition defaults
+- *(team)* auto-checkpoint worker-1 [unknown]
+- *(team)* auto-checkpoint worker-1 [unknown]
+- *(team)* auto-checkpoint worker-2 [unknown]
+- *(team)* auto-checkpoint worker-3 [unknown]
+- *(team)* auto-checkpoint worker-2 [unknown]
+- *(team)* auto-checkpoint worker-2 [unknown]
+- *(team)* auto-checkpoint worker-3 [unknown]
+- Simplify the motion runtime around a direct store-backed engine
+- Derive Default and simplify animation logic
+- *(team)* checkpoint worker-1 shutdown changes
+- *(team)* auto-checkpoint worker-1 [unknown]
+- *(team)* auto-checkpoint worker-1 [unknown]
+- more dep update
+- Update dependency versions and regenerate lockfile
+
+## [0.1.2](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-transitions-macro-v0.1.1...dioxus-motion-transitions-macro-v0.1.2) - 2026-04-07
+
+### <!-- 3 -->Other
+
+- more dep update
+
+## [0.3.4](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-v0.3.3...dioxus-motion-v0.3.4) - 2026-04-07
+
 ### <!-- 1 -->New features
 
 - add a clean `default-features = false` core build by gating the Dioxus-only hook/store surface behind the `dioxus` feature
