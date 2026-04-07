@@ -134,7 +134,7 @@ pub fn NavBar() -> Element {
                                 "Crates.io"
                                 span { class: "ml-2 px-2 py-1 text-xs rounded-full
                                            bg-primary/10 text-primary",
-                                    "0.3.1"
+                                    "0.3.4"
                                 }
                             }
                         }
@@ -188,7 +188,7 @@ pub fn NavBar() -> Element {
                                             "Crates.io"
                                             span { class: "ml-2 px-2 py-1 text-xs rounded-full
                                                                                                                                                                                                                                                                                                                                                                                                    bg-primary/10 text-primary",
-                                                "0.3.1"
+                                                "0.3.4"
                                             }
                                         }
                                     }

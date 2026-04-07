@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-v0.3.3...dioxus-motion-v0.3.4) - 2026-04-07
+
+### <!-- 1 -->New features
+
+- add a clean `default-features = false` core build by gating the Dioxus-only hook/store surface behind the `dioxus` feature
+- make the `transitions` feature enable `dioxus` automatically so transition users do not need to wire that dependency surface manually
+
+### <!-- 2 -->Fixes
+
+- refresh release notes and docs around the current published Dioxus `0.7.4` line while keeping the workspace ready for a future `0.7.5` bump once it is available on crates.io
+- declare MSRV `1.85.0` for the `Tween` `fn_addr_eq` `PartialEq` implementation
+- fix page transition store tests to run inside a real Dioxus runtime instead of constructing stores outside hooks
+- remove stale doctest and installation/version drift so release docs match the published crate surface
+
+### <!-- 3 -->Other
+
+- refresh migration guidance for the upcoming release
+- update docs site installation snippets and version badges to match the current crate version
+
 ## [0.3.3](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-v0.3.2...dioxus-motion-v0.3.3) - 2026-01-17
 
 ### <!-- 3 -->Other

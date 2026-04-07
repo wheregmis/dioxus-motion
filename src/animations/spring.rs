@@ -3,6 +3,9 @@
 //! Provides a physical spring model for smooth, natural-looking animations.
 //! Based on Hooke's law with damping for realistic motion.
 
+#[cfg(feature = "dioxus")]
+use dioxus::prelude::Store;
+
 /// Configuration for spring-based animations
 ///
 /// Uses a mass-spring-damper system to create natural motion.
@@ -17,6 +20,7 @@
 ///     velocity: 0.0,     // Initial velocity
 /// };
 /// ```
+#[cfg_attr(feature = "dioxus", derive(Store))]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Spring {
     /// Spring stiffness constant (default: 100.0)

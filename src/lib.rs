@@ -17,10 +17,8 @@
 //!
 //! # Example
 //! ```rust,no_run
+//! # #[cfg(feature = "dioxus")] {
 //! use dioxus_motion::prelude::*;
-//!
-//! // Optional: Configure resource pools for optimal performance (recommended for production)
-//! resource_pools::init_high_performance();
 //!
 //! let mut value = use_motion(0.0f32);
 //!
@@ -38,6 +36,7 @@
 //! if value.is_running() {
 //!     println!("Animation is active with current value: {}", value.get_value());
 //! }
+//! # }
 //! ```
 //!
 //! # Creating Custom Animatable Types
@@ -97,15 +96,19 @@
 #![deny(clippy::modulo_arithmetic)] // Check modulo operations
 #![deny(clippy::option_if_let_else)] // Prefer map/and_then
 
+#[cfg(feature = "dioxus")]
 use animations::core::Animatable;
+#[cfg(feature = "dioxus")]
 use dioxus::prelude::*;
 pub use instant::Duration;
 
 pub mod animations;
 pub mod keyframes;
+#[cfg(feature = "dioxus")]
 pub mod manager;
 pub mod motion;
-pub mod pool;
+#[allow(dead_code)]
+pub(crate) mod pool;
 pub mod sequence;
 #[cfg(feature = "transitions")]
 pub mod transitions;
@@ -116,9 +119,10 @@ pub use dioxus_motion_transitions_macro;
 pub use animations::platform::{MotionTime, TimeProvider};
 
 pub use keyframes::{Keyframe, KeyframeAnimation};
-pub use manager::AnimationManager;
-
-use motion::Motion;
+#[cfg(feature = "dioxus")]
+pub use manager::{AnimationManager, MotionHandle};
+#[cfg(test)]
+pub(crate) use motion::Motion;
 
 // Re-exports
 pub mod prelude {
@@ -135,16 +139,14 @@ pub mod prelude {
     pub use crate::transitions::page_transitions::TransitionVariantResolver;
     #[cfg(feature = "transitions")]
     pub use crate::transitions::page_transitions::{AnimatableRoute, AnimatedOutlet};
-    pub use crate::{AnimationManager, Duration, Time, TimeProvider, use_motion};
-
-    // Performance optimization exports
-    pub use crate::motion::MotionOptimizationStats;
-    pub use crate::pool::resource_pools;
-    pub use crate::pool::{PoolConfig, PoolStats};
+    #[cfg(feature = "dioxus")]
+    pub use crate::{AnimationManager, MotionHandle, use_motion};
+    pub use crate::{Duration, Time, TimeProvider};
 }
 
 pub type Time = MotionTime;
 
+#[cfg(feature = "dioxus")]
 /// Helper function to calculate the appropriate delay for the animation loop
 fn calculate_delay(dt: f32, running_frames: u32) -> Duration {
     #[cfg(feature = "web")]
@@ -181,6 +183,7 @@ fn calculate_delay(dt: f32, running_frames: u32) -> Duration {
 /// # Example
 ///
 /// ```no_run
+/// # #[cfg(feature = "dioxus")] {
 /// use dioxus_motion::prelude::*;
 /// use dioxus::prelude::*;
 ///
@@ -200,9 +203,11 @@ fn calculate_delay(dt: f32, running_frames: u32) -> Duration {
 ///         }
 ///     }
 /// }
+/// # }
 /// ```
-pub fn use_motion<T: Animatable + Send + 'static>(initial: T) -> impl AnimationManager<T> {
-    let mut state = use_signal(|| Motion::new(initial));
+#[cfg(feature = "dioxus")]
+pub fn use_motion<T: Animatable + Send + 'static>(initial: T) -> MotionHandle<T> {
+    let mut state = MotionHandle::new_hook(initial);
 
     #[cfg(feature = "web")]
     let idle_poll_rate = Duration::from_millis(100);
@@ -222,16 +227,14 @@ pub fn use_motion<T: Animatable + Send + 'static>(initial: T) -> impl AnimationM
                 last_frame = now;
 
                 // Only check if running first, then write to the signal
-                if (*state.peek()).is_running() {
+                if state.is_running() {
                     running_frames += 1;
-                    let prev_value = (*state.peek()).get_value();
-                    let updated = (*state.write()).update(dt);
-                    let new_value = (*state.peek()).get_value();
-                    let epsilon = (*state.peek()).get_epsilon();
+                    let prev_value = state.get_value();
+                    let updated = state.update(dt);
+                    let new_value = state.get_value();
+                    let epsilon = state.epsilon();
                     // Only trigger a re-render if the value changed significantly
-                    if (new_value - prev_value).magnitude() > epsilon || updated {
-                        // State has changed enough, continue
-                    } else {
+                    if (new_value - prev_value).magnitude() <= epsilon && !updated {
                         // Skip this frame's update to avoid unnecessary re-render
                         let delay = calculate_delay(dt, running_frames);
                         Time::delay(delay).await;

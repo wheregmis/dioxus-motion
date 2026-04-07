@@ -236,46 +236,36 @@ fn NavBar() -> Element {
                 }
             }
 
-            // Configurable Animation Context
+            // Store-backed Transition Configuration
             section { class: "space-y-6",
-                h2 { class: "text-2xl font-semibold text-text-primary", "Configurable Animation Context" }
+                h2 { class: "text-2xl font-semibold text-text-primary", "Store-backed Transition Configuration" }
                 p { class: "text-text-secondary",
-                    "Dioxus Motion allows you to customize the spring physics used in transitions through Dioxus's context system. "
-                    "This provides fine-grained control over animation behavior without modifying individual transition definitions."
+                    "Dioxus Motion resolves transition timing from store-backed context. Provide a "
+                    "Store<Tween> for duration-driven navigation, a Store<Spring> for physics-based motion, or nothing to use the built-in default spring."
                 }
 
                 div { class: "bg-dark-200/50 backdrop-blur-xs rounded-xl p-6 border border-primary/10 mb-6",
-                    h3 { class: "text-lg font-medium text-text-primary mb-4", "Basic Context Setup" }
+                    h3 { class: "text-lg font-medium text-text-primary mb-4", "Store-backed Context Setup" }
                     p { class: "text-text-secondary mb-4",
-                        "Provide custom spring configuration to all page transitions using a context provider:"
+                        "Provide a store-backed tween or spring to all page transitions using a context provider:"
                     }
                     CodeBlock {
                         code: r#"use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
-
-fn main() {
-    dioxus::launch(|| {
-        rsx! {
-            head {
-                link { rel: "stylesheet", href: MAIN_CSS }
-            }
-            App {}
-        }
-    });
-}
+use instant::Duration;
 
 #[component]
 fn App() -> Element {
-    // Define custom spring configuration
-    let spring = use_signal(|| Spring {
+    // Define custom spring configuration in a store
+    let spring = use_store(|| Spring {
         stiffness: 200.0,  // Higher = faster, snappier
         damping: 30.0,     // Higher = less bounce
         mass: 0.8,         // Lower = more responsive
         velocity: 0.0,     // Initial velocity
     });
 
-    // Provide spring context to all child components
-    use_context_provider(|| spring);
+    // Provide the store so AnimatedOutlet can read it from context
+    use_context_provider(move || spring);
 
     rsx! {
         Router::<Route> {}
@@ -288,30 +278,30 @@ fn App() -> Element {
                 div { class: "grid grid-cols-1 md:grid-cols-2 gap-6",
                     // Spring Parameters
                     div { class: "space-y-4",
-                        h3 { class: "text-lg font-medium text-text-primary mb-3", "Spring Parameters" }
+                        h3 { class: "text-lg font-medium text-text-primary mb-3", "Spring store fields" }
                         div { class: "space-y-3",
                             div { class: "p-3 bg-dark-100/30 rounded-lg",
-                                h4 { class: "font-medium text-primary text-sm", "Stiffness (default: 160.0)" }
+                                h4 { class: "font-medium text-primary text-sm", "Stiffness (default transition store: 160.0)" }
                                 p { class: "text-xs text-text-secondary mt-1",
-                                    "Controls how quickly the animation reaches its target. Higher values = faster, more aggressive motion."
+                                    "Controls how quickly the animation reaches its target. Higher values create snappier route changes."
                                 }
                             }
                             div { class: "p-3 bg-dark-100/30 rounded-lg",
-                                h4 { class: "font-medium text-primary text-sm", "Damping (default: 25.0)" }
+                                h4 { class: "font-medium text-primary text-sm", "Damping (default transition store: 25.0)" }
                                 p { class: "text-xs text-text-secondary mt-1",
-                                    "Controls oscillation and bounce. Higher values = smoother, less bouncy motion."
+                                    "Controls oscillation and bounce. Higher values settle the page more quickly."
                                 }
                             }
                             div { class: "p-3 bg-dark-100/30 rounded-lg",
                                 h4 { class: "font-medium text-primary text-sm", "Mass (default: 1.0)" }
                                 p { class: "text-xs text-text-secondary mt-1",
-                                    "Controls inertia. Higher values = more sluggish, weighty motion."
+                                    "Controls inertia. Higher values make the page feel heavier during the transition."
                                 }
                             }
                             div { class: "p-3 bg-dark-100/30 rounded-lg",
                                 h4 { class: "font-medium text-primary text-sm", "Velocity (default: 0.0)" }
                                 p { class: "text-xs text-text-secondary mt-1",
-                                    "Initial velocity. Can create pre-existing motion effects."
+                                    "Adds starting momentum when the route enters or exits."
                                 }
                             }
                         }
@@ -319,7 +309,7 @@ fn App() -> Element {
 
                     // Preset Configurations
                     div { class: "space-y-4",
-                        h3 { class: "text-lg font-medium text-text-primary mb-3", "Common Configurations" }
+                        h3 { class: "text-lg font-medium text-text-primary mb-3", "Common spring presets" }
                         div { class: "space-y-3",
                             div { class: "p-3 bg-dark-100/30 rounded-lg",
                                 h4 { class: "font-medium text-green-400 text-sm", "Bouncy (Fun & Playful)" }
@@ -350,22 +340,22 @@ fn App() -> Element {
                 }
 
                 div { class: "bg-dark-200/50 backdrop-blur-xs rounded-xl p-6 border border-primary/10 mt-6",
-                    h3 { class: "text-lg font-medium text-text-primary mb-4", "Multiple Animation Contexts" }
+                    h3 { class: "text-lg font-medium text-text-primary mb-4", "Scope transition timing per layout" }
                     p { class: "text-text-secondary mb-4",
-                        "You can provide different spring configurations for different parts of your application:"
+                        "You can provide different store-backed spring configurations for different parts of your application:"
                     }
                     CodeBlock {
                         code: r#"#[component]
 fn AdminSection() -> Element {
     // Faster, more aggressive animations for admin interfaces
-    let admin_spring = use_signal(|| Spring {
+    let admin_spring = use_store(|| Spring {
         stiffness: 220.0,
         damping: 20.0,
         mass: 0.8,
         velocity: 0.0,
     });
 
-    use_context_provider(|| admin_spring);
+    use_context_provider(move || admin_spring);
 
     rsx! {
         AnimatedOutlet::<AdminRoute> {}
@@ -375,14 +365,14 @@ fn AdminSection() -> Element {
 #[component]
 fn UserSection() -> Element {
     // Gentler animations for user-facing content
-    let user_spring = use_signal(|| Spring {
+    let user_spring = use_store(|| Spring {
         stiffness: 140.0,
         damping: 35.0,
         mass: 1.0,
         velocity: 0.0,
     });
 
-    use_context_provider(|| user_spring);
+    use_context_provider(move || user_spring);
 
     rsx! {
         AnimatedOutlet::<UserRoute> {}
@@ -396,10 +386,10 @@ fn UserSection() -> Element {
                     div { class: "flex items-start space-x-3",
                         div { class: "text-blue-400 text-lg", "💡" }
                         div {
-                            h4 { class: "font-medium text-blue-300 mb-1", "Pro Tip: Context Fallback" }
+                            h4 { class: "font-medium text-blue-300 mb-1", "Pro Tip: Store fallback order" }
                             p { class: "text-sm text-blue-200/80",
-                                "If no spring context is provided, Dioxus Motion automatically falls back to sensible defaults. "
-                                "This means transitions work out-of-the-box while still allowing customization when needed."
+                                "If no Store<Tween> or Store<Spring> context is provided, Dioxus Motion automatically falls back to its default spring. "
+                                "That means transitions work out of the box, and you can opt into custom timing only when a section needs it."
                             }
                         }
                     }
@@ -428,7 +418,7 @@ fn UserSection() -> Element {
                         h3 { class: "text-lg font-medium text-primary mb-2", "Keep Transitions Short" }
                         p { class: "text-text-secondary",
                             "Aim for transitions between 200-300ms. Longer transitions can make your app feel sluggish, "
-                            "while shorter ones might be too abrupt. The default durations are optimized for most cases."
+                            "while shorter ones might be too abrupt. Start with the default durations, then tune them with a transition store if a flow needs a different feel."
                         }
                     }
 
@@ -552,7 +542,7 @@ enum Route {
                         "Provide a resolver function via context that receives the previous and next route, and returns the appropriate transition variant."
                     }
                     CodeBlock {
-                        code: r#"use dioxus_motion::transitions::page_transitions::TransitionVariantResolver;
+                        code: r#"use dioxus_motion::prelude::{TransitionVariant, TransitionVariantResolver};
 
 // NOTE: Route::Card { idx } is a hypothetical example variant for illustration purposes.
 // Replace with your actual route variants as needed.
@@ -570,7 +560,7 @@ let resolver: TransitionVariantResolver<Route> = std::rc::Rc::new(|from, to| {
         _ => to.get_transition(),
     }
 });
-use_context_provider(|| resolver);"#.to_string(),
+use_context_provider(move || resolver);"#.to_string(),
                         language: "rust".to_string(),
                     }
                 }

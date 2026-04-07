@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 use crate::{
     AnimationManager,
-    prelude::{AnimationConfig, AnimationMode, Spring, Tween}, // Add Tween
+    prelude::{AnimationConfig, AnimationMode, Spring, Tween},
     use_motion,
 };
 
@@ -17,12 +17,13 @@ use crate::animations::core::Animatable;
 use crate::prelude::Transform;
 use wide::f32x4;
 
+#[cfg_attr(feature = "dioxus", derive(Store))]
 #[derive(Clone)]
 pub enum AnimatedRouterContext<R: Routable + PartialEq> {
     /// Transition from one route to another.
     FromTo(R, R),
     /// Settled in a route.
-    In(R),
+    Settled(R),
 }
 
 impl<R: Routable + PartialEq> AnimatedRouterContext<R> {
@@ -30,7 +31,7 @@ impl<R: Routable + PartialEq> AnimatedRouterContext<R> {
     pub fn target_route(&self) -> &R {
         match self {
             Self::FromTo(_, to) => to,
-            Self::In(to) => to,
+            Self::Settled(to) => to,
         }
     }
 
@@ -41,14 +42,14 @@ impl<R: Routable + PartialEq> AnimatedRouterContext<R> {
                 *old_from = old_to.clone();
                 *old_to = to
             }
-            Self::In(old_to) => *self = Self::FromTo(old_to.clone(), to),
+            Self::Settled(old_to) => *self = Self::FromTo(old_to.clone(), to),
         }
     }
 
     /// After the transition animation has finished, make the outlet only render the destination route.
     pub fn settle(&mut self) {
         if let Self::FromTo(_, to) = self {
-            *self = Self::In(to.clone())
+            *self = Self::Settled(to.clone())
         }
     }
 }
@@ -189,7 +190,7 @@ impl Animatable for PageTransitionAnimation {
 pub fn AnimatedOutlet<R: AnimatableRoute>() -> Element {
     let route = use_route::<R>();
     // Create router context only if we're the root AnimatedOutlet
-    let mut prev_route = use_signal(|| AnimatedRouterContext::In(route.clone()));
+    let mut prev_route = use_store(|| AnimatedRouterContext::Settled(route.clone()));
     use_context_provider(move || prev_route);
 
     use_effect(move || {
@@ -250,12 +251,31 @@ pub trait AnimatableRoute: Routable + Clone + PartialEq {
 }
 
 /// Shortcut to get access to the [AnimatedRouterContext].
-pub fn use_animated_router<Route: Routable + PartialEq>() -> Signal<AnimatedRouterContext<Route>> {
+pub fn use_animated_router<Route: Routable + PartialEq>() -> Store<AnimatedRouterContext<Route>> {
     use_context()
 }
 
 // Add a type alias for the resolver
 pub type TransitionVariantResolver<R> = Rc<dyn Fn(&R, &R) -> TransitionVariant>;
+
+fn default_transition_spring() -> Spring {
+    Spring {
+        stiffness: 160.0,
+        damping: 25.0,
+        mass: 1.0,
+        velocity: 0.0,
+    }
+}
+
+fn resolve_transition_mode(
+    tween_store: Option<Store<Tween>>,
+    spring_store: Option<Store<Spring>>,
+    default_spring: Store<Spring>,
+) -> AnimationMode {
+    tween_store
+        .map(|tween| AnimationMode::Tween(tween()))
+        .unwrap_or_else(|| AnimationMode::Spring(spring_store.unwrap_or(default_spring)()))
+}
 
 #[component]
 fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, to: R) -> Element {
@@ -268,36 +288,24 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     let config = transition_variant.get_config();
     let mut from_anim = use_motion(PageTransitionAnimation::from_exit_start(&config));
     let mut to_anim = use_motion(PageTransitionAnimation::from_enter_start(&config));
+    let default_spring = use_store(default_transition_spring);
 
-    // Try to get a Tween from context, otherwise use Spring
-    let tween = try_use_context::<Signal<Tween>>();
-    let spring = try_use_context::<Signal<Spring>>();
+    // Try to get a store-backed animation mode from context, otherwise use the default spring.
+    let tween_store = try_use_context::<Store<Tween>>();
+    let spring_store = try_use_context::<Store<Spring>>();
 
     use_effect(move || {
-        let (from_config, to_config) = tween.map_or_else(
-            || {
-                let spring = spring.unwrap_or_else(|| {
-                    use_signal(|| Spring {
-                        stiffness: 160.0,
-                        damping: 25.0,
-                        mass: 1.0,
-                        velocity: 0.0,
-                    })
-                });
-                (
-                    AnimationConfig::new(AnimationMode::Spring(spring())),
-                    AnimationConfig::new(AnimationMode::Spring(spring())),
-                )
-            },
-            |tween| {
-                (
-                    AnimationConfig::new(AnimationMode::Tween(tween())),
-                    AnimationConfig::new(AnimationMode::Tween(tween())),
-                )
-            },
+        let mode = resolve_transition_mode(tween_store, spring_store, default_spring);
+        let animation_config = AnimationConfig::new(mode);
+
+        from_anim.animate_to(
+            PageTransitionAnimation::from_exit_end(&config),
+            animation_config.clone(),
         );
-        from_anim.animate_to(PageTransitionAnimation::from_exit_end(&config), from_config);
-        to_anim.animate_to(PageTransitionAnimation::from_enter_end(&config), to_config);
+        to_anim.animate_to(
+            PageTransitionAnimation::from_enter_end(&config),
+            animation_config,
+        );
     });
 
     use_effect(move || {
@@ -330,5 +338,101 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
                 Outlet::<R> {}
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{cell::RefCell, rc::Rc};
+
+    use dioxus::prelude::{Element, Store, VNode, VirtualDom, use_hook, use_store};
+    use instant::Duration;
+
+    use super::{AnimationMode, Spring, Tween, default_transition_spring, resolve_transition_mode};
+
+    #[derive(Clone)]
+    struct ResolveModeProps {
+        tween: Option<Tween>,
+        spring: Option<Spring>,
+        default_spring: Spring,
+        result: Rc<RefCell<Option<AnimationMode>>>,
+    }
+
+    #[allow(non_snake_case)]
+    fn ResolveModeHost(props: ResolveModeProps) -> Element {
+        let tween_store = use_hook(move || props.tween.map(Store::new));
+        let spring_store = use_hook(move || props.spring.map(Store::new));
+        let default_spring = use_store(move || props.default_spring);
+
+        *props.result.borrow_mut() = Some(resolve_transition_mode(
+            tween_store,
+            spring_store,
+            default_spring,
+        ));
+
+        VNode::empty()
+    }
+
+    fn resolve_mode_in_runtime(
+        tween: Option<Tween>,
+        spring: Option<Spring>,
+        default_spring: Spring,
+    ) -> AnimationMode {
+        let resolved_mode = Rc::new(RefCell::new(None));
+        let mut dom = VirtualDom::new_with_props(
+            ResolveModeHost,
+            ResolveModeProps {
+                tween,
+                spring,
+                default_spring,
+                result: Rc::clone(&resolved_mode),
+            },
+        );
+
+        dom.rebuild_in_place();
+
+        resolved_mode
+            .borrow()
+            .as_ref()
+            .copied()
+            .expect("test component should resolve an animation mode")
+    }
+
+    #[test]
+    fn transition_mode_prefers_tween_store() {
+        let tween = Tween::new(Duration::from_millis(450));
+        let spring = Spring {
+            stiffness: 320.0,
+            damping: 40.0,
+            mass: 2.0,
+            velocity: 3.0,
+        };
+
+        let mode = resolve_mode_in_runtime(Some(tween), Some(spring), default_transition_spring());
+
+        assert_eq!(mode, AnimationMode::Tween(tween));
+    }
+
+    #[test]
+    fn transition_mode_uses_context_spring_before_default() {
+        let spring = Spring {
+            stiffness: 220.0,
+            damping: 32.0,
+            mass: 1.5,
+            velocity: 2.5,
+        };
+
+        let mode = resolve_mode_in_runtime(None, Some(spring), default_transition_spring());
+
+        assert_eq!(mode, AnimationMode::Spring(spring));
+    }
+
+    #[test]
+    fn transition_mode_falls_back_to_default_spring_store() {
+        let default_spring = default_transition_spring();
+
+        let mode = resolve_mode_in_runtime(None, None, default_spring);
+
+        assert_eq!(mode, AnimationMode::Spring(default_spring));
     }
 }
