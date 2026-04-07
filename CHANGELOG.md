@@ -12,6 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <!-- 3 -->Other
 
 - release
+- release
+
+## [0.3.5](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-v0.3.4...dioxus-motion-v0.3.5) - 2026-04-07
+
+### <!-- 3 -->Other
+
+- release
 
 ## [0.1.2](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-transitions-macro-v0.1.1...dioxus-motion-transitions-macro-v0.1.2) - 2026-04-07
 
