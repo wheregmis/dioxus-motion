@@ -7,7 +7,7 @@
 //!
 //! Uses radians for rotation and supports smooth interpolation.
 
-use crate::Animatable;
+use crate::animations::core::Animatable;
 use wide::f32x4;
 
 /// Represents a 2D transformation with translation, scale, and rotation

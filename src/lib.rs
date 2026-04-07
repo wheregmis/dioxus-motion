@@ -17,6 +17,7 @@
 //!
 //! # Example
 //! ```rust,no_run
+//! # #[cfg(feature = "dioxus")] {
 //! use dioxus_motion::prelude::*;
 //!
 //! let mut value = use_motion(0.0f32);
@@ -35,6 +36,7 @@
 //! if value.is_running() {
 //!     println!("Animation is active with current value: {}", value.get_value());
 //! }
+//! # }
 //! ```
 //!
 //! # Creating Custom Animatable Types
@@ -94,12 +96,15 @@
 #![deny(clippy::modulo_arithmetic)] // Check modulo operations
 #![deny(clippy::option_if_let_else)] // Prefer map/and_then
 
+#[cfg(feature = "dioxus")]
 use animations::core::Animatable;
+#[cfg(feature = "dioxus")]
 use dioxus::prelude::*;
 pub use instant::Duration;
 
 pub mod animations;
 pub mod keyframes;
+#[cfg(feature = "dioxus")]
 pub mod manager;
 pub mod motion;
 #[allow(dead_code)]
@@ -114,6 +119,7 @@ pub use dioxus_motion_transitions_macro;
 pub use animations::platform::{MotionTime, TimeProvider};
 
 pub use keyframes::{Keyframe, KeyframeAnimation};
+#[cfg(feature = "dioxus")]
 pub use manager::{AnimationManager, MotionHandle};
 #[cfg(test)]
 pub(crate) use motion::Motion;
@@ -133,11 +139,14 @@ pub mod prelude {
     pub use crate::transitions::page_transitions::TransitionVariantResolver;
     #[cfg(feature = "transitions")]
     pub use crate::transitions::page_transitions::{AnimatableRoute, AnimatedOutlet};
-    pub use crate::{AnimationManager, Duration, MotionHandle, Time, TimeProvider, use_motion};
+    #[cfg(feature = "dioxus")]
+    pub use crate::{AnimationManager, MotionHandle, use_motion};
+    pub use crate::{Duration, Time, TimeProvider};
 }
 
 pub type Time = MotionTime;
 
+#[cfg(feature = "dioxus")]
 /// Helper function to calculate the appropriate delay for the animation loop
 fn calculate_delay(dt: f32, running_frames: u32) -> Duration {
     #[cfg(feature = "web")]
@@ -174,6 +183,7 @@ fn calculate_delay(dt: f32, running_frames: u32) -> Duration {
 /// # Example
 ///
 /// ```no_run
+/// # #[cfg(feature = "dioxus")] {
 /// use dioxus_motion::prelude::*;
 /// use dioxus::prelude::*;
 ///
@@ -193,7 +203,9 @@ fn calculate_delay(dt: f32, running_frames: u32) -> Duration {
 ///         }
 ///     }
 /// }
+/// # }
 /// ```
+#[cfg(feature = "dioxus")]
 pub fn use_motion<T: Animatable + Send + 'static>(initial: T) -> MotionHandle<T> {
     let mut state = MotionHandle::new_hook(initial);
 
