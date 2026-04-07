@@ -180,54 +180,59 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     }
 
     fn update_keyframes(&mut self, dt: f32) -> bool {
-        let Some(animation) = self.keyframe_animation.clone() else {
+        let Some(animation) = self.keyframe_animation.as_ref() else {
             return true;
         };
 
-        let duration_secs = animation.duration.as_secs_f32();
-        let next_elapsed_secs = self.elapsed.as_secs_f32() + dt;
-        let progress = if duration_secs == 0.0 {
-            1.0
-        } else {
-            (next_elapsed_secs / duration_secs).clamp(0.0, 1.0)
-        };
+        let (current, next_elapsed, completed) = {
+            let duration_secs = animation.duration.as_secs_f32();
+            let next_elapsed_secs = self.elapsed.as_secs_f32() + dt;
+            let progress = if duration_secs == 0.0 {
+                1.0
+            } else {
+                (next_elapsed_secs / duration_secs).clamp(0.0, 1.0)
+            };
 
-        let (start, end) = if animation.keyframes.is_empty() {
-            return true;
-        } else {
-            animation
+            if animation.keyframes.is_empty() {
+                return true;
+            }
+
+            let (start, end) = if let Some(window) = animation
                 .keyframes
                 .windows(2)
                 .find(|window| progress >= window[0].offset && progress <= window[1].offset)
-                .map(|window| (&window[0], &window[1]))
-                .unwrap_or_else(|| {
-                    if progress <= animation.keyframes[0].offset {
-                        let first = &animation.keyframes[0];
-                        (first, first)
-                    } else {
-                        let last = animation
-                            .keyframes
-                            .last()
-                            .expect("keyframe animation should have at least one frame");
-                        (last, last)
-                    }
-                })
+            {
+                (&window[0], &window[1])
+            } else if progress <= animation.keyframes[0].offset {
+                let first = &animation.keyframes[0];
+                (first, first)
+            } else if let Some(last) = animation.keyframes.last() {
+                (last, last)
+            } else {
+                return true;
+            };
+
+            let local_progress = if start.offset == end.offset {
+                1.0
+            } else {
+                (progress - start.offset) / (end.offset - start.offset)
+            };
+
+            let eased_progress = end
+                .easing
+                .map_or(local_progress, |ease| (ease)(local_progress, 0.0, 1.0, 1.0));
+
+            (
+                start.value.interpolate(&end.value, eased_progress),
+                Duration::from_secs_f32(next_elapsed_secs),
+                progress >= 1.0,
+            )
         };
 
-        let local_progress = if start.offset == end.offset {
-            1.0
-        } else {
-            (progress - start.offset) / (end.offset - start.offset)
-        };
+        self.current = current;
+        self.elapsed = next_elapsed;
 
-        let eased_progress = end
-            .easing
-            .map_or(local_progress, |ease| (ease)(local_progress, 0.0, 1.0, 1.0));
-
-        self.current = start.value.interpolate(&end.value, eased_progress);
-        self.elapsed = Duration::from_secs_f32(next_elapsed_secs);
-
-        progress >= 1.0
+        completed
     }
 
     fn update_spring(&mut self, spring: Spring, dt: f32) -> SpringState {

@@ -17,7 +17,8 @@ use crate::animations::core::Animatable;
 use crate::prelude::Transform;
 use wide::f32x4;
 
-#[derive(Store, Clone)]
+#[cfg_attr(feature = "dioxus", derive(Store))]
+#[derive(Clone)]
 pub enum AnimatedRouterContext<R: Routable + PartialEq> {
     /// Transition from one route to another.
     FromTo(R, R),
@@ -342,10 +343,60 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
 
 #[cfg(test)]
 mod tests {
-    use dioxus::prelude::Store;
+    use std::{cell::RefCell, rc::Rc};
+
+    use dioxus::prelude::{Element, Store, VNode, VirtualDom, use_hook, use_store};
     use instant::Duration;
 
     use super::{AnimationMode, Spring, Tween, default_transition_spring, resolve_transition_mode};
+
+    #[derive(Clone)]
+    struct ResolveModeProps {
+        tween: Option<Tween>,
+        spring: Option<Spring>,
+        default_spring: Spring,
+        result: Rc<RefCell<Option<AnimationMode>>>,
+    }
+
+    #[allow(non_snake_case)]
+    fn ResolveModeHost(props: ResolveModeProps) -> Element {
+        let tween_store = use_hook(move || props.tween.map(Store::new));
+        let spring_store = use_hook(move || props.spring.map(Store::new));
+        let default_spring = use_store(move || props.default_spring);
+
+        *props.result.borrow_mut() = Some(resolve_transition_mode(
+            tween_store,
+            spring_store,
+            default_spring,
+        ));
+
+        VNode::empty()
+    }
+
+    fn resolve_mode_in_runtime(
+        tween: Option<Tween>,
+        spring: Option<Spring>,
+        default_spring: Spring,
+    ) -> AnimationMode {
+        let resolved_mode = Rc::new(RefCell::new(None));
+        let mut dom = VirtualDom::new_with_props(
+            ResolveModeHost,
+            ResolveModeProps {
+                tween,
+                spring,
+                default_spring,
+                result: Rc::clone(&resolved_mode),
+            },
+        );
+
+        dom.rebuild_in_place();
+
+        resolved_mode
+            .borrow()
+            .as_ref()
+            .copied()
+            .expect("test component should resolve an animation mode")
+    }
 
     #[test]
     fn transition_mode_prefers_tween_store() {
@@ -357,11 +408,7 @@ mod tests {
             velocity: 3.0,
         };
 
-        let mode = resolve_transition_mode(
-            Some(Store::new(tween)),
-            Some(Store::new(spring)),
-            Store::new(default_transition_spring()),
-        );
+        let mode = resolve_mode_in_runtime(Some(tween), Some(spring), default_transition_spring());
 
         assert_eq!(mode, AnimationMode::Tween(tween));
     }
@@ -375,11 +422,7 @@ mod tests {
             velocity: 2.5,
         };
 
-        let mode = resolve_transition_mode(
-            None,
-            Some(Store::new(spring)),
-            Store::new(default_transition_spring()),
-        );
+        let mode = resolve_mode_in_runtime(None, Some(spring), default_transition_spring());
 
         assert_eq!(mode, AnimationMode::Spring(spring));
     }
@@ -388,7 +431,7 @@ mod tests {
     fn transition_mode_falls_back_to_default_spring_store() {
         let default_spring = default_transition_spring();
 
-        let mode = resolve_transition_mode(None, None, Store::new(default_spring));
+        let mode = resolve_mode_in_runtime(None, None, default_spring);
 
         assert_eq!(mode, AnimationMode::Spring(default_spring));
     }

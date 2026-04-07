@@ -137,7 +137,6 @@ pub mod prelude {
     #[cfg(feature = "transitions")]
     pub use crate::transitions::page_transitions::{AnimatableRoute, AnimatedOutlet};
     pub use crate::{AnimationManager, Duration, MotionHandle, Time, TimeProvider, use_motion};
-
 }
 
 pub type Time = MotionTime;
@@ -226,9 +225,7 @@ pub fn use_motion<T: Animatable + Send + 'static>(initial: T) -> MotionHandle<T>
                     let new_value = state.get_value();
                     let epsilon = state.epsilon();
                     // Only trigger a re-render if the value changed significantly
-                    if (new_value - prev_value).magnitude() > epsilon || updated {
-                        // State has changed enough, continue
-                    } else {
+                    if (new_value - prev_value).magnitude() <= epsilon && !updated {
                         // Skip this frame's update to avoid unnecessary re-render
                         let delay = calculate_delay(dt, running_frames);
                         Time::delay(delay).await;

@@ -187,6 +187,10 @@ impl<T: Animatable> AnimationSequence<T> {
     }
 }
 
+/// Cloning `AnimationSequence` preserves the queued steps and current_step_index,
+/// but resets the inner `SequenceState::on_complete` callback to `None`.
+/// Callers that clone an `AnimationSequence` must re-register `on_complete`
+/// on the cloned instance when they need completion behavior there too.
 impl<T: Animatable> Clone for AnimationSequence<T> {
     fn clone(&self) -> Self {
         let current_step = self.current_step_index();

@@ -79,8 +79,9 @@ impl<T: Animatable + Send + 'static> MotionHandle<T> {
         let next_current = motion.current;
         let next_running = motion.running;
         drop(motion);
+        let epsilon = self.epsilon();
 
-        if (next_current - previous_current).magnitude() > 0.0 {
+        if (next_current - previous_current).magnitude() > epsilon {
             selector.child_unmapped(CURRENT_SCOPE).mark_dirty();
         }
 
