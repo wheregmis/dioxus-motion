@@ -19,9 +19,6 @@
 //! ```rust,no_run
 //! use dioxus_motion::prelude::*;
 //!
-//! // Optional: Configure resource pools for optimal performance (recommended for production)
-//! resource_pools::init_high_performance();
-//!
 //! let mut value = use_motion(0.0f32);
 //!
 //! // Basic animation - automatically uses all optimizations
