@@ -4,11 +4,13 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
 
   # Release unpublished packages.
   release-plz-release:
+    if: github.event_name == 'workflow_dispatch'
     name: Release-plz release
     runs-on: ubuntu-latest
     permissions:
@@ -33,6 +35,7 @@ jobs:
 
   # Create a PR with the new versions and changelog, preparing the next release.
   release-plz-pr:
+    if: github.event_name == 'push'
     name: Release-plz PR
     runs-on: ubuntu-latest
     permissions:
