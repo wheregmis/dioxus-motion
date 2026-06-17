@@ -148,7 +148,7 @@ impl<T: Animatable> AnimationSequence<T> {
     /// Gets the target value for the current step
     pub fn current_target(&self) -> Option<T> {
         let current = self.current_step_index() as usize;
-        self.steps.get(current).map(|step| step.target)
+        self.steps.get(current).map(|step| step.target.clone())
     }
 
     /// Gets the current step data

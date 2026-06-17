@@ -47,7 +47,7 @@
 //! use dioxus_motion::prelude::*;
 //! use dioxus_motion::animations::core::Animatable;
 //!
-//! #[derive(Debug, Copy, Clone, PartialEq, Default)]
+//! #[derive(Debug, Clone, PartialEq, Default)]
 //! struct Point { x: f32, y: f32 }
 //!
 //! // Implement standard math operators
@@ -75,7 +75,7 @@
 //! // Implement Animatable with just two methods
 //! impl Animatable for Point {
 //!     fn interpolate(&self, target: &Self, t: f32) -> Self {
-//!         *self + (*target - *self) * t
+//!         self.clone() + (target.clone() - self.clone()) * t
 //!     }
 //!     
 //!     fn magnitude(&self) -> f32 {
@@ -109,6 +109,10 @@ pub mod manager;
 pub mod motion;
 #[allow(dead_code)]
 pub(crate) mod pool;
+#[cfg(feature = "dioxus")]
+pub mod presence;
+#[cfg(feature = "dioxus")]
+mod presence_macros;
 pub mod sequence;
 mod style_macros;
 #[cfg(feature = "transitions")]
@@ -136,6 +140,16 @@ pub mod prelude {
     pub use crate::motion_style;
     #[cfg(feature = "transitions")]
     pub use crate::dioxus_motion_transitions_macro::MotionTransitions;
+    pub use crate::animations::style::MotionStyle;
+    #[cfg(feature = "dioxus")]
+    pub use crate::presence::{
+        AnimatePresence, PresenceAnchorX, PresenceAnchorY, PresenceConfig, PresenceCustom,
+        PresenceHandle, PresenceLayout, PresenceMode, use_is_present, use_presence,
+        use_presence_data, use_presence_motion, use_presence_motion_completion,
+        use_presence_motion_with_transitions, use_presence_style,
+    };
+    #[cfg(feature = "dioxus")]
+    pub use crate::presence_style;
     pub use crate::sequence::AnimationSequence;
     #[cfg(feature = "transitions")]
     pub use crate::transitions::config::TransitionVariant;

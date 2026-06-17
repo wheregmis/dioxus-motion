@@ -266,49 +266,57 @@ impl<T: Animatable> SpringIntegrator<T> {
         let mass_inv = 1.0 / spring.mass;
 
         // K1 calculation
-        let delta = target - current_pos;
+        let delta = target.clone() - current_pos.clone();
         let force = delta * stiffness;
-        let damping_force = current_vel * damping;
+        let damping_force = current_vel.clone() * damping;
         let acc = (force - damping_force) * mass_inv;
-        self.k1_pos = current_vel;
+        self.k1_pos = current_vel.clone();
         self.k1_vel = acc;
 
         // K2 calculation
-        self.temp_pos = current_pos + self.k1_pos * (dt * 0.5);
-        self.temp_vel = current_vel + self.k1_vel * (dt * 0.5);
-        let delta = target - self.temp_pos;
+        self.temp_pos = current_pos.clone() + self.k1_pos.clone() * (dt * 0.5);
+        self.temp_vel = current_vel.clone() + self.k1_vel.clone() * (dt * 0.5);
+        let delta = target.clone() - self.temp_pos.clone();
         let force = delta * stiffness;
-        let damping_force = self.temp_vel * damping;
+        let damping_force = self.temp_vel.clone() * damping;
         let acc = (force - damping_force) * mass_inv;
-        self.k2_pos = self.temp_vel;
+        self.k2_pos = self.temp_vel.clone();
         self.k2_vel = acc;
 
         // K3 calculation
-        self.temp_pos = current_pos + self.k2_pos * (dt * 0.5);
-        self.temp_vel = current_vel + self.k2_vel * (dt * 0.5);
-        let delta = target - self.temp_pos;
+        self.temp_pos = current_pos.clone() + self.k2_pos.clone() * (dt * 0.5);
+        self.temp_vel = current_vel.clone() + self.k2_vel.clone() * (dt * 0.5);
+        let delta = target.clone() - self.temp_pos.clone();
         let force = delta * stiffness;
-        let damping_force = self.temp_vel * damping;
+        let damping_force = self.temp_vel.clone() * damping;
         let acc = (force - damping_force) * mass_inv;
-        self.k3_pos = self.temp_vel;
+        self.k3_pos = self.temp_vel.clone();
         self.k3_vel = acc;
 
         // K4 calculation
-        self.temp_pos = current_pos + self.k3_pos * dt;
-        self.temp_vel = current_vel + self.k3_vel * dt;
-        let delta = target - self.temp_pos;
+        self.temp_pos = current_pos.clone() + self.k3_pos.clone() * dt;
+        self.temp_vel = current_vel.clone() + self.k3_vel.clone() * dt;
+        let delta = target - self.temp_pos.clone();
         let force = delta * stiffness;
-        let damping_force = self.temp_vel * damping;
+        let damping_force = self.temp_vel.clone() * damping;
         let acc = (force - damping_force) * mass_inv;
-        self.k4_pos = self.temp_vel;
+        self.k4_pos = self.temp_vel.clone();
         self.k4_vel = acc;
 
         // Final integration
         const SIXTH: f32 = 1.0 / 6.0;
         let new_pos = current_pos
-            + (self.k1_pos + self.k2_pos * 2.0 + self.k3_pos * 2.0 + self.k4_pos) * (dt * SIXTH);
+            + (self.k1_pos.clone()
+                + self.k2_pos.clone() * 2.0
+                + self.k3_pos.clone() * 2.0
+                + self.k4_pos.clone())
+                * (dt * SIXTH);
         let new_vel = current_vel
-            + (self.k1_vel + self.k2_vel * 2.0 + self.k3_vel * 2.0 + self.k4_vel) * (dt * SIXTH);
+            + (self.k1_vel.clone()
+                + self.k2_vel.clone() * 2.0
+                + self.k3_vel.clone() * 2.0
+                + self.k4_vel.clone())
+                * (dt * SIXTH);
 
         (new_pos, new_vel)
     }
@@ -656,14 +664,13 @@ pub mod integrator {
         INTEGRATOR_POOLS.with(|pools| {
             let mut pools = pools.borrow_mut();
             let pool = pools.get_pool::<T>();
-            pool.get_integrator_mut(handle).map_or_else(
-                || {
-                    // Fallback to non-pooled integration if handle is invalid
-                    let mut integrator = SpringIntegrator::new();
-                    integrator.integrate_rk4(current_pos, current_vel, target, spring, dt)
-                },
-                |integrator| integrator.integrate_rk4(current_pos, current_vel, target, spring, dt),
-            )
+            if let Some(integrator) = pool.get_integrator_mut(handle) {
+                integrator.integrate_rk4(current_pos, current_vel, target, spring, dt)
+            } else {
+                // Fallback to non-pooled integration if handle is invalid
+                let mut integrator = SpringIntegrator::new();
+                integrator.integrate_rk4(current_pos, current_vel, target, spring, dt)
+            }
         })
     }
 

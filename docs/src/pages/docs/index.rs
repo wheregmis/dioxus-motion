@@ -78,6 +78,11 @@ fn DocLayout(title: &'static str, description: &'static str, children: Element) 
                                         icon: "✨",
                                         label: "Complex Animation Guide",
                                     }
+                                    SectionLink {
+                                        to: Route::PresenceGuide {},
+                                        icon: "🎭",
+                                        label: "AnimatePresence",
+                                    }
 
                                 }
                             }

@@ -29,10 +29,17 @@ fn running_mut<T: Animatable + Send + 'static>(motion: &mut Motion<T>) -> &mut b
     &mut motion.running
 }
 
-#[derive(Clone, Copy)]
 pub struct MotionHandle<T: Animatable + Send + 'static> {
     state: Store<Motion<T>>,
 }
+
+impl<T: Animatable + Send + 'static> Clone for MotionHandle<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<T: Animatable + Send + 'static> Copy for MotionHandle<T> {}
 
 impl<T: Animatable + Send + 'static> MotionHandle<T> {
     pub(crate) fn new_hook(initial: T) -> Self {
@@ -69,14 +76,20 @@ impl<T: Animatable + Send + 'static> MotionHandle<T> {
         self.state.peek().get_epsilon()
     }
 
+    pub(crate) fn set_current(&mut self, value: T) {
+        self.write_motion(|motion| {
+            motion.current = value;
+        });
+    }
+
     fn write_motion<R>(&mut self, f: impl FnOnce(&mut Motion<T>) -> R) -> R {
         let selector = self.state.into_selector();
         let mut motion = selector.write_untracked();
-        let previous_current = motion.current;
+        let previous_current = motion.current.clone();
         let previous_running = motion.running;
 
         let result = f(&mut motion);
-        let next_current = motion.current;
+        let next_current = motion.current.clone();
         let next_running = motion.running;
         drop(motion);
         let epsilon = self.epsilon();

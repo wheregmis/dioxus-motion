@@ -1157,6 +1157,7 @@ name = "dioxus-motion"
 version = "0.3.6"
 dependencies = [
  "dioxus",
+ "dioxus-core",
  "dioxus-motion-transitions-macro",
  "dioxus-stores",
  "easer",

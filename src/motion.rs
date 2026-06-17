@@ -27,8 +27,8 @@ pub struct Motion<T: Animatable + Send + 'static> {
 impl<T: Animatable + Send + 'static> Motion<T> {
     pub fn new(initial: T) -> Self {
         Self {
-            initial,
-            current: initial,
+            initial: initial.clone(),
+            current: initial.clone(),
             target: initial,
             velocity: T::default(),
             running: false,
@@ -51,7 +51,10 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     pub fn animate_sequence(&mut self, sequence: AnimationSequence<T>) {
         sequence.reset();
         if let Some(first_step) = sequence.current_step_data() {
-            self.start_animation(first_step.target, first_step.config.as_ref().clone());
+            self.start_animation(
+                first_step.target.clone(),
+                first_step.config.as_ref().clone(),
+            );
             self.sequence = Some(sequence);
         }
     }
@@ -68,7 +71,7 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     }
 
     pub fn get_value(&self) -> T {
-        self.current
+        self.current.clone()
     }
 
     pub fn is_running(&self) -> bool {
@@ -77,8 +80,8 @@ impl<T: Animatable + Send + 'static> Motion<T> {
 
     pub fn reset(&mut self) {
         self.stop();
-        self.current = self.initial;
-        self.target = self.initial;
+        self.current = self.initial.clone();
+        self.target = self.initial.clone();
         self.elapsed = Duration::default();
         self.delay_elapsed = Duration::default();
     }
@@ -145,7 +148,7 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     }
 
     fn start_animation(&mut self, target: T, config: AnimationConfig) {
-        self.initial = self.current;
+        self.initial = self.current.clone();
         self.target = target;
         self.running = true;
         self.elapsed = Duration::default();
@@ -164,7 +167,7 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         let next_step = if sequence.advance_step() {
             sequence
                 .current_step_data()
-                .map(|step| (step.target, step.config.as_ref().clone()))
+                .map(|step| (step.target.clone(), step.config.as_ref().clone()))
         } else {
             sequence.execute_completion();
             None
@@ -237,10 +240,10 @@ impl<T: Animatable + Send + 'static> Motion<T> {
 
     fn update_spring(&mut self, spring: Spring, dt: f32) -> SpringState {
         let epsilon = self.get_epsilon();
-        let delta = self.target - self.current;
+        let delta = self.target.clone() - self.current.clone();
 
         if delta.magnitude() < epsilon && self.velocity.magnitude() < epsilon {
-            self.current = self.target;
+            self.current = self.target.clone();
             self.velocity = T::default();
             return SpringState::Completed;
         }
@@ -256,19 +259,25 @@ impl<T: Animatable + Send + 'static> Motion<T> {
             let step_dt = dt / steps as f32;
 
             for _ in 0..steps {
-                let step_delta = self.target - self.current;
+                let step_delta = self.target.clone() - self.current.clone();
                 let force = step_delta * stiffness;
-                let damping_force = self.velocity * damping;
-                self.velocity = self.velocity + (force - damping_force) * (mass_inv * step_dt);
-                self.current = self.current + self.velocity * step_dt;
+                let damping_force = self.velocity.clone() * damping;
+                self.velocity =
+                    self.velocity.clone() + (force - damping_force) * (mass_inv * step_dt);
+                self.current = self.current.clone() + self.velocity.clone() * step_dt;
             }
         }
 
         #[cfg(not(feature = "web"))]
         {
             let mut integrator = SpringIntegrator::new();
-            let (new_pos, new_vel) =
-                integrator.integrate_rk4(self.current, self.velocity, self.target, &spring, dt);
+            let (new_pos, new_vel) = integrator.integrate_rk4(
+                self.current.clone(),
+                self.velocity.clone(),
+                self.target.clone(),
+                &spring,
+                dt,
+            );
             self.current = new_pos;
             self.velocity = new_vel;
         }
@@ -280,10 +289,12 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         let epsilon = self.get_epsilon();
         let epsilon_sq = epsilon * epsilon;
         let velocity_sq = self.velocity.magnitude().powi(2);
-        let delta_sq = (self.target - self.current).magnitude().powi(2);
+        let delta_sq = (self.target.clone() - self.current.clone())
+            .magnitude()
+            .powi(2);
 
         if velocity_sq < epsilon_sq && delta_sq < epsilon_sq {
-            self.current = self.target;
+            self.current = self.target.clone();
             self.velocity = T::default();
             SpringState::Completed
         } else {
@@ -303,19 +314,19 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         };
 
         if progress <= 0.0 {
-            self.current = self.initial;
+            self.current = self.initial.clone();
             return false;
         }
 
         if progress >= 1.0 {
-            self.current = self.target;
+            self.current = self.target.clone();
             return true;
         }
 
         let eased_progress = (tween.easing)(progress, 0.0, 1.0, 1.0);
         self.current = match eased_progress {
-            0.0 => self.initial,
-            1.0 => self.target,
+            0.0 => self.initial.clone(),
+            1.0 => self.target.clone(),
             _ => self.initial.interpolate(&self.target, eased_progress),
         };
 
@@ -371,7 +382,7 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     }
 
     fn restart_motion(&mut self) {
-        self.current = self.initial;
+        self.current = self.initial.clone();
         self.elapsed = Duration::default();
         self.delay_elapsed = Duration::default();
         self.velocity = T::default();
