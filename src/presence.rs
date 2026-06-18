@@ -1937,6 +1937,8 @@ where
     let mut motion = use_motion(start);
     let mut last_target_present = use_signal(|| None::<bool>);
     let mut awaiting_exit_completion = use_signal(|| false);
+    let mut exit_observed_running = use_signal(|| false);
+    let exit_duration = exit_config.get_duration();
     use_effect(move || {
         let is_present = status
             .map(|status| status.read().is_present)
@@ -1945,17 +1947,24 @@ where
             *last_target_present.write() = Some(is_present);
             if is_present {
                 awaiting_exit_completion.set(false);
+                exit_observed_running.set(false);
                 motion.animate_to(animate.clone(), enter_config.clone());
             } else {
                 awaiting_exit_completion.set(true);
+                exit_observed_running.set(false);
                 motion.animate_to(exit.clone(), exit_config.clone());
             }
         }
     });
     use_effect(move || {
-        if *awaiting_exit_completion.read() && !motion.is_running() {
-            awaiting_exit_completion.set(false);
-            presence.safe_to_remove.call(());
+        if *awaiting_exit_completion.read() {
+            if motion.is_running() {
+                exit_observed_running.set(true);
+            } else if *exit_observed_running.read() || exit_duration == Duration::default() {
+                awaiting_exit_completion.set(false);
+                exit_observed_running.set(false);
+                presence.safe_to_remove.call(());
+            }
         }
     });
 
@@ -2043,6 +2052,8 @@ pub fn use_presence_style(config: PresenceConfig) -> MotionHandle<MotionStyle> {
     let mut motion = use_motion(start);
     let mut last_target_present = use_signal(|| None::<bool>);
     let mut awaiting_exit_completion = use_signal(|| false);
+    let mut exit_observed_running = use_signal(|| false);
+    let exit_duration = config.exit_transition.get_duration();
 
     use_effect(move || {
         let is_present = status
@@ -2052,6 +2063,7 @@ pub fn use_presence_style(config: PresenceConfig) -> MotionHandle<MotionStyle> {
             *last_target_present.write() = Some(is_present);
             if is_present {
                 awaiting_exit_completion.set(false);
+                exit_observed_running.set(false);
                 if let Some(size) = measured_size.and_then(|size| *size.read()) {
                     let enter_start = presence_style_enter_start(
                         motion.get_value(),
@@ -2064,6 +2076,7 @@ pub fn use_presence_style(config: PresenceConfig) -> MotionHandle<MotionStyle> {
                 motion.animate_to(config.animate.clone(), config.enter_transition.clone());
             } else {
                 awaiting_exit_completion.set(true);
+                exit_observed_running.set(false);
                 if let Some(size) = measured_size.and_then(|size| *size.read()) {
                     let exit_start =
                         presence_style_exit_start(motion.get_value(), &config.exit, Some(size));
@@ -2075,9 +2088,14 @@ pub fn use_presence_style(config: PresenceConfig) -> MotionHandle<MotionStyle> {
         }
     });
     use_effect(move || {
-        if *awaiting_exit_completion.read() && !motion.is_running() {
-            awaiting_exit_completion.set(false);
-            presence.safe_to_remove.call(());
+        if *awaiting_exit_completion.read() {
+            if motion.is_running() {
+                exit_observed_running.set(true);
+            } else if *exit_observed_running.read() || exit_duration == Duration::default() {
+                awaiting_exit_completion.set(false);
+                exit_observed_running.set(false);
+                presence.safe_to_remove.call(());
+            }
         }
     });
 

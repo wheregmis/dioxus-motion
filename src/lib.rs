@@ -171,11 +171,8 @@ fn calculate_delay(dt: f32, running_frames: u32) -> Duration {
     {
         // running_frames is not used in web builds but kept for API consistency
         let _ = running_frames;
-        match dt {
-            x if x < 0.008 => Duration::from_millis(8),  // ~120fps
-            x if x < 0.016 => Duration::from_millis(16), // ~60fps
-            _ => Duration::from_millis(32),              // ~30fps
-        }
+        let _ = dt;
+        Duration::from_millis(8)
     }
     #[cfg(not(feature = "web"))]
     {
@@ -241,11 +238,20 @@ pub fn use_motion<T: Animatable + Send + 'static>(initial: T) -> MotionHandle<T>
 
             loop {
                 let now = Time::now();
+                let is_running = state.is_running();
+
+                if is_running && running_frames == 0 {
+                    last_frame = now;
+                    running_frames = 1;
+                    Time::delay(Duration::from_millis(8)).await;
+                    continue;
+                }
+
                 let dt = (now.duration_since(last_frame).as_secs_f32()).min(0.1);
                 last_frame = now;
 
                 // Only check if running first, then write to the signal
-                if state.is_running() {
+                if is_running {
                     running_frames += 1;
                     let prev_value = state.get_value();
                     let updated = state.update(dt);
