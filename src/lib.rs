@@ -127,6 +127,7 @@ pub(crate) use motion::Motion;
 // Re-exports
 pub mod prelude {
     pub use crate::animations::core::{AnimationConfig, AnimationMode, LoopMode};
+    pub use crate::animations::css::{CssColor, CssComplexValue, CssValue, IntoCssValue};
     pub use crate::animations::{
         colors::Color, spring::Spring, transform::Transform, tween::Tween,
     };
