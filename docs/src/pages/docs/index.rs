@@ -74,9 +74,19 @@ fn DocLayout(title: &'static str, description: &'static str, children: Element) 
                                         label: "Intermediate Animation Guide",
                                     }
                                     SectionLink {
+                                        to: Route::MotionStyleGuide {},
+                                        icon: "🎛️",
+                                        label: "motion_style! Guide",
+                                    }
+                                    SectionLink {
                                         to: Route::ComplexAnimationGuide {},
                                         icon: "✨",
                                         label: "Complex Animation Guide",
+                                    }
+                                    SectionLink {
+                                        to: Route::PresenceGuide {},
+                                        icon: "🎭",
+                                        label: "AnimatePresence",
                                     }
 
                                 }

@@ -14,7 +14,7 @@ use instant::Duration;
 /// reducing boilerplate and making implementations more intuitive.
 /// Only requires implementing interpolation and magnitude calculation.
 pub trait Animatable:
-    Copy
+    Clone
     + 'static
     + Default
     + std::ops::Add<Output = Self>
@@ -32,6 +32,29 @@ pub trait Animatable:
     /// Default implementation provides a reasonable value for most use cases
     fn epsilon() -> f32 {
         0.01 // Single default epsilon for simplicity
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tween_ms_creates_tween_config_with_millisecond_duration() {
+        let config = AnimationConfig::tween_ms(220);
+
+        assert!(matches!(
+            config.mode,
+            AnimationMode::Tween(Tween { duration, .. }) if duration == Duration::from_millis(220)
+        ));
+    }
+
+    #[test]
+    fn spring_creates_spring_config() {
+        let spring = Spring::default();
+        let config = AnimationConfig::spring(spring);
+
+        assert_eq!(config.mode, AnimationMode::Spring(spring));
     }
 }
 
@@ -93,6 +116,21 @@ impl AnimationConfig {
             on_complete: None,
             epsilon: None,
         }
+    }
+
+    /// Creates a tween animation configuration with the specified duration.
+    pub fn tween(duration: Duration) -> Self {
+        Self::new(AnimationMode::Tween(Tween::new(duration)))
+    }
+
+    /// Creates a tween animation configuration with a millisecond duration.
+    pub fn tween_ms(milliseconds: u64) -> Self {
+        Self::tween(Duration::from_millis(milliseconds))
+    }
+
+    /// Creates a spring animation configuration with the specified spring.
+    pub fn spring(spring: Spring) -> Self {
+        Self::new(AnimationMode::Spring(spring))
     }
 
     /// Sets the loop mode for the animation

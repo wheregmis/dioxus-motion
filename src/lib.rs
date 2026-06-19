@@ -47,7 +47,7 @@
 //! use dioxus_motion::prelude::*;
 //! use dioxus_motion::animations::core::Animatable;
 //!
-//! #[derive(Debug, Copy, Clone, PartialEq, Default)]
+//! #[derive(Debug, Clone, PartialEq, Default)]
 //! struct Point { x: f32, y: f32 }
 //!
 //! // Implement standard math operators
@@ -75,7 +75,7 @@
 //! // Implement Animatable with just two methods
 //! impl Animatable for Point {
 //!     fn interpolate(&self, target: &Self, t: f32) -> Self {
-//!         *self + (*target - *self) * t
+//!         self.clone() + (target.clone() - self.clone()) * t
 //!     }
 //!     
 //!     fn magnitude(&self) -> f32 {
@@ -109,7 +109,12 @@ pub mod manager;
 pub mod motion;
 #[allow(dead_code)]
 pub(crate) mod pool;
+#[cfg(feature = "dioxus")]
+pub mod presence;
+#[cfg(feature = "dioxus")]
+mod presence_macros;
 pub mod sequence;
+mod style_macros;
 #[cfg(feature = "transitions")]
 pub mod transitions;
 
@@ -127,11 +132,23 @@ pub(crate) use motion::Motion;
 // Re-exports
 pub mod prelude {
     pub use crate::animations::core::{AnimationConfig, AnimationMode, LoopMode};
+    pub use crate::animations::css::{CssColor, CssComplexValue, CssValue, IntoCssValue};
+    pub use crate::animations::style::MotionStyle;
     pub use crate::animations::{
         colors::Color, spring::Spring, transform::Transform, tween::Tween,
     };
     #[cfg(feature = "transitions")]
     pub use crate::dioxus_motion_transitions_macro::MotionTransitions;
+    pub use crate::motion_style;
+    #[cfg(feature = "dioxus")]
+    pub use crate::presence::{
+        AnimatePresence, PresenceAnchorX, PresenceAnchorY, PresenceConfig, PresenceCustom,
+        PresenceHandle, PresenceLayout, PresenceMode, use_is_present, use_presence,
+        use_presence_data, use_presence_motion, use_presence_motion_completion,
+        use_presence_motion_with_transitions, use_presence_style,
+    };
+    #[cfg(feature = "dioxus")]
+    pub use crate::presence_style;
     pub use crate::sequence::AnimationSequence;
     #[cfg(feature = "transitions")]
     pub use crate::transitions::config::TransitionVariant;
@@ -153,11 +170,8 @@ fn calculate_delay(dt: f32, running_frames: u32) -> Duration {
     {
         // running_frames is not used in web builds but kept for API consistency
         let _ = running_frames;
-        match dt {
-            x if x < 0.008 => Duration::from_millis(8),  // ~120fps
-            x if x < 0.016 => Duration::from_millis(16), // ~60fps
-            _ => Duration::from_millis(32),              // ~30fps
-        }
+        let _ = dt;
+        Duration::from_millis(8)
     }
     #[cfg(not(feature = "web"))]
     {
@@ -223,11 +237,20 @@ pub fn use_motion<T: Animatable + Send + 'static>(initial: T) -> MotionHandle<T>
 
             loop {
                 let now = Time::now();
+                let is_running = state.is_running();
+
+                if is_running && running_frames == 0 {
+                    last_frame = now;
+                    running_frames = 1;
+                    Time::delay(Duration::from_millis(8)).await;
+                    continue;
+                }
+
                 let dt = (now.duration_since(last_frame).as_secs_f32()).min(0.1);
                 last_frame = now;
 
                 // Only check if running first, then write to the signal
-                if state.is_running() {
+                if is_running {
                     running_frames += 1;
                     let prev_value = state.get_value();
                     let updated = state.update(dt);
