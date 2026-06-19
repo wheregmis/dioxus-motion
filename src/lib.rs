@@ -110,6 +110,7 @@ pub mod motion;
 #[allow(dead_code)]
 pub(crate) mod pool;
 pub mod sequence;
+mod style_macros;
 #[cfg(feature = "transitions")]
 pub mod transitions;
 
@@ -128,9 +129,11 @@ pub(crate) use motion::Motion;
 pub mod prelude {
     pub use crate::animations::core::{AnimationConfig, AnimationMode, LoopMode};
     pub use crate::animations::css::{CssColor, CssComplexValue, CssValue, IntoCssValue};
+    pub use crate::animations::style::MotionStyle;
     pub use crate::animations::{
         colors::Color, spring::Spring, transform::Transform, tween::Tween,
     };
+    pub use crate::motion_style;
     #[cfg(feature = "transitions")]
     pub use crate::dioxus_motion_transitions_macro::MotionTransitions;
     pub use crate::sequence::AnimationSequence;

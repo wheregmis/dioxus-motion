@@ -6,5 +6,6 @@ pub mod css;
 pub mod epsilon;
 pub mod platform;
 pub mod spring;
+pub mod style;
 pub mod transform;
 pub mod tween;
