@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.6](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-v0.3.5...dioxus-motion-v0.3.6) - 2026-06-19
+
+### <!-- 2 -->Fixes
+
+- *(ci)* separate release-plz release from release-pr trigger
+
+### <!-- 3 -->Other
+
+- Update Dioxus lockfile entry
+- Fix CI lint and audit failures
+- Align docs tooling with generated CSS
+- Fix MotionStyle interpolation nits
+- Avoid skipping short exit tweens after idle
+- Add AnimatePresence
+- Add MotionStyle
+- Add css lib
+- *(dioxus-motion)* release v0.3.6
+
 ## [0.3.6](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-v0.3.5...dioxus-motion-v0.3.6) - 2026-05-22
 
 ### <!-- 2 -->Fixes
