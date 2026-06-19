@@ -754,7 +754,7 @@ fn ApiReference() -> Element {
                 }
                 ReferenceItem {
                     name: "initial: false",
-                    detail: "Starts newly mounted children at their animate target instead of their initial target.",
+                    detail: "Starts children present on the first render at their animate target; children added later still enter from initial.",
                 }
                 ReferenceItem {
                     name: "custom / use_presence_data",
