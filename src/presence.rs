@@ -1973,7 +1973,7 @@ where
 
 /// Completes presence removal when a custom motion handle finishes its exit work.
 ///
-/// Use this when raw [`use_motion`](crate::use_motion) logic controls the exit
+/// Use this when raw [`use_motion`] logic controls the exit
 /// animation instead of [`use_presence_motion`] or [`use_presence_style`].
 /// Pass `true` for `exit_started` after starting the exit animation; the hook
 /// calls `safe_to_remove` once the nearest presence child is exiting and the

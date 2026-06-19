@@ -1,7 +1,7 @@
 /// Builds a [`MotionStyle`](crate::animations::style::MotionStyle) value from a CSS-like property block.
 ///
 /// Use with [`use_motion`](crate::use_motion) to animate CSS properties on always-mounted elements,
-/// or compose three calls into [`presence_style!`] for enter/exit animations.
+/// or compose three calls into `presence_style!` for enter/exit animations.
 #[macro_export]
 macro_rules! motion_style {
     () => {

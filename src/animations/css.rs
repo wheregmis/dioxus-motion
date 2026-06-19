@@ -636,17 +636,16 @@ fn parse_percentage(value: &str) -> Option<f32> {
 }
 
 fn parse_alpha(value: &str) -> Option<f32> {
-    if let Some(percent) = value.strip_suffix('%') {
-        percent.parse::<f32>().ok().map(|value| value / 100.0)
-    } else {
-        value.parse::<f32>().ok()
-    }
+    value.strip_suffix('%').map_or_else(
+        || value.parse::<f32>().ok(),
+        |percent| percent.parse::<f32>().ok().map(|value| value / 100.0),
+    )
 }
 
 fn hsl_to_rgb(hue: f32, saturation: f32, lightness: f32, alpha: f32) -> CssColor {
     let chroma = (1.0 - (2.0 * lightness - 1.0).abs()) * saturation;
     let hue_segment = hue.rem_euclid(360.0) / 60.0;
-    let secondary = chroma * (1.0 - (hue_segment % 2.0 - 1.0).abs());
+    let secondary = chroma * (1.0 - (hue_segment.rem_euclid(2.0) - 1.0).abs());
 
     let (red, green, blue) = if hue_segment < 1.0 {
         (chroma, secondary, 0.0)
