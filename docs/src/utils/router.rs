@@ -12,6 +12,7 @@ use crate::pages::docs::index::Docs;
 use crate::pages::docs::index::DocsLanding;
 use crate::pages::home::index::Home;
 use crate::pages::intermediate_guide::IntermediateAnimationGuide;
+use crate::pages::motion_style_guide::MotionStyleGuide;
 use crate::pages::presence_guide::PresenceGuide;
 
 // Turn off rustfmt since we're doing layouts and routes in the same enum
@@ -45,6 +46,10 @@ pub enum Route {
             #[route("/intermediate_guide")]
             #[transition(SlideLeft)]
             IntermediateAnimationGuide {},
+
+            #[route("/motion_style")]
+            #[transition(SlideLeft)]
+            MotionStyleGuide {},
 
             #[route("/complex_guide")]
             #[transition(SlideLeft)]
