@@ -214,7 +214,6 @@ impl CssComplexValue {
         let mut tokens = Vec::new();
         let mut text = String::new();
         let mut index = 0;
-        let bytes = value.as_bytes();
 
         while index < value.len() {
             let rest = &value[index..];
@@ -231,8 +230,9 @@ impl CssComplexValue {
                 tokens.push(CssComplexToken::Number(number));
                 index += len;
             } else {
-                text.push(bytes[index] as char);
-                index += 1;
+                let ch = rest.chars().next()?;
+                text.push(ch);
+                index += ch.len_utf8();
             }
         }
 
@@ -564,7 +564,20 @@ fn parse_rgb_color(value: &str) -> Option<CssColor> {
     let parts = body
         .replace(['/', ','], " ")
         .split_whitespace()
-        .map(|part| part.trim_end_matches('%').parse::<f32>().ok())
+        .enumerate()
+        .map(|(index, part)| {
+            let is_percent = part.ends_with('%');
+            let value = part.trim_end_matches('%').parse::<f32>().ok()?;
+            Some(if is_percent {
+                if index < 3 {
+                    value * 2.55
+                } else {
+                    value / 100.0
+                }
+            } else {
+                value
+            })
+        })
         .collect::<Option<Vec<_>>>()?;
 
     if parts.len() < 3 {
@@ -897,6 +910,15 @@ mod tests {
     }
 
     #[test]
+    fn parse_rgb_color_scales_percent_channels() {
+        let c = parse_rgb_color("rgb(100% 50% 0% / 25%)").unwrap();
+        assert!(approx_eq(c.red, 255.0));
+        assert!((c.green - 127.5).abs() < 0.001);
+        assert!(approx_eq(c.blue, 0.0));
+        assert!(approx_eq(c.alpha, 0.25));
+    }
+
+    #[test]
     fn parse_rgb_color_invalid() {
         assert!(parse_rgb_color("hsl(0, 100%, 50%)").is_none());
         assert!(parse_rgb_color("rgb(255, 0)").is_none()); // only 2 parts
@@ -906,6 +928,12 @@ mod tests {
     fn parse_rgb_color_defaults_alpha_to_one() {
         let c = parse_rgb_color("rgb(10, 20, 30)").unwrap();
         assert!(approx_eq(c.alpha, 1.0));
+    }
+
+    #[test]
+    fn complex_value_parse_handles_non_ascii_text() {
+        let value = CssComplexValue::parse("calc(100% - 2rem) /* café */").unwrap();
+        assert_eq!(value.to_css(), "calc(100% - 2rem) /* café */");
     }
 
     // ── parse_hsl_color ──────────────────────────────────────────────────────

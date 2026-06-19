@@ -208,7 +208,8 @@ impl MotionStyle {
 
     /// Sets an animated CSS property by value type.
     pub fn property(mut self, property: impl Into<String>, value: CssValue) -> Self {
-        self.properties.insert(property.into(), value);
+        let property = normalize_style_property(&property.into());
+        self.properties.insert(property, value);
         self
     }
 
@@ -358,6 +359,17 @@ mod tests {
     }
 
     #[test]
+    fn property_normalizes_keys() {
+        let style = MotionStyle::default().property("backgroundColor", CssValue::Px(12.0));
+
+        assert_eq!(
+            style.properties.get("background-color"),
+            Some(&CssValue::Px(12.0))
+        );
+        assert!(!style.properties.contains_key("backgroundColor"));
+    }
+
+    #[test]
     fn interpolate_blends_motion_style_colors() {
         let mut start = MotionStyle::default();
         start.add_css_property("color", "#000000");
@@ -377,6 +389,16 @@ mod tests {
             127.5,
             1.0,
         );
+    }
+
+    #[test]
+    fn interpolate_preserves_properties_missing_from_target() {
+        let start = MotionStyle::default().property("borderWidth", CssValue::Px(2.0));
+        let target = MotionStyle::default();
+
+        let mid = start.interpolate(&target, 0.5);
+
+        assert_eq!(mid.properties.get("border-width"), Some(&CssValue::Px(2.0)));
     }
 
     #[test]
@@ -488,6 +510,14 @@ impl Animatable for MotionStyle {
                 style
                     .properties
                     .insert(property.clone(), target_value.clone());
+            }
+        }
+
+        for (property, current_value) in &self.properties {
+            if !target.properties.contains_key(property) {
+                style
+                    .properties
+                    .insert(property.clone(), current_value.clone());
             }
         }
 

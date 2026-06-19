@@ -137,10 +137,9 @@ pub mod prelude {
     pub use crate::animations::{
         colors::Color, spring::Spring, transform::Transform, tween::Tween,
     };
-    pub use crate::motion_style;
     #[cfg(feature = "transitions")]
     pub use crate::dioxus_motion_transitions_macro::MotionTransitions;
-    pub use crate::animations::style::MotionStyle;
+    pub use crate::motion_style;
     #[cfg(feature = "dioxus")]
     pub use crate::presence::{
         AnimatePresence, PresenceAnchorX, PresenceAnchorY, PresenceConfig, PresenceCustom,
