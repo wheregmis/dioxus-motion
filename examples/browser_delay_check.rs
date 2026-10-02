@@ -55,12 +55,27 @@ pub fn retained_js_values() -> u32 {
 pub fn check_spring_numerics() -> Result<(), JsValue> {
     use dioxus_motion::{
         motion::Motion,
-        prelude::{AnimationConfig, MotionStyle, Spring},
+        prelude::{AnimationConfig, AnimationError, MotionStyle, Spring},
     };
     let error = |message: &str| JsValue::from_str(message);
     for initial in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
         if Motion::new(initial).is_ok() {
             return Err(error("nonfinite initial value entered motion state"));
+        }
+    }
+    for (initial, role) in [(-f32::MAX, "spring value"), (0.0, "spring velocity")] {
+        let mut motion = Motion::new(initial).map_err(|e| error(&e.to_string()))?;
+        motion
+            .animate_to(f32::MAX, AnimationConfig::spring(Spring::default()))
+            .map_err(|e| error(&e.to_string()))?;
+        if motion.update(1.0 / 60.0) != Err(AnimationError::NonFiniteValue(role))
+            || motion.current != initial
+            || !motion.velocity.is_finite()
+            || motion.is_running()
+        {
+            return Err(error(
+                "overflowing spring frame was not rejected atomically",
+            ));
         }
     }
     for (stiffness, damping, mass) in [
@@ -84,7 +99,9 @@ pub fn check_spring_numerics() -> Result<(), JsValue> {
             )
             .map_err(|e| error(&e.to_string()))?;
         for frame in 0..1000 {
-            motion.update([1.0 / 60.0, 0.001, 0.1][frame % 3]);
+            motion
+                .update([1.0 / 60.0, 0.001, 0.1][frame % 3])
+                .map_err(|e| error(&e.to_string()))?;
             if !motion.current.is_finite() || !motion.velocity.is_finite() {
                 return Err(error("spring state became nonfinite"));
             }
@@ -115,7 +132,7 @@ pub fn check_spring_numerics() -> Result<(), JsValue> {
         )
         .map_err(|e| error(&e.to_string()))?;
     reference.velocity = 2.0;
-    reference.update(0.02);
+    reference.update(0.02).map_err(|e| error(&e.to_string()))?;
     if (reference.current - 4.929_104_5).abs() > 1e-5
         || (reference.velocity + 8.963_278).abs() > 1e-5
     {
@@ -139,7 +156,10 @@ pub fn check_spring_numerics() -> Result<(), JsValue> {
     style
         .animate_to(target, AnimationConfig::spring(Spring::default()))
         .map_err(|e| error(&e.to_string()))?;
-    if !style.update(1.0 / 60.0) {
+    if !style
+        .update(1.0 / 60.0)
+        .map_err(|e| error(&e.to_string()))?
+    {
         return Err(error("alpha-only spring snapped instead of animating"));
     }
     Ok(())

@@ -109,7 +109,7 @@ pub trait AnimationManager<T: Animatable + Send + 'static>: Clone + Copy {
     fn animate_to(&mut self, target: T, config: AnimationConfig) -> Result<(), AnimationError>;
     fn animate_sequence(&mut self, sequence: AnimationSequence<T>) -> Result<(), AnimationError>;
     fn animate_keyframes(&mut self, animation: KeyframeAnimation<T>) -> Result<(), AnimationError>;
-    fn update(&mut self, dt: f32) -> bool;
+    fn update(&mut self, dt: f32) -> Result<bool, AnimationError>;
     fn get_value(&self) -> T;
     fn is_running(&self) -> bool;
     fn reset(&mut self);
@@ -139,12 +139,13 @@ impl<T: Animatable + Send + 'static> AnimationManager<T> for MotionHandle<T> {
         self.write_motion(|motion| motion.animate_keyframes(animation))
     }
 
-    fn update(&mut self, dt: f32) -> bool {
-        let (running, completion) = self.write_motion(|motion| motion.update_with_completion(dt));
+    fn update(&mut self, dt: f32) -> Result<bool, AnimationError> {
+        let (running, completion) =
+            self.write_motion(|motion| motion.update_with_completion(dt))?;
         if let Some(completion) = completion {
             completion.run();
         }
-        running
+        Ok(running)
     }
 
     fn get_value(&self) -> T {
@@ -226,7 +227,7 @@ mod tests {
             motion
                 .animate_to(1.0, AnimationConfig::tween_ms(1000))
                 .expect("valid configuration");
-            assert!(motion.update(0.25));
+            assert!(motion.update(0.25).expect("representable animation frame"));
             assert_eq!(
                 motion.animate_to(99.0, AnimationConfig::tween_ms(0).with_epsilon(0.0)),
                 Err(AnimationError::InvalidEpsilon)
@@ -240,8 +241,34 @@ mod tests {
             );
             assert!(motion.is_running());
             assert_eq!(motion.get_value(), 0.25);
-            assert!(!motion.update(0.75));
+            assert!(!motion.update(0.75).expect("representable animation frame"));
             assert_eq!(motion.get_value(), 1.0);
+        });
+    }
+
+    #[test]
+    fn runtime_errors_propagate_through_the_store_and_allow_restart() {
+        let mut dom = VirtualDom::new(|| rsx! { div {} });
+        dom.rebuild_in_place();
+        dom.in_scope(ScopeId::APP, || {
+            let mut motion = MotionHandle::new(0.0f32).expect("finite initial value");
+            motion
+                .animate_to(
+                    f32::MAX,
+                    AnimationConfig::spring(crate::prelude::Spring::default()),
+                )
+                .expect("valid animation configuration");
+            assert_eq!(
+                motion.update(1.0 / 60.0),
+                Err(AnimationError::NonFiniteValue("spring velocity"))
+            );
+            assert_eq!(motion.get_value(), 0.0);
+            assert!(!motion.is_running());
+            motion
+                .animate_to(1.0, AnimationConfig::tween_ms(1000))
+                .expect("valid animation configuration");
+            assert_eq!(motion.update(0.5), Ok(true));
+            assert_eq!(motion.get_value(), 0.5);
         });
     }
 
@@ -300,15 +327,15 @@ mod tests {
                         .expect("valid animation configuration"),
                 }
                 if case == 1 || case == 2 {
-                    assert!(motion.update(0.01));
+                    assert!(motion.update(0.01).expect("representable animation frame"));
                     assert_eq!(calls.load(Ordering::Relaxed), 0);
                 }
                 if case != 4 {
-                    assert!(!motion.update(0.01));
+                    assert!(!motion.update(0.01).expect("representable animation frame"));
                 }
                 assert_eq!(calls.load(Ordering::Relaxed), 1);
                 assert!(motion.is_running());
-                assert!(motion.update(0.5));
+                assert!(motion.update(0.5).expect("representable animation frame"));
                 assert!(motion.get_value() > expected);
                 assert_eq!(calls.load(Ordering::Relaxed), 1);
             }

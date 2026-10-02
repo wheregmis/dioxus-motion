@@ -656,6 +656,7 @@ struct PresenceLayoutConfig {
     exit_transition: Option<AnimationConfig>,
 }
 
+#[cfg(feature = "web")]
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct PresenceProjectionSnapshot {
     left: f64,
@@ -719,6 +720,7 @@ struct PresenceProjectionRoot {
 struct PresenceProjectionNode {
     mounted: Rc<MountedData>,
     transition: Duration,
+    #[cfg(feature = "web")]
     snapshot: Option<PresenceProjectionSnapshot>,
 }
 
@@ -741,6 +743,7 @@ impl PresenceProjectionRoot {
                 PresenceProjectionNode {
                     mounted,
                     transition,
+                    #[cfg(feature = "web")]
                     snapshot: None,
                 },
             );

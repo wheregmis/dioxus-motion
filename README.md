@@ -148,6 +148,8 @@ scale.animate_sequence(sequence).expect("valid animation configuration");
 
 `animate_to`, `animate_sequence`, and `animate_keyframes` return `Result<(), AnimationError>`. Propagate errors with `?` or handle them when parameters come from user input. Invalid configuration leaves the active animation unchanged; sequences validate all steps before starting. Use `AnimationConfig::validate()` or `AnimationSequence::validate()` to check configuration in advance.
 
+`Motion::update` and `AnimationManager::update` return `Result<bool, AnimationError>`. Nonfinite easing or frame results stop playback, preserve the last valid value, and skip completion callbacks. Handle the error or propagate it with `?`; the motion hook logs playback errors.
+
 ## ✨ Features
 
 - **🔧 Simplified Animatable Trait**: Uses standard Rust operators (`+`, `-`, `*`) instead of custom methods

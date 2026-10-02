@@ -258,7 +258,9 @@ pub fn use_motion<T: Animatable + Send + 'static>(
                 // Only check if running first, then write to the signal
                 if is_running {
                     running_frames = running_frames.saturating_add(1);
-                    state.update(dt);
+                    if let Err(error) = state.update(dt) {
+                        tracing::error!(%error, "animation playback stopped");
+                    }
 
                     let delay = calculate_delay(dt, running_frames);
                     Time::delay(delay).await;

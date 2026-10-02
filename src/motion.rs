@@ -159,57 +159,70 @@ impl<T: Animatable + Send + 'static> Motion<T> {
 
     /// Advances by seconds, ignoring nonpositive or nonfinite deltas.
     /// Spring simulation caps a frame at 100 ms to bound work after stalls.
-    pub fn update(&mut self, dt: f32) -> bool {
-        let (running, completion) = self.update_with_completion(dt);
+    /// Nonfinite frame results stop playback without firing completion callbacks
+    /// or replacing the last valid value, and return a typed error.
+    pub fn update(&mut self, dt: f32) -> Result<bool, AnimationError> {
+        let (running, completion) = self.update_with_completion(dt)?;
         if let Some(completion) = completion {
             completion.run();
         }
-        running
+        Ok(running)
     }
 
-    pub(crate) fn update_with_completion(&mut self, dt: f32) -> (bool, Option<Completion>) {
+    pub(crate) fn update_with_completion(
+        &mut self,
+        dt: f32,
+    ) -> Result<(bool, Option<Completion>), AnimationError> {
+        let result = self.advance_frame(dt);
+        if result.is_err() {
+            self.stop();
+        }
+        result
+    }
+
+    fn advance_frame(&mut self, dt: f32) -> Result<(bool, Option<Completion>), AnimationError> {
         if !self.running {
-            return (false, None);
+            return Ok((false, None));
         }
 
         if !dt.is_finite() || dt <= 0.0 {
-            return (true, None);
+            return Ok((true, None));
         }
 
         let mut delta = Duration::try_from_secs_f32(dt).unwrap_or(Duration::MAX);
         let remaining_delay = self.config.delay.saturating_sub(self.delay_elapsed);
         if delta < remaining_delay {
             self.delay_elapsed = self.delay_elapsed.saturating_add(delta);
-            return (true, None);
+            return Ok((true, None));
         }
         self.delay_elapsed = self.config.delay;
         delta = delta.saturating_sub(remaining_delay);
 
         if self.keyframe_animation.is_some() {
-            if self.update_keyframes(delta) {
+            if self.update_keyframes(delta)? {
                 self.finish_motion();
-                return (false, None);
+                return Ok((false, None));
             }
-            return (true, None);
+            return Ok((true, None));
         }
 
         let completed = match self.config.mode {
             AnimationMode::Spring(spring) => {
-                let state = self.update_spring(spring, delta.as_secs_f32().min(0.1));
+                let state = self.update_spring(spring, delta.as_secs_f32().min(0.1))?;
                 matches!(state, SpringState::Completed)
             }
-            AnimationMode::Tween(tween) => self.update_tween(tween, delta),
+            AnimationMode::Tween(tween) => self.update_tween(tween, delta)?,
         };
 
         if !completed {
-            return (true, None);
+            return Ok((true, None));
         }
 
         if self.sequence.is_some() {
-            return self.advance_sequence_step();
+            return Ok(self.advance_sequence_step());
         }
 
-        self.handle_completion()
+        Ok(self.handle_completion())
     }
 
     fn start_animation(&mut self, target: T, config: AnimationConfig) {
@@ -244,9 +257,9 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         (false, completion)
     }
 
-    fn update_keyframes(&mut self, delta: Duration) -> bool {
+    fn update_keyframes(&mut self, delta: Duration) -> Result<bool, AnimationError> {
         let Some(animation) = self.keyframe_animation.as_ref() else {
-            return true;
+            return Ok(true);
         };
 
         let (current, next_elapsed, completed) = {
@@ -261,7 +274,7 @@ impl<T: Animatable + Send + 'static> Motion<T> {
 
             let keyframes = animation.keyframes();
             if keyframes.is_empty() {
-                return true;
+                return Ok(true);
             }
 
             // Linear lookup wins on small tracks; binary search bounds large-track work.
@@ -282,7 +295,7 @@ impl<T: Animatable + Send + 'static> Motion<T> {
             } else if let Some(last) = keyframes.last() {
                 (last, last)
             } else {
-                return true;
+                return Ok(true);
             };
 
             let local_progress = if start.offset == end.offset {
@@ -295,6 +308,7 @@ impl<T: Animatable + Send + 'static> Motion<T> {
                 .easing
                 .map_or(local_progress, |ease| (ease)(local_progress, 0.0, 1.0, 1.0));
 
+            validate_value(&eased_progress, "easing progress")?;
             (
                 start.value.interpolate(&end.value, eased_progress),
                 next_elapsed,
@@ -302,20 +316,21 @@ impl<T: Animatable + Send + 'static> Motion<T> {
             )
         };
 
+        validate_value(&current, "keyframe value")?;
         self.current = current;
         self.elapsed = next_elapsed;
 
-        completed
+        Ok(completed)
     }
 
-    fn update_spring(&mut self, spring: Spring, dt: f32) -> SpringState {
+    fn update_spring(&mut self, spring: Spring, dt: f32) -> Result<SpringState, AnimationError> {
         let epsilon = self.get_epsilon();
         let delta = self.target.clone() - self.current.clone();
 
         if delta.magnitude() < epsilon && self.velocity.magnitude() < epsilon {
             self.current = self.target.clone();
             self.velocity = T::default() * 0.0;
-            return SpringState::Completed;
+            return Ok(SpringState::Completed);
         }
 
         let step = match self.spring_step {
@@ -327,12 +342,16 @@ impl<T: Animatable + Send + 'static> Motion<T> {
             }
         };
         let velocity = self.velocity.clone();
-        self.current = self.current.clone()
+        let current = self.current.clone()
             + delta.clone() * step.displacement
             + velocity.clone() * step.position_velocity;
-        self.velocity = delta * -step.velocity_position + velocity * step.velocity;
+        let velocity = delta * -step.velocity_position + velocity * step.velocity;
+        validate_value(&current, "spring value")?;
+        validate_value(&velocity, "spring velocity")?;
+        self.current = current;
+        self.velocity = velocity;
 
-        self.check_spring_completion()
+        Ok(self.check_spring_completion())
     }
 
     fn check_spring_completion(&mut self) -> SpringState {
@@ -348,9 +367,13 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         }
     }
 
-    fn update_tween(&mut self, tween: crate::prelude::Tween, delta: Duration) -> bool {
-        self.elapsed = self.elapsed.saturating_add(delta);
-        let elapsed_secs = self.elapsed.as_secs_f32();
+    fn update_tween(
+        &mut self,
+        tween: crate::prelude::Tween,
+        delta: Duration,
+    ) -> Result<bool, AnimationError> {
+        let next_elapsed = self.elapsed.saturating_add(delta);
+        let elapsed_secs = next_elapsed.as_secs_f32();
         let duration_secs = tween.duration.as_secs_f32();
 
         let progress = if duration_secs == 0.0 {
@@ -361,22 +384,28 @@ impl<T: Animatable + Send + 'static> Motion<T> {
 
         if progress <= 0.0 {
             self.current = self.initial.clone();
-            return false;
+            self.elapsed = next_elapsed;
+            return Ok(false);
         }
 
         if progress >= 1.0 {
             self.current = self.target.clone();
-            return true;
+            self.elapsed = next_elapsed;
+            return Ok(true);
         }
 
         let eased_progress = (tween.easing)(progress, 0.0, 1.0, 1.0);
-        self.current = match eased_progress {
+        validate_value(&eased_progress, "easing progress")?;
+        let current = match eased_progress {
             0.0 => self.initial.clone(),
             1.0 => self.target.clone(),
             _ => self.initial.interpolate(&self.target, eased_progress),
         };
 
-        false
+        validate_value(&current, "tween value")?;
+        self.current = current;
+        self.elapsed = next_elapsed;
+        Ok(false)
     }
 
     fn complete_animation(&mut self) -> (bool, Option<Completion>) {
@@ -501,7 +530,7 @@ mod tests {
             motion
                 .animate_to(1.0, AnimationConfig::tween_ms(1000))
                 .unwrap();
-            assert!(motion.update(0.25));
+            assert!(motion.update(0.25).expect("representable animation frame"));
             assert_eq!(
                 motion.animate_to(bad, instant_tween()),
                 Err(AnimationError::NonFiniteValue("target"))
@@ -515,7 +544,7 @@ mod tests {
             );
             assert_eq!(motion.current, 0.25);
             assert_eq!(motion.target, 1.0);
-            assert!(!motion.update(0.75));
+            assert!(!motion.update(0.75).expect("representable animation frame"));
             assert_eq!(motion.current, 1.0);
             assert!(matches!(
                 Motion::new(bad),
@@ -536,6 +565,197 @@ mod tests {
     }
 
     #[test]
+    fn overflowing_spring_frames_stop_without_committing_or_completing() {
+        use std::sync::{
+            Arc,
+            atomic::{AtomicUsize, Ordering},
+        };
+        for (initial, target, role) in [
+            (-f32::MAX, f32::MAX, "spring value"),
+            (0.0, f32::MAX, "spring velocity"),
+        ] {
+            let calls = Arc::new(AtomicUsize::new(0));
+            let completed = calls.clone();
+            let mut motion = Motion::new(initial).unwrap();
+            motion
+                .animate_sequence(
+                    AnimationSequence::new()
+                        .then(target, AnimationConfig::spring(Spring::default()))
+                        .on_complete(move || {
+                            completed.fetch_add(1, Ordering::Relaxed);
+                        }),
+                )
+                .unwrap();
+            assert_eq!(
+                motion.update(1.0 / 60.0),
+                Err(AnimationError::NonFiniteValue(role))
+            );
+            assert_eq!(motion.current, initial);
+            assert_eq!(motion.velocity, 0.0);
+            assert!(!motion.is_running());
+            assert!(motion.sequence.is_none());
+            assert_eq!(calls.load(Ordering::Relaxed), 0);
+            assert_eq!(motion.update(1.0), Ok(false));
+            // Error handling does not prevent a later valid animation.
+            motion.animate_to(initial, instant_tween()).unwrap();
+            assert_eq!(motion.update(1.0), Ok(false));
+        }
+    }
+
+    #[test]
+    fn invalid_easing_stops_tweens_and_keyframes_before_interpolation() {
+        fn nan(_: f32, _: f32, _: f32, _: f32) -> f32 {
+            f32::NAN
+        }
+        fn inf(_: f32, _: f32, _: f32, _: f32) -> f32 {
+            f32::INFINITY
+        }
+        fn neg_inf(_: f32, _: f32, _: f32, _: f32) -> f32 {
+            f32::NEG_INFINITY
+        }
+        for easing in [nan, inf, neg_inf] {
+            for keyframes in [false, true] {
+                let mut motion = Motion::new(0.0f32).unwrap();
+                if keyframes {
+                    motion
+                        .animate_keyframes(
+                            KeyframeAnimation::new(Duration::from_secs(1))
+                                .add_keyframe(0.0, 0.0, None)
+                                .unwrap()
+                                .add_keyframe(1.0, 1.0, Some(easing))
+                                .unwrap(),
+                        )
+                        .unwrap();
+                } else {
+                    motion
+                        .animate_to(
+                            1.0,
+                            AnimationConfig::new(AnimationMode::Tween(
+                                Tween::new(Duration::from_secs(1)).with_easing(easing),
+                            )),
+                        )
+                        .unwrap();
+                }
+                assert_eq!(
+                    motion.update(0.25),
+                    Err(AnimationError::NonFiniteValue("easing progress"))
+                );
+                assert_eq!(motion.current, 0.0);
+                assert_eq!(motion.elapsed, Duration::ZERO);
+                assert!(!motion.running);
+                assert!(motion.keyframe_animation.is_none());
+            }
+        }
+    }
+
+    #[test]
+    fn custom_interpolation_cannot_commit_nonfinite_frames() {
+        #[derive(Clone, Default)]
+        struct BadInterpolation(f32);
+        impl std::ops::Add for BadInterpolation {
+            type Output = Self;
+            fn add(self, rhs: Self) -> Self {
+                Self(self.0 + rhs.0)
+            }
+        }
+        impl std::ops::Sub for BadInterpolation {
+            type Output = Self;
+            fn sub(self, rhs: Self) -> Self {
+                Self(self.0 - rhs.0)
+            }
+        }
+        impl std::ops::Mul<f32> for BadInterpolation {
+            type Output = Self;
+            fn mul(self, rhs: f32) -> Self {
+                Self(self.0 * rhs)
+            }
+        }
+        impl Animatable for BadInterpolation {
+            fn is_finite(&self) -> bool {
+                self.0.is_finite()
+            }
+            fn magnitude(&self) -> f32 {
+                self.0.abs()
+            }
+            fn interpolate(&self, _: &Self, _: f32) -> Self {
+                Self(f32::NAN)
+            }
+        }
+        for keyframes in [false, true] {
+            let mut motion = Motion::new(BadInterpolation(0.0)).unwrap();
+            if keyframes {
+                motion
+                    .animate_keyframes(
+                        KeyframeAnimation::new(Duration::from_secs(1))
+                            .add_keyframe(BadInterpolation(0.0), 0.0, None)
+                            .unwrap()
+                            .add_keyframe(BadInterpolation(1.0), 1.0, None)
+                            .unwrap(),
+                    )
+                    .unwrap();
+            } else {
+                motion
+                    .animate_to(BadInterpolation(1.0), AnimationConfig::tween_ms(1000))
+                    .unwrap();
+            }
+            assert_eq!(
+                motion.update(0.25),
+                Err(AnimationError::NonFiniteValue(if keyframes {
+                    "keyframe value"
+                } else {
+                    "tween value"
+                }))
+            );
+            assert_eq!(motion.current.0, 0.0);
+            assert_eq!(motion.elapsed, Duration::ZERO);
+            assert!(!motion.running);
+        }
+    }
+
+    #[test]
+    fn fuzz_finite_spring_values_never_poison_motion_state() {
+        let mut seed = 0x91e1_0da5u32;
+        let mut next = || {
+            seed = seed.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+            f32::from_bits(seed)
+        };
+        let mut errors = 0;
+        let mut accepted_frames = 0;
+        for _ in 0..4096 {
+            let (initial, target) = (next(), next());
+            if !initial.is_finite() || !target.is_finite() {
+                continue;
+            }
+            let mut motion = Motion::new(initial).unwrap();
+            motion
+                .animate_to(target, AnimationConfig::spring(Spring::default()))
+                .unwrap();
+            for _ in 0..8 {
+                let previous = motion.current;
+                match motion.update(1.0 / 60.0) {
+                    Ok(running) => {
+                        accepted_frames += 1;
+                        assert!(motion.current.is_finite());
+                        assert!(motion.velocity.is_finite());
+                        if !running {
+                            break;
+                        }
+                    }
+                    Err(_) => {
+                        errors += 1;
+                        assert_eq!(motion.current, previous);
+                        assert!(motion.velocity.is_finite());
+                        assert!(!motion.running);
+                        break;
+                    }
+                }
+            }
+        }
+        assert!(errors > 0);
+        assert!(accepted_frames > 0);
+    }
+
+    #[test]
     fn repeated_frame_delta_reuses_spring_coefficients() {
         use crate::animations::spring::STEP_CALCULATIONS;
         STEP_CALCULATIONS.set(0);
@@ -544,7 +764,7 @@ mod tests {
             .animate_to(1.0, AnimationConfig::spring(Spring::default()))
             .unwrap();
         for (dt, calculations) in [(0.02, 1), (0.02, 1), (0.01, 2), (0.01, 2)] {
-            assert!(motion.update(dt));
+            assert!(motion.update(dt).expect("representable animation frame"));
             assert_eq!(STEP_CALCULATIONS.get(), calculations);
         }
         motion
@@ -556,10 +776,10 @@ mod tests {
                 }),
             )
             .unwrap();
-        assert!(motion.update(0.01));
+        assert!(motion.update(0.01).expect("representable animation frame"));
         assert_eq!(STEP_CALCULATIONS.get(), 3);
         motion.stop();
-        assert!(!motion.update(0.01));
+        assert!(!motion.update(0.01).expect("representable animation frame"));
         assert_eq!(STEP_CALCULATIONS.get(), 3);
     }
 
@@ -575,7 +795,9 @@ mod tests {
                 }),
             )
             .unwrap();
-        light.update(1.0 / 60.0);
+        light
+            .update(1.0 / 60.0)
+            .expect("representable animation frame");
         // Negligible mass gives x(t)=1-exp(-10t), v(t)=10exp(-10t).
         assert!((light.current - 0.153_518_27).abs() < 1e-6);
         assert!((light.velocity - 8.464_818).abs() < 1e-5);
@@ -589,7 +811,9 @@ mod tests {
                 }),
             )
             .unwrap();
-        damped.update(1.0 / 60.0);
+        damped
+            .update(1.0 / 60.0)
+            .expect("representable animation frame");
         assert!(damped.current > 1e-30 && damped.current < 2e-30);
         assert!(damped.velocity > 9e-29 && damped.velocity < 1.1e-28);
     }
@@ -612,7 +836,9 @@ mod tests {
                 )
                 .unwrap();
             for _ in 0..1000 {
-                motion.update(1.0 / 60.0);
+                motion
+                    .update(1.0 / 60.0)
+                    .expect("representable animation frame");
                 assert!(motion.current.is_finite());
                 assert!(motion.velocity.is_finite());
                 if !motion.running {
@@ -624,7 +850,7 @@ mod tests {
         motion
             .animate_to(1.0, AnimationConfig::spring(Spring::default()))
             .unwrap();
-        motion.update(0.02);
+        motion.update(0.02).expect("representable animation frame");
         let config = AnimationConfig::spring(Spring {
             stiffness: 1e6,
             ..Spring::default()
@@ -634,7 +860,10 @@ mod tests {
             let mut reference = Motion::new(motion.current).expect("finite initial value");
             reference.animate_to(1.0, config.clone()).unwrap();
             reference.velocity = motion.velocity;
-            assert_eq!(motion.update(dt), reference.update(dt));
+            assert_eq!(
+                motion.update(dt).expect("representable animation frame"),
+                reference.update(dt).expect("representable animation frame")
+            );
             assert_eq!(motion.current, reference.current);
             assert_eq!(motion.velocity, reference.velocity);
         }
@@ -682,8 +911,15 @@ mod tests {
             style.animate_to(target.clone(), config.clone()).unwrap();
             scalar.animate_to(1.0, config).unwrap();
             for _ in 0..1000 {
-                let scalar_running = scalar.update(1.0 / 120.0);
-                assert_eq!(style.update(1.0 / 120.0), scalar_running);
+                let scalar_running = scalar
+                    .update(1.0 / 120.0)
+                    .expect("representable animation frame");
+                assert_eq!(
+                    style
+                        .update(1.0 / 120.0)
+                        .expect("representable animation frame"),
+                    scalar_running
+                );
                 assert!(
                     ((style.current.clone() - initial.clone()).magnitude() - scalar.current.abs())
                         .abs()
@@ -713,7 +949,7 @@ mod tests {
                 }),
             )
             .unwrap();
-        assert!(motion.update(0.25));
+        assert!(motion.update(0.25).expect("representable animation frame"));
         let rejected_calls = calls.clone();
         assert_eq!(
             motion.animate_to(
@@ -748,7 +984,7 @@ mod tests {
         assert_eq!(motion.elapsed, Duration::from_millis(250));
         assert!(motion.sequence.is_none());
         assert!(motion.keyframe_animation.is_none());
-        assert!(!motion.update(0.75));
+        assert!(!motion.update(0.75).expect("representable animation frame"));
         assert_eq!(motion.current, 1.0);
         assert_eq!(calls.load(Ordering::Relaxed), 1);
     }
@@ -808,12 +1044,12 @@ mod tests {
             motion.animate_to(InvalidEpsilon, instant_tween().with_epsilon(0.125)),
             Ok(())
         );
-        assert!(!motion.update(0.01));
+        assert!(!motion.update(0.01).expect("representable animation frame"));
         assert_eq!(
             motion.animate_keyframes(KeyframeAnimation::new(Duration::ZERO)),
             Ok(())
         );
-        assert!(!motion.update(0.01));
+        assert!(!motion.update(0.01).expect("representable animation frame"));
     }
 
     #[test]
@@ -835,7 +1071,7 @@ mod tests {
                         )
                         .unwrap();
                 }
-                assert!(motion.update(0.25));
+                assert!(motion.update(0.25).expect("representable animation frame"));
                 motion.current = bad;
                 assert_eq!(
                     motion.animate_keyframes(track),
@@ -848,7 +1084,7 @@ mod tests {
                 assert_eq!(motion.sequence.is_some(), !keyframes);
                 // Restoring the public value lets the original playback finish.
                 motion.current = 0.25;
-                assert!(!motion.update(0.75));
+                assert!(!motion.update(0.75).expect("representable animation frame"));
                 assert_eq!(motion.current, 1.0);
             }
         }
@@ -875,7 +1111,7 @@ mod tests {
                     )
                     .unwrap();
             }
-            assert!(motion.update(0.25));
+            assert!(motion.update(0.25).expect("representable animation frame"));
             assert_eq!(
                 motion.animate_to(99.0, instant_tween().with_epsilon(0.0)),
                 Err(AnimationError::InvalidEpsilon)
@@ -890,7 +1126,7 @@ mod tests {
             assert_eq!(motion.keyframe_animation.is_some(), keyframes);
             assert_eq!(motion.current, 0.25);
             assert_eq!(motion.elapsed, Duration::from_millis(250));
-            assert!(!motion.update(0.75));
+            assert!(!motion.update(0.75).expect("representable animation frame"));
             assert_eq!(motion.current, 1.0);
         }
     }
@@ -909,14 +1145,14 @@ mod tests {
                 .animate_to(T::default(), instant_tween().with_loop(LoopMode::Times(2)))
                 .expect("valid animation configuration");
             assert_eq!(motion.velocity.magnitude(), 0.0);
-            assert!(motion.update(0.01));
+            assert!(motion.update(0.01).expect("representable animation frame"));
             assert_eq!(motion.velocity.magnitude(), 0.0);
-            assert!(!motion.update(0.01));
+            assert!(!motion.update(0.01).expect("representable animation frame"));
             assert_eq!(motion.velocity.magnitude(), 0.0);
             motion
                 .animate_to(T::default(), AnimationConfig::spring(Spring::default()))
                 .expect("valid animation configuration");
-            assert!(!motion.update(0.01));
+            assert!(!motion.update(0.01).expect("representable animation frame"));
             assert_eq!(motion.velocity.magnitude(), 0.0);
             motion
                 .animate_keyframes(KeyframeAnimation::new(Duration::ZERO))
@@ -955,9 +1191,21 @@ mod tests {
             assert_eq!(color.velocity.magnitude(), 0.0);
             assert_eq!(transform.velocity.magnitude(), 0.0);
             for _ in 0..600 {
-                let running = scalar.update(1.0 / 60.0);
-                assert_eq!(color.update(1.0 / 60.0), running);
-                assert_eq!(transform.update(1.0 / 60.0), running);
+                let running = scalar
+                    .update(1.0 / 60.0)
+                    .expect("representable animation frame");
+                assert_eq!(
+                    color
+                        .update(1.0 / 60.0)
+                        .expect("representable animation frame"),
+                    running
+                );
+                assert_eq!(
+                    transform
+                        .update(1.0 / 60.0)
+                        .expect("representable animation frame"),
+                    running
+                );
                 assert!((color.current.r - scalar.current).abs() < 0.000001);
                 assert!((transform.current.scale - scalar.current).abs() < 0.000001);
                 assert_eq!(color.current.a, 1.0);
@@ -988,7 +1236,7 @@ mod tests {
             )
             .expect("valid animation configuration");
         motion.velocity = 2.0;
-        assert!(motion.update(0.02));
+        assert!(motion.update(0.02).expect("representable animation frame"));
         // Independent closed-form reference for a damped harmonic oscillator.
         let (position, velocity) = (4.929_104_5, -8.963_278);
         assert!((motion.current - position).abs() < 0.00001);
@@ -1018,7 +1266,7 @@ mod tests {
                 .expect("valid animation configuration");
             motion.velocity = velocity;
             assert_eq!(
-                motion.update(0.1),
+                motion.update(0.1).expect("representable animation frame"),
                 !completed,
                 "offset={offset}, velocity={velocity}"
             );
@@ -1035,7 +1283,7 @@ mod tests {
             )
             .expect("valid animation configuration");
         settled.velocity = 0.0625;
-        assert!(!settled.update(0.1));
+        assert!(!settled.update(0.1).expect("representable animation frame"));
         assert_eq!(settled.current, 5.0);
         assert_eq!(settled.velocity, 0.0);
     }
@@ -1049,7 +1297,7 @@ mod tests {
                 AnimationConfig::tween_ms(1000).with_delay(Duration::from_millis(50)),
             )
             .expect("valid animation configuration");
-        assert!(motion.update(0.1));
+        assert!(motion.update(0.1).expect("representable animation frame"));
         assert!(motion.current > 7.0);
         motion.reset();
         assert_eq!(motion.current, 7.0);
@@ -1070,7 +1318,7 @@ mod tests {
         motion
             .animate_to(30.0, AnimationConfig::tween(Duration::from_secs(2)))
             .expect("valid animation configuration");
-        assert!(motion.update(0.5));
+        assert!(motion.update(0.5).expect("representable animation frame"));
         assert_eq!(motion.current, 15.0);
 
         for (easing, expected) in [
@@ -1086,7 +1334,7 @@ mod tests {
                     )),
                 )
                 .expect("valid animation configuration");
-            assert!(motion.update(0.5));
+            assert!(motion.update(0.5).expect("representable animation frame"));
             assert_eq!(motion.current, expected);
         }
     }
@@ -1122,7 +1370,7 @@ mod tests {
                 motion
                     .animate_keyframes(animation.clone())
                     .expect("valid keyframe setup");
-                motion.update(dt);
+                motion.update(dt).expect("representable animation frame");
                 let progress = motion.elapsed.as_secs_f32() / animation.duration.as_secs_f32();
                 let frames = animation.keyframes();
                 let (start, end) = match frames
@@ -1169,7 +1417,7 @@ mod tests {
             .animate_sequence(AnimationSequence::new().then(2.0, instant_tween()))
             .expect("valid animation configuration");
         assert!(motion.keyframe_animation.is_none());
-        assert!(!motion.update(0.01));
+        assert!(!motion.update(0.01).expect("representable animation frame"));
         assert_eq!(motion.current, 2.0);
 
         let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
@@ -1184,7 +1432,7 @@ mod tests {
             .expect("valid animation configuration");
         assert!(!motion.is_running());
         assert!(motion.sequence.is_none());
-        assert!(!motion.update(0.01));
+        assert!(!motion.update(0.01).expect("representable animation frame"));
         assert_eq!(motion.current, 2.0);
         assert_eq!(calls.load(std::sync::atomic::Ordering::Relaxed), 1);
     }
@@ -1196,13 +1444,21 @@ mod tests {
             .animate_to(1.0, AnimationConfig::tween(Duration::from_secs(1)))
             .expect("valid animation configuration");
         for dt in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY, -1.0, 0.0] {
-            assert!(motion.update(dt));
+            assert!(motion.update(dt).expect("representable animation frame"));
             assert_eq!(motion.current, 0.0);
             assert_eq!(motion.elapsed, Duration::ZERO);
         }
-        assert!(motion.update(1.0 / 1000.0));
+        assert!(
+            motion
+                .update(1.0 / 1000.0)
+                .expect("representable animation frame")
+        );
         assert!(motion.current > 0.0);
-        assert!(!motion.update(f32::MAX));
+        assert!(
+            !motion
+                .update(f32::MAX)
+                .expect("representable animation frame")
+        );
         assert_eq!(motion.current, 1.0);
     }
 
@@ -1216,13 +1472,13 @@ mod tests {
                     .with_delay(Duration::from_millis(250)),
             )
             .expect("valid animation configuration");
-        assert!(motion.update(0.125));
+        assert!(motion.update(0.125).expect("representable animation frame"));
         assert_eq!(motion.delay_elapsed, Duration::from_millis(125));
         assert_eq!(motion.current, 0.0);
-        assert!(motion.update(0.375));
+        assert!(motion.update(0.375).expect("representable animation frame"));
         assert_eq!(motion.elapsed, Duration::from_millis(250));
         assert!(motion.current > 0.0);
-        assert!(!motion.update(0.75));
+        assert!(!motion.update(0.75).expect("representable animation frame"));
         assert_eq!(motion.current, 1.0);
     }
 
@@ -1232,7 +1488,7 @@ mod tests {
         motion
             .animate_to(1.0, instant_tween().with_delay(Duration::from_millis(250)))
             .expect("valid animation configuration");
-        assert!(!motion.update(0.25));
+        assert!(!motion.update(0.25).expect("representable animation frame"));
         assert_eq!(motion.current, 1.0);
     }
 
@@ -1249,7 +1505,7 @@ mod tests {
             let frames = (u16::from(count) * 2).max(1);
             for frame in 1..=frames {
                 assert_eq!(
-                    motion.update(0.01),
+                    motion.update(0.01).expect("representable animation frame"),
                     frame < frames,
                     "count={count}, frame={frame}"
                 );
@@ -1267,7 +1523,9 @@ mod tests {
             motion
                 .animate_to(1.0, AnimationConfig::spring(Spring::default()))
                 .expect("valid animation configuration");
-            motion.update(f32::from_bits(bits));
+            motion
+                .update(f32::from_bits(bits))
+                .expect("representable animation frame");
             assert!(motion.current.is_finite(), "delta bits={bits:#x}");
             assert!(motion.velocity.is_finite(), "delta bits={bits:#x}");
         }
@@ -1316,11 +1574,19 @@ mod tests {
         assert_eq!(motion.target, 50.0);
         assert!(motion.sequence.is_some());
 
-        assert!(motion.update(1.0 / 60.0));
+        assert!(
+            motion
+                .update(1.0 / 60.0)
+                .expect("representable animation frame")
+        );
         assert_eq!(motion.target, 100.0);
         assert!(motion.running);
 
-        assert!(!motion.update(1.0 / 60.0));
+        assert!(
+            !motion
+                .update(1.0 / 60.0)
+                .expect("representable animation frame")
+        );
         assert_eq!(motion.current, 100.0);
         assert!(!motion.running);
         assert!(motion.sequence.is_none());
@@ -1340,11 +1606,11 @@ mod tests {
             .animate_keyframes(animation)
             .expect("valid keyframe setup");
 
-        assert!(motion.update(0.5));
+        assert!(motion.update(0.5).expect("representable animation frame"));
         assert!(motion.current > 0.0);
         assert!(motion.current < 100.0);
 
-        assert!(!motion.update(0.5));
+        assert!(!motion.update(0.5).expect("representable animation frame"));
         assert_eq!(motion.current, 100.0);
         assert!(!motion.running);
         assert!(motion.keyframe_animation.is_none());
@@ -1394,7 +1660,11 @@ mod tests {
             .expect("valid animation configuration");
         motion.delay(Duration::from_millis(100));
 
-        assert!(motion.update(1.0 / 60.0));
+        assert!(
+            motion
+                .update(1.0 / 60.0)
+                .expect("representable animation frame")
+        );
         assert_eq!(motion.current, motion.initial);
     }
 
@@ -1408,7 +1678,11 @@ mod tests {
             )
             .expect("valid animation configuration");
 
-        assert!(motion.update(1.0 / 60.0));
+        assert!(
+            motion
+                .update(1.0 / 60.0)
+                .expect("representable animation frame")
+        );
         assert!(motion.current > 0.0);
         assert!(motion.current < 100.0);
     }
@@ -1424,7 +1698,11 @@ mod tests {
             .expect("valid animation configuration");
         motion.velocity = 0.0;
 
-        assert!(!motion.update(1.0 / 60.0));
+        assert!(
+            !motion
+                .update(1.0 / 60.0)
+                .expect("representable animation frame")
+        );
         assert_eq!(motion.current, 0.0);
         assert!(!motion.running);
     }
@@ -1436,11 +1714,19 @@ mod tests {
             .animate_to(100.0, instant_tween().with_loop(LoopMode::Times(2)))
             .expect("valid animation configuration");
 
-        assert!(motion.update(1.0 / 60.0));
+        assert!(
+            motion
+                .update(1.0 / 60.0)
+                .expect("representable animation frame")
+        );
         assert_eq!(motion.current, motion.initial);
         assert!(motion.running);
 
-        assert!(!motion.update(1.0 / 60.0));
+        assert!(
+            !motion
+                .update(1.0 / 60.0)
+                .expect("representable animation frame")
+        );
         assert!(!motion.running);
     }
 
@@ -1451,7 +1737,11 @@ mod tests {
             .animate_to(100.0, instant_tween().with_loop(LoopMode::Alternate))
             .expect("valid animation configuration");
 
-        assert!(motion.update(1.0 / 60.0));
+        assert!(
+            motion
+                .update(1.0 / 60.0)
+                .expect("representable animation frame")
+        );
         assert!(motion.running);
         assert!(motion.reverse);
         assert_eq!(motion.initial, 100.0);
@@ -1471,7 +1761,11 @@ mod tests {
             .animate_to(100.0, config)
             .expect("valid animation configuration");
 
-        assert!(!motion.update(1.0 / 60.0));
+        assert!(
+            !motion
+                .update(1.0 / 60.0)
+                .expect("representable animation frame")
+        );
         assert!(*called.lock().unwrap());
     }
 

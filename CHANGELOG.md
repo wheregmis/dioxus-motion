@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `Motion::update` and `AnimationManager::update` now return `Result<bool, AnimationError>`. Spring position/velocity and tween/keyframe interpolation are validated before committing a frame; nonfinite easing is rejected before interpolation. Failed playback stops, preserves the last valid value, and skips completion callbacks. The motion hook logs runtime errors.
 - `Motion::new`, `AnimationManager::new`, `use_motion`, and presence motion/style hooks now return `Result` so invalid initial components or nonfinite default zero velocity cannot enter a store. Components can propagate errors with `?` to a Dioxus error boundary. Hook initialization validates once per component lifetime, matching the existing initial-value semantics.
 
 - `Animatable` now requires `is_finite()`, checking every numerical component directly. Built-in values validate components independently of magnitude. Motion targets, sequence targets, and keyframe values reject NaN/infinity with typed errors; invalid setup preserves active motion. Add `is_finite` to custom implementations, for example `[self.x, self.y].into_iter().all(f32::is_finite)`.

@@ -30,7 +30,11 @@ mod tests {
                     .expect("valid keyframe setup");
                 let start = Instant::now();
                 for _ in 0..ITERATIONS {
-                    black_box(motion.update(black_box(1.0 / 60.0)));
+                    black_box(
+                        motion
+                            .update(black_box(1.0 / 60.0))
+                            .expect("representable animation frame"),
+                    );
                     black_box(motion.current);
                 }
                 samples.push(start.elapsed());
@@ -290,7 +294,11 @@ mod tests {
                     }
                     let start = Instant::now();
                     for _ in 0..ITERATIONS {
-                        black_box(motion.update(black_box(DT)));
+                        black_box(
+                            motion
+                                .update(black_box(DT))
+                                .expect("representable animation frame"),
+                        );
                         black_box(motion.current);
                     }
                     samples.push(start.elapsed());
@@ -343,8 +351,8 @@ mod tests {
 
         // Run both animations and verify they produce identical results
         for step in 0..ANIMATION_STEPS {
-            let result1 = motion1.update(DT);
-            let result2 = motion2.update(DT);
+            let result1 = motion1.update(DT).expect("representable animation frame");
+            let result2 = motion2.update(DT).expect("representable animation frame");
 
             // Both should return the same continuation result
             assert_eq!(

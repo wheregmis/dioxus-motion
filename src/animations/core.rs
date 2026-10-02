@@ -343,7 +343,7 @@ pub enum LoopMode {
 
 pub type OnComplete = Arc<Mutex<dyn FnMut() + Send + 'static>>;
 
-/// Invalid animation configuration, rejected before changing motion state.
+/// Invalid animation setup or a frame result that cannot be represented.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum AnimationError {
     #[error("animation {0} contains a nonfinite numerical component")]
