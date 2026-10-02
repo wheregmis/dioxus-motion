@@ -24,21 +24,51 @@ impl Completion {
     }
 }
 
+/// Animation state with validated setup and frame updates.
+/// Read values through getters and use `set_velocity` to change spring velocity.
+///
+/// ```
+/// use dioxus_motion::motion::Motion;
+/// let mut motion = Motion::new(1.0f32).expect("finite initial value");
+/// motion.set_velocity(2.0).expect("finite velocity");
+/// assert_eq!(motion.get_value(), 1.0);
+/// assert_eq!(motion.get_target(), 1.0);
+/// assert_eq!(motion.get_velocity(), 2.0);
+/// assert!(!motion.is_running());
+/// ```
+///
+/// ```compile_fail,E0616
+/// use dioxus_motion::motion::Motion;
+/// let mut motion = Motion::new(0.0f32).unwrap();
+/// motion.current = f32::NAN;
+/// ```
+///
+/// ```compile_fail,E0616
+/// use dioxus_motion::motion::Motion;
+/// let mut motion = Motion::new(0.0f32).unwrap();
+/// motion.velocity = f32::INFINITY;
+/// ```
+///
+/// ```compile_fail,E0616
+/// use dioxus_motion::motion::Motion;
+/// let mut motion = Motion::new(0.0f32).unwrap();
+/// motion.running = true;
+/// ```
 #[derive(Clone)]
 pub struct Motion<T: Animatable + Send + 'static> {
-    pub initial: T,
-    pub current: T,
-    pub target: T,
-    pub velocity: T,
-    pub running: bool,
-    pub elapsed: Duration,
-    pub delay_elapsed: Duration,
-    pub current_loop: u16,
-    pub reverse: bool,
+    initial: T,
+    pub(crate) current: T,
+    target: T,
+    velocity: T,
+    pub(crate) running: bool,
+    elapsed: Duration,
+    delay_elapsed: Duration,
+    current_loop: u16,
+    reverse: bool,
     config: AnimationConfig,
     spring_step: Option<(f32, SpringStep)>,
-    pub sequence: Option<AnimationSequence<T>>,
-    pub keyframe_animation: Option<KeyframeAnimation<T>>,
+    sequence: Option<AnimationSequence<T>>,
+    keyframe_animation: Option<KeyframeAnimation<T>>,
 }
 
 impl<T: Animatable + Send + 'static> Motion<T> {
@@ -125,6 +155,24 @@ impl<T: Animatable + Send + 'static> Motion<T> {
 
     pub fn get_value(&self) -> T {
         self.current.clone()
+    }
+
+    /// Returns the current animation target.
+    pub fn get_target(&self) -> T {
+        self.target.clone()
+    }
+
+    /// Returns the current spring velocity in value units per second.
+    pub fn get_velocity(&self) -> T {
+        self.velocity.clone()
+    }
+
+    /// Changes spring velocity without restarting playback. Invalid values leave state unchanged.
+    /// Starting another animation resets this velocity to zero.
+    pub fn set_velocity(&mut self, velocity: T) -> Result<(), AnimationError> {
+        validate_value(&velocity, "velocity")?;
+        self.velocity = velocity;
+        Ok(())
     }
 
     pub fn is_running(&self) -> bool {
@@ -756,6 +804,77 @@ mod tests {
     }
 
     #[test]
+    fn checked_velocity_changes_preserve_state_and_drive_spring_motion() {
+        let mut motion = Motion::new(5.0f32).expect("finite initial value");
+        assert_eq!(motion.get_value(), 5.0);
+        assert_eq!(motion.get_target(), 5.0);
+        assert_eq!(motion.get_velocity(), 0.0);
+        assert!(!motion.is_running());
+        motion
+            .animate_to(
+                10.0,
+                AnimationConfig::spring(Spring {
+                    stiffness: 0.0,
+                    damping: 0.0,
+                    mass: 1.0,
+                }),
+            )
+            .expect("valid animation configuration");
+        assert_eq!(motion.set_velocity(2.0), Ok(()));
+        for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            assert_eq!(
+                motion.set_velocity(bad),
+                Err(AnimationError::NonFiniteValue("velocity"))
+            );
+            assert_eq!(motion.get_velocity(), 2.0);
+            assert_eq!(motion.get_value(), 5.0);
+            assert_eq!(motion.get_target(), 10.0);
+            assert!(motion.is_running());
+        }
+        assert_eq!(motion.update(0.1), Ok(true));
+        assert!((motion.get_value() - 5.2).abs() < 1e-6);
+        assert_eq!(motion.get_velocity(), 2.0);
+        motion
+            .animate_to(6.0, instant_tween())
+            .expect("valid animation configuration");
+        assert_eq!(motion.get_velocity(), 0.0);
+        assert_eq!(motion.update(0.1), Ok(false));
+        assert_eq!(motion.get_value(), 6.0);
+        assert_eq!(motion.get_target(), 6.0);
+        assert!(!motion.is_running());
+    }
+
+    #[test]
+    fn checked_compound_velocity_validates_every_component() {
+        use crate::animations::colors::Color;
+        let mut motion = Motion::new(Color::new(0.0, 0.0, 0.0, 1.0)).expect("finite initial value");
+        let velocity = Color {
+            r: 2.0,
+            g: -1.0,
+            b: 0.5,
+            a: 0.0,
+        };
+        assert_eq!(motion.set_velocity(velocity), Ok(()));
+        for index in 0..4 {
+            for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+                let mut invalid = velocity;
+                let channels = [
+                    &mut invalid.r,
+                    &mut invalid.g,
+                    &mut invalid.b,
+                    &mut invalid.a,
+                ];
+                *channels[index] = bad;
+                assert_eq!(
+                    motion.set_velocity(invalid),
+                    Err(AnimationError::NonFiniteValue("velocity"))
+                );
+                assert_eq!(motion.get_velocity(), velocity);
+            }
+        }
+    }
+
+    #[test]
     fn repeated_frame_delta_reuses_spring_coefficients() {
         use crate::animations::spring::STEP_CALCULATIONS;
         STEP_CALCULATIONS.set(0);
@@ -831,7 +950,6 @@ mod tests {
                         stiffness,
                         damping,
                         mass,
-                        velocity: 0.0,
                     }),
                 )
                 .unwrap();
@@ -1231,7 +1349,6 @@ mod tests {
                     stiffness: 140.0,
                     damping: 6.0,
                     mass: 2.0,
-                    velocity: 0.0,
                 }),
             )
             .expect("valid animation configuration");

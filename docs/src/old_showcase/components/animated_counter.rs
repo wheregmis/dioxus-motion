@@ -15,7 +15,6 @@ pub fn AnimatedCounter() -> Element {
                 stiffness: 180.0,
                 damping: 12.0,
                 mass: 1.0,
-                velocity: 10.0,
             })),
         );
 

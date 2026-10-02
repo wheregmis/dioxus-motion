@@ -35,7 +35,7 @@ mod tests {
                             .update(black_box(1.0 / 60.0))
                             .expect("representable animation frame"),
                     );
-                    black_box(motion.current);
+                    black_box(motion.get_value());
                 }
                 samples.push(start.elapsed());
                 assert!(motion.is_running());
@@ -299,7 +299,7 @@ mod tests {
                                 .update(black_box(DT))
                                 .expect("representable animation frame"),
                         );
-                        black_box(motion.current);
+                        black_box(motion.get_value());
                     }
                     samples.push(start.elapsed());
                     assert_eq!(motion.is_running(), active);
@@ -362,18 +362,19 @@ mod tests {
             );
 
             // Both should have the same current value (within floating point precision)
-            let value_diff = (motion1.current - motion2.current).abs();
+            let value_diff = (motion1.get_value() - motion2.get_value()).abs();
             assert!(
                 value_diff < 0.001,
                 "Animation values diverged at step {}: {} vs {}",
                 step,
-                motion1.current,
-                motion2.current
+                motion1.get_value(),
+                motion2.get_value()
             );
 
             // Both should have the same running state
             assert_eq!(
-                motion1.running, motion2.running,
+                motion1.is_running(),
+                motion2.is_running(),
                 "Running state mismatch at step {}",
                 step
             );
@@ -386,11 +387,13 @@ mod tests {
 
         // Final values should be identical
         assert_eq!(
-            motion1.current, motion2.current,
+            motion1.get_value(),
+            motion2.get_value(),
             "Final animation values don't match"
         );
         assert_eq!(
-            motion1.running, motion2.running,
+            motion1.is_running(),
+            motion2.is_running(),
             "Final running states don't match"
         );
     }

@@ -88,7 +88,6 @@ fn TransformAnimation() -> Element {
                         stiffness: 100.0,
                         damping: 10.0,
                         mass: 1.0,
-                        velocity: 0.0,
                     })),
                 )
                 .expect("valid animation configuration");
@@ -100,7 +99,6 @@ fn TransformAnimation() -> Element {
                         stiffness: 100.0,
                         damping: 10.0,
                         mass: 1.0,
-                        velocity: 0.0,
                     })),
                 )
                 .expect("valid animation configuration");
@@ -218,7 +216,6 @@ fn CustomColorAnimation() -> Element {
                         stiffness: 100.0,
                         damping: 10.0,
                         mass: 1.0,
-                        velocity: 0.0,
                     })),
                 )
                 .expect("valid animation configuration");
@@ -234,7 +231,6 @@ fn CustomColorAnimation() -> Element {
                         stiffness: 100.0,
                         damping: 10.0,
                         mass: 1.0,
-                        velocity: 0.0,
                     })),
                 )
                 .expect("valid animation configuration");
@@ -278,7 +274,6 @@ fn SequenceAnimation() -> Element {
                 stiffness: 180.0,
                 damping: 12.0,
                 mass: 1.0,
-                velocity: 10.0,
             })),
         );
 
@@ -416,7 +411,6 @@ fn TransformAnimation() -> Element {
                     stiffness: 100.0,
                     damping: 10.0,
                     mass: 1.0,
-                    velocity: 0.0,
                 })),
             ).expect("valid animation configuration");
         } else {
@@ -426,7 +420,6 @@ fn TransformAnimation() -> Element {
                     stiffness: 100.0,
                     damping: 10.0,
                     mass: 1.0,
-                    velocity: 0.0,
                 })),
             ).expect("valid animation configuration");
         }
@@ -477,7 +470,6 @@ transform.animate_to(
         stiffness: 100.0,
         damping: 10.0,
         mass: 1.0,
-        velocity: 0.0,
     })),
 ).expect("valid animation configuration");
 
@@ -584,7 +576,6 @@ let onclick = move |_| {
                 stiffness: 180.0,
                 damping: 12.0,
                 mass: 1.0,
-                velocity: 10.0,
             }))
         );
 

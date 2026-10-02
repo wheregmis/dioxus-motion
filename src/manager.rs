@@ -112,6 +112,8 @@ pub trait AnimationManager<T: Animatable + Send + 'static>: Clone + Copy {
     fn animate_sequence(&mut self, sequence: AnimationSequence<T>) -> Result<(), AnimationError>;
     fn animate_keyframes(&mut self, animation: KeyframeAnimation<T>) -> Result<(), AnimationError>;
     fn update(&mut self, dt: f32) -> Result<bool, AnimationError>;
+    /// Changes spring velocity in value units per second without restarting playback.
+    fn set_velocity(&mut self, velocity: T) -> Result<(), AnimationError>;
     fn get_value(&self) -> T;
     fn is_running(&self) -> bool;
     fn reset(&mut self);
@@ -148,6 +150,10 @@ impl<T: Animatable + Send + 'static> AnimationManager<T> for MotionHandle<T> {
             completion.run();
         }
         Ok(running)
+    }
+
+    fn set_velocity(&mut self, velocity: T) -> Result<(), AnimationError> {
+        self.write_motion(|motion| motion.set_velocity(velocity))
     }
 
     fn get_value(&self) -> T {

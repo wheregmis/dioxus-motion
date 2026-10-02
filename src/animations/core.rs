@@ -228,17 +228,17 @@ mod tests {
                 Ok(())
             );
         }
-        for field in ["stiffness", "damping", "mass", "velocity"] {
-            for (value, coefficient_valid, mass_valid, velocity_valid) in [
-                (f32::NAN, false, false, false),
-                (f32::INFINITY, false, false, false),
-                (f32::NEG_INFINITY, false, false, false),
-                (-1.0, false, false, true),
-                (-0.0, true, false, true),
-                (0.0, true, false, true),
-                (f32::from_bits(1), true, false, true),
-                (1.0, true, true, true),
-                (f32::MAX, true, true, true),
+        for field in ["stiffness", "damping", "mass"] {
+            for (value, coefficient_valid, mass_valid) in [
+                (f32::NAN, false, false),
+                (f32::INFINITY, false, false),
+                (f32::NEG_INFINITY, false, false),
+                (-1.0, false, false),
+                (-0.0, true, false),
+                (0.0, true, false),
+                (f32::from_bits(1), true, false),
+                (1.0, true, true),
+                (f32::MAX, true, true),
             ] {
                 let mut spring = Spring::default();
                 let valid = match field {
@@ -250,13 +250,9 @@ mod tests {
                         spring.damping = value;
                         coefficient_valid
                     }
-                    "mass" => {
+                    _ => {
                         spring.mass = value;
                         mass_valid
-                    }
-                    _ => {
-                        spring.velocity = value;
-                        velocity_valid
                     }
                 };
                 let expected = if valid {
@@ -351,7 +347,7 @@ pub enum AnimationError {
     #[error("animation epsilon must be finite and positive")]
     InvalidEpsilon,
     #[error(
-        "spring {0} is invalid: coefficients must be finite and nonnegative, mass and its reciprocal must be finite and positive, and velocity must be finite"
+        "spring {0} is invalid: coefficients must be finite and nonnegative, mass and its reciprocal must be finite and positive"
     )]
     InvalidSpringParameter(&'static str),
 }
@@ -398,9 +394,6 @@ impl AnimationConfig {
             }
             if !spring.mass.is_finite() || spring.mass <= 0.0 || !(1.0 / spring.mass).is_finite() {
                 return Err(AnimationError::InvalidSpringParameter("mass"));
-            }
-            if !spring.velocity.is_finite() {
-                return Err(AnimationError::InvalidSpringParameter("velocity"));
             }
         }
         Ok(())

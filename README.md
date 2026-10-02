@@ -92,10 +92,10 @@ fn PulseEffect() -> Element {
                 stiffness: 100.0,
                 damping: 5.0,
                 mass: 0.5,
-                velocity: 1.0
             }))
             .with_loop(LoopMode::Infinite)
         ).expect("valid animation configuration");
+        scale.set_velocity(1.0).expect("finite velocity");
     });
 
     rsx! {
@@ -122,7 +122,6 @@ let sequence = AnimationSequence::new()
             stiffness: 400.0,
             damping: 10.0,
             mass: 1.0,
-            velocity: 5.0,
         }))
     )
     .then(
@@ -131,7 +130,6 @@ let sequence = AnimationSequence::new()
             stiffness: 300.0,
             damping: 15.0,
             mass: 1.0,
-            velocity: -2.0,
         }))
     )
     .then(
@@ -149,6 +147,8 @@ scale.animate_sequence(sequence).expect("valid animation configuration");
 `animate_to`, `animate_sequence`, and `animate_keyframes` return `Result<(), AnimationError>`. Propagate errors with `?` or handle them when parameters come from user input. Invalid configuration leaves the active animation unchanged; sequences validate all steps before starting. Use `AnimationConfig::validate()` or `AnimationSequence::validate()` to check configuration in advance.
 
 `Motion::update` and `AnimationManager::update` return `Result<bool, AnimationError>`. Nonfinite easing or frame results stop playback, preserve the last valid value, and skip completion callbacks. Handle the error or propagate it with `?`; the motion hook logs playback errors.
+
+`Motion` state fields are private. Read state with `get_value`, `get_target`, `get_velocity`, and `is_running`. `set_velocity` validates numerical components and preserves existing state on error; starting another animation resets velocity to zero. `Spring` configures stiffness, damping, and mass; velocity uses the animated type through `Motion::set_velocity` or `AnimationManager::set_velocity`, called after starting playback.
 
 ## ✨ Features
 

@@ -21,7 +21,6 @@ pub fn InteractiveCube() -> Element {
                 stiffness: 150.0,
                 damping: 12.0,
                 mass: 1.0,
-                velocity: 25.0,
             })),
         );
 
@@ -33,7 +32,6 @@ pub fn InteractiveCube() -> Element {
                     stiffness: 400.0,
                     damping: 8.0,
                     mass: 1.0,
-                    velocity: 8.0,
                 })),
             )
             .then(
@@ -42,7 +40,6 @@ pub fn InteractiveCube() -> Element {
                     stiffness: 300.0,
                     damping: 15.0,
                     mass: 1.0,
-                    velocity: 0.0,
                 })),
             );
 
@@ -54,7 +51,6 @@ pub fn InteractiveCube() -> Element {
                     stiffness: 200.0,
                     damping: 5.0,
                     mass: 0.5,
-                    velocity: 10.0,
                 })),
             )
             .then(
@@ -63,7 +59,6 @@ pub fn InteractiveCube() -> Element {
                     stiffness: 200.0,
                     damping: 10.0,
                     mass: 0.5,
-                    velocity: 0.0,
                 })),
             );
 
@@ -84,7 +79,6 @@ pub fn InteractiveCube() -> Element {
                 stiffness: 300.0,
                 damping: 10.0,
                 mass: 0.5,
-                velocity: 5.0,
             })),
         )
         .expect("valid animation configuration");
@@ -111,7 +105,6 @@ pub fn InteractiveCube() -> Element {
                     stiffness: 150.0,
                     damping: 15.0,
                     mass: 0.8,
-                    velocity: 0.0,
                 })),
             )
             .expect("valid animation configuration");
@@ -123,7 +116,6 @@ pub fn InteractiveCube() -> Element {
                     stiffness: 150.0,
                     damping: 15.0,
                     mass: 0.8,
-                    velocity: 0.0,
                 })),
             )
             .expect("valid animation configuration");
@@ -137,7 +129,6 @@ pub fn InteractiveCube() -> Element {
                     stiffness: 200.0,
                     damping: 15.0,
                     mass: 0.8,
-                    velocity: 0.0,
                 })),
             )
             .expect("valid animation configuration");
@@ -151,7 +142,6 @@ pub fn InteractiveCube() -> Element {
                     stiffness: 200.0,
                     damping: 15.0,
                     mass: 0.8,
-                    velocity: 0.0,
                 })),
             )
             .expect("valid animation configuration");
@@ -164,7 +154,6 @@ pub fn InteractiveCube() -> Element {
                     stiffness: 150.0,
                     damping: 15.0,
                     mass: 0.8,
-                    velocity: 0.0,
                 })),
             )
             .expect("valid animation configuration");
@@ -176,7 +165,6 @@ pub fn InteractiveCube() -> Element {
                     stiffness: 150.0,
                     damping: 15.0,
                     mass: 0.8,
-                    velocity: 0.0,
                 })),
             )
             .expect("valid animation configuration");

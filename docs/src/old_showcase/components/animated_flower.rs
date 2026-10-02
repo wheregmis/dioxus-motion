@@ -116,7 +116,6 @@ pub fn AnimatedFlower() -> Element {
                     stiffness: 25.0, // Slower for more organic movement
                     damping: 8.0,
                     mass: 0.4,
-                    velocity: 0.5,
                 })),
             )
             .expect("valid animation configuration");
@@ -129,7 +128,6 @@ pub fn AnimatedFlower() -> Element {
                     stiffness: 15.0,
                     damping: 3.0,
                     mass: 0.3,
-                    velocity: 0.0,
                 }))
                 .with_loop(LoopMode::Alternate),
             )
@@ -148,7 +146,6 @@ pub fn AnimatedFlower() -> Element {
                     stiffness: 35.0,
                     damping: 6.0,
                     mass: 0.4,
-                    velocity: 2.5,
                 }))
                 .with_on_complete(move || {
                     is_leaves_grown.set(true);
@@ -167,7 +164,6 @@ pub fn AnimatedFlower() -> Element {
                         stiffness: 45.0,
                         damping: 7.0,
                         mass: 0.4,
-                        velocity: 1.5,
                     }))
                     .with_loop(LoopMode::Alternate),
                 )
@@ -181,7 +177,6 @@ pub fn AnimatedFlower() -> Element {
                         stiffness: 20.0,
                         damping: 5.0,
                         mass: 0.3,
-                        velocity: 0.5,
                     }))
                     .with_loop(LoopMode::Infinite),
                 )
@@ -195,7 +190,6 @@ pub fn AnimatedFlower() -> Element {
                         stiffness: 60.0, // Reduced stiffness
                         damping: 12.0,   // Increased damping
                         mass: 1.0,       // Increased mass
-                        velocity: 0.0,   // Start with zero velocity
                     }))
                     .with_loop(LoopMode::Alternate),
                 )
@@ -209,7 +203,6 @@ pub fn AnimatedFlower() -> Element {
                         stiffness: 40.0,
                         damping: 6.0,
                         mass: 0.5,
-                        velocity: 0.0,
                     }))
                     .with_loop(LoopMode::Alternate),
                 )

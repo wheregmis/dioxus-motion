@@ -259,7 +259,6 @@ pub fn SwingingCube() -> Element {
                     stiffness: 25.0, // Softer spring for smoother motion
                     damping: 8.0,    // Adjusted damping for better bounce
                     mass: 1.2,       // Increased mass for more weight
-                    velocity: 3.0,   // Faster initial velocity
                 }))
                 .with_loop(LoopMode::Alternate), // Makes the animation go back and forth
             )
@@ -273,7 +272,6 @@ pub fn SwingingCube() -> Element {
                     stiffness: 30.0,
                     damping: 5.0,
                     mass: 1.0,
-                    velocity: 0.0,
                 }))
                 .with_loop(LoopMode::Alternate),
             )
@@ -286,7 +284,6 @@ pub fn SwingingCube() -> Element {
                     stiffness: 40.0,
                     damping: 6.0,
                     mass: 0.8,
-                    velocity: 0.0,
                 }))
                 .with_loop(LoopMode::Alternate),
             )
@@ -299,7 +296,6 @@ pub fn SwingingCube() -> Element {
                     stiffness: 35.0,
                     damping: 7.0,
                     mass: 0.5,
-                    velocity: 0.0,
                 }))
                 .with_loop(LoopMode::Alternate),
             )

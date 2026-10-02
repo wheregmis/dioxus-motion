@@ -39,7 +39,6 @@ pub fn Home() -> Element {
                         stiffness: 100.0,
                         damping: 10.0,
                         mass: 1.0,
-                        velocity: 0.0,
                     }))
                     .with_loop(LoopMode::Infinite),
                 )
@@ -218,7 +217,6 @@ fn FeatureCard(title: &'static str, description: &'static str, icon: &'static st
                                 stiffness: 300.0,
                                 damping: 20.0,
                                 mass: 1.0,
-                                velocity: 0.0,
                             }),
                         ),
                     ).expect("valid animation configuration");
@@ -230,7 +228,6 @@ fn FeatureCard(title: &'static str, description: &'static str, icon: &'static st
                                 stiffness: 300.0,
                                 damping: 20.0,
                                 mass: 1.0,
-                                velocity: 0.0,
                             }),
                         ),
                     ).expect("valid animation configuration");
@@ -244,7 +241,6 @@ fn FeatureCard(title: &'static str, description: &'static str, icon: &'static st
                                 stiffness: 300.0,
                                 damping: 20.0,
                                 mass: 1.0,
-                                velocity: 0.0,
                             }),
                         ),
                     ).expect("valid animation configuration");
@@ -256,7 +252,6 @@ fn FeatureCard(title: &'static str, description: &'static str, icon: &'static st
                                 stiffness: 300.0,
                                 damping: 20.0,
                                 mass: 1.0,
-                                velocity: 0.0,
                             }),
                         ),
                     ).expect("valid animation configuration");

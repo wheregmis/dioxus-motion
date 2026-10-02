@@ -165,7 +165,6 @@ fn MotionStyleShowcase() -> Element {
                     stiffness: 120.0,
                     damping: 10.0,
                     mass: 1.0,
-                    velocity: 0.0,
                 })),
             )
             .expect("valid animation configuration");

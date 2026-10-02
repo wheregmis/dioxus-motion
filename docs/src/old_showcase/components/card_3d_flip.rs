@@ -15,7 +15,6 @@ pub fn Card3DFlip() -> Element {
                         stiffness: 200.0, // Increased for snappier response
                         damping: 20.0,    // Increased for less oscillation
                         mass: 0.8,        // Reduced for lighter feel
-                        velocity: 5.0,    // Reduced for smoother start
                     })),
                 )
                 .expect("valid animation configuration");
@@ -32,7 +31,6 @@ pub fn Card3DFlip() -> Element {
                         stiffness: 200.0, // Increased for snappier response
                         damping: 20.0,    // Increased for less oscillation
                         mass: 0.8,        // Reduced for lighter feel
-                        velocity: 5.0,    // Reduced for smoother start
                     })),
                 )
                 .expect("valid animation configuration");

@@ -173,7 +173,6 @@ fn StepTwo() -> Element {
                 stiffness: 100.0,
                 damping: 10.0,
                 mass: 1.0,
-                velocity: 0.0,
             })),
         ).expect("valid animation configuration");
     };
@@ -207,7 +206,6 @@ petal.animate_to(
         stiffness: 100.0,
         damping: 10.0,
         mass: 1.0,
-        velocity: 0.0,
     })),
 ).expect("valid animation configuration");"#.to_string(),
                         language: "rust".to_string(),
@@ -269,7 +267,6 @@ fn StepThree() -> Element {
                     stiffness: 100.0,
                     damping: 10.0,
                     mass: 1.0,
-                    velocity: 0.0,
                 })),
             )
             .then(
@@ -278,7 +275,6 @@ fn StepThree() -> Element {
                     stiffness: 150.0,
                     damping: 12.0,
                     mass: 1.0,
-                    velocity: 0.0,
                 })),
             )
             .then(
@@ -287,7 +283,6 @@ fn StepThree() -> Element {
                     stiffness: 200.0,
                     damping: 15.0,
                     mass: 1.0,
-                    velocity: 0.0,
                 })),
             );
 

@@ -2195,7 +2195,10 @@ mod tests {
         fn host((shared, calls): (Shared, Rc<Cell<usize>>)) -> Element {
             let motion = use_hook(|| MotionHandle::new(0.0f32).expect("finite initial value"));
             let awaiting = use_signal(|| false);
-            let callback = Callback::new(move |_| calls.set(calls.get() + 1));
+            let callback = Callback::new(move |_| {
+                assert_eq!(calls.get(), 0, "exit removal must run once");
+                calls.set(calls.get() + 1);
+            });
             super::use_exit_completion(motion, awaiting, callback);
             *shared.borrow_mut() = Some((motion, awaiting));
             rsx! { div {} }

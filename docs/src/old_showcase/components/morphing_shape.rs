@@ -82,7 +82,6 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
                     stiffness: 35.0, // Reduced for more fluid motion
                     damping: 5.0,    // Lower damping for organic movement
                     mass: 0.6,       // Lighter mass for faster response
-                    velocity: 0.8,   // Increased initial velocity
                 }))
                 .with_loop(LoopMode::Infinite),
             )
@@ -96,7 +95,6 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
                     stiffness: 25.0,
                     damping: 3.0,
                     mass: 0.5,
-                    velocity: 0.5,
                 }))
                 .with_loop(LoopMode::Infinite),
             )

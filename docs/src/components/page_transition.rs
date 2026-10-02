@@ -249,7 +249,6 @@ fn App() -> Element {
         stiffness: 200.0,  // Higher = faster, snappier
         damping: 30.0,     // Higher = less bounce
         mass: 0.8,         // Lower = more responsive
-        velocity: 0.0,     // Initial velocity
     });
 
     // Provide the store so AnimatedOutlet can read it from context
@@ -340,7 +339,6 @@ fn AdminSection() -> Element {
         stiffness: 220.0,
         damping: 20.0,
         mass: 0.8,
-        velocity: 0.0,
     });
 
     use_context_provider(move || admin_spring);
@@ -357,7 +355,6 @@ fn UserSection() -> Element {
         stiffness: 140.0,
         damping: 35.0,
         mass: 1.0,
-        velocity: 0.0,
     });
 
     use_context_provider(move || user_spring);

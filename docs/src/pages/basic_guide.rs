@@ -198,7 +198,6 @@ fn StepTwo() -> Element {
                     stiffness: 100.0,
                     damping: 10.0,
                     mass: 1.0,
-                    velocity: 0.0,
                 })),
             )
             .expect("valid animation configuration");

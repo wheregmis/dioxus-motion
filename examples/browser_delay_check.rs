@@ -69,8 +69,8 @@ pub fn check_spring_numerics() -> Result<(), JsValue> {
             .animate_to(f32::MAX, AnimationConfig::spring(Spring::default()))
             .map_err(|e| error(&e.to_string()))?;
         if motion.update(1.0 / 60.0) != Err(AnimationError::NonFiniteValue(role))
-            || motion.current != initial
-            || !motion.velocity.is_finite()
+            || motion.get_value() != initial
+            || !motion.get_velocity().is_finite()
             || motion.is_running()
         {
             return Err(error(
@@ -94,7 +94,6 @@ pub fn check_spring_numerics() -> Result<(), JsValue> {
                     stiffness,
                     damping,
                     mass,
-                    velocity: 0.0,
                 }),
             )
             .map_err(|e| error(&e.to_string()))?;
@@ -102,17 +101,17 @@ pub fn check_spring_numerics() -> Result<(), JsValue> {
             motion
                 .update([1.0 / 60.0, 0.001, 0.1][frame % 3])
                 .map_err(|e| error(&e.to_string()))?;
-            if !motion.current.is_finite() || !motion.velocity.is_finite() {
+            if !motion.get_value().is_finite() || !motion.get_velocity().is_finite() {
                 return Err(error("spring state became nonfinite"));
             }
             if frame == 0
                 && mass == 1e-30
-                && ((motion.current - 0.153_518_27).abs() > 1e-6
-                    || (motion.velocity - 8.464_818).abs() > 1e-5)
+                && ((motion.get_value() - 0.153_518_27).abs() > 1e-6
+                    || (motion.get_velocity() - 8.464_818).abs() > 1e-5)
             {
                 return Err(error("low-mass spring differs from its first-order limit"));
             }
-            if frame == 0 && damping == 1e30 && motion.current <= 0.0 {
+            if frame == 0 && damping == 1e30 && motion.get_value() <= 0.0 {
                 return Err(error(
                     "overdamped spring lost its representable displacement",
                 ));
@@ -127,23 +126,24 @@ pub fn check_spring_numerics() -> Result<(), JsValue> {
                 stiffness: 140.0,
                 damping: 6.0,
                 mass: 2.0,
-                velocity: 0.0,
             }),
         )
         .map_err(|e| error(&e.to_string()))?;
-    reference.velocity = 2.0;
+    reference
+        .set_velocity(2.0)
+        .map_err(|e| error(&e.to_string()))?;
     reference.update(0.02).map_err(|e| error(&e.to_string()))?;
-    if (reference.current - 4.929_104_5).abs() > 1e-5
-        || (reference.velocity + 8.963_278).abs() > 1e-5
+    if (reference.get_value() - 4.929_104_5).abs() > 1e-5
+        || (reference.get_velocity() + 8.963_278).abs() > 1e-5
     {
         return Err(error("spring differs from closed-form reference"));
     }
-    let saved = reference.current;
+    let saved = reference.get_value();
     for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
         if reference
             .animate_to(bad, AnimationConfig::tween_ms(1))
             .is_ok()
-            || reference.current != saved
+            || reference.get_value() != saved
         {
             return Err(error("nonfinite target replaced the current animation"));
         }

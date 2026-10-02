@@ -265,7 +265,6 @@ fn default_transition_spring() -> Spring {
         stiffness: 160.0,
         damping: 25.0,
         mass: 1.0,
-        velocity: 0.0,
     }
 }
 
@@ -430,7 +429,6 @@ mod tests {
             stiffness: 320.0,
             damping: 40.0,
             mass: 2.0,
-            velocity: 3.0,
         };
 
         let mode = resolve_mode_in_runtime(Some(tween), Some(spring), default_transition_spring());
@@ -444,7 +442,6 @@ mod tests {
             stiffness: 220.0,
             damping: 32.0,
             mass: 1.5,
-            velocity: 2.5,
         };
 
         let mode = resolve_mode_in_runtime(None, Some(spring), default_transition_spring());

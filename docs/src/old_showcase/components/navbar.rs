@@ -13,7 +13,6 @@ pub fn Navbar() -> Element {
                 stiffness: 100.0,
                 damping: 20.0,
                 mass: 1.0,
-                velocity: 10.0,
             })),
         ).expect("valid animation configuration");
     });

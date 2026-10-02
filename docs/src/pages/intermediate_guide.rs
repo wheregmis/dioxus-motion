@@ -287,7 +287,6 @@ fn StepTwo() -> Element {
                     stiffness: 100.0,
                     damping: 10.0,
                     mass: 1.0,
-                    velocity: 0.0,
                 }))
                 .with_delay(Duration::from_millis(1000)),
             )
@@ -366,7 +365,6 @@ fn StepThree() -> Element {
                     stiffness: 100.0,
                     damping: 10.0,
                     mass: 1.0,
-                    velocity: 0.0,
                 })),
             )
             .then(
@@ -375,7 +373,6 @@ fn StepThree() -> Element {
                     stiffness: 200.0,
                     damping: 15.0,
                     mass: 1.0,
-                    velocity: 0.0,
                 })),
             )
             .then(
@@ -384,7 +381,6 @@ fn StepThree() -> Element {
                     stiffness: 300.0,
                     damping: 20.0,
                     mass: 1.0,
-                    velocity: 0.0,
                 })),
             );
 
@@ -525,7 +521,6 @@ fn StepFour() -> Element {
                     stiffness: 100.0,
                     damping: 10.0,
                     mass: 1.0,
-                    velocity: 0.0,
                 })),
             )
             .then(
@@ -534,7 +529,6 @@ fn StepFour() -> Element {
                     stiffness: 200.0,
                     damping: 15.0,
                     mass: 1.0,
-                    velocity: 0.0,
                 })),
             )
             .then(
@@ -543,7 +537,6 @@ fn StepFour() -> Element {
                     stiffness: 300.0,
                     damping: 20.0,
                     mass: 1.0,
-                    velocity: 0.0,
                 })),
             );
 
@@ -591,7 +584,6 @@ fn StepFour() -> Element {
             stiffness: 200.0,
             damping: 20.0,
             mass: 1.0,
-            velocity: 0.0,
         }));
 
         // Initial color
@@ -612,7 +604,6 @@ fn StepFour() -> Element {
             stiffness: 200.0,
             damping: 20.0,
             mass: 1.0,
-            velocity: 0.0,
         }));
 
         // Reset keyframe transform

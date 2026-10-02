@@ -383,14 +383,11 @@ macro_rules! presence_style_spring_assign {
     ($spring:ident, mass, $value:expr) => {
         $spring.mass = $value;
     };
-    ($spring:ident, velocity, $value:expr) => {
-        $spring.velocity = $value;
-    };
     ($spring:ident, $field:ident, $value:expr) => {
         compile_error!(concat!(
             "unknown spring transition field `",
             stringify!($field),
-            "`. Supported fields are `stiffness`, `damping`, `mass`, and `velocity`."
+            "`. Supported fields are `stiffness`, `damping`, and `mass`."
         ));
     };
 }

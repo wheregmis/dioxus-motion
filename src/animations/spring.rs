@@ -9,6 +9,12 @@ use dioxus::prelude::Store;
 /// Configuration for spring-based animations
 ///
 /// Uses a mass-spring-damper system to create natural motion.
+/// Velocity belongs to the animated value type; call `set_velocity` after starting playback.
+///
+/// ```compile_fail,E0560
+/// use dioxus_motion::prelude::Spring;
+/// let spring = Spring { velocity: 2.0, ..Spring::default() };
+/// ```
 ///
 /// # Examples
 /// ```rust
@@ -17,7 +23,6 @@ use dioxus::prelude::Store;
 ///     stiffness: 100.0,  // Higher values = faster snap
 ///     damping: 10.0,     // Higher values = less bounce
 ///     mass: 1.0,         // Higher values = more inertia
-///     velocity: 0.0,     // Initial velocity
 /// };
 /// ```
 #[cfg_attr(feature = "dioxus", derive(Store))]
@@ -34,10 +39,6 @@ pub struct Spring {
     /// Mass of the object (default: 1.0)
     /// Higher values increase inertia
     pub mass: f32,
-
-    /// Initial velocity (default: 0.0)
-    /// Can be set for pre-existing motion
-    pub velocity: f32,
 }
 
 /// Default spring configuration for general-purpose animations
@@ -47,7 +48,6 @@ impl Default for Spring {
             stiffness: 100.0,
             damping: 10.0,
             mass: 1.0,
-            velocity: 0.0,
         }
     }
 }
@@ -145,7 +145,6 @@ mod tests {
                 stiffness: next(),
                 damping: next(),
                 mass: next(),
-                velocity: 0.0,
             };
             if crate::animations::core::AnimationConfig::spring(spring)
                 .validate()
@@ -184,7 +183,6 @@ mod tests {
                 stiffness,
                 damping,
                 mass,
-                velocity: 0.0,
             };
             let advance = |x: f32, v: f32, dt| {
                 let step = spring.step(dt);
@@ -243,7 +241,6 @@ mod tests {
         assert_eq!(spring.stiffness, 100.0);
         assert_eq!(spring.damping, 10.0);
         assert_eq!(spring.mass, 1.0);
-        assert_eq!(spring.velocity, 0.0);
     }
 
     #[test]
@@ -252,12 +249,10 @@ mod tests {
             stiffness: 200.0,
             damping: 20.0,
             mass: 2.0,
-            velocity: 5.0,
         };
 
         assert_eq!(spring.stiffness, 200.0);
         assert_eq!(spring.damping, 20.0);
         assert_eq!(spring.mass, 2.0);
-        assert_eq!(spring.velocity, 5.0);
     }
 }
