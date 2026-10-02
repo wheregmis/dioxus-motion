@@ -26,11 +26,13 @@ jobs:
       group: release-plz-publish
       cancel-in-progress: false
     steps:
-      - &checkout
-        name: Checkout repository
+      # A depth-one checkout prevents release-plz from rewinding to a PR ancestor.
+      - name: Checkout publication commit
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          fetch-tags: true
           persist-credentials: false
       - name: Require successful CI for this commit
         run: python3 scripts/check_release_ci.py
@@ -59,7 +61,11 @@ jobs:
       group: release-plz-pr-${{ github.ref }}
       cancel-in-progress: false
     steps:
-      - *checkout
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
       - *install-rust
       - name: Generate release PR token
         id: app-token

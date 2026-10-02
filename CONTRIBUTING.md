@@ -189,6 +189,11 @@ Release preparation uses `release-plz`; publication stays manual:
 3. Wait for the merged commit's **push** CI run to succeed, then dispatch
    **Release-plz** on `main`. Publication checks that exact commit's latest push CI
    run, verifies packaged code with all features, and uses crates.io Trusted Publishing.
+   The publication job uses a depth-one checkout of `GITHUB_SHA` and checks that
+   checkout before querying CI. This prevents pinned release-plz from selecting an
+   earlier PR commit after a merge commit; release PR generation still fetches full
+   history. Keep publication shallow when updating release-plz and verify its
+   [commit-selection behavior](https://release-plz.dev/docs/usage/release#what-commit-is-released).
    A failed, pending, cancelled, missing, or unapproved run blocks publication.
 
 The next main crate release is `0.4.0` because it changes public APIs. The transition

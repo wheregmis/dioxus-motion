@@ -5,6 +5,11 @@ import os
 import subprocess
 
 
+def require_publication_checkout(sha, head, commit_count):
+    if not sha or head != sha or commit_count != "1":
+        raise SystemExit("Release requires a depth-one checkout of the dispatched commit.")
+
+
 def require_successful_ci(ref, sha, runs):
     run = runs[0] if runs else {}
     if (
@@ -19,6 +24,11 @@ def require_successful_ci(ref, sha, runs):
 
 if __name__ == "__main__":
     sha = os.environ["GITHUB_SHA"]
+    require_publication_checkout(
+        sha,
+        subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+        subprocess.check_output(["git", "rev-list", "--count", "HEAD"], text=True).strip(),
+    )
     runs = json.loads(subprocess.check_output([
         "gh", "run", "list", "--repo", os.environ["GITHUB_REPOSITORY"],
         "--workflow", "ci.yml", "--branch", "main", "--event", "push",
