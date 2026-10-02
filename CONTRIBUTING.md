@@ -121,8 +121,10 @@ On the same host and date, scaling those tokens in place reduced a paired run fr
 3,620 to 3,060 ns/update (about 15% less time), using the same sample settings.
 
 The deterministic fuzz checks sample float bit patterns for spring coefficients,
-values, and frame deltas. They check finite state and preservation of the last valid
-value when a frame fails; they do not prove correctness for every input or platform.
+values, and frame deltas, plus Unicode code points for CSS parsing and serialization.
+They check finite state, preservation of the last valid value when a frame fails,
+and parsing without UTF-8 slicing panics; they do not prove correctness for every
+input or platform.
 
 With `cargo-mutants` installed, audit a changed function, for example:
 

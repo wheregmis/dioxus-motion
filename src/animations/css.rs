@@ -538,11 +538,14 @@ fn parse_color_prefix(value: &str) -> Option<(usize, CssColor)> {
 
 fn parse_hex_color(value: &str) -> Option<CssColor> {
     let hex = value.strip_prefix('#')?;
+    if !matches!(hex.len(), 3 | 4 | 6 | 8) || !hex.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return None;
+    }
     let parse_pair = |pair: &str| u8::from_str_radix(pair, 16).ok().map(f32::from);
     let parse_single = |single: &str| {
-        u8::from_str_radix(&single.repeat(2), 16)
+        u8::from_str_radix(single, 16)
             .ok()
-            .map(f32::from)
+            .map(|value| f32::from(value) * 17.0)
     };
 
     match hex.len() {
@@ -722,6 +725,49 @@ fn parse_number_prefix(value: &str) -> Option<(usize, f32)> {
 mod tests {
     #![allow(clippy::unwrap_used, clippy::panic)]
     use super::*;
+
+    #[test]
+    fn fuzz_hex_and_unicode_css_do_not_panic() {
+        for value in [
+            "#éx",
+            "#aé",
+            "#一",
+            "#éé",
+            "#ab💚",
+            "#a💚b",
+            "#💚💚",
+            "#+fffff",
+        ] {
+            assert_eq!(parse_hex_color(value), None, "malformed color {value}");
+            assert_eq!(
+                value.into_css_value("color"),
+                CssValue::Keyword(value.into())
+            );
+        }
+        assert_eq!(
+            parse_hex_color("#AbC"),
+            Some(CssColor::rgba(170.0, 187.0, 204.0, 1.0))
+        );
+        assert_eq!(
+            parse_hex_color("#AbCd"),
+            Some(CssColor::rgba(170.0, 187.0, 204.0, 221.0 / 255.0))
+        );
+        let mut bits = 0x7eaf_35d1u32;
+        for _ in 0..4096 {
+            bits = bits.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+            if let Some(character) = char::from_u32(128 + bits % (0x110000 - 128)) {
+                for text in [
+                    format!("#{character}a"),
+                    format!("#ab{character}"),
+                    format!("x({character}12px)"),
+                ] {
+                    let parsed = text.as_str().into_css_value("color");
+                    assert!(parsed.is_finite(), "input {text:?}");
+                    let _ = parsed.to_css();
+                }
+            }
+        }
+    }
 
     #[test]
     fn extreme_css_numbers_interpolate_and_format_without_overflow() {
