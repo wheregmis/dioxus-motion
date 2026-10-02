@@ -6,6 +6,13 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -16,11 +23,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install system dependencies
         run: |
-          echo "deb http://gb.archive.ubuntu.com/ubuntu jammy main" | sudo tee -a /etc/apt/sources.list
           sudo apt-get update
           sudo apt-get install -y libxdo-dev libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
@@ -31,24 +37,13 @@ jobs:
           targets: wasm32-unknown-unknown
 
       - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-
-      - name: Check code
-        run: cargo check --all-features
+        uses: Swatinem/rust-cache@v2
 
       - name: Check browser workspace
-        run: cargo check --workspace --target wasm32-unknown-unknown
+        run: cargo check --workspace --target wasm32-unknown-unknown --locked
 
       - name: Run clippy
-        run: cargo clippy --all-features -- -D warnings
+        run: cargo clippy --workspace --all-features --locked -- -D warnings
 
       - name: Install browser check tools
         run: |
@@ -111,15 +106,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install system dependencies (Linux)
         if: matrix.os == 'ubuntu-latest' && contains(matrix.features, 'desktop')
         run: |
-          echo "deb http://gb.archive.ubuntu.com/ubuntu jammy main" | sudo tee -a /etc/apt/sources.list
           sudo apt-get update
           sudo apt-get install -y libxdo-dev libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-          sudo apt --fix-broken install
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -127,19 +120,11 @@ jobs:
           target: ${{ matrix.target }}
 
       - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.target }}-cargo-
+        uses: Swatinem/rust-cache@v2
 
       - name: Run tests
         # Run all unit, integration and doc tests for the specific target
-        run: cargo test --target ${{ matrix.target }} --no-default-features --features ${{ matrix.features }}
+        run: cargo test --target ${{ matrix.target }} --no-default-features --features ${{ matrix.features }} --locked
 
   # Check documentation
   docs:
@@ -147,11 +132,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install system dependencies
         run: |
-          echo "deb http://gb.archive.ubuntu.com/ubuntu jammy main" | sudo tee -a /etc/apt/sources.list
           sudo apt-get update
           sudo apt-get install -y libxdo-dev libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
@@ -159,15 +143,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+        uses: Swatinem/rust-cache@v2
 
       - name: Check documentation
         run: cargo doc --workspace --no-deps --all-features --locked
@@ -181,7 +157,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -197,7 +173,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -208,36 +184,29 @@ jobs:
       - name: Run security audit
         run: cargo audit
 
-  # Check workspace members
-  workspace:
-    name: Check workspace members
+  msrv:
+    name: Check MSRV (1.89)
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install system dependencies
-        run: |
-          echo "deb http://gb.archive.ubuntu.com/ubuntu jammy main" | sudo tee -a /etc/apt/sources.list
-          sudo apt-get update
-          sudo apt-get install -y libxdo-dev libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-          sudo apt --fix-broken install
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@1.89.0
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-
-      - name: Check all workspace members
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Check published crates on native and WASM
         run: |
-          cargo check --workspace --all-features
-          cargo clippy --workspace --all-features -- -D warnings
+          cargo check -p dioxus-motion -p dioxus-motion-transitions-macro --all-features --lib --locked
+          cargo check -p dioxus-motion --all-features --lib --target wasm32-unknown-unknown --locked
+
+  release-checks:
+    name: Check release tooling
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: actionlint@1.7.12
+      - name: Lint workflows
+        run: actionlint
+      - name: Test release CI gate
+        run: python3 scripts/test_release_ci.py

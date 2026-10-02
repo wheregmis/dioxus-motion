@@ -1441,7 +1441,7 @@ dependencies = [
 
 [[package]]
 name = "dioxus-motion"
-version = "0.3.6"
+version = "0.4.0"
 dependencies = [
  "dioxus",
  "dioxus-core",
