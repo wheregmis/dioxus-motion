@@ -1,0 +1,25 @@
+name: Pages Cleanup
+
+# The pinned pages-publish workflow gates cleanup on event_name == 'pull_request',
+# so this stays a plain pull_request trigger (not pull_request_target). Cleanup
+# only runs on PR close, checks out the default branch, and never runs PR code.
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+# Per-PR group: a close event is one-shot, so a cleanup run must never be
+# displaced by a publish or another PR's cleanup. Two writers to gh-pages may
+# collide on push — that fails loudly and the workflow can simply be re-run,
+# unlike a silently dropped concurrency slot.
+concurrency:
+  group: gh-pages-cleanup-${{ github.repository }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    uses: DioxusLabs/dioxus-ci/.github/workflows/pages-publish.yml@60c40430ef69c6d7b92439bc43e281689db1bde7
+    with:
+      pages-url-base: https://wheregmis.github.io
