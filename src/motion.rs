@@ -11,7 +11,7 @@ use crate::sequence::AnimationSequence;
 // Returned to the store owner so user code runs after its write guard is released.
 pub(crate) enum Completion {
     Animation(OnComplete),
-    Sequence(Box<dyn FnOnce() + Send>),
+    Sequence(Option<OnComplete>, Box<dyn FnOnce() + Send>),
 }
 
 impl Completion {
@@ -20,7 +20,12 @@ impl Completion {
             Self::Animation(callback) => {
                 crate::animations::core::execute_completion_callback(&callback)?;
             }
-            Self::Sequence(callback) => callback(),
+            Self::Sequence(step, callback) => {
+                if let Some(step) = step {
+                    crate::animations::core::execute_completion_callback(&step)?;
+                }
+                callback();
+            }
         }
         Ok(())
     }
@@ -125,11 +130,8 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         &mut self,
         sequence: AnimationSequence<T>,
     ) -> Result<Option<Completion>, AnimationError> {
-        sequence.validate()?;
         validate_value(&self.current, "current value")?;
-        if let Some(first) = sequence.steps().first() {
-            validate_spring_transition(&self.current, &first.target, first.config.mode)?;
-        }
+        sequence.validate_from(Some(&self.current))?;
         self.stop();
         sequence.reset();
         if let Some(first_step) = sequence.current_step_data() {
@@ -140,7 +142,9 @@ impl<T: Animatable + Send + 'static> Motion<T> {
             self.sequence = Some(sequence);
             Ok(None)
         } else {
-            Ok(sequence.take_completion().map(Completion::Sequence))
+            Ok(sequence
+                .take_completion()
+                .map(|callback| Completion::Sequence(None, callback)))
         }
     }
 
@@ -227,7 +231,8 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     /// Spring simulation caps a frame at 100 ms to bound work after stalls.
     /// Nonfinite frame results stop playback without firing completion callbacks
     /// or replacing the last valid value, and return a typed error.
-    /// A busy or poisoned completion callback also returns an error after playback finishes.
+    /// A busy or poisoned completion callback also returns an error after its leg finishes.
+    /// Sequence step callbacks run after advancing state, before the sequence callback.
     pub fn update(&mut self, dt: f32) -> Result<bool, AnimationError> {
         let (running, completion) = self.update_with_completion(dt)?;
         if let Some(completion) = completion {
@@ -285,10 +290,6 @@ impl<T: Animatable + Send + 'static> Motion<T> {
             return Ok((true, None));
         }
 
-        if self.sequence.is_some() {
-            return Ok(self.advance_sequence_step());
-        }
-
         Ok(self.handle_completion())
     }
 
@@ -310,16 +311,20 @@ impl<T: Animatable + Send + 'static> Motion<T> {
             return (false, None);
         };
 
+        let step_completion = self.config.on_complete.clone();
         if sequence.advance_step()
             && let Some(step) = sequence.current_step_data()
         {
             let target = step.target.clone();
             let config = step.config.as_ref().clone();
             self.start_animation(target, config);
-            return (true, None);
+            return (true, step_completion.map(Completion::Animation));
         }
 
-        let completion = sequence.take_completion().map(Completion::Sequence);
+        let completion = match sequence.take_completion() {
+            Some(callback) => Some(Completion::Sequence(step_completion, callback)),
+            None => step_completion.map(Completion::Animation),
+        };
         self.finish_motion();
         (false, completion)
     }
@@ -477,6 +482,9 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     }
 
     fn complete_animation(&mut self) -> (bool, Option<Completion>) {
+        if self.sequence.is_some() {
+            return self.advance_sequence_step();
+        }
         let completion = self.config.on_complete.clone().map(Completion::Animation);
         self.finish_motion();
         (false, completion)
@@ -1909,6 +1917,85 @@ mod tests {
                     "offsets={offsets:?}, progress={progress}, actual={}, expected={expected}",
                     motion.current
                 );
+            }
+        }
+    }
+
+    #[test]
+    fn sequence_honors_step_loops_and_completion_order() {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let first = events.clone();
+        let second = events.clone();
+        let complete = events.clone();
+        let sequence = AnimationSequence::new()
+            .then(
+                1.0,
+                instant_tween()
+                    .with_loop(LoopMode::Times(2))
+                    .with_on_complete(move || first.lock().unwrap().push("first")),
+            )
+            .then(
+                2.0,
+                instant_tween()
+                    .with_loop(LoopMode::AlternateTimes(1))
+                    .with_on_complete(move || second.lock().unwrap().push("second")),
+            )
+            .on_complete(move || complete.lock().unwrap().push("sequence"));
+        let mut motion = Motion::new(0.0f32).unwrap();
+        motion.animate_sequence(sequence).unwrap();
+        for (running, value, target, expected_events) in [
+            (true, 0.0, 1.0, vec![]),
+            (true, 1.0, 2.0, vec!["first"]),
+            (true, 2.0, 1.0, vec!["first"]),
+            (false, 1.0, 1.0, vec!["first", "second", "sequence"]),
+        ] {
+            assert_eq!(motion.update(0.01), Ok(running));
+            assert_eq!(motion.get_value(), value);
+            assert_eq!(motion.get_target(), target);
+            assert_eq!(*events.lock().unwrap(), expected_events);
+        }
+        assert_eq!(motion.update(0.01), Ok(false));
+        assert_eq!(*events.lock().unwrap(), vec!["first", "second", "sequence"]);
+    }
+
+    #[test]
+    fn sequence_validates_springs_from_round_trip_endpoints() {
+        use crate::animations::style::MotionStyle;
+        let style = |left: &str| {
+            let mut value = MotionStyle::default();
+            value.add_css_property("left", left);
+            value
+        };
+        for compatible in [true, false] {
+            let mut motion = Motion::new(style("10px")).unwrap();
+            motion
+                .animate_to(style("20px"), AnimationConfig::spring(Spring::default()))
+                .unwrap();
+            let target = if compatible {
+                style("30px")
+            } else {
+                style("30%")
+            };
+            let sequence = AnimationSequence::new()
+                .then(
+                    style("100%"),
+                    instant_tween().with_loop(LoopMode::AlternateTimes(1)),
+                )
+                .then(target.clone(), AnimationConfig::spring(Spring::default()));
+            if compatible {
+                motion.animate_sequence(sequence).unwrap();
+                assert_eq!(motion.update(0.01), Ok(true));
+                assert_eq!(motion.update(0.01), Ok(true));
+                assert_eq!(motion.get_value(), style("10px"));
+                assert_eq!(motion.get_target(), target);
+            } else {
+                assert_eq!(
+                    motion.animate_sequence(sequence),
+                    Err(AnimationError::IncompatibleSpringValues)
+                );
+                assert_eq!(motion.get_value(), style("10px"));
+                assert_eq!(motion.get_target(), style("20px"));
+                assert!(motion.is_running());
             }
         }
     }

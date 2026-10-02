@@ -21,7 +21,7 @@ pub fn IntermediateAnimationGuide() -> Element {
             }
             Lesson {
                 title: "2. Let one step finish before the next",
-                summary: "A sequence first tweens to 100, springs back to 40, then tweens home. Each step has its own configuration. A spring step advances when it settles, so the sequence has no fixed total duration.",
+                summary: "A sequence first tweens to 100, springs back to 40, then tweens home. Each step honors its own delay, loop mode, and completion callback. Infinite loops keep the sequence at that step. A spring step advances when it settles, so the sequence has no fixed total duration.",
                 exercise: "Run the sequence and watch the pause in direction at 100 and 40. Change the middle spring damping and observe how it changes the time before the final step begins.",
                 source: dioxus_code::code!("/src/pages/lessons/sequence.rs"), SequenceDemo {}
             }

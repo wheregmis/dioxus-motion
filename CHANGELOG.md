@@ -58,6 +58,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Sequence steps honor their loop modes and run their animation completion callbacks once before overall sequence completion. Spring transition validation follows finite round trips back to their starting value instead of assuming every step ends at its target.
+
 - Animation duration reports include the delay on every loop leg, treat zero repeat counts as one playback leg, and saturate infinite loops at `Duration::MAX`. Spring estimates apply the same loop accounting.
 
 - Keyframe completion lands exactly on the last value when terminal offsets are duplicated, including zero-duration tracks. Endpoint settlement bypasses segment lookup and easing.

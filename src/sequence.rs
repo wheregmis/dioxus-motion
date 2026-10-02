@@ -3,7 +3,7 @@
 use crate::animations::core::{
     Animatable, AnimationError, validate_spring_transition, validate_value,
 };
-use crate::prelude::AnimationConfig;
+use crate::prelude::{AnimationConfig, LoopMode};
 
 use std::sync::Mutex;
 use std::sync::{Arc, MutexGuard};
@@ -28,14 +28,26 @@ pub struct AnimationSequence<T: Animatable> {
 }
 
 impl<T: Animatable> AnimationSequence<T> {
-    /// Validates every step before playback, including the type's default epsilon.
+    /// Validates targets, configurations, and transitions whose starting values are known.
+    /// Motion setup also checks transitions using the actual initial value.
     pub fn validate(&self) -> Result<(), AnimationError> {
+        self.validate_from(None)
+    }
+
+    pub(crate) fn validate_from<'a>(
+        &'a self,
+        mut current: Option<&'a T>,
+    ) -> Result<(), AnimationError> {
         for step in &self.steps {
             step.config.validate_for::<T>()?;
             validate_value(&step.target, "sequence target")?;
-        }
-        for pair in self.steps.windows(2) {
-            validate_spring_transition(&pair[0].target, &pair[1].target, pair[1].config.mode)?;
+            if let Some(current) = current {
+                validate_spring_transition(current, &step.target, step.config.mode)?;
+            }
+            // A finite round trip finishes at its starting value; zero counts play one leg.
+            if !matches!(step.config.loop_mode, Some(LoopMode::AlternateTimes(1..))) {
+                current = Some(&step.target);
+            }
         }
         Ok(())
     }
@@ -99,7 +111,9 @@ impl<T: Animatable> AnimationSequence<T> {
         self.steps.reserve(additional);
     }
 
-    /// Adds a new step to the sequence and returns a new sequence
+    /// Adds a step with its own delay, loop mode, and completion callback.
+    /// Infinite loops hold the sequence at that step. Step callbacks run once after
+    /// all of its legs, before the overall sequence callback.
     pub fn then(mut self, target: T, config: AnimationConfig) -> Self {
         let new_step = AnimationStep {
             target,
