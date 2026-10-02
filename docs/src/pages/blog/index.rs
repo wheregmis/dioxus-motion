@@ -38,7 +38,7 @@ pub fn Blog() -> Element {
                     h2 { "Two motion models, one handle" }
                     p {
                         "Every animation is a spring or a tween. A spring integrates displacement and velocity until it settles, so a retargeted animation keeps its momentum. A tween interpolates over a fixed duration with an easing function. Both run through the same "
-                        code { "Motion<T>" }
+                        code { "MotionHandle<T>" }
                         " handle returned by "
                         code { "use_motion" }
                         "."
@@ -89,7 +89,26 @@ x.animate_to(0.0, AnimationConfig::tween(Duration::from_millis(300)))?;"#,
                             r#"#[derive(Clone, PartialEq, Default)]
 struct Point { x: f32, y: f32 }
 
-// Add, Sub, and Mul<f32> come from std::ops.
+// Animatable needs Add, Sub, and Mul<f32> arithmetic.
+impl Add for Point {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        Self { x: self.x + rhs.x, y: self.y + rhs.y }
+    }
+}
+impl Sub for Point {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        Self { x: self.x - rhs.x, y: self.y - rhs.y }
+    }
+}
+impl Mul<f32> for Point {
+    type Output = Self;
+    fn mul(self, scale: f32) -> Self {
+        Self { x: self.x * scale, y: self.y * scale }
+    }
+}
+
 impl Animatable for Point {
     fn interpolate(&self, target: &Self, t: f32) -> Self {
         Self {
