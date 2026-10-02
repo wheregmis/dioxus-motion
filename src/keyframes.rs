@@ -45,6 +45,8 @@ impl<T: Animatable> KeyframeAnimation<T> {
         &self.keyframes
     }
 
+    /// Adds a frame, keeping equal offsets in insertion order.
+    /// Completed playback always lands on the last frame, including duplicate offsets at 1.0.
     pub fn add_keyframe(
         mut self,
         value: T,

@@ -344,16 +344,20 @@ impl<T: Animatable + Send + 'static> Motion<T> {
                 return Ok(true);
             }
 
-            let end_index = keyframe_end_index(keyframes, |frame| frame.offset < progress);
-            let (start, end) = if progress < keyframes[0].offset {
+            let (start, end) = if progress >= 1.0 {
+                let last = &keyframes[keyframes.len() - 1];
+                (last, last)
+            } else if progress < keyframes[0].offset {
                 let first = &keyframes[0];
                 (first, first)
-            } else if end_index < keyframes.len() {
-                (&keyframes[end_index - 1], &keyframes[end_index])
-            } else if let Some(last) = keyframes.last() {
-                (last, last)
             } else {
-                return Ok(true);
+                let end_index = keyframe_end_index(keyframes, |frame| frame.offset < progress);
+                if end_index < keyframes.len() {
+                    (&keyframes[end_index - 1], &keyframes[end_index])
+                } else {
+                    let last = &keyframes[keyframes.len() - 1];
+                    (last, last)
+                }
             };
 
             let local_progress = if start.offset == end.offset {
@@ -1816,6 +1820,34 @@ mod tests {
     }
 
     #[test]
+    fn keyframes_finish_at_the_last_value_with_duplicate_terminal_offsets() {
+        fn invalid_easing(_: f32, _: f32, _: f32, _: f32) -> f32 {
+            f32::NAN
+        }
+
+        for count in [2, 5, 40] {
+            for (duration, dt) in [
+                (Duration::ZERO, 0.1),
+                (Duration::from_secs(1), 1.0),
+                (Duration::from_secs(1), 2.0),
+            ] {
+                let mut track = KeyframeAnimation::new(duration);
+                for index in 0..count {
+                    track = track
+                        .add_keyframe(index as f32, 1.0, Some(invalid_easing))
+                        .unwrap();
+                }
+                let mut motion = Motion::new(-1.0f32).unwrap();
+                motion.animate_keyframes(track).unwrap();
+                assert_eq!(motion.update(dt), Ok(false));
+                assert_eq!(motion.get_value(), (count - 1) as f32);
+                assert_eq!(motion.get_value(), motion.get_target());
+                assert!(!motion.is_running());
+            }
+        }
+    }
+
+    #[test]
     fn keyframe_binary_lookup_matches_linear_interpolation() {
         fn quadratic(t: f32, _: f32, _: f32, _: f32) -> f32 {
             t * t
@@ -1865,9 +1897,13 @@ mod tests {
                 } else {
                     (progress - start.offset) / (end.offset - start.offset)
                 };
-                let expected = start
-                    .value
-                    .interpolate(&end.value, quadratic(local, 0.0, 1.0, 1.0));
+                let expected = if progress >= 1.0 {
+                    frames.last().unwrap().value
+                } else {
+                    start
+                        .value
+                        .interpolate(&end.value, quadratic(local, 0.0, 1.0, 1.0))
+                };
                 assert!(
                     (motion.current - expected).abs() < 0.0001,
                     "offsets={offsets:?}, progress={progress}, actual={}, expected={expected}",
