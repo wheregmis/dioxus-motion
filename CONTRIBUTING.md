@@ -38,7 +38,8 @@ Thank you for your interest in contributing to Dioxus Motion! This document prov
 We use GitHub Actions for continuous integration. The CI pipeline runs on every pull request to the main branch and includes:
 
 ### Comprehensive CI Checks
-- **Compilation Check**: Ensures code compiles with all features
+- **Compilation Check**: Checks the workspace with all features and on WASM
+- **MSRV Check**: Checks published crates on Rust 1.89 for native and WASM
 - **Clippy Check**: Enforces Rust coding standards and catches common issues
 - **Test Suite**: Runs all unit and integration tests
 - **Formatting Check**: Ensures code follows rustfmt standards
@@ -178,10 +179,54 @@ The project uses feature flags to control functionality:
 
 ## Release Process
 
-Releases are automated using `release-plz`:
-1. Changes are merged to main
-2. `release-plz` creates a PR with version bumps
-3. After review and merge, `release-plz` publishes to crates.io
+Release preparation uses `release-plz`; publication stays manual:
+
+1. Merge changes to `main`. Release-plz opens or updates a release PR.
+2. Review version bumps and both crate changelogs, and merge only after CI passes.
+   Require the CI jobs (including `Check MSRV (1.89)` and `Check release tooling`)
+   in the repository's branch protection rules. Replace the retired
+   `Check workspace members` requirement with the consolidated `Check` job.
+3. Wait for the merged commit's **push** CI run to succeed, then dispatch
+   **Release-plz** on `main`. Publication checks that exact commit's latest push CI
+   run, verifies packaged code with all features, and uses crates.io Trusted Publishing.
+   The publication job uses a depth-one checkout of `GITHUB_SHA` and checks that
+   checkout before querying CI. This prevents pinned release-plz from selecting an
+   earlier PR commit after a merge commit; release PR generation still fetches full
+   history. Keep publication shallow when updating release-plz and verify its
+   [commit-selection behavior](https://release-plz.dev/docs/usage/release#what-commit-is-released).
+   A failed, pending, cancelled, missing, or unapproved run blocks publication.
+
+The next main crate release is `0.4.0` because it changes public APIs. The transition
+proc-macro source is unchanged from `0.1.2`; its version remains independent.
+Keep unpublished notes in `[Unreleased]` until release-plz prepares them. The old
+`0.3.6` heading described an unpublished release and has been folded back into
+`[Unreleased]`. Avoid merging unrelated changes between preparing and publishing
+an unpublished version: release-plz does not recalculate a version already ahead
+of crates.io. Check breaking changes manually, particularly declarative and proc
+macros that cargo-semver-checks cannot fully validate.
+
+### Maintainer setup before merging these workflow changes
+
+- Install a GitHub App on this repository with **Contents: read/write** and
+  **Pull requests: read/write**. Set repository variable `RELEASE_PLZ_APP_ID` and
+  secret `RELEASE_PLZ_APP_PRIVATE_KEY`. The release PR job requires this App token
+  so its pushes trigger CI; it has no registry credential.
+  See [release-plz GitHub App setup](https://release-plz.dev/docs/github/token#use-a-github-app).
+- Configure trusted publishers for **both** `dioxus-motion` and
+  `dioxus-motion-transitions-macro` on crates.io: GitHub owner `wheregmis`, repository
+  `dioxus-motion`, workflow `release-plz.yml`, and no environment restriction
+  (the publication job does not use a GitHub environment). The workflow grants
+  `id-token: write` only to the manual publication job and does not pass a static
+  registry token. Remove the obsolete `CARGO_REGISTRY_TOKEN` repository secret
+  once both publishers are configured.
+  See [crates.io Trusted Publishing](https://crates.io/docs/trusted-publishing).
+- Close the stale release PR #69 before merging, then let the next `main` push
+  prepare a fresh release PR for `0.4.0` using the repaired changelogs.
+
+Release-plz is pinned to `0.3.169` in the workflow's `RELEASE_PLZ_VERSION` variable.
+Update that pin deliberately after reviewing its release notes. Validate local
+release gate changes with `python3 scripts/test_release_ci.py` and workflow changes
+with `actionlint`.
 
 ## Getting Help
 

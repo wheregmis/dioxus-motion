@@ -30,12 +30,13 @@ commit_preprocessors = [
 [[package]]
 name = "dioxus-motion"
 changelog_path = "./CHANGELOG.md"
+changelog_include = ["dioxus-motion-transitions-macro"]
+publish_all_features = true
 git_release_enable = true
 
 [[package]]
 name = "dioxus-motion-transitions-macro"
-changelog_include = []
-changelog_path = "./CHANGELOG.md"
+changelog_path = "packages/dioxus-motion-transitions-macro/CHANGELOG.md"
 git_release_enable = true
 
 [[package]]

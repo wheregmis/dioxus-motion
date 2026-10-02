@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- *(ci)* separate release-plz release from release-pr trigger
+
 - Remove the allocation and redundant spin-sleep from native frame delays. Use Tokio virtual time in delay tests so machine load cannot create false failures.
 
 - Reject nonfinite epsilon values in validation. Keep scalar and transform interpolation finite for opposite extreme endpoints, preserve exact translation/scale endpoints, and wrap rotations spanning multiple turns along the shortest path.
@@ -95,24 +97,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add deterministic frame-delta fuzzing, exhaustive loop-count checks, sequence boundary checks, and interpolation/physics regression checks informed by mutation testing.
 - Keep host-dependent timing measurements as manual benchmarks and remove misleading idle-heavy and battery-simulation checks.
 
-## [0.3.6](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-v0.3.5...dioxus-motion-v0.3.6) - 2026-05-22
-
-### <!-- 2 -->Fixes
-
-- *(ci)* separate release-plz release from release-pr trigger
-
 ## [0.3.5](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-v0.3.4...dioxus-motion-v0.3.5) - 2026-04-07
 
 ### <!-- 3 -->Other
 
 - release
-
-## [0.1.2](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-transitions-macro-v0.1.1...dioxus-motion-transitions-macro-v0.1.2) - 2026-04-07
-
-### <!-- 3 -->Other
-
-- release
-- more dep update
 
 ## [0.3.4](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-v0.3.3...dioxus-motion-v0.3.4) - 2026-04-07
 
@@ -137,14 +126,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(team)* auto-checkpoint worker-1 [unknown]
 - more dep update
 - Update dependency versions and regenerate lockfile
-
-## [0.1.2](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-transitions-macro-v0.1.1...dioxus-motion-transitions-macro-v0.1.2) - 2026-04-07
-
-### <!-- 3 -->Other
-
-- more dep update
-
-## [0.3.4](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-v0.3.3...dioxus-motion-v0.3.4) - 2026-04-07
 
 ### <!-- 1 -->New features
 
@@ -298,21 +279,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Not showing layout, now need to show it somehow
 - Update workspace configuration and add utils module for transitions
 
-## [0.1.1](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-transitions-macro-v0.1.0...dioxus-motion-transitions-macro-v0.1.1) - 2025-11-03
-
-### <!-- 1 -->New features
-
-- update edition
-- rustfmt **/*.rs --edition 2024
-
-### <!-- 2 -->Fixes
-
-- edition2024 -> error: binding modifiers may only be written when the default binding mode is move
-
-### <!-- 3 -->Other
-
-- Bump Dioxus Version
-- Refactor dioxus-motion-transitions-macro package structure and remove obsolete route_transitions crate
 ### BREAKING CHANGES:
 - **Major Simplification: Simplified Animatable Trait**
   - Reduced from 7 required methods to just 2: `interpolate()` and `magnitude()`
