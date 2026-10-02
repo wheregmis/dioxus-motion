@@ -8,30 +8,32 @@ struct Shape {
     colors: (&'static str, &'static str),
 }
 
+// Every silhouette is a 12-vertex polygon so clip-path can interpolate
+// between any pair — mismatched point counts snap instead of morphing.
 const SHAPES: [Shape; 5] = [
     Shape {
         name: "orb",
-        clip: "circle(48% at 50% 50%)",
+        clip: "polygon(98% 50%, 91.6% 74%, 74% 91.6%, 50% 98%, 26% 91.6%, 8.4% 74%, 2% 50%, 8.4% 26%, 26% 8.4%, 50% 2%, 74% 8.4%, 91.6% 26%)",
         colors: ("#b9f078", "#6ee7b7"),
     },
     Shape {
         name: "hex",
-        clip: "polygon(25% 5%, 75% 5%, 98% 50%, 75% 95%, 25% 95%, 2% 50%)",
+        clip: "polygon(98% 50%, 86% 70.8%, 74% 91.6%, 50% 91.6%, 26% 91.6%, 14% 70.8%, 2% 50%, 14% 29.2%, 26% 8.4%, 50% 8.4%, 74% 8.4%, 86% 29.2%)",
         colors: ("#6ee7b7", "#a5f3fc"),
     },
     Shape {
         name: "star",
-        clip: "polygon(50% 2%, 61% 36%, 98% 36%, 68% 58%, 79% 94%, 50% 72%, 21% 94%, 32% 58%, 2% 36%, 39% 36%)",
+        clip: "polygon(98% 50%, 69.1% 61%, 74% 91.6%, 50% 72%, 26% 91.6%, 30.9% 61%, 2% 50%, 30.9% 39%, 26% 8.4%, 50% 28%, 74% 8.4%, 69.1% 39%)",
         colors: ("#a5f3fc", "#c4b5fd"),
     },
     Shape {
         name: "diamond",
-        clip: "polygon(50% 0%, 95% 50%, 50% 100%, 5% 50%)",
+        clip: "polygon(50% 0%, 65% 16.7%, 80% 33.3%, 95% 50%, 80% 66.7%, 65% 83.3%, 50% 100%, 35% 83.3%, 20% 66.7%, 5% 50%, 20% 33.3%, 35% 16.7%)",
         colors: ("#c4b5fd", "#f0abfc"),
     },
     Shape {
         name: "bolt",
-        clip: "polygon(58% 0%, 12% 58%, 42% 58%, 38% 100%, 88% 40%, 56% 40%)",
+        clip: "polygon(58% 0%, 35% 29%, 12% 58%, 27% 58%, 42% 58%, 40% 79%, 38% 100%, 63% 70%, 88% 40%, 72% 40%, 56% 40%, 57% 20%)",
         colors: ("#f0abfc", "#b9f078"),
     },
 ];

@@ -10,23 +10,32 @@ const COLORS: [&str; 3] = ["#b9f078", "#6ee7b7", "#a5f3fc"];
 fn WaveLetter(letter: char, index: usize) -> Element {
     let mut transform = use_motion(Transform::identity())?;
 
+    // Stagger only the first leg: a delayed Alternate loop replays the
+    // delay on every leg and the letters fall out of sync.
     use_effect(move || {
-        transform
-            .animate_to(
-                Transform {
-                    y: -22.0,
-                    scale: 1.15,
-                    rotation: if index % 2 == 0 { -0.06 } else { 0.06 },
-                    x: 0.0,
-                },
-                AnimationConfig::new(AnimationMode::Tween(Tween {
-                    duration: Duration::from_millis(1100),
-                    easing: easer::functions::Sine::ease_in_out,
-                }))
-                .with_loop(LoopMode::Alternate)
-                .with_delay(Duration::from_millis((index * 90) as u64)),
-            )
-            .expect("valid animation configuration");
+        spawn(async move {
+            if Time::delay(Duration::from_millis((index * 90) as u64))
+                .await
+                .is_err()
+            {
+                return;
+            }
+            transform
+                .animate_to(
+                    Transform {
+                        y: -22.0,
+                        scale: 1.15,
+                        rotation: if index % 2 == 0 { -0.06 } else { 0.06 },
+                        x: 0.0,
+                    },
+                    AnimationConfig::new(AnimationMode::Tween(Tween {
+                        duration: Duration::from_millis(1100),
+                        easing: easer::functions::Sine::ease_in_out,
+                    }))
+                    .with_loop(LoopMode::Alternate),
+                )
+                .expect("valid animation configuration");
+        });
     });
 
     let t = transform.get_value();

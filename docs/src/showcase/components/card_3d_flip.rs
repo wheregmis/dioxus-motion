@@ -14,7 +14,7 @@ pub fn Card3DFlip() -> Element {
     let mut rotation = use_motion(0.0f32)?;
     let mut flipped = use_signal(|| false);
 
-    let flip = move |_| {
+    let mut flip = move || {
         let target = if *flipped.read() { 0.0 } else { 180.0 };
         rotation
             .animate_to(target, AnimationConfig::new(AnimationMode::Spring(FLIP)))
@@ -22,12 +22,23 @@ pub fn Card3DFlip() -> Element {
         flipped.toggle();
     };
 
+    let onclick = move |_| flip();
+    let onkeydown = move |e: Event<KeyboardData>| {
+        if e.code() == Code::Enter || e.code() == Code::Space {
+            flip();
+        }
+    };
+
     let angle = rotation.get_value();
     let shine = ((angle / 180.0) * std::f32::consts::PI).sin().abs();
 
     rsx! {
         div { class: "cursor-pointer select-none", style: "perspective: 1200px",
-            onclick: flip,
+            tabindex: "0",
+            role: "button",
+            aria_label: "Flip card",
+            onclick,
+            onkeydown,
             div {
                 class: "relative w-72 h-44",
                 style: "transform-style: preserve-3d; transform: rotateY({angle}deg);",

@@ -4,6 +4,7 @@ use dioxus_motion::prelude::*;
 const SIZE: f32 = 190.0;
 const HALF: f32 = SIZE / 2.0;
 
+/// Spring preset for cursor tilt — snappy but not jittery.
 fn tilt() -> AnimationConfig {
     AnimationConfig::new(AnimationMode::Spring(Spring {
         stiffness: 170.0,
@@ -25,7 +26,9 @@ fn CubeFace(face: &'static str, label: &'static str, accent: &'static str) -> El
     };
     rsx! {
         div {
-            class: "absolute inset-0 grid place-items-center rounded-xl",
+            // pointer-events stay on the stage so element_coordinates is
+            // always measured against the fixed 190px container
+            class: "absolute inset-0 grid place-items-center rounded-xl pointer-events-none",
             style: "transform: {transform}; \
                    background: linear-gradient(150deg, {accent}26, #11161cd9 55%); \
                    border: 1px solid {accent}55; \
@@ -43,14 +46,17 @@ fn CubeFace(face: &'static str, label: &'static str, accent: &'static str) -> El
 /// spin + squash + wobble through `AnimationSequence` steps.
 #[component]
 pub fn InteractiveCube() -> Element {
-    let mut rot_x = use_motion(-18.0f32)?;
+    // rot_y carries the resting pose plus click spins; tilt_x/tilt_y are
+    // transient cursor deltas so mouse movement never interrupts a spin
     let mut rot_y = use_motion(24.0f32)?;
+    let mut tilt_x = use_motion(0.0f32)?;
+    let mut tilt_y = use_motion(0.0f32)?;
     let mut rot_z = use_motion(0.0f32)?;
     let mut scale = use_motion(1.0f32)?;
     let mut glow = use_motion(0.25f32)?;
     let mut lift = use_motion(0.0f32)?;
 
-    let onclick = move |_| {
+    let mut fire = move || {
         rot_y
             .animate_sequence(AnimationSequence::new().then(
                 rot_y.get_value() + 360.0,
@@ -118,15 +124,22 @@ pub fn InteractiveCube() -> Element {
         .expect("valid animation configuration");
     };
 
+    let onclick = move |_| fire();
+    let onkeydown = move |e: Event<KeyboardData>| {
+        if e.code() == Code::Enter || e.code() == Code::Space {
+            fire();
+        }
+    };
+
     let onmousemove = move |e: Event<MouseData>| {
         let point = e.data().element_coordinates();
         let dx = (point.x as f32 - HALF) / HALF;
         let dy = (point.y as f32 - HALF) / HALF;
-        rot_x
-            .animate_to(-18.0 - dy * 24.0, tilt())
+        tilt_x
+            .animate_to(-dy * 18.0, tilt())
             .expect("valid animation configuration");
-        rot_y
-            .animate_to(24.0 + dx * 24.0, tilt())
+        tilt_y
+            .animate_to(dx * 18.0, tilt())
             .expect("valid animation configuration");
     };
 
@@ -140,8 +153,8 @@ pub fn InteractiveCube() -> Element {
     let onmouseleave = move |_| {
         lift.animate_to(0.0, tilt()).expect("valid animation");
         glow.animate_to(0.25, tilt()).expect("valid animation");
-        rot_x.animate_to(-18.0, tilt()).expect("valid animation");
-        rot_y.animate_to(24.0, tilt()).expect("valid animation");
+        tilt_x.animate_to(0.0, tilt()).expect("valid animation");
+        tilt_y.animate_to(0.0, tilt()).expect("valid animation");
     };
 
     rsx! {
@@ -162,13 +175,17 @@ pub fn InteractiveCube() -> Element {
                 }
                 div {
                     onclick,
+                    onkeydown,
                     onmousemove,
                     onmouseenter,
                     onmouseleave,
+                    tabindex: "0",
+                    role: "button",
+                    aria_label: "Spin cube",
                     class: "absolute inset-0",
                     style: "transform-style: preserve-3d; \
                            transform: translateY(-{lift.get_value()}px) \
-                           rotateX({rot_x.get_value()}deg) rotateY({rot_y.get_value()}deg) \
+                           rotateX({-18.0 + tilt_x.get_value()}deg) rotateY({rot_y.get_value() + tilt_y.get_value()}deg) \
                            rotateZ({rot_z.get_value()}deg) scale({scale.get_value()});",
                     CubeFace { face: "front", label: "spring", accent: "#b9f078" }
                     CubeFace { face: "back", label: "tween", accent: "#a5f3fc" }
@@ -178,7 +195,7 @@ pub fn InteractiveCube() -> Element {
                     CubeFace { face: "bottom", label: "ease", accent: "#eaffd0" }
                 }
             }
-            p { class: "text-xs text-[#848e9b]", "Hover to tilt · click to chain a sequence" }
+            p { class: "text-xs text-[#848e9b]", "Hover to tilt · click or press Enter to chain a sequence" }
         }
     }
 }

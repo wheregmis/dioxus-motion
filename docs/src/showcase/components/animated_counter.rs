@@ -29,11 +29,14 @@ pub fn AnimatedCounter() -> Element {
                 AnimationConfig::new(AnimationMode::Spring(COUNT)),
             )
             .expect("valid animation configuration");
-        pop.animate_to(1.2, AnimationConfig::new(AnimationMode::Spring(POP)))
-            .expect("valid animation configuration");
-        pop.animate_to(
-            1.0,
-            AnimationConfig::new(AnimationMode::Spring(POP)).with_delay(Duration::from_millis(200)),
+        pop.animate_sequence(
+            AnimationSequence::new()
+                .then(1.2, AnimationConfig::new(AnimationMode::Spring(POP)))
+                .then(
+                    1.0,
+                    AnimationConfig::new(AnimationMode::Spring(POP))
+                        .with_delay(Duration::from_millis(200)),
+                ),
         )
         .expect("valid animation configuration");
     };

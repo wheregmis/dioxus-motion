@@ -2,13 +2,13 @@ use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
 use easer::functions::Easing;
 
-fn ring_config(delay: f32) -> AnimationConfig {
+/// One full expand-and-fade cycle for a sonar ring, looping forever.
+fn ring_config() -> AnimationConfig {
     AnimationConfig::new(AnimationMode::Tween(Tween {
         duration: Duration::from_millis(2600),
         easing: easer::functions::Sine::ease_in_out,
     }))
     .with_loop(LoopMode::Infinite)
-    .with_delay(Duration::from_secs_f32(delay))
 }
 
 /// One expanding sonar ring: scales out while fading to nothing.
@@ -17,13 +17,21 @@ fn SonarRing(delay: f32) -> Element {
     let mut scale = use_motion(0.25f32)?;
     let mut opacity = use_motion(0.85f32)?;
 
+    // The stagger delay must apply only to the first pass — a looping
+    // config replays its delay on every iteration and the rings drift
+    // out of phase.
     use_effect(move || {
-        scale
-            .animate_to(1.0, ring_config(delay))
-            .expect("valid animation configuration");
-        opacity
-            .animate_to(0.0, ring_config(delay))
-            .expect("valid animation configuration");
+        spawn(async move {
+            if Time::delay(Duration::from_secs_f32(delay)).await.is_err() {
+                return;
+            }
+            scale
+                .animate_to(1.0, ring_config())
+                .expect("valid animation configuration");
+            opacity
+                .animate_to(0.0, ring_config())
+                .expect("valid animation configuration");
+        });
     });
 
     rsx! {

@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
 use easer::functions::Easing;
 
+/// A tick turns lime once the fill has passed it.
 fn tick_color(i: usize, p: f32) -> &'static str {
     if (i * 10) as f32 <= p {
         "#b9f078"

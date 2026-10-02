@@ -69,6 +69,7 @@ pub fn PathAnimation(path: &'static str, duration: f32) -> Element {
                     stroke: "url(#comet-trail)",
                     stroke_width: "3",
                     stroke_linecap: "round",
+                    path_length: "1000",
                     stroke_dasharray: "1000",
                     stroke_dashoffset: "{1000.0 - progress.get_value() * 1000.0}",
                     filter: "url(#comet-glow)",

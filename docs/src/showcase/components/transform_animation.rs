@@ -21,8 +21,8 @@ pub fn TransformAnimationShowcase() -> Element {
 
     let onmousemove = move |e: Event<MouseData>| {
         let point = e.data().element_coordinates();
-        let dx = (point.x as f32 - 140.0) / 140.0;
-        let dy = (point.y as f32 - 170.0) / 170.0;
+        let dx = (point.x as f32 - 144.0) / 144.0;
+        let dy = (point.y as f32 - 160.0) / 160.0;
         glare_x.set(((dx + 1.0) * 50.0).clamp(0.0, 100.0));
         glare_y.set(((dy + 1.0) * 50.0).clamp(0.0, 100.0));
         tilt_y
@@ -56,10 +56,10 @@ pub fn TransformAnimationShowcase() -> Element {
         div {
             class: "flex items-center justify-center cursor-pointer select-none",
             style: "perspective: 900px",
-            onmousemove,
-            onmouseleave,
             div {
                 class: "relative w-72 h-80 rounded-3xl overflow-hidden",
+                onmousemove,
+                onmouseleave,
                 style: "transform: translate({t.x}px, {t.y}px) rotateX({tilt_x.get_value()}deg) \
                        rotateY({tilt_y.get_value()}deg) scale({t.scale}) rotate({t.rotation}rad); \
                        background: linear-gradient(155deg, #1a2129 0%, #11161c 55%, #0d1216 100%); \
@@ -71,8 +71,9 @@ pub fn TransformAnimationShowcase() -> Element {
                     style: "background: radial-gradient(280px circle at {glare_x()}% {glare_y()}%, \
                            rgba(185,240,120,0.18), transparent 60%);",
                 }
-                // Card content
-                div { class: "relative h-full flex flex-col justify-between p-7",
+                // Card content (pointer-events stay on the card so
+                // element_coordinates is measured against its bounds)
+                div { class: "relative h-full flex flex-col justify-between p-7 pointer-events-none",
                     div { class: "flex items-start justify-between",
                         div { class: "w-11 h-11 rounded-xl grid place-items-center text-xl font-black text-[#0b0d0f]",
                             style: "background: linear-gradient(135deg, #b9f078, #6ee7b7)",
