@@ -1,0 +1,23 @@
+name: Pages
+
+on:
+  workflow_run:
+    workflows: ["GitHub Pages"]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+
+# Every publisher writes to the same gh-pages branch, so they share one group.
+# A pending publish displaced by a newer one is fine — the newest preview wins.
+concurrency:
+  group: gh-pages-deploy-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    uses: DioxusLabs/dioxus-ci/.github/workflows/pages-publish.yml@60c40430ef69c6d7b92439bc43e281689db1bde7
+    with:
+      pages-url-base: https://wheregmis.github.io

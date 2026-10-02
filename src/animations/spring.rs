@@ -73,6 +73,16 @@ impl Spring {
         #[cfg(test)]
         STEP_CALCULATIONS.set(STEP_CALCULATIONS.get().saturating_add(1));
         let t = f64::from(dt);
+        if !t.is_finite() || t <= 0.0 {
+            // No elapsed time means the identity transition; non-finite dt can
+            // never produce a valid step.
+            return SpringStep {
+                displacement: 0.0,
+                position_velocity: 0.0,
+                velocity_position: 0.0,
+                velocity: 1.0,
+            };
+        }
         let a = f64::from(self.damping) / (2.0 * f64::from(self.mass));
         let b = f64::from(self.stiffness) / f64::from(self.mass);
         let discriminant = a * a - b;

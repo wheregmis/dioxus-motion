@@ -17,7 +17,7 @@ For a web app:
 ```toml
 [dependencies]
 dioxus = { version = "0.7.10", features = ["web"] }
-dioxus-motion = { git = "https://github.com/wheregmis/dioxus-motion", branch = "new_release", default-features = false, features = ["web"] }
+dioxus-motion = { git = "https://github.com/wheregmis/dioxus-motion", branch = "main", default-features = false, features = ["web"] }
 ```
 
 Commit `Cargo.lock` to pin the Git revision. For desktop apps, use the `desktop` feature. Add `transitions` for animated router outlets. The animation core is also available without the default features.

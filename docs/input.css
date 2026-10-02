@@ -182,7 +182,8 @@
 .example-detail { min-width: 0; border: 1px solid #ffffff15; border-radius: 10px; background: #111519; overflow: hidden; }
 .example-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px; }
 .example-heading h2 { font-size: 20px; font-weight: 550; }
-.example-heading a { color: #a9b0bb; font-size: 12px; }
+.example-heading .example-blurb { color: #a9b0bb; font-size: 13px; line-height: 1.7; margin-top: 6px; max-width: 560px; }
+.example-heading a { color: #a9b0bb; font-size: 12px; white-space: nowrap; }
 .example-stage { min-height: 420px; padding: 35px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .example-placeholder { text-align: center; color: #848e9b; font-size: 14px; }
 .example-placeholder .button { margin-top: 20px; }
@@ -220,6 +221,27 @@
 @media(max-width:420px) { .lesson-preview { padding:16px; } .lesson h2 { font-size:22px; } }
 
 .lesson-actions { display:flex; gap:12px; flex-wrap:wrap; }
+
+.blog-shell { max-width: 1280px; margin: auto; padding: 60px 32px 80px; }
+.blog-article { max-width: 720px; margin: auto; }
+.blog-intro h1 { font-size: clamp(34px, 4.5vw, 52px); line-height: 1.1; font-weight: 600; margin: 18px 0; }
+.blog-intro .lead { max-width: 640px; }
+.blog-note { border-left: 2px solid #b9f078; background: #b9f07805; padding: 14px 18px; margin: 24px 0 8px; color: #a9b0bb; font-size: 13px; line-height: 1.8; }
+.blog-note a { color: #b9f078; }
+.blog-article section { padding: 28px 0 8px; }
+.blog-article h2 { font-size: 24px; font-weight: 550; margin-bottom: 14px; }
+.blog-article section > p, .blog-article li { color: #a9b0bb; font-size: 14px; line-height: 1.9; margin: 12px 0; }
+.blog-article p code, .blog-article li code { font: 12px 'JetBrains Mono', monospace; color: #d8ffac; background: #b9f07812; padding: 2px 6px; border-radius: 4px; }
+.blog-article p a { color: #b9f078; }
+.blog-article ul { padding-left: 22px; list-style: disc; display: grid; gap: 12px; }
+.blog-article li strong { color: #f1f3ef; }
+.blog-article .hero-actions { margin-top: 20px; }
+
+.not-found-shell { max-width: 1280px; margin: auto; padding: 90px 32px; min-height: 50vh; }
+.not-found-shell h1 { font-size: clamp(40px, 5vw, 60px); font-weight: 600; line-height: 1.08; margin: 18px 0; }
+.not-found-shell .lead { max-width: 560px; }
+.not-found-shell code { font: 14px 'JetBrains Mono', monospace; color: #d8ffac; background: #b9f07812; padding: 2px 8px; border-radius: 4px; }
+@media (max-width: 760px) { .blog-shell, .not-found-shell { padding: 45px 20px 60px; } }
 .transition-demo .route-container { display:grid; }
 .transition-demo .route-content { grid-area:1/1; min-width:0; }
 .transition-panel { padding:24px; border-radius:12px; background:#b9f078; color:#0b0d0f; min-height:140px; }

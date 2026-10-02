@@ -33,6 +33,34 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: docs/package-lock.json
+      - name: Resolve pages paths
+        id: paths
+        shell: bash
+        env:
+          BASE_PATH: ${{ github.event.repository.name }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+
+          base_path = os.environ["BASE_PATH"].strip().strip("/")
+          pr_number = os.environ["PR_NUMBER"]
+
+          target_folder = ""
+          build_base_path = base_path
+          if os.environ["EVENT_NAME"] == "pull_request":
+              if not pr_number:
+                  raise SystemExit("pull_request event is missing a PR number")
+              target_folder = f"pr-preview/pr-{int(pr_number)}"
+              build_base_path = "/".join(part for part in (base_path, target_folder) if part)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"site-base-path={base_path}\n")
+              output.write(f"build-base-path={build_base_path}\n")
+              output.write(f"target-folder={target_folder}\n")
+          PY
       - name: Build styles
         working-directory: docs
         run: |
@@ -43,25 +71,64 @@ jobs:
         run: cargo binstall --no-confirm --locked dioxus-cli@0.7.10
       - name: Bundle documentation
         working-directory: docs
-        run: dx bundle --release --platform web --locked
+        run: dx bundle --release --platform web --locked --base-path "${{ steps.paths.outputs.build-base-path }}"
       - name: Add SPA fallback
         run: cp target/dx/docs/release/web/public/index.html target/dx/docs/release/web/public/404.html
-      - uses: actions/upload-pages-artifact@v4
-        with:
-          path: target/dx/docs/release/web/public
+      - name: Stage pages artifact
+        shell: bash
+        env:
+          OUTPUT_PATH: target/dx/docs/release/web/public
+          ARTIFACT_DIR: ${{ runner.temp }}/dioxus-pages
+          REPOSITORY: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          REF_NAME: ${{ github.ref_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          WORKFLOW_SHA: ${{ github.sha }}
+          MERGE_SHA: ${{ github.sha }}
+          SITE_BASE_PATH: ${{ steps.paths.outputs.site-base-path }}
+          BUILD_BASE_PATH: ${{ steps.paths.outputs.build-base-path }}
+          TARGET_FOLDER: ${{ steps.paths.outputs.target-folder }}
+        run: |
+          set -euo pipefail
+          rm -rf "$ARTIFACT_DIR"
+          mkdir -p "$ARTIFACT_DIR/site"
+          cp -a "$OUTPUT_PATH/." "$ARTIFACT_DIR/site/"
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
 
-  deploy:
-    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/configure-pages@v5
-      - name: Deploy documentation
-        id: deployment
-        uses: actions/deploy-pages@v4
+          artifact_dir = Path(os.environ["ARTIFACT_DIR"])
+          event_name = os.environ["EVENT_NAME"]
+          pr_number = os.environ["PR_NUMBER"]
+          pr_number_value = int(pr_number) if pr_number else None
+          head_sha = os.environ["HEAD_SHA"] or os.environ["WORKFLOW_SHA"]
+          merge_sha = os.environ["MERGE_SHA"] if event_name == "pull_request" else ""
+          metadata = {
+              "schema_version": 1,
+              "kind": "dioxus-pages",
+              "repository": os.environ["REPOSITORY"],
+              "event_name": event_name,
+              "ref": os.environ["REF"],
+              "ref_name": os.environ["REF_NAME"],
+              "pr_number": pr_number_value,
+              "head_sha": head_sha,
+              "merge_sha": merge_sha,
+              "site_base_path": os.environ["SITE_BASE_PATH"],
+              "base_path": os.environ["BUILD_BASE_PATH"],
+              "target_folder": os.environ["TARGET_FOLDER"],
+          }
+          (artifact_dir / ".dioxus-ci-pages.json").write_text(
+              json.dumps(metadata, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dioxus-pages
+          path: ${{ runner.temp }}/dioxus-pages
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 7
