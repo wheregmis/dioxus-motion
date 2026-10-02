@@ -101,7 +101,7 @@ mod tests {
         use crate::Motion;
         use crate::animations::core::{Animatable, AnimationMode};
         use crate::prelude::{AnimationConfig, LoopMode, Spring, Tween};
-        use crate::prelude::{Color, Transform};
+        use crate::prelude::{Color, CssValue, MotionStyle, Transform};
         use std::hint::black_box;
 
         const ITERATIONS: usize = 100_000;
@@ -121,7 +121,7 @@ mod tests {
             ),
         ];
 
-        fn measure<T: Animatable + Send + Copy>(
+        fn measure<T: Animatable + Send>(
             value_type: &str,
             initial: T,
             target: T,
@@ -131,10 +131,10 @@ mod tests {
                 let active = config.is_some();
                 let mut samples = Vec::with_capacity(7);
                 for _ in 0..7 {
-                    let mut motion = Motion::new(initial).expect("finite initial value");
+                    let mut motion = Motion::new(initial.clone()).expect("finite initial value");
                     if let Some(config) = config.clone() {
                         motion
-                            .animate_to(target, config.with_loop(LoopMode::Infinite))
+                            .animate_to(target.clone(), config.with_loop(LoopMode::Infinite))
                             .expect("valid animation configuration");
                     }
                     let start = Instant::now();
@@ -157,6 +157,16 @@ mod tests {
             }
         }
         measure("f32", 0.0f32, 100.0, &test_cases);
+        measure(
+            "MotionStyle",
+            MotionStyle::default()
+                .property("width", CssValue::Px(0.0))
+                .property("gap", CssValue::Percent(0.0)),
+            MotionStyle::default()
+                .property("width", CssValue::Px(100.0))
+                .property("gap", CssValue::Percent(100.0)),
+            &test_cases,
+        );
         measure(
             "Color",
             Color::new(1.0, 0.5, 0.25, 1.0),

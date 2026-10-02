@@ -349,7 +349,25 @@ impl Animatable for MotionStyle {
 
     fn interpolate(&self, target: &Self, t: f32) -> Self {
         let t = t.clamp(0.0, 1.0);
-        let mut style = self.clone() + (target.clone() - self.clone()) * t;
+        let mut style = Self {
+            opacity: self.opacity.interpolate(&target.opacity, t),
+            x: self.x.interpolate(&target.x, t),
+            y: self.y.interpolate(&target.y, t),
+            z: self.z.interpolate(&target.z, t),
+            scale: self.scale.interpolate(&target.scale, t),
+            scale_x: self.scale_x.interpolate(&target.scale_x, t),
+            scale_y: self.scale_y.interpolate(&target.scale_y, t),
+            scale_z: self.scale_z.interpolate(&target.scale_z, t),
+            rotate: self.rotate.interpolate(&target.rotate, t),
+            rotate_x: self.rotate_x.interpolate(&target.rotate_x, t),
+            rotate_y: self.rotate_y.interpolate(&target.rotate_y, t),
+            rotate_z: self.rotate_z.interpolate(&target.rotate_z, t),
+            skew: self.skew.interpolate(&target.skew, t),
+            skew_x: self.skew_x.interpolate(&target.skew_x, t),
+            skew_y: self.skew_y.interpolate(&target.skew_y, t),
+            perspective: self.perspective.interpolate(&target.perspective, t),
+            properties: self.properties.clone(),
+        };
 
         for (property, target_value) in &target.properties {
             if let Some(current_value) = self.properties.get(property) {
@@ -360,14 +378,6 @@ impl Animatable for MotionStyle {
                 style
                     .properties
                     .insert(property.clone(), target_value.clone());
-            }
-        }
-
-        for (property, current_value) in &self.properties {
-            if !target.properties.contains_key(property) {
-                style
-                    .properties
-                    .insert(property.clone(), current_value.clone());
             }
         }
 
@@ -483,6 +493,49 @@ mod tests {
             Some(&CssValue::Px(12.0))
         );
         assert!(!style.properties.contains_key("backgroundColor"));
+    }
+
+    #[test]
+    fn interpolation_preserves_extreme_finite_style_components() {
+        fn filled(value: f32) -> MotionStyle {
+            let mut style = MotionStyle::default();
+            for field in [
+                &mut style.opacity,
+                &mut style.x,
+                &mut style.y,
+                &mut style.z,
+                &mut style.scale,
+                &mut style.scale_x,
+                &mut style.scale_y,
+                &mut style.scale_z,
+                &mut style.rotate,
+                &mut style.rotate_x,
+                &mut style.rotate_y,
+                &mut style.rotate_z,
+                &mut style.skew,
+                &mut style.skew_x,
+                &mut style.skew_y,
+                &mut style.perspective,
+            ] {
+                *field = value;
+            }
+            style
+                .property("width", CssValue::Px(value))
+                .property("gap", CssValue::Percent(value))
+        }
+        let start = filled(-f32::MAX);
+        let target = filled(f32::MAX);
+        for (t, expected) in [
+            (0.0, -f32::MAX),
+            (0.25, -f32::MAX * 0.5),
+            (0.5, 0.0),
+            (0.75, f32::MAX * 0.5),
+            (1.0, f32::MAX),
+        ] {
+            let actual = start.interpolate(&target, t);
+            assert!(actual.is_finite());
+            assert_eq!(actual, filled(expected));
+        }
     }
 
     #[test]

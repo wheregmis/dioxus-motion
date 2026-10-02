@@ -2,6 +2,8 @@
 // Methods are called from presence.rs which is gated behind the dioxus feature.
 #![cfg_attr(not(feature = "dioxus"), allow(dead_code))]
 
+use super::core::Animatable;
+
 /// Animated CSS property value.
 #[derive(Debug, Clone, PartialEq)]
 pub enum CssValue {
@@ -489,12 +491,12 @@ fn parse_f32(value: &str) -> Option<f32> {
 }
 
 fn lerp(start: f32, end: f32, t: f32) -> f32 {
-    start + (end - start) * t.clamp(0.0, 1.0)
+    start.interpolate(&end, t.clamp(0.0, 1.0))
 }
 
 fn format_number(value: f32) -> String {
     let value = if value == -0.0 { 0.0 } else { value };
-    let rounded = (value * 1_000_000.0).round() / 1_000_000.0;
+    let rounded = ((f64::from(value) * 1_000_000.0).round() / 1_000_000.0) as f32;
     rounded.to_string()
 }
 
@@ -724,6 +726,42 @@ fn parse_number_prefix(value: &str) -> Option<(usize, f32)> {
 mod tests {
     #![allow(clippy::unwrap_used, clippy::panic)]
     use super::*;
+
+    #[test]
+    fn extreme_css_numbers_interpolate_and_format_without_overflow() {
+        for make in [
+            CssValue::Number,
+            CssValue::Px,
+            CssValue::Percent,
+            CssValue::Vw,
+            CssValue::Vh,
+            CssValue::Deg,
+        ] {
+            let start = make(-f32::MAX);
+            let target = make(f32::MAX);
+            for (t, expected) in [
+                (0.0, -f32::MAX),
+                (0.25, -f32::MAX * 0.5),
+                (0.5, 0.0),
+                (0.75, f32::MAX * 0.5),
+                (1.0, f32::MAX),
+            ] {
+                assert_eq!(start.interpolate(&target, t), make(expected));
+            }
+        }
+        for value in [-f32::MAX, -1.0e33, 1.0e33, f32::MAX] {
+            assert_eq!(
+                format_number(value)
+                    .parse::<f32>()
+                    .expect("finite CSS number"),
+                value
+            );
+        }
+        let start = parse_css_string(&format!("translateX({}px)", -f32::MAX));
+        let target = parse_css_string(&format!("translateX({}px)", f32::MAX));
+        assert!(matches!(start, CssValue::Complex(_)));
+        assert_eq!(start.interpolate(&target, 0.5).to_css(), "translateX(0px)");
+    }
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
