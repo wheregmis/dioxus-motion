@@ -1,5 +1,5 @@
 use crate::Duration;
-use crate::animations::core::{Animatable, AnimationError};
+use crate::animations::core::{Animatable, AnimationError, validate_value};
 use crate::keyframes::KeyframeAnimation;
 use crate::motion::Motion;
 use crate::prelude::AnimationConfig;
@@ -74,10 +74,12 @@ impl<T: Animatable + Send + 'static> MotionHandle<T> {
         self.state.peek().get_epsilon()
     }
 
-    pub(crate) fn set_current(&mut self, value: T) {
+    pub(crate) fn set_current(&mut self, value: T) -> Result<(), AnimationError> {
+        validate_value(&value, "current value")?;
         self.write_motion(|motion| {
             motion.current = value;
         });
+        Ok(())
     }
 
     fn write_motion<R>(&mut self, f: impl FnOnce(&mut Motion<T>) -> R) -> R {
@@ -243,6 +245,29 @@ mod tests {
             assert_eq!(motion.get_value(), 0.25);
             assert!(!motion.update(0.75).expect("representable animation frame"));
             assert_eq!(motion.get_value(), 1.0);
+        });
+    }
+
+    #[test]
+    fn current_setter_rejects_nonfinite_values_without_changing_playback() {
+        let mut dom = VirtualDom::new(|| rsx! { div {} });
+        dom.rebuild_in_place();
+        dom.in_scope(ScopeId::APP, || {
+            let mut motion = MotionHandle::new(0.0f32).expect("finite initial value");
+            motion
+                .animate_to(1.0, AnimationConfig::tween_ms(1000))
+                .expect("valid animation configuration");
+            for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+                assert_eq!(
+                    motion.set_current(bad),
+                    Err(AnimationError::NonFiniteValue("current value"))
+                );
+                assert_eq!(motion.get_value(), 0.0);
+                assert!(motion.is_running());
+            }
+            assert_eq!(motion.set_current(0.25), Ok(()));
+            assert_eq!(motion.get_value(), 0.25);
+            assert!(motion.is_running());
         });
     }
 

@@ -1939,8 +1939,6 @@ where
     let mut motion = use_motion(start)?;
     let mut last_target_present = use_signal(|| None::<bool>);
     let mut awaiting_exit_completion = use_signal(|| false);
-    let mut exit_observed_running = use_signal(|| false);
-    let exit_duration = exit_config.get_duration();
     use_effect(move || {
         let is_present = status
             .map(|status| status.read().is_present)
@@ -1949,13 +1947,11 @@ where
             *last_target_present.write() = Some(is_present);
             if is_present {
                 awaiting_exit_completion.set(false);
-                exit_observed_running.set(false);
                 if let Err(error) = motion.animate_to(animate.clone(), enter_config.clone()) {
                     tracing::error!(%error, "cannot start presence enter animation");
                 }
             } else {
                 awaiting_exit_completion.set(true);
-                exit_observed_running.set(false);
                 if let Err(error) = motion.animate_to(exit.clone(), exit_config.clone()) {
                     tracing::error!(%error, "cannot start presence exit animation");
                     motion.stop();
@@ -1965,17 +1961,7 @@ where
             }
         }
     });
-    use_effect(move || {
-        if *awaiting_exit_completion.read() {
-            if motion.is_running() {
-                exit_observed_running.set(true);
-            } else if *exit_observed_running.read() || exit_duration == Duration::default() {
-                awaiting_exit_completion.set(false);
-                exit_observed_running.set(false);
-                presence.safe_to_remove.call(());
-            }
-        }
-    });
+    use_exit_completion(motion, awaiting_exit_completion, presence.safe_to_remove);
 
     Ok(motion)
 }
@@ -2005,14 +1991,22 @@ where
         }
     });
 
+    use_exit_completion(motion, awaiting_exit_completion, presence.safe_to_remove);
+
+    presence
+}
+
+fn use_exit_completion<T: Animatable + Send + 'static>(
+    motion: MotionHandle<T>,
+    mut awaiting_exit_completion: Signal<bool>,
+    safe_to_remove: Callback<()>,
+) {
     use_effect(move || {
         if *awaiting_exit_completion.read() && !motion.is_running() {
             awaiting_exit_completion.set(false);
-            presence.safe_to_remove.call(());
+            safe_to_remove.call(());
         }
     });
-
-    presence
 }
 
 /// Creates a CSS-ready presence style handle for opacity and transform animations.
@@ -2063,8 +2057,6 @@ pub fn use_presence_style(
     let mut motion = use_motion(start)?;
     let mut last_target_present = use_signal(|| None::<bool>);
     let mut awaiting_exit_completion = use_signal(|| false);
-    let mut exit_observed_running = use_signal(|| false);
-    let exit_duration = config.exit_transition.get_duration();
 
     use_effect(move || {
         let is_present = status
@@ -2074,33 +2066,34 @@ pub fn use_presence_style(
             *last_target_present.write() = Some(is_present);
             if is_present {
                 awaiting_exit_completion.set(false);
-                exit_observed_running.set(false);
-                if let Some(size) = measured_size.and_then(|size| *size.read()) {
-                    let enter_start = presence_style_enter_start(
-                        motion.get_value(),
-                        &config.animate,
-                        &config.exit,
-                        Some(size),
-                    );
-                    motion.set_current(enter_start);
-                }
-                if let Err(error) =
+                let prepared = measured_size
+                    .and_then(|size| *size.read())
+                    .map_or(Ok(()), |size| {
+                        let enter_start = presence_style_enter_start(
+                            motion.get_value(),
+                            &config.animate,
+                            &config.exit,
+                            Some(size),
+                        );
+                        motion.set_current(enter_start)
+                    });
+                if let Err(error) = prepared.and_then(|()| {
                     motion.animate_to(config.animate.clone(), config.enter_transition.clone())
-                {
+                }) {
                     tracing::error!(%error, "cannot start presence enter animation");
                 }
             } else {
                 awaiting_exit_completion.set(true);
-                exit_observed_running.set(false);
-                if let Some(size) = measured_size.and_then(|size| *size.read()) {
-                    let exit_start =
-                        presence_style_exit_start(motion.get_value(), &config.exit, Some(size));
-                    motion.set_current(exit_start);
-                }
-
-                if let Err(error) =
+                let prepared = measured_size
+                    .and_then(|size| *size.read())
+                    .map_or(Ok(()), |size| {
+                        let exit_start =
+                            presence_style_exit_start(motion.get_value(), &config.exit, Some(size));
+                        motion.set_current(exit_start)
+                    });
+                if let Err(error) = prepared.and_then(|()| {
                     motion.animate_to(config.exit.clone(), config.exit_transition.clone())
-                {
+                }) {
                     tracing::error!(%error, "cannot start presence exit animation");
                     motion.stop();
                     awaiting_exit_completion.set(false);
@@ -2109,17 +2102,7 @@ pub fn use_presence_style(
             }
         }
     });
-    use_effect(move || {
-        if *awaiting_exit_completion.read() {
-            if motion.is_running() {
-                exit_observed_running.set(true);
-            } else if *exit_observed_running.read() || exit_duration == Duration::default() {
-                awaiting_exit_completion.set(false);
-                exit_observed_running.set(false);
-                presence.safe_to_remove.call(());
-            }
-        }
-    });
+    use_exit_completion(motion, awaiting_exit_completion, presence.safe_to_remove);
 
     Ok(motion)
 }
@@ -2197,6 +2180,63 @@ mod tests {
     use dioxus::prelude::*;
     use dioxus_core::ScopeId;
     use std::collections::BTreeMap;
+
+    #[test]
+    fn exit_completion_handles_failure_before_the_first_running_observation() {
+        use crate::{
+            manager::{AnimationManager, MotionHandle},
+            prelude::{AnimationConfig, Spring},
+        };
+        use std::{
+            cell::{Cell, RefCell},
+            rc::Rc,
+        };
+        type Shared = Rc<RefCell<Option<(MotionHandle<f32>, Signal<bool>)>>>;
+        fn host((shared, calls): (Shared, Rc<Cell<usize>>)) -> Element {
+            let motion = use_hook(|| MotionHandle::new(0.0f32).expect("finite initial value"));
+            let awaiting = use_signal(|| false);
+            let callback = Callback::new(move |_| calls.set(calls.get() + 1));
+            super::use_exit_completion(motion, awaiting, callback);
+            *shared.borrow_mut() = Some((motion, awaiting));
+            rsx! { div {} }
+        }
+        for case in 0..4 {
+            let shared = Shared::default();
+            let calls = Rc::new(Cell::new(0));
+            let mut dom = VirtualDom::new_with_props(host, (shared.clone(), calls.clone()));
+            dom.rebuild_in_place();
+            dom.render_immediate_to_vec();
+            assert_eq!(calls.get(), 0);
+            dom.in_scope(ScopeId::APP, || {
+                let (mut motion, mut awaiting) = shared.borrow().expect("hook state");
+                let target = if case == 0 { f32::MAX } else { 1.0 };
+                motion
+                    .animate_to(target, AnimationConfig::spring(Spring::default()))
+                    .expect("valid animation configuration");
+                awaiting.set(true);
+                // Finish or fail synchronously before the completion effect sees running=true.
+                match case {
+                    0 => assert!(motion.update(1.0 / 60.0).is_err()),
+                    1 => motion.stop(),
+                    2 => assert!(motion.is_running()),
+                    _ => {
+                        awaiting.set(false);
+                        motion.stop();
+                    }
+                }
+            });
+            for _ in 0..3 {
+                dom.render_immediate_to_vec();
+            }
+            assert_eq!(calls.get(), usize::from(case < 2));
+            dom.render_immediate_to_vec();
+            assert_eq!(
+                calls.get(),
+                usize::from(case < 2),
+                "completion must run once"
+            );
+        }
+    }
 
     fn child(key: &str) -> Result<PresenceChild, PresenceError> {
         let children = rsx! {

@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Presence exit completion now removes stopped motion even if a runtime failure occurs before an effect observes its first running frame. Raw motion, presence motion, and presence styles share this completion effect. Measured style preparation rejects nonfinite values before entering a store.
 - `Motion::update` and `AnimationManager::update` now return `Result<bool, AnimationError>`. Spring position/velocity and tween/keyframe interpolation are validated before committing a frame; nonfinite easing is rejected before interpolation. Failed playback stops, preserves the last valid value, and skips completion callbacks. The motion hook logs runtime errors.
 - `Motion::new`, `AnimationManager::new`, `use_motion`, and presence motion/style hooks now return `Result` so invalid initial components or nonfinite default zero velocity cannot enter a store. Components can propagate errors with `?` to a Dioxus error boundary. Hook initialization validates once per component lifetime, matching the existing initial-value semantics.
 
