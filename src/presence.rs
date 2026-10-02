@@ -2387,12 +2387,35 @@ mod tests {
     }
 
     #[test]
+    fn presence_tween_preserves_typed_duration_boundaries() {
+        use crate::Duration;
+        for duration in [Duration::ZERO, Duration::from_nanos(1), Duration::MAX] {
+            let mut evaluations = 0;
+            let config = crate::presence_style! {
+                initial: { opacity: 0.0 },
+                animate: { opacity: 1.0 },
+                exit: { opacity: 0.0 },
+                layout: size,
+                transition: tween { duration: { evaluations += 1; duration } },
+                layout_transition: tween { duration: duration },
+            };
+            assert_eq!(evaluations, 1);
+            assert_eq!(config.enter_transition.get_duration(), duration);
+            assert_eq!(config.exit_transition.get_duration(), duration);
+            assert_eq!(
+                config.layout_transition.map(|config| config.get_duration()),
+                Some(duration)
+            );
+        }
+    }
+
+    #[test]
     fn presence_style_macro_builds_config() {
         let config = crate::presence_style! {
             initial: { opacity: 0.0, y: 20.0, scale: 0.92, rotate: -6.0 },
             animate: { opacity: 1.0 },
             exit: { opacity: 0.0, y: -16.0, scale: 0.96 },
-            transition: tween { duration: 220.5 },
+            transition: tween { duration: crate::Duration::from_micros(220_500) },
         };
 
         assert_eq!(
@@ -2432,7 +2455,7 @@ mod tests {
             },
             animate: { opacity: 1.0 },
             exit: { opacity: 0.0, scaleY: 0 },
-            transition: tween { duration: 220.0 },
+            transition: tween { duration: crate::Duration::from_millis(220) },
         };
 
         assert_eq!(
@@ -2461,7 +2484,7 @@ mod tests {
             initial: { opacity: 0.0, height: 48.0, borderRadius: 8 },
             animate: { opacity: 1.0, height: 96.0, zIndex: 2 },
             exit: { opacity: 0.0, height: 0.0 },
-            transition: tween { duration: 420.0 },
+            transition: tween { duration: crate::Duration::from_millis(420) },
         };
 
         assert_eq!(
@@ -2502,7 +2525,7 @@ mod tests {
                 color: "var(--accent-color)",
             },
             exit: { opacity: 0.0, width: "0%" },
-            transition: tween { duration: 200.0 },
+            transition: tween { duration: crate::Duration::from_millis(200) },
         };
 
         assert_eq!(
@@ -2663,7 +2686,7 @@ mod tests {
             initial: { opacity: 0.0, y: 20.0, scale: 0.92 },
             animate: { opacity: 1.0 },
             exit: { opacity: 0.0, y: -16.0, scale: 0.96 },
-            transition: tween { duration: 420.0 },
+            transition: tween { duration: crate::Duration::from_millis(420) },
         };
 
         assert_eq!(
@@ -2683,8 +2706,8 @@ mod tests {
             animate: { opacity: 1.0, x: 0.0 },
             exit: { opacity: 0.0, x: -20.0 },
             layout: size,
-            transition: tween { duration: 440.0 },
-            layout_transition: tween { duration: 444.0 },
+            transition: tween { duration: crate::Duration::from_millis(440) },
+            layout_transition: tween { duration: crate::Duration::from_millis(444) },
         };
 
         assert_eq!(config.layout, super::PresenceLayout::Size);
@@ -2709,8 +2732,8 @@ mod tests {
             exit: { opacity: 0.0, x: -20.0 },
             layout: size,
             transition: tween {
-                layout: tween { duration: 444.0 },
-            duration: 440.0,
+                layout: tween { duration: crate::Duration::from_millis(444) },
+            duration: crate::Duration::from_millis(440),
             },
         };
 
@@ -2757,7 +2780,7 @@ mod tests {
             animate: { opacity: 1.0, y: 0.0 },
             exit: { opacity: 0.0, y: -12.0 },
             enter_transition: spring { stiffness: 180.0, damping: 22.0 },
-            exit_transition: tween { duration: 140.0 },
+            exit_transition: tween { duration: crate::Duration::from_millis(140) },
         };
 
         assert!(matches!(

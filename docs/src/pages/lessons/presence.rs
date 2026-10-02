@@ -23,7 +23,7 @@ fn Notice(label: String) -> Element {
         initial: { opacity: 0.0, y: 12.0, scale: 0.95 },
         animate: { opacity: 1.0, y: 0.0, scale: 1.0 },
         exit: { opacity: 0.0, y: -12.0, scale: 0.95 },
-        transition: tween { duration: 350.0 },
+        transition: tween { duration: Duration::from_millis(350) },
     })?;
     rsx! { div { style: "padding:20px;border-radius:12px;background:#b9f078;color:#0b0d0f;{style.get_value()}", {label} } }
 }

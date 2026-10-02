@@ -28,8 +28,8 @@ fn LayoutItem(id: usize) -> Element {
         animate: { opacity: 1.0, scale: 1.0 },
         exit: { opacity: 0.0, scale: 0.9 },
         layout: size,
-        transition: tween { duration: 350.0 },
-        layout_transition: tween { duration: 250.0 },
+        transition: tween { duration: Duration::from_millis(350) },
+        layout_transition: tween { duration: Duration::from_millis(250) },
     })?;
     rsx! {
         div { style: "width:120px;padding:20px;border-radius:12px;background:#b9f078;color:#0b0d0f;{style.get_value()}", "Item {id}" }
