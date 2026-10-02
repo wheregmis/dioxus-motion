@@ -1,4 +1,37 @@
 /// Builds a presence style animation config from initial, animate, exit, and transition variants.
+/// Velocity uses the animated type's checked setter after starting playback.
+/// Tween `duration` accepts a `Duration`, including fractional milliseconds.
+/// Convert dynamic seconds with `Duration::try_from_secs_f64` to reject invalid input.
+///
+/// ```
+/// use dioxus_motion::{presence_style, Duration};
+/// let config = presence_style! {
+///     initial: { opacity: 0.0 },
+///     animate: { opacity: 1.0 },
+///     exit: { opacity: 0.0 },
+///     transition: tween { duration: Duration::from_micros(220_500) },
+/// };
+/// ```
+///
+/// ```compile_fail
+/// use dioxus_motion::presence_style;
+/// let config = presence_style! {
+///     initial: { opacity: 0.0 },
+///     animate: { opacity: 1.0 },
+///     exit: { opacity: 0.0 },
+///     transition: tween { duration: f64::NAN },
+/// };
+/// ```
+///
+/// ```compile_fail
+/// use dioxus_motion::presence_style;
+/// let config = presence_style! {
+///     initial: { opacity: 0.0 },
+///     animate: { opacity: 1.0 },
+///     exit: { opacity: 0.0 },
+///     transition: spring { velocity: 2.0 },
+/// };
+/// ```
 #[macro_export]
 macro_rules! presence_style {
     (
@@ -336,7 +369,7 @@ macro_rules! presence_style_tween {
 #[macro_export]
 macro_rules! presence_style_tween_assign {
     ($tween:ident, duration, $value:expr) => {
-        $tween.duration = $crate::Duration::from_secs_f64(($value as f64) / 1000.0);
+        $tween.duration = $value;
     };
     ($tween:ident, easing, $value:expr) => {
         $tween.easing = $value;
@@ -383,14 +416,11 @@ macro_rules! presence_style_spring_assign {
     ($spring:ident, mass, $value:expr) => {
         $spring.mass = $value;
     };
-    ($spring:ident, velocity, $value:expr) => {
-        $spring.velocity = $value;
-    };
     ($spring:ident, $field:ident, $value:expr) => {
         compile_error!(concat!(
             "unknown spring transition field `",
             stringify!($field),
-            "`. Supported fields are `stiffness`, `damping`, `mass`, and `velocity`."
+            "`. Supported fields are `stiffness`, `damping`, and `mass`."
         ));
     };
 }

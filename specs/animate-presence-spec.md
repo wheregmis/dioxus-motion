@@ -372,17 +372,17 @@ Near-term presence style API requirements:
 - Support symmetric transition syntax:
 
 ```rust
-transition: tween { duration: 300.0 }
-transition: tween { duration: 300.0, easing: easer::functions::Cubic::ease_in_out }
+transition: tween { duration: Duration::from_millis(300) }
+transition: tween { duration: Duration::from_millis(300), easing: easer::functions::Cubic::ease_in_out }
 transition: spring { stiffness: 180.0, damping: 22.0 }
 ```
 
-- Preserve fractional millisecond durations instead of truncating them.
+- Accept typed `Duration` values, preserving fractional milliseconds (for example `Duration::from_micros(220_500)`). Reject numeric duration fields at compile time; dynamic seconds use `Duration::try_from_secs_f64` explicitly.
 - `transition` applies to both enter and exit. Users can override each side explicitly:
 
 ```rust
 enter_transition: spring { stiffness: 180.0, damping: 22.0 },
-exit_transition: tween { duration: 140.0 },
+exit_transition: tween { duration: Duration::from_millis(140) },
 ```
 
 - Exit completion is based on the actual motion handle settling or stopping, not only a wall-clock sleep equal to the nominal transition duration. Otherwise frame scheduling can remove exiting children before the final exit frame is rendered.

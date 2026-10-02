@@ -94,6 +94,60 @@ cargo clippy --all-features -- -D warnings
 cargo clippy --workspace --all-features -- -D warnings
 ```
 
+### Performance and adversarial checks
+
+Run manual timing measurements with optimizations enabled:
+
+```bash
+cargo test -p dioxus-motion --release --lib --locked test_motion_update_cpu_usage -- --ignored --nocapture
+cargo test -p dioxus-motion --release --lib --locked test_keyframe_lookup_cpu_usage -- --ignored --nocapture
+cargo test -p dioxus-motion --lib --locked fuzz_
+```
+
+The update benchmark keeps playback active and reports the median of seven samples,
+with 100,000 updates per sample. `get_value` is measured separately because it clones
+the value; combining it with updates hides map allocation costs. Compare changes on
+the same host with the same harness and inputs. These timings exclude reactive
+notifications, CSS formatting, DOM updates, and rendering.
+
+On ARM64 macOS on 2026-10-02, reusing owned property maps reduced the two-property
+`MotionStyle` spring case from 2,115 ns/update to 873 ns/update in a paired run
+(about 59% less time). Both sides used the separated-read harness above, seven
+samples, and 100,000 updates per sample. This is a host-specific baseline for that
+case, not an end-to-end browser or many-component performance guarantee.
+
+The shadow-and-filter case exercises complex numeric/color tokens separately.
+On the same host and date, scaling those tokens in place reduced a paired run from
+3,620 to 3,060 ns/update (about 15% less time), using the same sample settings.
+
+The deterministic fuzz checks sample float bit patterns for spring coefficients,
+values (including raw RGBA components), and frame deltas, plus Unicode code points
+for CSS parsing and serialization.
+They check finite state, preservation of the last valid value when a frame fails,
+and parsing without UTF-8 slicing panics; they do not prove correctness for every
+input or platform.
+
+With `cargo-mutants` installed, audit a changed function, for example:
+
+```bash
+cargo mutants --cap-lints true --file src/animations/style.rs --re 'merge_style_properties|std::ops::Mul' -- --lib --locked
+cargo mutants --cap-lints true --file src/motion.rs --re 'update_keyframes' -- --lib --locked
+```
+
+On 2026-10-02, the keyframe update audit caught all 33 generated mutations, with
+zero survivors, timeouts, or unviable cases. Coverage includes held frames,
+duplicate terminal offsets, zero duration, invalid easing, custom interpolation
+failures, and agreement between binary lookup and an independent linear reference.
+This result covers that function and those mutations; it is not a whole-library
+correctness proof.
+
+Inspect survivors and build failures individually. A timeout or unviable mutation
+is not a caught mutation. Mutable selector callbacks required by Dioxus are private
+and exposed through `ReadStore`; mutations affecting only those writers are not
+reachable through the public motion API. Keep the public compile-fail checks that
+prevent callers from writing invalid state, rather than adding an internal writer
+test to raise the mutation score.
+
 ## Feature Development
 
 ### Adding New Features
@@ -137,4 +191,4 @@ Releases are automated using `release-plz`:
 
 ## License
 
-By contributing to Dioxus Motion, you agree that your contributions will be licensed under the MIT License. 
+By contributing to Dioxus Motion, you agree that your contributions will be licensed under the MIT License.

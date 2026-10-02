@@ -248,6 +248,22 @@ pub struct PresenceConfig {
 }
 
 impl PresenceConfig {
+    /// Validates all presence states and enter, exit, and optional layout transitions.
+    /// Spring transitions must support both initial entry and interrupted re-entry.
+    pub fn validate(&self) -> Result<(), crate::prelude::AnimationError> {
+        validate_presence_animation(
+            &self.initial,
+            &self.animate,
+            &self.exit,
+            &self.enter_transition,
+            &self.exit_transition,
+        )?;
+        if let Some(layout) = &self.layout_transition {
+            layout.validate()?;
+        }
+        Ok(())
+    }
+
     /// Creates a presence style animation config with one transition for enter and exit.
     pub fn new(
         initial: MotionStyle,
@@ -416,14 +432,14 @@ impl PresenceStateMachine {
 
             let tracked_keys = self.records.keys().cloned().collect::<Vec<_>>();
             for key in tracked_keys {
-                if !incoming_keys.contains(&key) {
-                    if let Some(record) = self.records.get_mut(&key) {
-                        if record.state == PresenceRecordState::Present {
-                            notify_scopes.extend(record.subscriber_scopes());
-                        }
-                        record.state = PresenceRecordState::Exiting;
-                        record.custom = custom.clone();
+                if !incoming_keys.contains(&key)
+                    && let Some(record) = self.records.get_mut(&key)
+                {
+                    if record.state == PresenceRecordState::Present {
+                        notify_scopes.extend(record.subscriber_scopes());
                     }
+                    record.state = PresenceRecordState::Exiting;
+                    record.custom = custom.clone();
                 }
             }
 
@@ -473,14 +489,14 @@ impl PresenceStateMachine {
 
         let tracked_keys = self.records.keys().cloned().collect::<Vec<_>>();
         for key in tracked_keys {
-            if !incoming_keys.contains(&key) {
-                if let Some(record) = self.records.get_mut(&key) {
-                    if record.state == PresenceRecordState::Present {
-                        notify_scopes.extend(record.subscriber_scopes());
-                    }
-                    record.state = PresenceRecordState::Exiting;
-                    record.custom = custom.clone();
+            if !incoming_keys.contains(&key)
+                && let Some(record) = self.records.get_mut(&key)
+            {
+                if record.state == PresenceRecordState::Present {
+                    notify_scopes.extend(record.subscriber_scopes());
                 }
+                record.state = PresenceRecordState::Exiting;
+                record.custom = custom.clone();
             }
         }
 
@@ -522,12 +538,11 @@ impl PresenceStateMachine {
     }
 
     fn complete(&mut self, key: &str, token: PresenceToken) {
-        if let Some(record) = self.records.get_mut(key) {
-            if record.generation == token.generation {
-                if let Some(subscriber) = record.subscribers.get_mut(&token.subscriber_id) {
-                    subscriber.completed = true;
-                }
-            }
+        if let Some(record) = self.records.get_mut(key)
+            && record.generation == token.generation
+            && let Some(subscriber) = record.subscribers.get_mut(&token.subscriber_id)
+        {
+            subscriber.completed = true;
         }
         if self.remove_completed_exits() {
             self.exit_completed_since_last_reconcile = true;
@@ -535,10 +550,10 @@ impl PresenceStateMachine {
     }
 
     fn unregister(&mut self, key: &str, token: PresenceToken) {
-        if let Some(record) = self.records.get_mut(key) {
-            if record.generation == token.generation {
-                record.subscribers.remove(&token.subscriber_id);
-            }
+        if let Some(record) = self.records.get_mut(key)
+            && record.generation == token.generation
+        {
+            record.subscribers.remove(&token.subscriber_id);
         }
         if self.remove_completed_exits() {
             self.exit_completed_since_last_reconcile = true;
@@ -566,23 +581,23 @@ impl PresenceStateMachine {
 
         let completed_all_exits = removed_any && !self.has_exiting_children();
 
-        if !self.has_exiting_children() {
-            if let Some(pending) = self.pending_wait_children.take() {
-                for (order, child) in pending.children.into_iter().enumerate() {
-                    if let Some(record) = self.records.get_mut(&child.key) {
-                        record.child = child;
-                        record.state = PresenceRecordState::Present;
-                        record.last_order = order;
-                        record.initial_allowed = true;
-                        record.layout_enter_allowed = true;
-                        record.enter_on_next_reconcile = true;
-                        record.custom = pending.custom.clone();
-                    } else {
-                        let mut record =
-                            PresenceRecord::new(child, order, true, true, pending.custom.clone());
-                        record.enter_on_next_reconcile = true;
-                        self.records.insert(record.child.key.clone(), record);
-                    }
+        if !self.has_exiting_children()
+            && let Some(pending) = self.pending_wait_children.take()
+        {
+            for (order, child) in pending.children.into_iter().enumerate() {
+                if let Some(record) = self.records.get_mut(&child.key) {
+                    record.child = child;
+                    record.state = PresenceRecordState::Present;
+                    record.last_order = order;
+                    record.initial_allowed = true;
+                    record.layout_enter_allowed = true;
+                    record.enter_on_next_reconcile = true;
+                    record.custom = pending.custom.clone();
+                } else {
+                    let mut record =
+                        PresenceRecord::new(child, order, true, true, pending.custom.clone());
+                    record.enter_on_next_reconcile = true;
+                    self.records.insert(record.child.key.clone(), record);
                 }
             }
         }
@@ -657,6 +672,7 @@ struct PresenceLayoutConfig {
     exit_transition: Option<AnimationConfig>,
 }
 
+#[cfg(feature = "web")]
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct PresenceProjectionSnapshot {
     left: f64,
@@ -720,7 +736,10 @@ struct PresenceProjectionRoot {
 struct PresenceProjectionNode {
     mounted: Rc<MountedData>,
     transition: Duration,
+    #[cfg(feature = "web")]
     snapshot: Option<PresenceProjectionSnapshot>,
+    #[cfg(feature = "web")]
+    finish: Option<ProjectionTask>,
 }
 
 #[cfg(feature = "web")]
@@ -734,6 +753,12 @@ const PROJECTION_PREVIOUS_TRANSITION_ATTR: &str =
 impl PresenceProjectionRoot {
     fn register(&mut self, key: String, mounted: Rc<MountedData>, transition: Duration) {
         if let Some(node) = self.nodes.get_mut(&key) {
+            #[cfg(feature = "web")]
+            if !Rc::ptr_eq(&node.mounted, &mounted) {
+                node.finish = None;
+                reset_projection_styles(&node.mounted);
+                node.snapshot = None;
+            }
             node.mounted = mounted;
             node.transition = transition;
         } else {
@@ -742,7 +767,10 @@ impl PresenceProjectionRoot {
                 PresenceProjectionNode {
                     mounted,
                     transition,
+                    #[cfg(feature = "web")]
                     snapshot: None,
+                    #[cfg(feature = "web")]
+                    finish: None,
                 },
             );
         }
@@ -755,6 +783,7 @@ impl PresenceProjectionRoot {
     #[cfg(feature = "web")]
     fn will_update(&mut self) {
         for (key, node) in self.nodes.iter_mut() {
+            node.finish = None;
             reset_projection_styles(&node.mounted);
             node.snapshot = measure_projection_snapshot(&node.mounted);
             if let Some(snapshot) = node.snapshot {
@@ -793,7 +822,8 @@ impl PresenceProjectionRoot {
                 );
                 continue;
             };
-            apply_projection_animation(key, &node.mounted, previous, next, node.transition);
+            node.finish =
+                apply_projection_animation(key, &node.mounted, previous, next, node.transition);
         }
     }
 
@@ -856,7 +886,7 @@ fn apply_projection_animation(
     previous: PresenceProjectionSnapshot,
     next: PresenceProjectionSnapshot,
     transition: Duration,
-) {
+) -> Option<ProjectionTask> {
     let translate_x = previous.left - next.left;
     let translate_y = previous.top - next.top;
     let scale_x = if next.width.abs() > f64::EPSILON {
@@ -880,7 +910,7 @@ fn apply_projection_animation(
             None,
             "unchanged",
         );
-        return;
+        return None;
     }
 
     let Some(element) = projection_element(mounted) else {
@@ -892,7 +922,7 @@ fn apply_projection_animation(
             None,
             "unmounted",
         );
-        return;
+        return None;
     };
     let style = element.style();
     let previous_transform = style.get_property_value("transform").unwrap_or_default();
@@ -928,14 +958,47 @@ fn apply_projection_animation(
         Some((translate_x, translate_y, scale_x, scale_y)),
         "animate",
     );
-    schedule_projection_finish(element, transition);
+    Some(schedule_projection_finish(element, transition))
 }
 
 #[cfg(feature = "web")]
-fn schedule_projection_finish(element: web_sys::HtmlElement, transition: Duration) {
-    use wasm_bindgen::{JsCast, closure::Closure};
+struct ProjectionTask {
+    task: dioxus_core::Task,
+    runtime: std::rc::Weak<dioxus_core::Runtime>,
+}
 
-    let callback = Closure::once(move || {
+#[cfg(feature = "web")]
+impl ProjectionTask {
+    fn new(task: dioxus_core::Task) -> Self {
+        Self {
+            task,
+            runtime: Rc::downgrade(&dioxus_core::Runtime::current()),
+        }
+    }
+}
+
+#[cfg(feature = "web")]
+impl Drop for ProjectionTask {
+    fn drop(&mut self) {
+        if let Some(runtime) = self.runtime.upgrade() {
+            let _guard = dioxus_core::RuntimeGuard::new(runtime);
+            self.task.cancel();
+        }
+    }
+}
+
+#[cfg(feature = "web")]
+fn schedule_projection_finish(
+    element: web_sys::HtmlElement,
+    transition: Duration,
+) -> ProjectionTask {
+    ProjectionTask::new(spawn(async move {
+        if let Err(error) = Time::delay(Duration::from_millis(16)).await {
+            tracing::warn!(%error, "settling layout projection without a frame");
+        }
+        if element.get_attribute(PROJECTION_ACTIVE_ATTR).is_none() {
+            return;
+        }
         let style = element.style();
         let previous_transition = element
             .get_attribute(PROJECTION_PREVIOUS_TRANSITION_ATTR)
@@ -948,12 +1011,7 @@ fn schedule_projection_finish(element: web_sys::HtmlElement, transition: Duratio
             "transform",
             &compose_projection_identity_transform(previous_transform.as_deref()),
         );
-    });
-
-    if let Some(window) = web_sys::window() {
-        let _ = window.request_animation_frame(callback.as_ref().unchecked_ref());
-        callback.forget();
-    }
+    }))
 }
 
 #[cfg(feature = "web")]
@@ -1192,7 +1250,9 @@ async fn measure_presence_layout_size_stable(
     mounted: Rc<MountedData>,
 ) -> Result<PresenceMeasuredSize, MountedError> {
     let _ = measure_presence_layout_size(mounted.clone()).await?;
-    Time::delay(Duration::from_millis(16)).await;
+    if let Err(error) = Time::delay(Duration::from_millis(16)).await {
+        tracing::warn!(%error, "presence layout proceeds without a timer");
+    }
     measure_presence_layout_size(mounted).await
 }
 
@@ -1213,9 +1273,13 @@ fn schedule_presence_layout_measurement(
                     .as_ref()
                     .map(AnimationConfig::get_duration)
                     .unwrap_or_default();
-                Time::delay(Duration::from_millis(16)).await;
+                if let Err(error) = Time::delay(Duration::from_millis(16)).await {
+                    tracing::warn!(%error, "presence layout proceeds without a timer");
+                }
                 expand_enter.set(true);
-                Time::delay(duration).await;
+                if let Err(error) = Time::delay(duration).await {
+                    tracing::warn!(%error, "presence layout settles without a timer");
+                }
                 settle_enter.set(true);
             }
         }
@@ -1340,7 +1404,9 @@ fn PresenceLayoutChildBoundary(
     use_effect(use_reactive((&is_present,), move |_| {
         if !is_present {
             spawn(async move {
-                Time::delay(Duration::from_millis(16)).await;
+                if let Err(error) = Time::delay(Duration::from_millis(16)).await {
+                    tracing::warn!(%error, "presence layout proceeds without a timer");
+                }
                 collapse_exit.set(true);
             });
         }
@@ -1599,21 +1665,21 @@ fn measure_pop_layout_snapshot(
                     position != "static"
                 })
                 .unwrap_or(true);
-            if !parent_positioned {
-                if let Some(parent_html) = parent_element.dyn_ref::<web_sys::HtmlElement>() {
-                    let previous_position = parent_html
-                        .style()
-                        .get_property_value("position")
-                        .unwrap_or_default();
-                    let _ = parent_html.style().set_property("position", "relative");
-                    if parent_style_mutation.borrow().is_none() {
-                        parent_style_mutation
-                            .borrow_mut()
-                            .replace(ParentStyleMutation {
-                                element: parent_html.clone(),
-                                previous_position,
-                            });
-                    }
+            if !parent_positioned
+                && let Some(parent_html) = parent_element.dyn_ref::<web_sys::HtmlElement>()
+            {
+                let previous_position = parent_html
+                    .style()
+                    .get_property_value("position")
+                    .unwrap_or_default();
+                let _ = parent_html.style().set_property("position", "relative");
+                if parent_style_mutation.borrow().is_none() {
+                    parent_style_mutation
+                        .borrow_mut()
+                        .replace(ParentStyleMutation {
+                            element: parent_html.clone(),
+                            previous_position,
+                        });
                 }
             }
 
@@ -1749,8 +1815,8 @@ fn PopLayoutBoundary(
 
     rsx! {
         div {
-            id: "{pop_id}",
-            style: "{pop_style}",
+            id: pop_id,
+            style: pop_style,
             onmounted: move |event| {
                 let mounted = event.data.clone();
                 content_node.set(Some(mounted.clone()));
@@ -1903,7 +1969,7 @@ pub fn use_presence_motion<T>(
     animate: T,
     exit: T,
     config: AnimationConfig,
-) -> MotionHandle<T>
+) -> Result<MotionHandle<T>, crate::prelude::AnimationError>
 where
     T: Animatable + Send + 'static,
 {
@@ -1911,16 +1977,18 @@ where
 }
 
 /// Creates a motion handle with separate enter and exit transitions.
+/// Returns setup errors for invalid states, parameters, or incompatible spring units.
 pub fn use_presence_motion_with_transitions<T>(
     initial: T,
     animate: T,
     exit: T,
     enter_config: AnimationConfig,
     exit_config: AnimationConfig,
-) -> MotionHandle<T>
+) -> Result<MotionHandle<T>, crate::prelude::AnimationError>
 where
     T: Animatable + Send + 'static,
 {
+    validate_presence_animation(&initial, &animate, &exit, &enter_config, &exit_config)?;
     let presence = use_presence();
     let context = try_consume_context::<PresenceContext>();
     let status = context.as_ref().map(|context| context.status);
@@ -1934,11 +2002,9 @@ where
             }
         })
         .unwrap_or_else(|| animate.clone());
-    let mut motion = use_motion(start);
+    let mut motion = use_motion(start)?;
     let mut last_target_present = use_signal(|| None::<bool>);
     let mut awaiting_exit_completion = use_signal(|| false);
-    let mut exit_observed_running = use_signal(|| false);
-    let exit_duration = exit_config.get_duration();
     use_effect(move || {
         let is_present = status
             .map(|status| status.read().is_present)
@@ -1947,28 +2013,23 @@ where
             *last_target_present.write() = Some(is_present);
             if is_present {
                 awaiting_exit_completion.set(false);
-                exit_observed_running.set(false);
-                motion.animate_to(animate.clone(), enter_config.clone());
+                if let Err(error) = motion.animate_to(animate.clone(), enter_config.clone()) {
+                    tracing::error!(%error, "cannot start presence enter animation");
+                }
             } else {
                 awaiting_exit_completion.set(true);
-                exit_observed_running.set(false);
-                motion.animate_to(exit.clone(), exit_config.clone());
+                if let Err(error) = motion.animate_to(exit.clone(), exit_config.clone()) {
+                    tracing::error!(%error, "cannot start presence exit animation");
+                    motion.stop();
+                    awaiting_exit_completion.set(false);
+                    presence.safe_to_remove.call(());
+                }
             }
         }
     });
-    use_effect(move || {
-        if *awaiting_exit_completion.read() {
-            if motion.is_running() {
-                exit_observed_running.set(true);
-            } else if *exit_observed_running.read() || exit_duration == Duration::default() {
-                awaiting_exit_completion.set(false);
-                exit_observed_running.set(false);
-                presence.safe_to_remove.call(());
-            }
-        }
-    });
+    use_exit_completion(motion, awaiting_exit_completion, presence.safe_to_remove);
 
-    motion
+    Ok(motion)
 }
 
 /// Completes presence removal when a custom motion handle finishes its exit work.
@@ -1996,18 +2057,30 @@ where
         }
     });
 
-    use_effect(move || {
-        if *awaiting_exit_completion.read() && !motion.is_running() {
-            awaiting_exit_completion.set(false);
-            presence.safe_to_remove.call(());
-        }
-    });
+    use_exit_completion(motion, awaiting_exit_completion, presence.safe_to_remove);
 
     presence
 }
 
+fn use_exit_completion<T: Animatable + Send + 'static>(
+    motion: MotionHandle<T>,
+    mut awaiting_exit_completion: Signal<bool>,
+    safe_to_remove: Callback<()>,
+) {
+    use_effect(move || {
+        if *awaiting_exit_completion.read() && !motion.is_running() {
+            awaiting_exit_completion.set(false);
+            safe_to_remove.call(());
+        }
+    });
+}
+
 /// Creates a CSS-ready presence style handle for opacity and transform animations.
-pub fn use_presence_style(config: PresenceConfig) -> MotionHandle<MotionStyle> {
+/// Validates the supplied configuration before registering presence or layout work.
+pub fn use_presence_style(
+    config: PresenceConfig,
+) -> Result<MotionHandle<MotionStyle>, crate::prelude::AnimationError> {
+    config.validate()?;
     let presence = use_presence();
     let context = try_consume_context::<PresenceContext>();
     let status = context.as_ref().map(|context| context.status);
@@ -2049,11 +2122,9 @@ pub fn use_presence_style(config: PresenceConfig) -> MotionHandle<MotionStyle> {
             }
         })
         .unwrap_or_else(|| config.animate.clone());
-    let mut motion = use_motion(start);
+    let mut motion = use_motion(start)?;
     let mut last_target_present = use_signal(|| None::<bool>);
     let mut awaiting_exit_completion = use_signal(|| false);
-    let mut exit_observed_running = use_signal(|| false);
-    let exit_duration = config.exit_transition.get_duration();
 
     use_effect(move || {
         let is_present = status
@@ -2063,43 +2134,63 @@ pub fn use_presence_style(config: PresenceConfig) -> MotionHandle<MotionStyle> {
             *last_target_present.write() = Some(is_present);
             if is_present {
                 awaiting_exit_completion.set(false);
-                exit_observed_running.set(false);
-                if let Some(size) = measured_size.and_then(|size| *size.read()) {
-                    let enter_start = presence_style_enter_start(
-                        motion.get_value(),
-                        &config.animate,
-                        &config.exit,
-                        Some(size),
-                    );
-                    motion.set_current(enter_start);
+                let prepared = measured_size
+                    .and_then(|size| *size.read())
+                    .map_or(Ok(()), |size| {
+                        let enter_start = presence_style_enter_start(
+                            motion.get_value(),
+                            &config.animate,
+                            &config.exit,
+                            Some(size),
+                        );
+                        motion.set_current(enter_start)
+                    });
+                if let Err(error) = prepared.and_then(|()| {
+                    motion.animate_to(config.animate.clone(), config.enter_transition.clone())
+                }) {
+                    tracing::error!(%error, "cannot start presence enter animation");
                 }
-                motion.animate_to(config.animate.clone(), config.enter_transition.clone());
             } else {
                 awaiting_exit_completion.set(true);
-                exit_observed_running.set(false);
-                if let Some(size) = measured_size.and_then(|size| *size.read()) {
-                    let exit_start =
-                        presence_style_exit_start(motion.get_value(), &config.exit, Some(size));
-                    motion.set_current(exit_start);
+                let prepared = measured_size
+                    .and_then(|size| *size.read())
+                    .map_or(Ok(()), |size| {
+                        let exit_start =
+                            presence_style_exit_start(motion.get_value(), &config.exit, Some(size));
+                        motion.set_current(exit_start)
+                    });
+                if let Err(error) = prepared.and_then(|()| {
+                    motion.animate_to(config.exit.clone(), config.exit_transition.clone())
+                }) {
+                    tracing::error!(%error, "cannot start presence exit animation");
+                    motion.stop();
+                    awaiting_exit_completion.set(false);
+                    presence.safe_to_remove.call(());
                 }
-
-                motion.animate_to(config.exit.clone(), config.exit_transition.clone());
             }
         }
     });
-    use_effect(move || {
-        if *awaiting_exit_completion.read() {
-            if motion.is_running() {
-                exit_observed_running.set(true);
-            } else if *exit_observed_running.read() || exit_duration == Duration::default() {
-                awaiting_exit_completion.set(false);
-                exit_observed_running.set(false);
-                presence.safe_to_remove.call(());
-            }
-        }
-    });
+    use_exit_completion(motion, awaiting_exit_completion, presence.safe_to_remove);
 
-    motion
+    Ok(motion)
+}
+
+fn validate_presence_animation<T: Animatable>(
+    initial: &T,
+    animate: &T,
+    exit: &T,
+    enter: &AnimationConfig,
+    leaving: &AnimationConfig,
+) -> Result<(), crate::prelude::AnimationError> {
+    use crate::animations::core::{validate_spring_transition, validate_value};
+    validate_value(initial, "presence initial")?;
+    validate_value(animate, "presence animate")?;
+    validate_value(exit, "presence exit")?;
+    enter.validate_for::<T>()?;
+    leaving.validate_for::<T>()?;
+    validate_spring_transition(initial, animate, enter.mode)?;
+    validate_spring_transition(animate, exit, leaving.mode)?;
+    validate_spring_transition(exit, animate, enter.mode)
 }
 
 fn presence_style_enter_start(
@@ -2176,11 +2267,209 @@ mod tests {
     use dioxus_core::ScopeId;
     use std::collections::BTreeMap;
 
+    #[test]
+    fn presence_hooks_return_setup_errors_for_future_states_and_transitions() {
+        use crate::prelude::{AnimationConfig, AnimationError, PresenceConfig, Spring};
+        use std::{cell::Cell, rc::Rc};
+        type Shared = Rc<Cell<Option<AnimationError>>>;
+        fn host((case, result): (usize, Shared)) -> Element {
+            let tween = AnimationConfig::tween_ms(200);
+            let invalid_spring = AnimationConfig::spring(Spring {
+                mass: 0.0,
+                ..Spring::default()
+            });
+            let error = if case < 5 {
+                super::use_presence_motion_with_transitions(
+                    if case == 0 { f32::NAN } else { 0.0 },
+                    if case == 1 { f32::NAN } else { 1.0 },
+                    if case == 2 { f32::NAN } else { 0.0 },
+                    if case == 3 {
+                        invalid_spring.clone()
+                    } else {
+                        tween.clone()
+                    },
+                    if case == 4 { invalid_spring } else { tween },
+                )
+                .err()
+            } else {
+                let style = MotionStyle::default().property("width", CssValue::Px(20.0));
+                let mut config =
+                    PresenceConfig::new(style.clone(), style.clone(), style, tween.clone());
+                match case {
+                    5 => config.initial.opacity = f32::NAN,
+                    6 => config.exit.opacity = f32::NAN,
+                    7 => config.layout_transition = Some(invalid_spring),
+                    8 => {
+                        config.exit = config.exit.property("width", CssValue::Percent(0.0));
+                        config.exit_transition = AnimationConfig::spring(Spring::default());
+                    }
+                    _ => {
+                        config.exit = config.exit.property("width", CssValue::Percent(0.0));
+                        config.enter_transition = AnimationConfig::spring(Spring::default());
+                    }
+                }
+                // A tween exit is valid here, but an interrupted spring entry is incompatible.
+                super::use_presence_style(config).err()
+            };
+            result.set(error);
+            VNode::empty()
+        }
+        let errors = [
+            AnimationError::NonFiniteValue("presence initial"),
+            AnimationError::NonFiniteValue("presence animate"),
+            AnimationError::NonFiniteValue("presence exit"),
+            AnimationError::InvalidSpringParameter("mass"),
+            AnimationError::InvalidSpringParameter("mass"),
+            AnimationError::NonFiniteValue("presence initial"),
+            AnimationError::NonFiniteValue("presence exit"),
+            AnimationError::InvalidSpringParameter("mass"),
+            AnimationError::IncompatibleSpringValues,
+            AnimationError::IncompatibleSpringValues,
+        ];
+        for (case, expected) in errors.into_iter().enumerate() {
+            let result = Shared::default();
+            let mut dom = VirtualDom::new_with_props(host, (case, result.clone()));
+            dom.rebuild_in_place();
+            assert_eq!(result.get(), Some(expected), "presence case {case}");
+        }
+        let style = MotionStyle::default().property("width", CssValue::Px(20.0));
+        let config = PresenceConfig::new(
+            style.clone(),
+            style.clone(),
+            style.property("width", CssValue::Percent(0.0)),
+            AnimationConfig::tween_ms(200),
+        );
+        assert_eq!(config.validate(), Ok(()), "discrete tween units are valid");
+    }
+
+    #[cfg(feature = "web")]
+    #[test]
+    fn projection_owner_cancels_and_releases_pending_work() {
+        use std::{cell::Cell, rc::Rc};
+        struct Release(Rc<Cell<usize>>);
+        impl Drop for Release {
+            fn drop(&mut self) {
+                self.0.set(self.0.get() + 1);
+            }
+        }
+        let released = Rc::new(Cell::new(0));
+        let mut dom = VirtualDom::new(VNode::empty);
+        dom.rebuild_in_place();
+        dom.in_scope(ScopeId::APP, || {
+            let mut pending = None;
+            for _ in 0..1000 {
+                let release = Release(released.clone());
+                pending = Some(super::ProjectionTask::new(spawn(async move {
+                    let _release = release;
+                    std::future::pending::<()>().await;
+                })));
+            }
+            assert_eq!(
+                released.get(),
+                999,
+                "replacing projection cancels its previous work"
+            );
+            drop(pending);
+            assert_eq!(
+                released.get(),
+                1000,
+                "removing projection releases its last task"
+            );
+        });
+        let release = Release(released.clone());
+        let owner = dom.in_scope(ScopeId::APP, || {
+            super::ProjectionTask::new(spawn(async move {
+                let _release = release;
+                std::future::pending::<()>().await;
+            }))
+        });
+        drop(owner);
+        assert_eq!(
+            released.get(),
+            1001,
+            "owner can be dropped outside its runtime scope"
+        );
+        let release = Release(released.clone());
+        let owner = dom.in_scope(ScopeId::APP, || {
+            super::ProjectionTask::new(spawn(async move {
+                let _release = release;
+                std::future::pending::<()>().await;
+            }))
+        });
+        drop(dom);
+        assert_eq!(
+            released.get(),
+            1002,
+            "unmount cancels the task without an ownership cycle"
+        );
+        drop(owner);
+    }
+
+    #[test]
+    fn exit_completion_handles_failure_before_the_first_running_observation() {
+        use crate::{
+            manager::{AnimationManager, MotionHandle},
+            prelude::{AnimationConfig, Spring},
+        };
+        use std::{
+            cell::{Cell, RefCell},
+            rc::Rc,
+        };
+        type Shared = Rc<RefCell<Option<(MotionHandle<f32>, Signal<bool>)>>>;
+        fn host((shared, calls): (Shared, Rc<Cell<usize>>)) -> Element {
+            let motion = use_hook(|| MotionHandle::new(0.0f32).expect("finite initial value"));
+            let awaiting = use_signal(|| false);
+            let callback = Callback::new(move |_| {
+                assert_eq!(calls.get(), 0, "exit removal must run once");
+                calls.set(calls.get() + 1);
+            });
+            super::use_exit_completion(motion, awaiting, callback);
+            *shared.borrow_mut() = Some((motion, awaiting));
+            rsx! { div {} }
+        }
+        for case in 0..4 {
+            let shared = Shared::default();
+            let calls = Rc::new(Cell::new(0));
+            let mut dom = VirtualDom::new_with_props(host, (shared.clone(), calls.clone()));
+            dom.rebuild_in_place();
+            dom.render_immediate_to_vec();
+            assert_eq!(calls.get(), 0);
+            dom.in_scope(ScopeId::APP, || {
+                let (mut motion, mut awaiting) = shared.borrow().expect("hook state");
+                let target = if case == 0 { f32::MAX } else { 1.0 };
+                motion
+                    .animate_to(target, AnimationConfig::spring(Spring::default()))
+                    .expect("valid animation configuration");
+                awaiting.set(true);
+                // Finish or fail synchronously before the completion effect sees running=true.
+                match case {
+                    0 => assert!(motion.update(1.0 / 60.0).is_err()),
+                    1 => motion.stop(),
+                    2 => assert!(motion.is_running()),
+                    _ => {
+                        awaiting.set(false);
+                        motion.stop();
+                    }
+                }
+            });
+            for _ in 0..3 {
+                dom.render_immediate_to_vec();
+            }
+            assert_eq!(calls.get(), usize::from(case < 2));
+            dom.render_immediate_to_vec();
+            assert_eq!(
+                calls.get(),
+                usize::from(case < 2),
+                "completion must run once"
+            );
+        }
+    }
+
     fn child(key: &str) -> Result<PresenceChild, PresenceError> {
         let children = rsx! {
             div {
                 key: "{key}",
-                "{key}"
+                {key}
             }
         };
 
@@ -2211,12 +2500,35 @@ mod tests {
     }
 
     #[test]
+    fn presence_tween_preserves_typed_duration_boundaries() {
+        use crate::Duration;
+        for duration in [Duration::ZERO, Duration::from_nanos(1), Duration::MAX] {
+            let mut evaluations = 0;
+            let config = crate::presence_style! {
+                initial: { opacity: 0.0 },
+                animate: { opacity: 1.0 },
+                exit: { opacity: 0.0 },
+                layout: size,
+                transition: tween { duration: { evaluations += 1; duration } },
+                layout_transition: tween { duration: duration },
+            };
+            assert_eq!(evaluations, 1);
+            assert_eq!(config.enter_transition.get_duration(), duration);
+            assert_eq!(config.exit_transition.get_duration(), duration);
+            assert_eq!(
+                config.layout_transition.map(|config| config.get_duration()),
+                Some(duration)
+            );
+        }
+    }
+
+    #[test]
     fn presence_style_macro_builds_config() {
         let config = crate::presence_style! {
             initial: { opacity: 0.0, y: 20.0, scale: 0.92, rotate: -6.0 },
             animate: { opacity: 1.0 },
             exit: { opacity: 0.0, y: -16.0, scale: 0.96 },
-            transition: tween { duration: 220.5 },
+            transition: tween { duration: crate::Duration::from_micros(220_500) },
         };
 
         assert_eq!(
@@ -2256,7 +2568,7 @@ mod tests {
             },
             animate: { opacity: 1.0 },
             exit: { opacity: 0.0, scaleY: 0 },
-            transition: tween { duration: 220.0 },
+            transition: tween { duration: crate::Duration::from_millis(220) },
         };
 
         assert_eq!(
@@ -2285,7 +2597,7 @@ mod tests {
             initial: { opacity: 0.0, height: 48.0, borderRadius: 8 },
             animate: { opacity: 1.0, height: 96.0, zIndex: 2 },
             exit: { opacity: 0.0, height: 0.0 },
-            transition: tween { duration: 420.0 },
+            transition: tween { duration: crate::Duration::from_millis(420) },
         };
 
         assert_eq!(
@@ -2326,7 +2638,7 @@ mod tests {
                 color: "var(--accent-color)",
             },
             exit: { opacity: 0.0, width: "0%" },
-            transition: tween { duration: 200.0 },
+            transition: tween { duration: crate::Duration::from_millis(200) },
         };
 
         assert_eq!(
@@ -2487,7 +2799,7 @@ mod tests {
             initial: { opacity: 0.0, y: 20.0, scale: 0.92 },
             animate: { opacity: 1.0 },
             exit: { opacity: 0.0, y: -16.0, scale: 0.96 },
-            transition: tween { duration: 420.0 },
+            transition: tween { duration: crate::Duration::from_millis(420) },
         };
 
         assert_eq!(
@@ -2507,8 +2819,8 @@ mod tests {
             animate: { opacity: 1.0, x: 0.0 },
             exit: { opacity: 0.0, x: -20.0 },
             layout: size,
-            transition: tween { duration: 440.0 },
-            layout_transition: tween { duration: 444.0 },
+            transition: tween { duration: crate::Duration::from_millis(440) },
+            layout_transition: tween { duration: crate::Duration::from_millis(444) },
         };
 
         assert_eq!(config.layout, super::PresenceLayout::Size);
@@ -2533,8 +2845,8 @@ mod tests {
             exit: { opacity: 0.0, x: -20.0 },
             layout: size,
             transition: tween {
-                layout: tween { duration: 444.0 },
-            duration: 440.0,
+                layout: tween { duration: crate::Duration::from_millis(444) },
+            duration: crate::Duration::from_millis(440),
             },
         };
 
@@ -2581,7 +2893,7 @@ mod tests {
             animate: { opacity: 1.0, y: 0.0 },
             exit: { opacity: 0.0, y: -12.0 },
             enter_transition: spring { stiffness: 180.0, damping: 22.0 },
-            exit_transition: tween { duration: 140.0 },
+            exit_transition: tween { duration: crate::Duration::from_millis(140) },
         };
 
         assert!(matches!(
@@ -3100,7 +3412,7 @@ mod tests {
             for item in items {
                 div {
                     key: "{item}",
-                    "{item}"
+                    {item}
                 }
             }
         };
@@ -3119,7 +3431,7 @@ mod tests {
     #[component]
     fn Row(id: String) -> Element {
         rsx! {
-            div { "{id}" }
+            div { {id} }
         }
     }
 
@@ -3166,7 +3478,7 @@ mod tests {
             for item in [first, second] {
                 div {
                     key: "{item}",
-                    "{item}"
+                    {item}
                 }
             }
         };

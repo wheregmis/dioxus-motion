@@ -3,7 +3,7 @@ use dioxus_motion::{animations::core::Animatable, prelude::*};
 use std::f32::consts::PI;
 use wide::f32x4;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PetalTransform {
     rotate: f32,
     scale: f32,
@@ -65,6 +65,12 @@ impl std::ops::Mul<f32> for PetalTransform {
 }
 
 impl Animatable for PetalTransform {
+    fn is_finite(&self) -> bool {
+        [self.rotate, self.scale, self.translate_x, self.translate_y]
+            .into_iter()
+            .all(f32::is_finite)
+    }
+
     fn interpolate(&self, target: &Self, t: f32) -> Self {
         let a = [self.rotate, self.scale, self.translate_x, self.translate_y];
         let b = [
@@ -92,108 +98,115 @@ impl Animatable for PetalTransform {
 
 #[component]
 pub fn AnimatedFlower() -> Element {
-    let mut petal_transform = use_motion(PetalTransform::default());
-    let mut leaf_transform = use_motion(PetalTransform::default());
-    let mut center_scale = use_motion(1.0f32); // Start from 1.0 instead of 0.0
-    let mut center_rotate = use_motion(0.0f32);
+    let mut petal_transform = use_motion(PetalTransform::default())?;
+    let mut leaf_transform = use_motion(PetalTransform::default())?;
+    let mut center_scale = use_motion(1.0f32)?; // Start from 1.0 instead of 0.0
+    let mut center_rotate = use_motion(0.0f32)?;
     let mut is_leaves_grown = use_signal_sync(|| false);
-    let mut stem_length = use_motion(100.0f32);
-    let mut stem_sway = use_motion(0.0f32);
-    let mut glow_opacity = use_motion(0.0f32);
+    let mut stem_length = use_motion(100.0f32)?;
+    let mut stem_sway = use_motion(0.0f32)?;
+    let mut glow_opacity = use_motion(0.0f32)?;
 
     let animate_leaves = move |_: Event<MountedData>| {
         // Enhanced stem animation with natural growth
-        stem_length.animate_to(
-            0.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 25.0, // Slower for more organic movement
-                damping: 8.0,
-                mass: 0.4,
-                velocity: 0.5,
-            })),
-        );
+        stem_length
+            .animate_to(
+                0.0,
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 25.0, // Slower for more organic movement
+                    damping: 8.0,
+                    mass: 0.4,
+                })),
+            )
+            .expect("valid animation configuration");
 
         // Add gentle stem sway
-        stem_sway.animate_to(
-            5.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 15.0,
-                damping: 3.0,
-                mass: 0.3,
-                velocity: 0.0,
-            }))
-            .with_loop(LoopMode::Alternate),
-        );
+        stem_sway
+            .animate_to(
+                5.0,
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 15.0,
+                    damping: 3.0,
+                    mass: 0.3,
+                }))
+                .with_loop(LoopMode::Alternate),
+            )
+            .expect("valid animation configuration");
 
         // Enhanced leaf growth animation
-        leaf_transform.animate_to(
-            PetalTransform::new(
-                PI / 5.0,
-                1.2,   // Slightly larger scale
-                2.0,   // Add some x movement
-                -22.0, // Higher up
-            ),
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 35.0,
-                damping: 6.0,
-                mass: 0.4,
-                velocity: 2.5,
-            }))
-            .with_on_complete(move || {
-                is_leaves_grown.set(true);
-            }),
-        );
+        leaf_transform
+            .animate_to(
+                PetalTransform::new(
+                    PI / 5.0,
+                    1.2,   // Slightly larger scale
+                    2.0,   // Add some x movement
+                    -22.0, // Higher up
+                ),
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 35.0,
+                    damping: 6.0,
+                    mass: 0.4,
+                }))
+                .with_on_complete(move || {
+                    is_leaves_grown.set(true);
+                }),
+            )
+            .expect("valid animation configuration");
     };
 
     let mut animate_petals = move || {
         if *is_leaves_grown.read() {
             // More dynamic petal animation
-            petal_transform.animate_to(
-                PetalTransform::new(PI / 3.5, 1.3, 4.0, 4.0),
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 45.0,
-                    damping: 7.0,
-                    mass: 0.4,
-                    velocity: 1.5,
-                }))
-                .with_loop(LoopMode::Alternate),
-            );
+            petal_transform
+                .animate_to(
+                    PetalTransform::new(PI / 3.5, 1.3, 4.0, 4.0),
+                    AnimationConfig::new(AnimationMode::Spring(Spring {
+                        stiffness: 45.0,
+                        damping: 7.0,
+                        mass: 0.4,
+                    }))
+                    .with_loop(LoopMode::Alternate),
+                )
+                .expect("valid animation configuration");
 
             // Add rotation to center
-            center_rotate.animate_to(
-                360.0,
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 20.0,
-                    damping: 5.0,
-                    mass: 0.3,
-                    velocity: 0.5,
-                }))
-                .with_loop(LoopMode::Infinite),
-            );
+            center_rotate
+                .animate_to(
+                    360.0,
+                    AnimationConfig::new(AnimationMode::Spring(Spring {
+                        stiffness: 20.0,
+                        damping: 5.0,
+                        mass: 0.3,
+                    }))
+                    .with_loop(LoopMode::Infinite),
+                )
+                .expect("valid animation configuration");
 
             // Modified center scaling animation
-            center_scale.animate_to(
-                1.4,
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 60.0, // Reduced stiffness
-                    damping: 12.0,   // Increased damping
-                    mass: 1.0,       // Increased mass
-                    velocity: 0.0,   // Start with zero velocity
-                }))
-                .with_loop(LoopMode::Alternate),
-            );
+            center_scale
+                .animate_to(
+                    1.4,
+                    AnimationConfig::new(AnimationMode::Spring(Spring {
+                        stiffness: 60.0, // Reduced stiffness
+                        damping: 12.0,   // Increased damping
+                        mass: 1.0,       // Increased mass
+                    }))
+                    .with_loop(LoopMode::Alternate),
+                )
+                .expect("valid animation configuration");
 
             // Add subtle glow effect
-            glow_opacity.animate_to(
-                0.6,
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 40.0,
-                    damping: 6.0,
-                    mass: 0.5,
-                    velocity: 0.0,
-                }))
-                .with_loop(LoopMode::Alternate),
-            );
+            glow_opacity
+                .animate_to(
+                    0.6,
+                    AnimationConfig::new(AnimationMode::Spring(Spring {
+                        stiffness: 40.0,
+                        damping: 6.0,
+                        mass: 0.5,
+                    }))
+                    .with_loop(LoopMode::Alternate),
+                )
+                .expect("valid animation configuration");
         }
     };
 

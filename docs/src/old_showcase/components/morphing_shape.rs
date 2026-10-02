@@ -13,8 +13,8 @@ struct ShapeConfig {
 #[component]
 pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
     let mut current_shape = use_signal(|| 0);
-    let mut transform = use_motion(Transform::identity());
-    let mut scale_pulse = use_motion(1.0f32);
+    let mut transform = use_motion(Transform::identity())?;
+    let mut scale_pulse = use_motion(1.0f32)?;
 
     let shape_configs = [
         ShapeConfig {
@@ -70,38 +70,43 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
 
     use_effect(move || {
         // Main rotation and scale animation
-        transform.animate_to(
-            Transform {
-                rotation: 360.0,
-                scale: 1.2,
-                x: 0.0,
-                y: 0.0,
-            },
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 35.0, // Reduced for more fluid motion
-                damping: 5.0,    // Lower damping for organic movement
-                mass: 0.6,       // Lighter mass for faster response
-                velocity: 0.8,   // Increased initial velocity
-            }))
-            .with_loop(LoopMode::Infinite),
-        );
+        transform
+            .animate_to(
+                Transform {
+                    rotation: 360.0,
+                    scale: 1.2,
+                    x: 0.0,
+                    y: 0.0,
+                },
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 35.0, // Reduced for more fluid motion
+                    damping: 5.0,    // Lower damping for organic movement
+                    mass: 0.6,       // Lighter mass for faster response
+                }))
+                .with_loop(LoopMode::Infinite),
+            )
+            .expect("valid animation configuration");
 
         // Additional scale pulse animation
-        scale_pulse.animate_to(
-            1.15,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 25.0,
-                damping: 3.0,
-                mass: 0.5,
-                velocity: 0.5,
-            }))
-            .with_loop(LoopMode::Infinite),
-        );
+        scale_pulse
+            .animate_to(
+                1.15,
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 25.0,
+                    damping: 3.0,
+                    mass: 0.5,
+                }))
+                .with_loop(LoopMode::Infinite),
+            )
+            .expect("valid animation configuration");
 
         // Shape transition loop
         spawn(async move {
             loop {
-                Time::delay(Duration::from_secs_f32(duration)).await;
+                if let Err(error) = Time::delay(Duration::from_secs_f32(duration)).await {
+                    dioxus::logger::tracing::error!(%error, "shape loop stopped");
+                    break;
+                }
                 let next = (*current_shape.read() + 1) % shape_configs.len();
                 current_shape.set(next);
             }

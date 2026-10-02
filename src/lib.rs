@@ -5,32 +5,32 @@
 //!
 //! # Features
 //! - **Simplified Animatable trait** - Uses standard Rust operators (`+`, `-`, `*`) for math operations
-//! - **High-performance optimizations** - Automatic memory pooling, state machine dispatch, and resource management
-//! - Spring physics animations with optimized integration
+//! - Exact spring transitions with cached frame coefficients
+//! - Spring physics and validated tween interpolation
 //! - Tween animations with custom easing
 //! - Color interpolation
 //! - Transform animations
 //! - Configurable animation loops
-//! - Animation sequences with atomic step management
-//! - Single default epsilon (0.01) for consistent animation completion
-//! - Automatic resource pool management for maximum performance
+//! - Animation sequences with independent playback state
+//! - Type-specific completion tolerances with validated overrides
+//! - Browser timers that release callbacks on completion or cancellation
 //!
 //! # Example
 //! ```rust,no_run
 //! # #[cfg(feature = "dioxus")] {
 //! use dioxus_motion::prelude::*;
 //!
-//! let mut value = use_motion(0.0f32);
+//! let mut value = use_motion(0.0f32).expect("finite initial value");
 //!
 //! // Basic animation - automatically uses all optimizations
-//! value.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
+//! value.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default()))).expect("valid animation configuration");
 //!
 //! // Animation with custom epsilon for fine-tuned performance (optional)
 //! value.animate_to(
 //!     100.0,
 //!     AnimationConfig::new(AnimationMode::Spring(Spring::default()))
 //!         .with_epsilon(0.001) // Tighter threshold for high-precision animations
-//! );
+//! ).expect("valid animation configuration");
 //!
 //! // Check if animation is running
 //! if value.is_running() {
@@ -41,7 +41,7 @@
 //!
 //! # Creating Custom Animatable Types
 //!
-//! The simplified `Animatable` trait requires only two methods and leverages standard Rust traits:
+//! The simplified `Animatable` trait requires three methods and leverages standard Rust traits:
 //!
 //! ```rust
 //! use dioxus_motion::prelude::*;
@@ -72,8 +72,12 @@
 //!     }
 //! }
 //!
-//! // Implement Animatable with just two methods
+//! // Implement Animatable with three methods
 //! impl Animatable for Point {
+//!     fn is_finite(&self) -> bool {
+//!         [self.x, self.y].into_iter().all(f32::is_finite)
+//!     }
+
 //!     fn interpolate(&self, target: &Self, t: f32) -> Self {
 //!         self.clone() + (target.clone() - self.clone()) * t
 //!     }
@@ -107,8 +111,6 @@ pub mod keyframes;
 #[cfg(feature = "dioxus")]
 pub mod manager;
 pub mod motion;
-#[allow(dead_code)]
-pub(crate) mod pool;
 #[cfg(feature = "dioxus")]
 pub mod presence;
 #[cfg(feature = "dioxus")]
@@ -131,7 +133,7 @@ pub(crate) use motion::Motion;
 
 // Re-exports
 pub mod prelude {
-    pub use crate::animations::core::{AnimationConfig, AnimationMode, LoopMode};
+    pub use crate::animations::core::{AnimationConfig, AnimationError, AnimationMode, LoopMode};
     pub use crate::animations::css::{CssColor, CssComplexValue, CssValue, IntoCssValue};
     pub use crate::animations::style::MotionStyle;
     pub use crate::animations::{
@@ -202,13 +204,13 @@ fn calculate_delay(dt: f32, running_frames: u32) -> Duration {
 /// use dioxus::prelude::*;
 ///
 /// fn app() -> Element {
-///     let mut value = use_motion(0.0f32);
+///     let mut value = use_motion(0.0f32).expect("finite initial value");
 ///
 ///     // Animate to 100 with spring physics
 ///     value.animate_to(
 ///         100.0,
 ///         AnimationConfig::new(AnimationMode::Spring(Spring::default()))
-///     );
+///     ).expect("valid animation configuration");
 ///
 ///     rsx! {
 ///         div {
@@ -220,8 +222,10 @@ fn calculate_delay(dt: f32, running_frames: u32) -> Duration {
 /// # }
 /// ```
 #[cfg(feature = "dioxus")]
-pub fn use_motion<T: Animatable + Send + 'static>(initial: T) -> MotionHandle<T> {
-    let mut state = MotionHandle::new_hook(initial);
+pub fn use_motion<T: Animatable + Send + 'static>(
+    initial: T,
+) -> Result<MotionHandle<T>, prelude::AnimationError> {
+    let mut state = MotionHandle::new_hook(initial)?;
 
     #[cfg(feature = "web")]
     let idle_poll_rate = Duration::from_millis(100);
@@ -239,40 +243,30 @@ pub fn use_motion<T: Animatable + Send + 'static>(initial: T) -> MotionHandle<T>
                 let now = Time::now();
                 let is_running = state.is_running();
 
-                if is_running && running_frames == 0 {
+                let delay = if is_running && running_frames == 0 {
                     last_frame = now;
                     running_frames = 1;
-                    Time::delay(Duration::from_millis(8)).await;
-                    continue;
-                }
-
-                let dt = (now.duration_since(last_frame).as_secs_f32()).min(0.1);
-                last_frame = now;
-
-                // Only check if running first, then write to the signal
-                if is_running {
-                    running_frames += 1;
-                    let prev_value = state.get_value();
-                    let updated = state.update(dt);
-                    let new_value = state.get_value();
-                    let epsilon = state.epsilon();
-                    // Only trigger a re-render if the value changed significantly
-                    if (new_value - prev_value).magnitude() <= epsilon && !updated {
-                        // Skip this frame's update to avoid unnecessary re-render
-                        let delay = calculate_delay(dt, running_frames);
-                        Time::delay(delay).await;
-                        continue;
+                    Duration::from_millis(8)
+                } else if is_running {
+                    let dt = now.duration_since(last_frame).as_secs_f32().min(0.1);
+                    last_frame = now;
+                    running_frames = running_frames.saturating_add(1);
+                    if let Err(error) = state.update(dt) {
+                        tracing::error!(%error, "animation playback stopped");
                     }
-
-                    let delay = calculate_delay(dt, running_frames);
-                    Time::delay(delay).await;
+                    calculate_delay(dt, running_frames)
                 } else {
                     running_frames = 0;
-                    Time::delay(idle_poll_rate).await;
+                    idle_poll_rate
+                };
+                if let Err(error) = Time::delay(delay).await {
+                    state.fail_driver();
+                    tracing::error!(%error, "animation timer stopped");
+                    break;
                 }
             }
         });
     });
 
-    state
+    Ok(state)
 }

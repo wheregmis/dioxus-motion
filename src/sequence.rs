@@ -1,7 +1,9 @@
 //! `AnimationSequence<T>` - Optimized animation step sequences
 
-use crate::animations::core::Animatable;
-use crate::prelude::AnimationConfig;
+use crate::animations::core::{
+    Animatable, AnimationError, validate_spring_transition, validate_value,
+};
+use crate::prelude::{AnimationConfig, LoopMode};
 
 use std::sync::Mutex;
 use std::sync::{Arc, MutexGuard};
@@ -10,11 +12,10 @@ use std::sync::{Arc, MutexGuard};
 pub struct AnimationStep<T: Animatable> {
     pub target: T,
     pub config: Arc<AnimationConfig>,
-    pub predicted_next: Option<T>,
 }
 
 struct SequenceState {
-    current_step: u8,
+    current_step: usize,
     #[allow(clippy::type_complexity)]
     on_complete: Option<Box<dyn FnOnce() + Send>>,
 }
@@ -27,6 +28,30 @@ pub struct AnimationSequence<T: Animatable> {
 }
 
 impl<T: Animatable> AnimationSequence<T> {
+    /// Validates targets, configurations, and transitions whose starting values are known.
+    /// Motion setup also checks transitions using the actual initial value.
+    pub fn validate(&self) -> Result<(), AnimationError> {
+        self.validate_from(None)
+    }
+
+    pub(crate) fn validate_from<'a>(
+        &'a self,
+        mut current: Option<&'a T>,
+    ) -> Result<(), AnimationError> {
+        for step in &self.steps {
+            step.config.validate_for::<T>()?;
+            validate_value(&step.target, "sequence target")?;
+            if let Some(current) = current {
+                validate_spring_transition(current, &step.target, step.config.mode)?;
+            }
+            // A finite round trip finishes at its starting value; zero counts play one leg.
+            if !matches!(step.config.loop_mode, Some(LoopMode::AlternateTimes(1..))) {
+                current = Some(&step.target);
+            }
+        }
+        Ok(())
+    }
+
     fn lock_state(&self) -> MutexGuard<'_, SequenceState> {
         match self.state.lock() {
             Ok(state) => state,
@@ -46,9 +71,9 @@ impl<T: Animatable> AnimationSequence<T> {
     }
 
     /// Creates a new animation sequence with specified capacity hint.
-    pub fn with_capacity(capacity: u8) -> Self {
+    pub fn with_capacity(capacity: usize) -> Self {
         Self {
-            steps: Vec::with_capacity(capacity as usize),
+            steps: Vec::with_capacity(capacity),
             state: Mutex::new(SequenceState {
                 current_step: 0,
                 on_complete: None,
@@ -82,24 +107,17 @@ impl<T: Animatable> AnimationSequence<T> {
     }
 
     /// Reserve additional capacity for future steps.
-    pub fn reserve(&mut self, additional: u8) {
-        self.steps.reserve(additional as usize);
+    pub fn reserve(&mut self, additional: usize) {
+        self.steps.reserve(additional);
     }
 
-    /// Adds a new step to the sequence and returns a new sequence
+    /// Adds a step with its own delay, loop mode, and completion callback.
+    /// Infinite loops hold the sequence at that step. Step callbacks run once after
+    /// all of its legs, before the overall sequence callback.
     pub fn then(mut self, target: T, config: AnimationConfig) -> Self {
-        let predicted_next = if self.steps.is_empty() {
-            None
-        } else {
-            self.steps
-                .last()
-                .map(|last_step| last_step.target.interpolate(&target, 0.5))
-        };
-
         let new_step = AnimationStep {
             target,
             config: Arc::new(config),
-            predicted_next,
         };
 
         self.steps.push(new_step);
@@ -119,7 +137,7 @@ impl<T: Animatable> AnimationSequence<T> {
     pub fn advance_step(&self) -> bool {
         let mut state = self.lock_state();
         let current = state.current_step;
-        let total_steps = self.steps.len() as u8;
+        let total_steps = self.steps.len();
 
         if current < total_steps.saturating_sub(1) {
             state.current_step += 1;
@@ -130,30 +148,30 @@ impl<T: Animatable> AnimationSequence<T> {
     }
 
     /// Gets the current step index
-    pub fn current_step_index(&self) -> u8 {
+    pub fn current_step_index(&self) -> usize {
         self.lock_state().current_step
     }
 
-    /// Gets the current step index (kept for backward compatibility)
-    pub fn current_step(&self) -> u8 {
+    /// Alias for the current step index.
+    pub fn current_step(&self) -> usize {
         self.current_step_index()
     }
 
     /// Gets the configuration for the current step
     pub fn current_config(&self) -> Option<&AnimationConfig> {
-        let current = self.current_step_index() as usize;
+        let current = self.current_step_index();
         self.steps.get(current).map(|step| step.config.as_ref())
     }
 
     /// Gets the target value for the current step
     pub fn current_target(&self) -> Option<T> {
-        let current = self.current_step_index() as usize;
+        let current = self.current_step_index();
         self.steps.get(current).map(|step| step.target.clone())
     }
 
     /// Gets the current step data
     pub fn current_step_data(&self) -> Option<&AnimationStep<T>> {
-        let current = self.current_step_index() as usize;
+        let current = self.current_step_index();
         self.steps.get(current)
     }
 
@@ -165,7 +183,7 @@ impl<T: Animatable> AnimationSequence<T> {
     /// Checks if the sequence is complete (at the last step)
     pub fn is_complete(&self) -> bool {
         let current = self.current_step_index();
-        let total_steps = self.steps.len() as u8;
+        let total_steps = self.steps.len();
         current >= total_steps.saturating_sub(1)
     }
 
@@ -181,9 +199,14 @@ impl<T: Animatable> AnimationSequence<T> {
 
     /// Executes the completion callback if present
     pub fn execute_completion(&self) {
-        if let Some(callback) = self.lock_state().on_complete.take() {
+        let callback = self.take_completion();
+        if let Some(callback) = callback {
             callback();
         }
+    }
+
+    pub(crate) fn take_completion(&self) -> Option<Box<dyn FnOnce() + Send>> {
+        self.lock_state().on_complete.take()
     }
 }
 
@@ -219,6 +242,65 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     #[test]
+    fn sequence_indices_follow_vector_length() {
+        for count in [0, 1, 2, 254, 255, 256, 257, 512, 1024] {
+            let steps = (0..count)
+                .map(|index| AnimationStep {
+                    target: index as f32,
+                    config: Arc::new(AnimationConfig::tween_ms(index as u64 + 1)),
+                })
+                .collect();
+            let sequence = AnimationSequence::from_steps(steps);
+            assert_eq!(sequence.total_steps(), count);
+            if count == 0 {
+                assert!(sequence.is_complete());
+                assert!(!sequence.advance_step());
+                assert!(sequence.current_target().is_none());
+                assert!(sequence.current_config().is_none());
+                assert!(sequence.current_step_data().is_none());
+                continue;
+            }
+            for index in 0..count {
+                assert_eq!(sequence.current_step_index(), index);
+                assert_eq!(sequence.current_step(), index);
+                assert_eq!(sequence.current_target(), Some(index as f32));
+                assert_eq!(sequence.current_step_data().unwrap().target, index as f32);
+                assert_eq!(
+                    sequence.current_config().unwrap().get_duration(),
+                    crate::Duration::from_millis(index as u64 + 1),
+                );
+                assert_eq!(sequence.is_complete(), index + 1 == count);
+                assert_eq!(sequence.advance_step(), index + 1 < count);
+            }
+            sequence.reset();
+            assert_eq!(sequence.current_target(), Some(0.0));
+        }
+    }
+
+    #[test]
+    fn completion_releases_lock_and_runs_once() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        let sequence = Arc::new(AnimationSequence::<f32>::new());
+        let weak = Arc::downgrade(&sequence);
+        let calls = Arc::new(AtomicUsize::new(0));
+        let callback_calls = calls.clone();
+        sequence.lock_state().on_complete = Some(Box::new(move || {
+            let sequence = weak.upgrade().unwrap();
+            assert!(
+                sequence.state.try_lock().is_ok(),
+                "callback still holds state lock"
+            );
+            sequence.reset();
+            sequence.execute_completion();
+            callback_calls.fetch_add(1, Ordering::Relaxed);
+        }));
+        sequence.execute_completion();
+        sequence.execute_completion();
+        assert_eq!(calls.load(Ordering::Relaxed), 1);
+    }
+
+    #[test]
     fn test_animation_sequence_basic() {
         let steps = vec![
             AnimationStep {
@@ -226,21 +308,18 @@ mod tests {
                 config: Arc::new(AnimationConfig::new(AnimationMode::Spring(
                     Spring::default(),
                 ))),
-                predicted_next: None,
             },
             AnimationStep {
                 target: 20.0f32,
                 config: Arc::new(AnimationConfig::new(AnimationMode::Spring(
                     Spring::default(),
                 ))),
-                predicted_next: None,
             },
             AnimationStep {
                 target: 30.0f32,
                 config: Arc::new(AnimationConfig::new(AnimationMode::Spring(
                     Spring::default(),
                 ))),
-                predicted_next: None,
             },
         ];
 
@@ -311,7 +390,6 @@ mod tests {
             config: Arc::new(AnimationConfig::new(AnimationMode::Spring(
                 Spring::default(),
             ))),
-            predicted_next: None,
         }];
 
         let sequence = AnimationSequence::with_on_complete(steps, move || {
@@ -334,7 +412,6 @@ mod tests {
             config: Arc::new(AnimationConfig::new(AnimationMode::Spring(
                 Spring::default(),
             ))),
-            predicted_next: None,
         }];
 
         let sequence = AnimationSequence::with_on_complete(steps, move || {
@@ -363,26 +440,80 @@ mod tests {
 
     #[test]
     fn test_animation_sequence_clone() {
-        let steps = vec![AnimationStep {
-            target: 10.0f32,
-            config: Arc::new(AnimationConfig::new(AnimationMode::Spring(
-                Spring::default(),
-            ))),
-            predicted_next: None,
-        }];
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let calls = Arc::new(AtomicUsize::new(0));
+        let completed = calls.clone();
+        let original = AnimationSequence::new()
+            .then(10.0f32, AnimationConfig::tween_ms(1000))
+            .then(20.0, AnimationConfig::tween_ms(1000))
+            .then(30.0, AnimationConfig::tween_ms(1000))
+            .on_complete(move || {
+                completed.fetch_add(1, Ordering::Relaxed);
+            });
+        assert!(original.advance_step());
+        let cloned = original.clone();
+        assert_eq!(cloned.current_step_index(), 1);
+        assert_eq!(cloned.total_steps(), 3);
+        assert!(cloned.advance_step());
+        assert_eq!(cloned.current_target(), Some(30.0));
+        assert_eq!(original.current_target(), Some(20.0));
+        original.reset();
+        assert_eq!(original.current_target(), Some(10.0));
+        assert_eq!(cloned.current_target(), Some(30.0));
+        cloned.execute_completion();
+        assert_eq!(calls.load(Ordering::Relaxed), 0);
+        original.execute_completion();
+        original.execute_completion();
+        assert_eq!(calls.load(Ordering::Relaxed), 1);
+    }
 
-        let sequence1 = AnimationSequence::from_steps(steps);
-        sequence1.advance_step(); // This won't work since there's only one step, but let's test the clone
-
-        let sequence2 = sequence1.clone();
-
-        // Both sequences should have the same step data but independent counters
+    #[test]
+    #[allow(clippy::panic)] // Sentinel: this interpolation must never execute during construction.
+    fn building_steps_never_interpolates_before_validation() {
+        #[derive(Clone, Default, PartialEq)]
+        struct NoInterpolation(f32);
+        impl std::ops::Add for NoInterpolation {
+            type Output = Self;
+            fn add(self, rhs: Self) -> Self {
+                Self(self.0 + rhs.0)
+            }
+        }
+        impl std::ops::Sub for NoInterpolation {
+            type Output = Self;
+            fn sub(self, rhs: Self) -> Self {
+                Self(self.0 - rhs.0)
+            }
+        }
+        impl std::ops::Mul<f32> for NoInterpolation {
+            type Output = Self;
+            fn mul(self, rhs: f32) -> Self {
+                Self(self.0 * rhs)
+            }
+        }
+        impl Animatable for NoInterpolation {
+            fn is_finite(&self) -> bool {
+                self.0.is_finite()
+            }
+            fn magnitude(&self) -> f32 {
+                self.0.abs()
+            }
+            fn interpolate(&self, _: &Self, _: f32) -> Self {
+                panic!("building a sequence must not interpolate values");
+            }
+        }
+        let mut sequence = AnimationSequence::with_capacity(1024usize)
+            .then(NoInterpolation(1.0), AnimationConfig::tween_ms(1000))
+            .then(NoInterpolation(2.0), AnimationConfig::tween_ms(1000));
+        assert!(sequence.steps.capacity() >= 1024);
+        sequence.reserve(2048usize);
+        assert!(sequence.steps.capacity() >= 2050);
+        assert_eq!(sequence.total_steps(), 2);
+        assert_eq!(sequence.validate(), Ok(()));
+        let invalid = sequence.then(NoInterpolation(f32::NAN), AnimationConfig::tween_ms(1000));
         assert_eq!(
-            sequence1.current_step_index(),
-            sequence2.current_step_index()
+            invalid.validate(),
+            Err(AnimationError::NonFiniteValue("sequence target"))
         );
-        assert_eq!(sequence1.total_steps(), sequence2.total_steps());
-        assert_eq!(sequence1.current_target(), sequence2.current_target());
     }
 
     #[test]
@@ -402,10 +533,10 @@ mod tests {
         assert_eq!(sequence.current_step(), 0);
         assert_eq!(sequence.steps().len(), 2);
 
-        // Test with_capacity (should work but be a no-op)
+        // Test capacity helpers.
         let _sequence_with_capacity = AnimationSequence::<f32>::with_capacity(10);
 
-        // Test reserve (should work but be a no-op)
+        // Reserve additional slots.
         let mut sequence_mut = sequence.clone();
         sequence_mut.reserve(5);
     }

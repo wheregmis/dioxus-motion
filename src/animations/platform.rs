@@ -3,11 +3,34 @@
 //! Provides cross-platform timing operations for animations.
 //! Supports both web (WASM) and native platforms.
 
+use super::core::AnimationError;
 use instant::{Duration, Instant};
 use std::future::Future;
 
 #[cfg(feature = "web")]
-use crate::animations::closure_pool::{create_pooled_closure, register_pooled_callback};
+enum BrowserRequest {
+    AnimationFrame(i32),
+    Timeout(i32),
+}
+
+#[cfg(feature = "web")]
+struct BrowserTimer {
+    window: web_sys::Window,
+    request: BrowserRequest,
+    _callback: wasm_bindgen::closure::Closure<dyn FnMut()>,
+}
+
+#[cfg(feature = "web")]
+impl Drop for BrowserTimer {
+    fn drop(&mut self) {
+        match self.request {
+            BrowserRequest::AnimationFrame(id) => {
+                let _ = self.window.cancel_animation_frame(id);
+            }
+            BrowserRequest::Timeout(id) => self.window.clear_timeout_with_handle(id),
+        }
+    }
+}
 
 /// Provides platform-agnostic timing operations
 ///
@@ -17,8 +40,9 @@ pub trait TimeProvider {
     /// Returns the current instant
     fn now() -> Instant;
 
-    /// Creates a future that completes after the specified duration
-    fn delay(duration: Duration) -> impl Future<Output = ()>;
+    /// Creates a future that completes after the specified duration.
+    /// Returns an error if a platform timer cannot be scheduled.
+    fn delay(duration: Duration) -> impl Future<Output = Result<(), AnimationError>>;
 }
 
 /// Default time provider implementation for motion animations
@@ -37,87 +61,53 @@ impl TimeProvider for MotionTime {
     /// Creates a delay future using platform-specific implementations
     ///
     /// # Web
-    /// Uses requestAnimationFrame for short delays (<16ms)
-    /// Uses setTimeout for longer delays
+    /// Uses requestAnimationFrame for delays up to 16ms
+    /// Uses setTimeout for longer delays, capped at i32::MAX milliseconds
     ///
     /// # Native
-    /// Uses tokio::time::sleep
+    /// Uses tokio::time::sleep in a Tokio runtime with time enabled.
     #[cfg(feature = "web")]
-    fn delay(_duration: Duration) -> impl Future<Output = ()> {
-        use futures_util::FutureExt;
+    async fn delay(duration: Duration) -> Result<(), AnimationError> {
         use wasm_bindgen::prelude::*;
-        use web_sys::window;
-
-        const RAF_THRESHOLD_MS: u8 = 16;
-
+        let Some(window) = web_sys::window() else {
+            return Err(AnimationError::TimerUnavailable);
+        };
         let (sender, receiver) = futures_channel::oneshot::channel::<()>();
-
-        if let Some(window) = window() {
-            // Choose timing method based on duration
-            if _duration.as_millis() <= RAF_THRESHOLD_MS as u128 {
-                // For frame-based timing, use requestAnimationFrame
-                // This is ideal for animation frames (typically 16ms at 60fps)
-
-                // Use pooled closure for better performance
-                let callback_id = register_pooled_callback(Box::new(move || {
-                    let _ = sender.send(());
-                }));
-                let cb = create_pooled_closure(callback_id);
-
-                window
-                    .request_animation_frame(cb.as_ref().unchecked_ref())
-                    .expect("Failed to request animation frame");
-
-                cb.forget();
-            } else {
-                // For longer delays, use setTimeout which is more appropriate
-
-                // Use pooled closure for better performance
-                let callback_id = register_pooled_callback(Box::new(move || {
-                    let _ = sender.send(());
-                }));
-                let cb = create_pooled_closure(callback_id);
-
-                window
-                    .set_timeout_with_callback_and_timeout_and_arguments_0(
-                        cb.as_ref().unchecked_ref(),
-                        _duration.as_millis() as i32,
-                    )
-                    .expect("Failed to set timeout");
-
-                cb.forget();
-            }
-        } else {
-            // Fallback: complete immediately if no window
+        let callback = Closure::once(move || {
             let _ = sender.send(());
-        }
-
-        receiver.map(|_| ())
+        });
+        let request = if duration <= Duration::from_millis(16) {
+            window
+                .request_animation_frame(callback.as_ref().unchecked_ref())
+                .map(BrowserRequest::AnimationFrame)
+        } else {
+            // Browser timers take a signed 32-bit millisecond delay.
+            let milliseconds = i32::try_from(duration.as_millis()).unwrap_or(i32::MAX);
+            window
+                .set_timeout_with_callback_and_timeout_and_arguments_0(
+                    callback.as_ref().unchecked_ref(),
+                    milliseconds,
+                )
+                .map(BrowserRequest::Timeout)
+        };
+        let request = request.map_err(|_| AnimationError::TimerUnavailable)?;
+        let _timer = BrowserTimer {
+            window,
+            request,
+            _callback: callback,
+        };
+        receiver.await.map_err(|_| AnimationError::TimerUnavailable)
     }
 
     #[cfg(not(feature = "web"))]
-    fn delay(duration: Duration) -> impl Future<Output = ()> {
-        Box::pin(async move {
-            // Threshold-based sleep optimization
-            const MIN_SPIN_THRESHOLD: Duration = Duration::from_millis(1);
-
-            if duration >= MIN_SPIN_THRESHOLD {
-                let start = Instant::now();
-
-                // Use tokio sleep for longer durations
-                tokio::time::sleep(duration).await;
-
-                // High precision timing for desktop - only for remaining time
-                let remaining = duration.saturating_sub(start.elapsed());
-                if remaining > Duration::from_micros(100) {
-                    spin_sleep::sleep(remaining);
-                }
-            } else {
-                // For very short durations, skip sleep entirely to avoid CPU waste
-                // This prevents unnecessary context switching for sub-millisecond delays
-                tokio::task::yield_now().await;
-            }
-        })
+    async fn delay(duration: Duration) -> Result<(), AnimationError> {
+        tokio::runtime::Handle::try_current().map_err(|_| AnimationError::TimerUnavailable)?;
+        if duration >= Duration::from_millis(1) {
+            tokio::time::sleep(duration).await;
+        } else {
+            tokio::task::yield_now().await;
+        }
+        Ok(())
     }
 }
 
@@ -143,71 +133,47 @@ mod tests {
     }
 
     #[cfg(not(feature = "web"))]
-    #[tokio::test]
+    #[test]
+    fn missing_runtime_returns_error() {
+        let mut delay = Box::pin(MotionTime::delay(Duration::from_millis(10)));
+        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+        assert_eq!(
+            delay.as_mut().poll(&mut context),
+            std::task::Poll::Ready(Err(AnimationError::TimerUnavailable))
+        );
+    }
+
+    #[cfg(not(feature = "web"))]
+    #[tokio::test(start_paused = true)]
     async fn test_desktop_sleep_threshold_optimization() {
-        // Test that very short durations don't use spin sleep
-        let short_duration = Duration::from_micros(500);
-        let start = Instant::now();
-
-        MotionTime::delay(short_duration).await;
-
-        let elapsed = start.elapsed();
-
-        // For very short durations, we should yield instead of sleep
-        // The elapsed time should be minimal (less than 2ms)
-        assert!(
-            elapsed < Duration::from_millis(2),
-            "Short duration sleep took too long: {:?}",
-            elapsed
-        );
+        let start = tokio::time::Instant::now();
+        let delay = MotionTime::delay(Duration::from_micros(500));
+        futures_util::pin_mut!(delay);
+        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+        assert!(delay.as_mut().poll(&mut context).is_pending());
+        delay.await.expect("available test timer");
+        assert_eq!(start.elapsed(), Duration::ZERO);
     }
 
     #[cfg(not(feature = "web"))]
-    #[tokio::test]
+    #[tokio::test(start_paused = true)]
     async fn test_desktop_sleep_longer_duration() {
-        // Test that longer durations use proper sleep
-        let long_duration = Duration::from_millis(10);
-        let start = Instant::now();
-
-        MotionTime::delay(long_duration).await;
-
-        let elapsed = start.elapsed();
-
-        // For longer durations, we should sleep properly
-        // Allow some tolerance for timing variations
-        assert!(
-            elapsed >= Duration::from_millis(8),
-            "Long duration sleep was too short: {:?}",
-            elapsed
-        );
-        assert!(
-            elapsed <= Duration::from_millis(15),
-            "Long duration sleep was too long: {:?}",
-            elapsed
-        );
+        let duration = Duration::from_millis(10);
+        let start = tokio::time::Instant::now();
+        MotionTime::delay(duration)
+            .await
+            .expect("available test timer");
+        assert_eq!(start.elapsed(), duration);
     }
 
     #[cfg(not(feature = "web"))]
-    #[tokio::test]
+    #[tokio::test(start_paused = true)]
     async fn test_desktop_sleep_threshold_boundary() {
-        // Test the 1ms threshold boundary
-        let threshold_duration = Duration::from_millis(1);
-        let start = Instant::now();
-
-        MotionTime::delay(threshold_duration).await;
-
-        let elapsed = start.elapsed();
-
-        // At the threshold, we should still use proper sleep
-        assert!(
-            elapsed >= Duration::from_micros(800),
-            "Threshold duration sleep was too short: {:?}",
-            elapsed
-        );
-        assert!(
-            elapsed <= Duration::from_millis(3),
-            "Threshold duration sleep was too long: {:?}",
-            elapsed
-        );
+        let duration = Duration::from_millis(1);
+        let start = tokio::time::Instant::now();
+        MotionTime::delay(duration)
+            .await
+            .expect("available test timer");
+        assert_eq!(start.elapsed(), duration);
     }
 }

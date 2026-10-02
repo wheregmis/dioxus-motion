@@ -8,12 +8,13 @@ use dioxus::prelude::*;
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```no_run
 /// use dioxus::prelude::*;
+/// use docs::pages::blog::index::Blog;
 ///
-/// // Create the blog component element
-/// let blog_element: Element = Blog();
-/// // The returned element can be integrated into a Dioxus application view.
+/// fn app() -> Element {
+///     rsx! { Blog {} }
+/// }
 /// ```
 pub fn Blog() -> Element {
     rsx! {

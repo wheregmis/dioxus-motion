@@ -10,14 +10,12 @@ use dioxus::prelude::*;
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```no_run
 /// use dioxus::prelude::*;
+/// use docs::components::footer::Footer;
 ///
 /// fn app() -> Element {
-///     rsx! {
-///         // Your page content
-///         Footer {}
-///     }
+///     rsx! { Footer {} }
 /// }
 /// ```
 pub fn Footer() -> Element {

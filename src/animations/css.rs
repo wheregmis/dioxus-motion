@@ -2,6 +2,8 @@
 // Methods are called from presence.rs which is gated behind the dioxus feature.
 #![cfg_attr(not(feature = "dioxus"), allow(dead_code))]
 
+use super::core::Animatable;
+
 /// Animated CSS property value.
 #[derive(Debug, Clone, PartialEq)]
 pub enum CssValue {
@@ -26,6 +28,23 @@ pub enum CssValue {
 }
 
 impl CssValue {
+    pub(crate) fn is_finite(&self) -> bool {
+        match self {
+            Self::Number(value)
+            | Self::Px(value)
+            | Self::Percent(value)
+            | Self::Vw(value)
+            | Self::Vh(value)
+            | Self::Deg(value) => value.is_finite(),
+            Self::Color(color) => color.is_finite(),
+            Self::Complex(value) => value.tokens.iter().all(|token| match token {
+                CssComplexToken::Number(value) => value.is_finite(),
+                CssComplexToken::Color(color) => color.is_finite(),
+                CssComplexToken::Text(_) => true,
+            }),
+            Self::Keyword(_) => true,
+        }
+    }
     /// Adds compatible CSS values for vector-style animation math.
     pub(crate) fn add(&self, other: &Self) -> Option<Self> {
         match (self, other) {
@@ -56,18 +75,18 @@ impl CssValue {
         }
     }
 
-    /// Scales a CSS value for vector-style animation math.
-    pub(crate) fn scale(&self, factor: f32) -> Self {
+    /// Scales an owned CSS value in place for vector-style animation math.
+    pub(crate) fn scale(&mut self, factor: f32) {
         match self {
-            Self::Number(value) => Self::Number(value * factor),
-            Self::Px(value) => Self::Px(value * factor),
-            Self::Percent(value) => Self::Percent(value * factor),
-            Self::Vw(value) => Self::Vw(value * factor),
-            Self::Vh(value) => Self::Vh(value * factor),
-            Self::Deg(value) => Self::Deg(value * factor),
-            Self::Color(value) => Self::Color(value.scale(factor)),
-            Self::Complex(value) => Self::Complex(value.scale(factor)),
-            Self::Keyword(value) => Self::Keyword(value.clone()),
+            Self::Number(value)
+            | Self::Px(value)
+            | Self::Percent(value)
+            | Self::Vw(value)
+            | Self::Vh(value)
+            | Self::Deg(value) => *value *= factor,
+            Self::Color(value) => *value = value.scale(factor),
+            Self::Complex(value) => value.scale(factor),
+            Self::Keyword(_) => {}
         }
     }
 
@@ -134,6 +153,11 @@ pub struct CssColor {
 }
 
 impl CssColor {
+    fn is_finite(&self) -> bool {
+        [self.red, self.green, self.blue, self.alpha]
+            .into_iter()
+            .all(f32::is_finite)
+    }
     /// Creates a color from RGBA components.
     pub fn rgba(red: f32, green: f32, blue: f32, alpha: f32) -> Self {
         Self {
@@ -181,7 +205,9 @@ impl CssColor {
     }
 
     pub(crate) fn magnitude(&self) -> f32 {
-        (self.red * self.red + self.green * self.green + self.blue * self.blue).sqrt()
+        crate::animations::core::magnitude(
+            [self.red, self.green, self.blue, self.alpha].into_iter(),
+        )
     }
 
     pub(crate) fn to_css(self) -> String {
@@ -315,17 +341,13 @@ impl CssComplexValue {
         })
     }
 
-    fn scale(&self, factor: f32) -> Self {
-        Self {
-            tokens: self
-                .tokens
-                .iter()
-                .map(|token| match token {
-                    CssComplexToken::Text(_) => CssComplexToken::Text(String::new()),
-                    CssComplexToken::Number(value) => CssComplexToken::Number(value * factor),
-                    CssComplexToken::Color(value) => CssComplexToken::Color(value.scale(factor)),
-                })
-                .collect(),
+    fn scale(&mut self, factor: f32) {
+        for token in &mut self.tokens {
+            match token {
+                CssComplexToken::Text(text) => text.clear(),
+                CssComplexToken::Number(value) => *value *= factor,
+                CssComplexToken::Color(value) => *value = value.scale(factor),
+            }
         }
     }
 
@@ -347,15 +369,11 @@ impl CssComplexValue {
     }
 
     fn magnitude(&self) -> f32 {
-        self.tokens
-            .iter()
-            .map(|token| match token {
-                CssComplexToken::Number(value) => value * value,
-                CssComplexToken::Color(value) => value.magnitude(),
-                CssComplexToken::Text(_) => 0.0,
-            })
-            .sum::<f32>()
-            .sqrt()
+        crate::animations::core::magnitude(self.tokens.iter().flat_map(|token| match token {
+            CssComplexToken::Number(value) => [*value, 0.0, 0.0, 0.0],
+            CssComplexToken::Color(value) => [value.red, value.green, value.blue, value.alpha],
+            CssComplexToken::Text(_) => [0.0; 4],
+        }))
     }
 
     fn to_css(&self) -> String {
@@ -469,12 +487,12 @@ fn parse_f32(value: &str) -> Option<f32> {
 }
 
 fn lerp(start: f32, end: f32, t: f32) -> f32 {
-    start + (end - start) * t.clamp(0.0, 1.0)
+    start.interpolate(&end, t.clamp(0.0, 1.0))
 }
 
 fn format_number(value: f32) -> String {
     let value = if value == -0.0 { 0.0 } else { value };
-    let rounded = (value * 1_000_000.0).round() / 1_000_000.0;
+    let rounded = ((f64::from(value) * 1_000_000.0).round() / 1_000_000.0) as f32;
     rounded.to_string()
 }
 
@@ -520,11 +538,14 @@ fn parse_color_prefix(value: &str) -> Option<(usize, CssColor)> {
 
 fn parse_hex_color(value: &str) -> Option<CssColor> {
     let hex = value.strip_prefix('#')?;
+    if !matches!(hex.len(), 3 | 4 | 6 | 8) || !hex.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return None;
+    }
     let parse_pair = |pair: &str| u8::from_str_radix(pair, 16).ok().map(f32::from);
     let parse_single = |single: &str| {
-        u8::from_str_radix(&single.repeat(2), 16)
+        u8::from_str_radix(single, 16)
             .ok()
-            .map(f32::from)
+            .map(|value| f32::from(value) * 17.0)
     };
 
     match hex.len() {
@@ -702,7 +723,87 @@ fn parse_number_prefix(value: &str) -> Option<(usize, f32)> {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used, clippy::panic)]
     use super::*;
+
+    #[test]
+    fn fuzz_hex_and_unicode_css_do_not_panic() {
+        for value in [
+            "#éx",
+            "#aé",
+            "#一",
+            "#éé",
+            "#ab💚",
+            "#a💚b",
+            "#💚💚",
+            "#+fffff",
+        ] {
+            assert_eq!(parse_hex_color(value), None, "malformed color {value}");
+            assert_eq!(
+                value.into_css_value("color"),
+                CssValue::Keyword(value.into())
+            );
+        }
+        assert_eq!(
+            parse_hex_color("#AbC"),
+            Some(CssColor::rgba(170.0, 187.0, 204.0, 1.0))
+        );
+        assert_eq!(
+            parse_hex_color("#AbCd"),
+            Some(CssColor::rgba(170.0, 187.0, 204.0, 221.0 / 255.0))
+        );
+        let mut bits = 0x7eaf_35d1u32;
+        for _ in 0..4096 {
+            bits = bits.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+            if let Some(character) = char::from_u32(128 + bits % (0x110000 - 128)) {
+                for text in [
+                    format!("#{character}a"),
+                    format!("#ab{character}"),
+                    format!("x({character}12px)"),
+                ] {
+                    let parsed = text.as_str().into_css_value("color");
+                    assert!(parsed.is_finite(), "input {text:?}");
+                    let _ = parsed.to_css();
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn extreme_css_numbers_interpolate_and_format_without_overflow() {
+        for make in [
+            CssValue::Number,
+            CssValue::Px,
+            CssValue::Percent,
+            CssValue::Vw,
+            CssValue::Vh,
+            CssValue::Deg,
+        ] {
+            let start = make(-f32::MAX);
+            let target = make(f32::MAX);
+            for (t, expected) in [
+                (0.0, -f32::MAX),
+                (0.25, -f32::MAX * 0.5),
+                (0.5, 0.0),
+                (0.75, f32::MAX * 0.5),
+                (1.0, f32::MAX),
+            ] {
+                assert_eq!(start.interpolate(&target, t), make(expected));
+            }
+        }
+        for value in [-f32::MAX, -1.0e33, 1.0e33, f32::MAX] {
+            assert_eq!(
+                format_number(value)
+                    .parse::<f32>()
+                    .expect("finite CSS number"),
+                value
+            );
+        }
+        let start = parse_css_string(&format!("translateX({}px)", -f32::MAX));
+        let target = parse_css_string(&format!("translateX({}px)", f32::MAX));
+        assert!(matches!(start, CssValue::Complex(_)));
+        assert_eq!(start.interpolate(&target, 0.5).to_css(), "translateX(0px)");
+    }
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
@@ -773,7 +874,7 @@ mod tests {
 
     #[test]
     fn parse_f32_valid() {
-        assert_eq!(parse_f32("  3.14  "), Some(3.14_f32));
+        assert_eq!(parse_f32("  3.25  "), Some(3.25_f32));
     }
 
     #[test]
@@ -1022,7 +1123,7 @@ mod tests {
     #[test]
     fn css_color_magnitude() {
         let c = CssColor::rgba(3.0, 4.0, 0.0, 1.0);
-        assert!(approx_eq(c.magnitude(), 5.0));
+        assert!(approx_eq(c.magnitude(), 26.0_f32.sqrt()));
     }
 
     #[test]
@@ -1055,9 +1156,47 @@ mod tests {
     }
 
     #[test]
+    fn css_scaling_matches_signed_vector_arithmetic() {
+        for value in [
+            CssValue::Number(3.0),
+            CssValue::Px(3.0),
+            CssValue::Percent(3.0),
+            CssValue::Vw(3.0),
+            CssValue::Vh(3.0),
+            CssValue::Deg(3.0),
+            CssValue::Color(CssColor::rgba(3.0, 4.0, 5.0, 0.5)),
+            "X(12px, 4%) rgba(3, 4, 5, 0.5)".into_css_value("filter"),
+        ] {
+            let zero = value.sub(&value).expect("compatible vector subtraction");
+            let negative = zero.sub(&value).expect("compatible signed vector");
+            let double = value.sub(&negative).expect("compatible doubled vector");
+            for (factor, expected) in [(-1.0, negative), (0.0, zero), (2.0, double)] {
+                let mut scaled = value.clone();
+                scaled.scale(factor);
+                assert_eq!(scaled, expected, "factor {factor}, value {value:?}");
+            }
+        }
+        let mut keyword = CssValue::Keyword("var(--surface)".into());
+        for factor in [-1.0, 0.0, 2.0] {
+            keyword.scale(factor);
+            assert_eq!(keyword, CssValue::Keyword("var(--surface)".into()));
+        }
+    }
+
+    #[test]
     fn css_value_number_color() {
         let c = CssColor::rgba(3.0, 4.0, 0.0, 1.0);
-        assert!(approx_eq(CssValue::Color(c).number(), 5.0));
+        assert!(approx_eq(CssValue::Color(c).number(), 26.0_f32.sqrt()));
+    }
+
+    #[test]
+    fn complex_magnitude_combines_color_and_numeric_components() {
+        let mut value = CssComplexValue::parse("X(12px) rgba(3, 4, 0, 0)").unwrap();
+        assert_eq!(value.magnitude(), 13.0);
+        value.scale(-1.0);
+        assert_eq!(value.magnitude(), 13.0);
+        let alpha = CssComplexValue::parse("rgba(0, 0, 0, 0.5)").unwrap();
+        assert_eq!(alpha.magnitude(), 0.5);
     }
 
     // ── CssValue::interpolate ────────────────────────────────────────────────

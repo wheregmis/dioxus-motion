@@ -22,12 +22,13 @@ jobs:
         run: |
           echo "deb http://gb.archive.ubuntu.com/ubuntu jammy main" | sudo tee -a /etc/apt/sources.list
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y libxdo-dev libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
+          targets: wasm32-unknown-unknown
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -43,8 +44,33 @@ jobs:
       - name: Check code
         run: cargo check --all-features
 
+      - name: Check browser workspace
+        run: cargo check --workspace --target wasm32-unknown-unknown
+
       - name: Run clippy
         run: cargo clippy --all-features -- -D warnings
+
+      - name: Install browser check tools
+        run: |
+          version=$(python3 -c 'import tomllib; print(next(p["version"] for p in tomllib.load(open("Cargo.lock", "rb"))["package"] if p["name"] == "wasm-bindgen"))')
+          cargo install wasm-bindgen-cli --version "$version" --locked
+          python3 - <<'PY'
+          import io, json, os, pathlib, re, subprocess, urllib.request, zipfile
+          version = subprocess.check_output(["google-chrome", "--version"], text=True)
+          build = re.search(r"\d+\.\d+\.\d+", version).group()
+          manifest = json.load(urllib.request.urlopen("https://googlechromelabs.github.io/chrome-for-testing/latest-patch-versions-per-build-with-downloads.json", timeout=30))
+          downloads = manifest["builds"][build]["downloads"]["chromedriver"]
+          url = next(d["url"] for d in downloads if d["platform"] == "linux64")
+          root = pathlib.Path(os.environ["RUNNER_TEMP"]) / "motion-browser"
+          zipfile.ZipFile(io.BytesIO(urllib.request.urlopen(url, timeout=60).read())).extractall(root)
+          driver = root / "chromedriver-linux64/chromedriver"
+          driver.chmod(0o755)
+          with open(os.environ["GITHUB_ENV"], "a") as env:
+              env.write(f"CHROMEDRIVER={driver}\n")
+          PY
+
+      - name: Check browser timer ownership
+        run: python3 scripts/check_browser_delay.py
 
   # Run tests on different platforms
   test:
@@ -92,7 +118,7 @@ jobs:
         run: |
           echo "deb http://gb.archive.ubuntu.com/ubuntu jammy main" | sudo tee -a /etc/apt/sources.list
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y libxdo-dev libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
           sudo apt --fix-broken install
 
       - name: Install Rust toolchain
@@ -113,7 +139,7 @@ jobs:
 
       - name: Run tests
         # Run all unit, integration and doc tests for the specific target
-        run: cargo test --target ${{ matrix.target }} --features ${{ matrix.features }}
+        run: cargo test --target ${{ matrix.target }} --no-default-features --features ${{ matrix.features }}
 
   # Check documentation
   docs:
@@ -127,7 +153,7 @@ jobs:
         run: |
           echo "deb http://gb.archive.ubuntu.com/ubuntu jammy main" | sudo tee -a /etc/apt/sources.list
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y libxdo-dev libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -144,7 +170,10 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Check documentation
-        run: cargo doc --no-deps --all-features
+        run: cargo doc --workspace --no-deps --all-features --locked
+
+      - name: Test documentation examples
+        run: cargo test -p docs --all-features --locked
 
   # Check formatting
   fmt:
@@ -191,7 +220,7 @@ jobs:
         run: |
           echo "deb http://gb.archive.ubuntu.com/ubuntu jammy main" | sudo tee -a /etc/apt/sources.list
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y libxdo-dev libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
           sudo apt --fix-broken install
 
       - name: Install Rust toolchain

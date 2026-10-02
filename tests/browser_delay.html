@@ -1,0 +1,82 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Browser delay regression check</title>
+<pre id="result">RUNNING</pre>
+<script type="module">
+import init, * as probe from '/target/browser-delay/browser_delay_check.js';
+const result = document.querySelector('#result');
+const assert = (condition, message) => { if (!condition) throw new Error(message); };
+const realFrame = window.requestAnimationFrame.bind(window);
+const realCancelFrame = window.cancelAnimationFrame.bind(window);
+const realTimeout = window.setTimeout.bind(window);
+const realClearTimeout = window.clearTimeout.bind(window);
+const frames = new Map(), timers = new Map();
+let nextId = 1, timeoutMilliseconds;
+try {
+  await init();
+  probe.check_spring_numerics();
+  window.requestAnimationFrame = callback => { const id = nextId++; frames.set(id, callback); return id; };
+  window.cancelAnimationFrame = id => frames.delete(id);
+  window.setTimeout = (callback, milliseconds) => { const id = nextId++; timeoutMilliseconds = milliseconds; timers.set(id, callback); return id; };
+  window.clearTimeout = id => timers.delete(id);
+
+  for (const milliseconds of [0, 16, 17]) {
+    assert(!probe.start_delay(milliseconds), 'scheduled delay must be pending');
+    assert(!probe.poll_delay(), 'delay completed before its callback');
+    const queue = milliseconds <= 16 ? frames : timers;
+    assert(queue.size === 1, 'wrong timer selection');
+    queue.values().next().value();
+    assert(probe.poll_delay(), 'callback did not complete delay');
+    assert(!probe.delay_failed(), 'successful delay returned a timer error');
+    assert(frames.size === 0 && timers.size === 0, 'completed request retained');
+  }
+
+  const baseline = probe.retained_js_values();
+  for (let i = 0; i < 1000; i++) {
+    assert(!probe.start_delay(i % 2 ? 16 : 17), 'cancel test must be pending');
+    probe.cancel_delay();
+    assert(frames.size === 0 && timers.size === 0, 'dropped future left a callback scheduled');
+    assert(probe.retained_js_values() === baseline, 'dropped future retained a JS reference');
+  }
+  assert(!probe.start_delay(0xffffffff), 'large delay must be pending');
+  assert(timeoutMilliseconds === 0x7fffffff, 'large timeout wrapped instead of saturating');
+  probe.cancel_delay();
+
+  window.requestAnimationFrame = () => { throw new Error('test frame failure'); };
+  assert(probe.start_delay(16), 'frame scheduling failure did not complete');
+  assert(probe.delay_failed(), 'failed frame was reported as a successful delay');
+  window.setTimeout = () => { throw new Error('test timeout failure'); };
+  assert(probe.start_delay(17), 'timeout scheduling failure did not complete');
+  assert(probe.delay_failed(), 'failed timeout was reported as a successful delay');
+  assert(probe.retained_js_values() === baseline, 'failed schedule retained a JS reference');
+
+  window.requestAnimationFrame = realFrame;
+  window.cancelAnimationFrame = realCancelFrame;
+  window.setTimeout = realTimeout;
+  window.clearTimeout = realClearTimeout;
+  assert(!probe.start_delay(16), 'real frame delay must be pending');
+  await new Promise(realFrame);
+  assert(probe.poll_delay(), 'real animation frame did not complete');
+  assert(!probe.start_delay(17), 'real timeout delay must be pending');
+  await new Promise(resolve => realTimeout(resolve, 50));
+  assert(probe.poll_delay(), 'real timeout did not complete');
+  const workerModule = new URL('/target/browser-delay/browser_delay_check.js', location.href).href;
+  const workerUrl = URL.createObjectURL(new Blob([
+    `import init, * as probe from ${JSON.stringify(workerModule)};
+     await init();
+     postMessage({ready: probe.start_delay(16), failed: probe.delay_failed()});`
+  ], {type: 'text/javascript'}));
+  const worker = new Worker(workerUrl, {type: 'module'});
+  try {
+    const missingWindow = await new Promise((resolve, reject) => {
+      const timeout = realTimeout(() => reject(new Error('worker timer check timed out')), 3000);
+      worker.onmessage = event => { realClearTimeout(timeout); resolve(event.data); };
+      worker.onerror = event => { realClearTimeout(timeout); reject(new Error(event.message)); };
+    });
+    assert(missingWindow.ready && missingWindow.failed, 'missing Window was reported as successful timing');
+  } finally { worker.terminate(); URL.revokeObjectURL(workerUrl); }
+  result.textContent = 'PASS: spring physics, completion, 1000 cancellations, typed timer failures, missing Window, timeout bounds, native browser APIs';
+} catch (error) {
+  result.textContent = 'FAIL: ' + error.stack;
+}
+</script>

@@ -1,281 +1,40 @@
-use dioxus::prelude::*;
-use dioxus_motion::prelude::*;
-
-use crate::components::footer::Footer;
-use crate::old_showcase::components::{AnimatedFlower, SwingingCube, TransformAnimationShowcase};
+use crate::components::motion_lab::MotionLab;
 use crate::utils::router::Route;
+use dioxus::prelude::*;
 
 #[component]
-/// Renders the main landing page of the application.
-///
-/// This component initializes animated states for opacity, scale, and vertical positioning of key elements.
-/// On mount, it triggers staggered spring and tween animations that animate the hero section, titles, and feature overlays,
-/// creating a dynamic and engaging home page layout.
-///
-/// # Examples
-///
-/// ```
-/// use dioxus::prelude::*;
-/// // Adjust the import path below according to your project setup.
-/// use your_crate::Home;
-///
-/// fn main() {
-///     dioxus::web::launch(Home);
-/// }
-/// ```
 pub fn Home() -> Element {
-    let hero_opacity = use_motion(1.0f32); // Changed from 0.0 to 1.0
-    let mut demo_scale = use_motion(1.0f32);
-    // Remove these animations since we don't want them
-    // let mut title_y = use_motion(-20.0f32);
-    // let mut subtitle_y = use_motion(20.0f32);
-
-    use_effect(move || {
-        {
-            // Remove title and subtitle animations
-            demo_scale.animate_to(
-                1.1,
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 100.0,
-                    damping: 10.0,
-                    mass: 1.0,
-                    velocity: 0.0,
-                }))
-                .with_loop(LoopMode::Infinite),
-            );
-        }
-    });
-
     rsx! {
-        section {
-            class: "min-h-screen bg-gradient-dark relative overflow-hidden flex flex-col",
-            style: "opacity: {hero_opacity.get_value()}",
-
-            // Animated background elements
-            div { class: "absolute inset-0 overflow-hidden",
-                div { class: "absolute -top-1/2 -left-1/2 w-full h-full bg-primary/5 rounded-full blur-3xl" }
-                div { class: "absolute -bottom-1/2 -right-1/2 w-full h-full bg-secondary/5 rounded-full blur-3xl" }
+        document::Title { "Dioxus Motion · Make your interface feel alive" }
+        document::Meta { name: "description", content: "Typed, interruptible animations for Dioxus. Explore real springs, readable examples, CSS motion, and enter/exit transitions." }
+        main { id: "main-content", class: "home-shell",
+            section { class: "hero-grid",
+                div { class: "hero-copy",
+                    p { class: "eyebrow", span { class: "status-dot" } "RUST / DIOXUS 0.7" }
+                    h1 { "Make your" br {} "interface" br {} span { "feel alive." } }
+                    p { class: "lead", "Springs that respond. Types you can trust. Bring a little life to your Dioxus app, one value at a time." }
+                    div { class: "hero-actions",
+                        Link { class: "button primary", to: Route::DocsLanding {}, "Start building →" }
+                        Link { class: "button secondary", to: Route::ShowcaseGallery {}, "Explore examples" }
+                    }
+                    p { class: "hero-note", "Typed values · Interruptible springs · Web & desktop" }
+                }
+                MotionLab {}
             }
-
-            // Content overlay
-            div { class: "relative z-10 flex-1",
-                // Main content
-                div { class: "container mx-auto px-4 pt-8",
-                    // Hero section with animations in a row
-                    div { class: "flex flex-col lg:flex-row items-center justify-between gap-8 mb-12",
-                        // Left side - Simple animation
-                        div { class: "w-full lg:w-1/3",
-                            div { class: "flex flex-col items-center gap-4",
-                                TransformAnimationShowcase {}
-                                div { class: "text-center",
-                                    span { class: "inline-block text-lg font-medium bg-clip-text text-transparent
-                                               bg-linear-to-r from-text-secondary/70 to-text-secondary/40
-                                               tracking-wide transform -rotate-12",
-                                        "From Simple"
-                                    }
-                                    div { class: "mt-2 text-sm text-text-muted",
-                                        "Basic Transformations"
-                                    }
-                                }
-                            }
-                        }
-
-                        // Center content - Flower
-                        div { class: "w-full lg:w-1/3",
-                            div { class: "flex flex-col items-center gap-4",
-                                AnimatedFlower {}
-                                div { class: "text-center",
-                                    span { class: "inline-block text-lg font-medium bg-clip-text text-transparent
-                                               bg-linear-to-r from-text-secondary/70 to-text-secondary/40
-                                               tracking-wide",
-                                        ""
-                                    }
-                                    div { class: "mt-2 text-sm text-text-muted", "Complex Animations" }
-                                }
-                            }
-                        }
-
-                        // Right side - Advanced animation
-                        div { class: "w-full lg:w-1/3",
-                            div { class: "flex flex-col items-center gap-4",
-                                SwingingCube {}
-                                div { class: "text-center",
-                                    span { class: "inline-block text-lg font-medium bg-clip-text text-transparent
-                                               bg-linear-to-r from-text-secondary/70 to-text-secondary/40
-                                               tracking-wide transform rotate-12",
-                                        "To Advanced"
-                                    }
-                                    div { class: "mt-2 text-sm text-text-muted",
-                                        "Custom Transformations"
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Title and CTA section
-                    div { class: "text-center max-w-4xl mx-auto",
-                        h1 { class: "text-4xl md:text-5xl lg:text-6xl font-bold mb-4",
-                            // Remove the transform style
-                            span { class: "text-gradient-primary", "Dioxus Motion" }
-                        }
-                        p { class: "text-lg md:text-xl text-text-secondary mb-8",
-                            // Remove the transform style
-                            "Simple and powerful animations for your Dioxus applications"
-                        }
-
-                        // CTA buttons
-                        div { class: "flex flex-col sm:flex-row justify-center gap-4",
-                            Link {
-                                to: Route::DocsLanding {},
-                                class: "px-8 py-3 bg-primary/90 backdrop-blur-xs text-dark-50 rounded-xl
-                                       font-semibold transition-all duration-300 hover:scale-105
-                                       shadow-lg shadow-primary/20 hover:shadow-primary/30",
-                                "Get Started →"
-                            }
-                            a {
-                                href: "https://github.com/wheregmis/dioxus-motion",
-                                target: "_blank",
-                                class: "px-8 py-3 bg-dark-200/50 backdrop-blur-xs text-white/90 rounded-xl
-                                       font-semibold transition-all duration-300 hover:scale-105
-                                       border border-white/10 hover:border-white/20",
-                                "Explore Examples"
-                            }
-                        }
-                    }
+            section { class: "principles-grid", aria_label: "Why Dioxus Motion",
+                div { span { class: "eyebrow", "01 / FEEL" } h2 { "Motion with momentum." } p { "Give a spring a new destination while it’s moving. It keeps going from where it is." } }
+                div { span { class: "eyebrow", "02 / SAFETY" } h2 { "Errors you can handle." } p { "Finite values, compatible units, and validated configuration. Invalid setup returns a typed error." } }
+                div { span { class: "eyebrow", "03 / OWNERSHIP" } h2 { "Still just Rust." } p { "Animate scalars, transforms, colours, styles, or your own types. Keep control of the values." } }
+            }
+            section { class: "learn-section",
+                div { class: "section-heading", div { p { class: "eyebrow", "A CLEAR PATH FORWARD" } h2 { "From first spring to full interface." } } Link { to: Route::DocsLanding {}, "Read the docs ↗" } }
+                div { class: "learning-grid",
+                    Link { class: "learning-card", to: Route::BasicAnimationGuide {}, span { class: "card-number", "01" } strong { "Start small" } span { "Create a motion value. Animate it. Read it in your component." } }
+                    Link { class: "learning-card", to: Route::MotionStyleGuide {}, span { class: "card-number", "02" } strong { "Style in motion" } span { "Move beyond transforms with typed CSS properties." } }
+                    Link { class: "learning-card", to: Route::PresenceGuide {}, span { class: "card-number", "03" } strong { "Make an entrance" } span { "Coordinate mounting, layout, and exit animations." } }
                 }
             }
-
-            // Features section
-            section { class: "container mx-auto px-4 py-20 pb-4 relative z-10",
-                h2 { class: "text-3xl font-bold text-center mb-12 text-gradient-primary",
-                    "Features"
-                }
-                div { class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto",
-                    FeatureCard {
-                        title: "Spring Physics",
-                        description: "Natural animations with customizable spring parameters",
-                        icon: "🌊",
-                    }
-                    FeatureCard {
-                        title: "Easy to Use",
-                        description: "Simple API with powerful configuration options",
-                        icon: "🎯",
-                    }
-                    FeatureCard {
-                        title: "Cross Platform",
-                        description: "Works on Web, Desktop, and Mobile",
-                        icon: "🌐",
-                    }
-                    FeatureCard {
-                        title: "Page Transitions",
-                        description: "Smooth animations for route changes",
-                        icon: "🔄",
-                    }
-                }
-            }
-
-            // Footer
-            Footer {}
-        }
-    }
-}
-
-#[component]
-/// Renders an animated feature card with a specified icon, title, and description.
-///
-/// This component displays a card that animates on hover by scaling up and shifting slightly upward,
-/// then reverting to its original state when the mouse leaves. The animations are achieved using spring
-/// dynamics to ensure smooth transitions.
-///
-/// # Arguments
-///
-/// * `title` - The title text displayed on the card.
-/// * `description` - A brief description of the feature.
-/// * `icon` - A static string representing the feature's icon (e.g., an emoji).
-///
-/// # Returns
-///
-/// A Dioxus `Element` representing the rendered feature card.
-///
-/// # Examples
-///
-/// ```
-/// use dioxus::prelude::*;
-///
-/// fn app(cx: Scope) -> Element {
-///     cx.render(rsx! {
-///         FeatureCard("Efficiency", "Boosts performance significantly.", "⚡")
-///     })
-/// }
-/// ```
-fn FeatureCard(title: &'static str, description: &'static str, icon: &'static str) -> Element {
-    let mut card_scale = use_motion(1.0f32);
-    let mut card_y = use_motion(0.0f32);
-
-    rsx! {
-        div {
-            class: "p-6 rounded-xl bg-dark-200/50 backdrop-blur-xs
-                    border border-primary/10 transition-all duration-300
-                    hover:border-primary/20",
-            style: "transform: translateY({card_y.get_value()}px) scale({card_scale.get_value()})",
-            onmouseenter: move |_| {
-                card_scale
-                    .animate_to(
-                        1.05,
-                        AnimationConfig::new(
-                            AnimationMode::Spring(Spring {
-                                stiffness: 300.0,
-                                damping: 20.0,
-                                mass: 1.0,
-                                velocity: 0.0,
-                            }),
-                        ),
-                    );
-                card_y
-                    .animate_to(
-                        -5.0,
-                        AnimationConfig::new(
-                            AnimationMode::Spring(Spring {
-                                stiffness: 300.0,
-                                damping: 20.0,
-                                mass: 1.0,
-                                velocity: 0.0,
-                            }),
-                        ),
-                    );
-            },
-            onmouseleave: move |_| {
-                card_scale
-                    .animate_to(
-                        1.0,
-                        AnimationConfig::new(
-                            AnimationMode::Spring(Spring {
-                                stiffness: 300.0,
-                                damping: 20.0,
-                                mass: 1.0,
-                                velocity: 0.0,
-                            }),
-                        ),
-                    );
-                card_y
-                    .animate_to(
-                        0.0,
-                        AnimationConfig::new(
-                            AnimationMode::Spring(Spring {
-                                stiffness: 300.0,
-                                damping: 20.0,
-                                mass: 1.0,
-                                velocity: 0.0,
-                            }),
-                        ),
-                    );
-            },
-            div { class: "flex items-center gap-3 mb-4",
-                span { class: "text-2xl", {icon} }
-                h3 { class: "text-xl font-medium text-text-primary", {title} }
-            }
-            p { class: "text-text-secondary leading-relaxed", {description} }
+            section { class: "closing-note", p { "Good motion starts with a small experiment." } Link { class: "button secondary", to: Route::DocsLanding {}, "Try your first spring →" } }
         }
     }
 }

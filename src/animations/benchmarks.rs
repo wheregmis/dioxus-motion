@@ -1,71 +1,55 @@
-//! Performance benchmarks for platform-specific optimizations
-//!
-//! This module contains benchmarks to validate the performance improvements
-//! from closure pooling on web platforms and sleep optimization on desktop.
+//! Manual measurements of active frame updates, value cloning, and platform scheduling.
+//! Run timing tests in release mode; their results depend on the host.
 
 #[cfg(test)]
 mod tests {
     #![allow(clippy::uninlined_format_args)]
     use instant::{Duration, Instant};
 
-    /// Test web closure pooling performance
-    #[cfg(feature = "web")]
     #[test]
-    fn test_web_closure_pooling_performance() {
-        use crate::animations::closure_pool::{
-            closure_pool_stats, execute_and_return_pooled_closure, register_pooled_callback,
-        };
+    #[ignore = "manual performance measurement; wall-clock timing is host-dependent"]
+    fn test_keyframe_lookup_cpu_usage() {
+        use crate::{KeyframeAnimation, Motion};
+        use std::hint::black_box;
 
-        const ITERATIONS: usize = 100;
-
-        // Test that closure pooling doesn't significantly impact performance
-        let start = Instant::now();
-
-        // Register multiple callbacks to test pool performance
-        let mut callback_ids = Vec::with_capacity(ITERATIONS);
-        for i in 0..ITERATIONS {
-            let callback = Box::new(move || {
-                // Simple callback that captures the loop variable
-                let _result = i * 2;
-            });
-            let id = register_pooled_callback(callback);
-            callback_ids.push(id);
+        const ITERATIONS: usize = 100_000;
+        for count in [2, 32, 1024] {
+            let mut animation = KeyframeAnimation::new(Duration::from_secs(10_000));
+            for index in 0..count {
+                animation = animation
+                    .add_keyframe(index as f32, index as f32 / (count - 1) as f32, None)
+                    .expect("finite keyframe offset");
+            }
+            let mut samples = Vec::with_capacity(7);
+            for _ in 0..7 {
+                let mut motion = Motion::new(0.0f32).expect("finite initial value");
+                motion
+                    .animate_keyframes(animation.clone())
+                    .expect("valid keyframe setup");
+                let start = Instant::now();
+                for _ in 0..ITERATIONS {
+                    black_box(
+                        motion
+                            .update(black_box(1.0 / 60.0))
+                            .expect("representable animation frame"),
+                    );
+                    black_box(&motion);
+                }
+                samples.push(start.elapsed());
+                assert!(motion.is_running());
+            }
+            samples.sort_unstable();
+            println!(
+                "{count} keyframes: {:.2} ns/update (median of 7 samples)",
+                samples[3].as_nanos() as f64 / ITERATIONS as f64,
+            );
         }
-
-        let registration_time = start.elapsed();
-
-        // Execute all callbacks
-        let execution_start = Instant::now();
-        for id in callback_ids {
-            execute_and_return_pooled_closure(id);
-        }
-        let execution_time = execution_start.elapsed();
-
-        // Verify pool statistics
-        let (_available, in_use) = closure_pool_stats();
-
-        // Performance assertions
-        assert!(
-            registration_time < Duration::from_millis(10),
-            "Callback registration took too long: {:?}",
-            registration_time
-        );
-        assert!(
-            execution_time < Duration::from_millis(10),
-            "Callback execution took too long: {:?}",
-            execution_time
-        );
-
-        // Pool should be clean after execution
-        assert_eq!(
-            in_use, 0,
-            "Pool should have no callbacks in use after execution"
-        );
     }
 
     /// Test desktop sleep optimization performance
     #[cfg(not(feature = "web"))]
     #[tokio::test]
+    #[ignore = "manual scheduling measurement; latency depends on host load"]
     async fn test_desktop_sleep_performance() {
         use crate::animations::platform::{MotionTime, TimeProvider};
 
@@ -77,7 +61,9 @@ mod tests {
 
         for duration in test_durations {
             let start = Instant::now();
-            MotionTime::delay(duration).await;
+            MotionTime::delay(duration)
+                .await
+                .expect("available test timer");
             let elapsed = start.elapsed();
 
             // Validate performance characteristics
@@ -108,277 +94,17 @@ mod tests {
         }
     }
 
-    /// Test animation config pool performance and reuse
+    /// Reports median update cost with animations active throughout each sample.
     #[test]
-    fn test_config_pool_performance() {
-        use crate::animations::core::{AnimationConfig, AnimationMode};
-        use crate::animations::tween::Tween;
-        use crate::pool::global;
-
-        // Clear pool to start with known state
-        global::clear_pool();
-
-        const ITERATIONS: usize = 1000;
-        let start = Instant::now();
-
-        // Test config pool allocation and release performance
-        let mut handles = Vec::with_capacity(ITERATIONS);
-
-        // Phase 1: Allocate configs from pool
-        let allocation_start = Instant::now();
-        for _ in 0..ITERATIONS {
-            let handle = global::get_config();
-            global::modify_config(&handle, |config| {
-                *config = AnimationConfig::new(AnimationMode::Tween(Tween::default()));
-            });
-            handles.push(handle);
-        }
-        let allocation_time = allocation_start.elapsed();
-
-        // Verify all configs are in use
-        let (in_use, available) = global::pool_stats();
-        assert_eq!(in_use, ITERATIONS, "All configs should be in use");
-        assert_eq!(available, 0, "No configs should be available");
-
-        // Phase 2: Release configs back to pool
-        let release_start = Instant::now();
-        for handle in handles {
-            global::return_config(handle);
-        }
-        let release_time = release_start.elapsed();
-
-        // Verify all configs are returned to pool
-        let (in_use, available) = global::pool_stats();
-        assert_eq!(in_use, 0, "No configs should be in use after return");
-        assert_eq!(available, ITERATIONS, "All configs should be available");
-
-        // Phase 3: Test reuse performance (should be faster than initial allocation)
-        let reuse_start = Instant::now();
-        let mut reuse_handles = Vec::with_capacity(ITERATIONS);
-        for _ in 0..ITERATIONS {
-            let handle = global::get_config();
-            global::modify_config(&handle, |config| {
-                *config = AnimationConfig::new(AnimationMode::Tween(Tween::default()));
-            });
-            reuse_handles.push(handle);
-        }
-        let reuse_time = reuse_start.elapsed();
-
-        let total_time = start.elapsed();
-
-        // Performance assertions
-        assert!(
-            allocation_time < Duration::from_millis(50),
-            "Config allocation took too long: {allocation_time:?}"
-        );
-
-        assert!(
-            release_time < Duration::from_millis(10),
-            "Config release took too long: {release_time:?}"
-        );
-
-        assert!(
-            reuse_time < Duration::from_millis(25),
-            "Config reuse took too long: {reuse_time:?}"
-        );
-
-        assert!(
-            total_time < Duration::from_millis(100),
-            "Total pool operations took too long: {total_time:?}"
-        );
-
-        // Keep the benchmark honest without requiring one wall-clock sample to beat another.
-        // The pool behavior itself is covered by deterministic pool tests.
-
-        // Clean up
-        for handle in reuse_handles {
-            global::return_config(handle);
-        }
-
-        println!("Config pool performance:");
-        println!("  Allocation: {allocation_time:?} for {ITERATIONS} configs");
-        println!("  Release: {release_time:?} for {ITERATIONS} configs");
-        println!("  Reuse: {reuse_time:?} for {ITERATIONS} configs");
-        println!("  Total: {total_time:?}");
-        println!(
-            "  Reuse efficiency: {:.2}x",
-            allocation_time.as_nanos() as f64 / reuse_time.as_nanos() as f64
-        );
-    }
-
-    /// Test battery life impact simulation
-    #[cfg(not(feature = "web"))]
-    #[tokio::test]
-    async fn test_battery_life_impact() {
-        use crate::animations::platform::{MotionTime, TimeProvider};
-
-        // Simulate a shorter animation scenario for testing
-        const ANIMATION_FRAMES: usize = 60; // 1 second at 60fps
-        const FRAME_DURATION: Duration = Duration::from_millis(16); // ~60fps
-
-        let start_time = Instant::now();
-        let mut cpu_intensive_operations = 0;
-
-        for frame in 0..ANIMATION_FRAMES {
-            let frame_start = Instant::now();
-
-            // Simulate animation work
-            let _work = frame * frame; // Simple computation
-
-            // Use optimized delay
-            MotionTime::delay(FRAME_DURATION).await;
-
-            let frame_elapsed = frame_start.elapsed();
-
-            // Count frames that took longer than expected (indicating CPU usage)
-            if frame_elapsed > FRAME_DURATION + Duration::from_millis(2) {
-                cpu_intensive_operations += 1;
-            }
-        }
-
-        let total_time = start_time.elapsed();
-        let expected_time = FRAME_DURATION * ANIMATION_FRAMES as u32;
-
-        // Validate battery efficiency
-        let efficiency = (expected_time.as_millis() as f64 / total_time.as_millis() as f64) * 100.0;
-
-        // The optimization should maintain reasonable efficiency
-        assert!(
-            efficiency >= 70.0,
-            "Animation efficiency is too low: {:.1}%",
-            efficiency
-        );
-
-        // Frame-level scheduling jitter varies substantially across hosts, so keep
-        // the native-path assertion coarse and based on aggregate behavior.
-        let cpu_intensive_ratio = cpu_intensive_operations as f64 / ANIMATION_FRAMES as f64;
-        assert!(
-            cpu_intensive_ratio <= 0.95,
-            "Too many CPU intensive frames: {:.1}%",
-            cpu_intensive_ratio * 100.0
-        );
-    }
-
-    /// Performance regression test
-    #[test]
-    fn test_performance_regression() {
-        // This test ensures that optimizations don't introduce performance regressions
-        const ITERATIONS: usize = 1000;
-
-        // Test simple operations that should be fast
-        let start = Instant::now();
-
-        for i in 0..ITERATIONS {
-            let _result = i * 2 + 1;
-        }
-
-        let elapsed = start.elapsed();
-
-        // Total time should be reasonable
-        assert!(
-            elapsed < Duration::from_millis(10),
-            "Total time is too long: {:?}",
-            elapsed
-        );
-    }
-
-    /// Test conditional checking overhead impact on state machine performance
-    ///
-    /// Note: This test measures the overhead of additional conditional checks
-    /// rather than comparing against a true branching implementation (which is no longer available).
-    /// It validates that extra conditional logic doesn't significantly impact performance.
-    #[test]
-    fn test_conditional_overhead_impact() {
-        use crate::Motion;
-        use crate::animations::core::AnimationMode;
-        use crate::prelude::{AnimationConfig, Tween};
-
-        const ITERATIONS: usize = 10000;
-        const DT: f32 = 1.0 / 60.0; // 60 FPS
-
-        // Create test motion for baseline measurement
-        let mut motion_baseline = Motion::new(0.0f32);
-        motion_baseline.animate_to(
-            100.0f32,
-            AnimationConfig::new(AnimationMode::Tween(Tween::default())),
-        );
-
-        // Create test motion for overhead measurement
-        let mut motion_with_overhead = Motion::new(0.0f32);
-        motion_with_overhead.animate_to(
-            100.0f32,
-            AnimationConfig::new(AnimationMode::Tween(Tween::default())),
-        );
-
-        // Benchmark baseline state machine performance
-        let baseline_start = Instant::now();
-        for _ in 0..ITERATIONS {
-            motion_baseline.update(DT);
-        }
-        let baseline_time = baseline_start.elapsed();
-
-        // Benchmark with additional conditional overhead
-        let overhead_start = Instant::now();
-        for _ in 0..ITERATIONS {
-            // Add conditional checking overhead to simulate complex dispatch logic
-            let _is_running = motion_with_overhead.running;
-            let _has_sequence = motion_with_overhead.sequence.is_some();
-            let _has_keyframes = motion_with_overhead.keyframe_animation.is_some();
-
-            // Simulate nested conditionals that might exist in complex animation systems
-            if motion_with_overhead.running {
-                if motion_with_overhead.sequence.is_some() {
-                    // Sequence branch simulation
-                } else if motion_with_overhead.keyframe_animation.is_some() {
-                    // Keyframe branch simulation
-                } else {
-                    // Regular animation branch simulation
-                }
-            }
-
-            // Perform the actual update
-            motion_with_overhead.update(DT);
-        }
-        let overhead_time = overhead_start.elapsed();
-
-        // Calculate the overhead ratio
-        let overhead_ratio = overhead_time.as_nanos() as f64 / baseline_time.as_nanos() as f64;
-
-        println!("Baseline state machine time: {:?}", baseline_time);
-        println!("With conditional overhead time: {:?}", overhead_time);
-        println!("Overhead ratio: {:.2}", overhead_ratio);
-
-        // The overhead should stay bounded without treating small machine-level
-        // timing variance as a correctness failure.
-        // This validates that conditional checks don't significantly impact performance
-        // Note: Some variance is expected due to system load and compiler optimizations
-        assert!(
-            overhead_ratio <= 2.5,
-            "Conditional overhead is too high: {:.2}x baseline performance",
-            overhead_ratio
-        );
-
-        // Both approaches should complete in reasonable time
-        assert!(
-            baseline_time < Duration::from_millis(100),
-            "Baseline updates took too long: {:?}",
-            baseline_time
-        );
-        assert!(
-            overhead_time < Duration::from_millis(150),
-            "Updates with overhead took too long: {:?}",
-            overhead_time
-        );
-    }
-
-    /// Test direct motion update CPU usage
-    #[test]
+    #[ignore = "manual performance measurement; wall-clock timing is host-dependent"]
     fn test_motion_update_cpu_usage() {
         use crate::Motion;
-        use crate::animations::core::AnimationMode;
-        use crate::prelude::{AnimationConfig, Spring, Tween};
+        use crate::animations::core::{Animatable, AnimationMode};
+        use crate::prelude::{AnimationConfig, LoopMode, Spring, Tween};
+        use crate::prelude::{Color, CssValue, IntoCssValue, MotionStyle, Transform};
+        use std::hint::black_box;
 
-        const ITERATIONS: usize = 1000;
+        const ITERATIONS: usize = 100_000;
         const DT: f32 = 1.0 / 60.0;
 
         let test_cases = [
@@ -395,30 +121,97 @@ mod tests {
             ),
         ];
 
-        for (name, config) in test_cases {
-            let mut motion = Motion::new(0.0f32);
-            if let Some(config) = config {
-                motion.animate_to(100.0f32, config);
+        fn measure<T: Animatable + Send>(
+            value_type: &str,
+            initial: T,
+            target: T,
+            test_cases: &[(&str, Option<AnimationConfig>)],
+        ) {
+            let motion = Motion::new(initial.clone()).expect("finite initial value");
+            let mut read_samples = Vec::with_capacity(7);
+            for _ in 0..7 {
+                let start = Instant::now();
+                for _ in 0..ITERATIONS {
+                    black_box(black_box(&motion).get_value());
+                }
+                read_samples.push(start.elapsed());
             }
-
-            let start = Instant::now();
-
-            for _ in 0..ITERATIONS {
-                motion.update(DT);
-            }
-
-            let elapsed = start.elapsed();
-
-            println!("{} state updates took: {:?}", name, elapsed);
-
-            // Each state should update efficiently
-            assert!(
-                elapsed < Duration::from_millis(50),
-                "{} state updates took too long: {:?}",
-                name,
-                elapsed
+            read_samples.sort_unstable();
+            println!(
+                "{value_type}/get_value: {:.2} ns/read (median of 7 samples, {ITERATIONS} reads/sample)",
+                read_samples[3].as_nanos() as f64 / ITERATIONS as f64,
             );
+            for (name, config) in test_cases {
+                let active = config.is_some();
+                let mut samples = Vec::with_capacity(7);
+                for _ in 0..7 {
+                    let mut motion = Motion::new(initial.clone()).expect("finite initial value");
+                    if let Some(config) = config.clone() {
+                        motion
+                            .animate_to(target.clone(), config.with_loop(LoopMode::Infinite))
+                            .expect("valid animation configuration");
+                    }
+                    let start = Instant::now();
+                    for _ in 0..ITERATIONS {
+                        black_box(
+                            motion
+                                .update(black_box(DT))
+                                .expect("representable animation frame"),
+                        );
+                        black_box(&motion);
+                    }
+                    samples.push(start.elapsed());
+                    assert_eq!(motion.is_running(), active);
+                }
+                samples.sort_unstable();
+                println!(
+                    "{value_type}/{name}: {:.2} ns/update (median of 7 samples, {ITERATIONS} updates/sample)",
+                    samples[3].as_nanos() as f64 / ITERATIONS as f64,
+                );
+            }
         }
+        measure("f32", 0.0f32, 100.0, &test_cases);
+        measure(
+            "MotionStyle",
+            MotionStyle::default()
+                .property("width", CssValue::Px(0.0))
+                .property("gap", CssValue::Percent(0.0)),
+            MotionStyle::default()
+                .property("width", CssValue::Px(100.0))
+                .property("gap", CssValue::Percent(100.0)),
+            &test_cases,
+        );
+        measure(
+            "MotionStyle/complex",
+            MotionStyle::default()
+                .property(
+                    "box-shadow",
+                    "0px 0px 0px rgba(0, 0, 0, 0)".into_css_value("box-shadow"),
+                )
+                .property("filter", "blur(0px) brightness(1)".into_css_value("filter")),
+            MotionStyle::default()
+                .property(
+                    "box-shadow",
+                    "20px 10px 30px rgba(255, 64, 128, 0.8)".into_css_value("box-shadow"),
+                )
+                .property(
+                    "filter",
+                    "blur(6px) brightness(1.2)".into_css_value("filter"),
+                ),
+            &test_cases,
+        );
+        measure(
+            "Color",
+            Color::new(1.0, 0.5, 0.25, 1.0),
+            Color::new(0.0, 0.0, 0.0, 0.0),
+            &test_cases,
+        );
+        measure(
+            "Transform",
+            Transform::identity(),
+            Transform::new(100.0, 50.0, 2.0, 1.0),
+            &test_cases,
+        );
     }
 
     /// Integration test to verify the simplified motion loop remains deterministic
@@ -432,18 +225,22 @@ mod tests {
         const ANIMATION_STEPS: usize = 120; // 2 seconds at 60fps
 
         // Create two identical motions
-        let mut motion1 = Motion::new(0.0f32);
-        let mut motion2 = Motion::new(0.0f32);
+        let mut motion1 = Motion::new(0.0f32).expect("finite initial value");
+        let mut motion2 = Motion::new(0.0f32).expect("finite initial value");
 
         let config = AnimationConfig::new(AnimationMode::Tween(Tween::default()));
 
-        motion1.animate_to(100.0f32, config.clone());
-        motion2.animate_to(100.0f32, config);
+        motion1
+            .animate_to(100.0f32, config.clone())
+            .expect("valid animation configuration");
+        motion2
+            .animate_to(100.0f32, config)
+            .expect("valid animation configuration");
 
         // Run both animations and verify they produce identical results
         for step in 0..ANIMATION_STEPS {
-            let result1 = motion1.update(DT);
-            let result2 = motion2.update(DT);
+            let result1 = motion1.update(DT).expect("representable animation frame");
+            let result2 = motion2.update(DT).expect("representable animation frame");
 
             // Both should return the same continuation result
             assert_eq!(
@@ -453,18 +250,19 @@ mod tests {
             );
 
             // Both should have the same current value (within floating point precision)
-            let value_diff = (motion1.current - motion2.current).abs();
+            let value_diff = (motion1.get_value() - motion2.get_value()).abs();
             assert!(
                 value_diff < 0.001,
                 "Animation values diverged at step {}: {} vs {}",
                 step,
-                motion1.current,
-                motion2.current
+                motion1.get_value(),
+                motion2.get_value()
             );
 
             // Both should have the same running state
             assert_eq!(
-                motion1.running, motion2.running,
+                motion1.is_running(),
+                motion2.is_running(),
                 "Running state mismatch at step {}",
                 step
             );
@@ -477,11 +275,13 @@ mod tests {
 
         // Final values should be identical
         assert_eq!(
-            motion1.current, motion2.current,
+            motion1.get_value(),
+            motion2.get_value(),
             "Final animation values don't match"
         );
         assert_eq!(
-            motion1.running, motion2.running,
+            motion1.is_running(),
+            motion2.is_running(),
             "Final running states don't match"
         );
     }

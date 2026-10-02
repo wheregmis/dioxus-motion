@@ -142,6 +142,12 @@ impl std::ops::Mul<f32> for PageTransitionAnimation {
 }
 
 impl Animatable for PageTransitionAnimation {
+    fn is_finite(&self) -> bool {
+        [self.x, self.y, self.scale, self.rotation, self.opacity]
+            .into_iter()
+            .all(f32::is_finite)
+    }
+
     fn interpolate(&self, target: &Self, t: f32) -> Self {
         let a = [self.x, self.y, self.scale, self.opacity];
         let b = [target.x, target.y, target.scale, target.opacity];
@@ -170,12 +176,9 @@ impl Animatable for PageTransitionAnimation {
     }
 
     fn magnitude(&self) -> f32 {
-        (self.x * self.x
-            + self.y * self.y
-            + self.scale * self.scale
-            + self.rotation * self.rotation
-            + self.opacity * self.opacity)
-            .sqrt()
+        crate::animations::core::magnitude(
+            [self.x, self.y, self.scale, self.rotation, self.opacity].into_iter(),
+        )
     }
 }
 
@@ -262,7 +265,6 @@ fn default_transition_spring() -> Spring {
         stiffness: 160.0,
         damping: 25.0,
         mass: 1.0,
-        velocity: 0.0,
     }
 }
 
@@ -285,8 +287,8 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
     let transition_variant =
         resolver.map_or_else(|| to.get_transition(), |resolver| resolver(&from, &to));
     let config = transition_variant.get_config();
-    let mut from_anim = use_motion(PageTransitionAnimation::from_exit_start(&config));
-    let mut to_anim = use_motion(PageTransitionAnimation::from_enter_start(&config));
+    let mut from_anim = use_motion(PageTransitionAnimation::from_exit_start(&config))?;
+    let mut to_anim = use_motion(PageTransitionAnimation::from_enter_start(&config))?;
     let default_spring = use_store(default_transition_spring);
 
     // Try to get a store-backed animation mode from context, otherwise use the default spring.
@@ -297,14 +299,18 @@ fn FromRouteToCurrent<R: AnimatableRoute>(route_type: PhantomData<R>, from: R, t
         let mode = resolve_transition_mode(tween_store, spring_store, default_spring);
         let animation_config = AnimationConfig::new(mode);
 
-        from_anim.animate_to(
+        if let Err(error) = from_anim.animate_to(
             PageTransitionAnimation::from_exit_end(&config),
             animation_config.clone(),
-        );
-        to_anim.animate_to(
+        ) {
+            tracing::error!(%error, "cannot start route exit animation");
+        }
+        if let Err(error) = to_anim.animate_to(
             PageTransitionAnimation::from_enter_end(&config),
             animation_config,
-        );
+        ) {
+            tracing::error!(%error, "cannot start route enter animation");
+        }
     });
 
     use_effect(move || {
@@ -348,6 +354,25 @@ mod tests {
     use instant::Duration;
 
     use super::{AnimationMode, Spring, Tween, default_transition_spring, resolve_transition_mode};
+
+    #[test]
+    fn transition_magnitude_preserves_each_component_at_extreme_scales() {
+        use super::{Animatable, PageTransitionAnimation};
+        for value in [f32::from_bits(1), 1.0, 1e20, f32::MAX] {
+            for index in 0..5 {
+                let mut animation = PageTransitionAnimation::default() * 0.0;
+                let fields = [
+                    &mut animation.x,
+                    &mut animation.y,
+                    &mut animation.scale,
+                    &mut animation.rotation,
+                    &mut animation.opacity,
+                ];
+                *fields[index] = -value;
+                assert_eq!(animation.magnitude(), value);
+            }
+        }
+    }
 
     #[derive(Clone)]
     struct ResolveModeProps {
@@ -404,7 +429,6 @@ mod tests {
             stiffness: 320.0,
             damping: 40.0,
             mass: 2.0,
-            velocity: 3.0,
         };
 
         let mode = resolve_mode_in_runtime(Some(tween), Some(spring), default_transition_spring());
@@ -418,7 +442,6 @@ mod tests {
             stiffness: 220.0,
             damping: 32.0,
             mass: 1.5,
-            velocity: 2.5,
         };
 
         let mode = resolve_mode_in_runtime(None, Some(spring), default_transition_spring());

@@ -7,6 +7,94 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Remove the allocation and redundant spin-sleep from native frame delays. Use Tokio virtual time in delay tests so machine load cannot create false failures.
+
+- Reject nonfinite epsilon values in validation. Keep scalar and transform interpolation finite for opposite extreme endpoints, preserve exact translation/scale endpoints, and wrap rotations spanning multiple turns along the shortest path.
+
+- Update documentation examples to current Dioxus component syntax and compile-check them; highlight guide examples at compile time with `dioxus-code`.
+
+### Changed
+
+- Scale owned CSS values and complex tokens in place, avoiding replacement token vectors and keyword clones during style spring arithmetic. Extend manual benchmarks with shadow and filter properties.
+
+- Reuse owned CSS property maps during style addition, subtraction, and scaling instead of rebuilding and cloning their keys. Manual benchmarks measure value reads separately from frame updates.
+
+- Breaking: presence tween `duration` fields take `Duration` instead of floating-point milliseconds. Use `Duration::from_millis(350)` or `Duration::from_micros(220_500)`; dynamic seconds can use `Duration::try_from_secs_f64`. The macro no longer performs a conversion that can panic on negative, nonfinite, or overflowing input.
+
+- Rebuild the six documentation lessons with compiled-source previews, concrete exercises, ordered navigation, and isolated route-transition history. Remove duplicate unrouted guide examples.
+
+- Breaking: `TimeProvider::delay` returns `Result<(), AnimationError>`; failed scheduling returns `TimerUnavailable` and stops the motion driver instead of spinning. Later playback requests on that failed hook also return `TimerUnavailable`. Presence layout falls back to immediate settlement.
+
+- Springs reject shared CSS properties with incompatible units or complex-string shapes before replacing active playback, including sequence steps and velocity changes. Use tweens for discrete transitions. Removing numeric properties now springs toward zero before dropping them at completion.
+- Style fields and typed/complex CSS numbers reuse overflow-safe scalar interpolation. Style tween frames avoid temporary vector arithmetic/property maps, and CSS number formatting widens rounding arithmetic so finite extremes remain finite strings.
+- `Animatable` now requires `PartialEq` for exact reactive change detection, including CSS keywords, units, and property keys. Derive or implement it for custom animated values. Store updates avoid cloning the new value and computing an arithmetic difference/magnitude.
+- Value subscribers receive every nonzero motion change, including frames smaller than spring completion epsilon. Running subscribers remain independent, and unchanged values do not trigger renders.
+- Removed the public `animations::closure_pool` module and its unused benchmark. Browser timers own their JavaScript closures directly; consumers of the legacy registry must likewise own each closure and cancel its scheduled browser request before dropping it.
+- Handle updates report running state after completion callbacks, so a callback that restarts motion keeps manually driven frame loops alive. Ordinary frames retain their existing update path.
+- Keyframes copy exact segment endpoints and held values without calling easing or interpolation. Exact eased endpoints also bypass interpolation, matching tween behavior.
+- Strengthened runtime mutation coverage for exact tween endpoints and bounded keyframe lookup work. Lookup comparison counts are checked through a predicate helper, keeping timing benchmarks free of instrumentation.
+- Completion callbacks use nonblocking mutex acquisition. Reentrant/locked callbacks return `AnimationError::CompletionBusy`; poisoned callbacks return `CompletionPoisoned`. `AnimationConfig::execute_completion` now returns `Result<(), AnimationError>`, and motion updates propagate callback errors after finalizing playback and releasing the store guard.
+- Removed the unused private config/resource pools and legacy RK4 integrator, along with their standalone tests and config-pool benchmark. Playback already uses exact cached spring transitions and owns browser timer callbacks directly. Updated crate docs to describe those production paths.
+- Removed unused `AnimationStep.predicted_next` storage and builder interpolation. Sequence construction now only queues targets/configuration, leaving validation to setup. Capacity/reserve hints use `usize`, matching step indices and `Vec`. Clone tests verify independent progress and single-owner completion callbacks.
+- Removed the ignored `Spring.velocity: f32` field and its presence-macro option. `Motion::set_velocity` and `AnimationManager::set_velocity` accept the animated type (`f32`, `Transform`, `Color`, etc.) and reject nonfinite components. Call the setter during active spring playback; idle, tween, and keyframe states return `AnimationError::VelocityRequiresSpring`. Animation setup resets velocity to zero.
+- `Motion` fields are no longer publicly mutable. Use `get_value`, `get_target`, `get_velocity`, and `is_running` to inspect state, and `set_velocity` for a checked velocity change. Use animation setup methods to change targets/tracks and `stop`/`reset` for lifecycle control.
+- Presence exit completion now removes stopped motion even if a runtime failure occurs before an effect observes its first running frame. Raw motion, presence motion, and presence styles share this completion effect. Measured style preparation rejects nonfinite values before entering a store.
+- `Motion::update` and `AnimationManager::update` now return `Result<bool, AnimationError>`. Spring position/velocity and tween/keyframe interpolation are validated before committing a frame; nonfinite easing is rejected before interpolation. Failed playback stops, preserves the last valid value, and skips completion callbacks. The motion hook logs runtime errors.
+- `Motion::new`, `AnimationManager::new`, `use_motion`, and presence motion/style hooks now return `Result` so invalid initial components or nonfinite default zero velocity cannot enter a store. Components can propagate errors with `?` to a Dioxus error boundary. Hook initialization validates once per component lifetime, matching the existing initial-value semantics.
+
+- `Animatable` now requires `is_finite()`, checking every numerical component directly. Built-in values validate components independently of magnitude. Motion targets, sequence targets, and keyframe values reject NaN/infinity with typed errors; invalid setup preserves active motion. Add `is_finite` to custom implementations, for example `[self.x, self.y].into_iter().all(f32::is_finite)`.
+
+- Motion springs use the closed-form damped oscillator on native and web, with coefficients cached for repeated frame deltas. Stiff, low-mass, and heavily damped springs no longer diverge through frame integration. Spring trajectories change slightly from the previous RK4/Euler approximation; zero-force springs remain supported.
+
+- `Motion` and `AnimationManager` setup methods `animate_to`, `animate_sequence`, and `animate_keyframes` now return `Result<(), AnimationError>`. Handle the error or propagate it with `?`; fixed, known-valid configurations in examples use `.expect("valid animation configuration")`. Invalid epsilon or spring parameters leave the existing animation unchanged, and sequences validate every step before playback. `AnimationConfig::validate` and `AnimationSequence::validate` expose the checks.
+
+- Color arithmetic now preserves signed, unbounded components so spring displacement, forces, and velocity are valid. `Color::new`, interpolation, and `to_rgba` continue to clamp display values.
+
+- Update Dioxus to 0.7.10 and declare Rust 1.89 as the minimum toolchain.
+- Sequence step indices now return `usize`; `Motion::current_loop` is `u16` to support all alternate loop counts.
+- `KeyframeAnimation::keyframes` is private. Read frames with `keyframes()` and add frames with `add_keyframe()` to preserve validated, sorted offsets.
+- Keyframe insertion preserves ordering without re-sorting the track. Large tracks use binary lookup; small tracks retain linear lookup.
+- Remove redundant value clones and comparisons from the hook frame loop; store updates already notify changed values.
+
+### Fixed
+
+- Color interpolation uses a weighted SIMD blend to preserve exact clamped endpoints and avoid overflowing the difference between extreme finite components. The same path handles ordinary and extreme colors.
+
+- Sequence steps honor their loop modes and run their animation completion callbacks once before overall sequence completion. Spring transition validation follows finite round trips back to their starting value instead of assuming every step ends at its target.
+
+- Animation duration reports include the delay on every loop leg, treat zero repeat counts as one playback leg, and saturate infinite loops at `Duration::MAX`. Spring estimates apply the same loop accounting.
+
+- Keyframe completion lands exactly on the last value when terminal offsets are duplicated, including zero-duration tracks. Endpoint settlement bypasses segment lookup and easing.
+
+- Keyframe setup captures its own reset value and final target instead of retaining those from previous playback. Empty tracks use the current value as their target.
+
+- Reject malformed hex syntax before slicing color components, preventing panics on non-ASCII CSS input such as `#éx`. Short hex colors parse without allocating repeated digit strings. Deterministic UTF-8 checks exercise parsing and serialization through the public CSS conversion API.
+
+- Presence hooks return invalid state, transition, and layout configuration errors during setup instead of deferring them to logged animation failures. Spring setup also checks interrupted re-entry from the exit state.
+
+- Layout projection owns and cancels its pending frame instead of forgetting RAF closures. Replacing or removing a projection releases its task, and timer failures settle the temporary transform immediately.
+
+- Include alpha in CSS color convergence and combine embedded color/number components as a Euclidean magnitude. Alpha-only style springs now animate instead of snapping at setup. Compound magnitudes use a wider fallback for squared-component overflow/underflow, and spring completion compares magnitudes directly to avoid squaring extreme epsilon values.
+
+- Browser delays own and release their closures, cancel pending RAF/timeout requests when dropped, and finish safely if scheduling fails. Large timeout values saturate instead of wrapping negative.
+- Run browser registry callbacks after releasing the registry borrow; remove duplicate in-use tracking and correct the registry documentation.
+
+- Initialize and reset spring velocity to the additive zero value, including transform scale and color alpha; identity defaults no longer introduce motion at rest.
+
+- Ignore invalid frame deltas, preserve time left after delays, and bound spring work after stalls.
+- Execute completion callbacks after finalizing the animation and releasing the Dioxus store write, so callbacks can read and restart their handle. Support sequences longer than 255 steps and clear previous animations when starting a sequence.
+
+### Tests
+
+- Check closed-form spring trajectories, coefficient extremes, and alpha-only springs in the real browser/WASM harness. Cache regression tests count coefficient calculations without clock-based assertions.
+
+- Add `just check-browser-delay` for browser completion, cancellation, scheduling failure, timeout bounds, and JS reference retention checks. Requires Chrome, matching ChromeDriver, and a wasm-bindgen CLI matching Cargo.lock (`CHROME_BIN`, `CHROMEDRIVER`, and `WASM_BINDGEN` can override tool paths).
+
+- Compare color and transform spring trajectories with scalar motion in both directions; check zero velocity across lifecycle operations and benchmark all three value types.
+
+- Add deterministic frame-delta fuzzing, exhaustive loop-count checks, sequence boundary checks, and interpolation/physics regression checks informed by mutation testing.
+- Keep host-dependent timing measurements as manual benchmarks and remove misleading idle-heavy and battery-simulation checks.
+
 ## [0.3.6](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-v0.3.5...dioxus-motion-v0.3.6) - 2026-05-22
 
 ### <!-- 2 -->Fixes

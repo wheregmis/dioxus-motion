@@ -4,24 +4,26 @@ use easer::functions::Easing;
 
 #[component]
 fn BouncingLetter(letter: char, delay: f32) -> Element {
-    let mut transform = use_motion(Transform::identity());
+    let mut transform = use_motion(Transform::identity())?;
 
     use_effect(move || {
         let delay = Duration::from_secs_f32(delay);
-        transform.animate_to(
-            Transform {
-                y: -30.0,
-                scale: 1.5,
-                rotation: 5.0 * (std::f32::consts::PI / 180.0),
-                x: 0.0,
-            },
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_secs(1),
-                easing: easer::functions::Sine::ease_in_out,
-            }))
-            .with_loop(LoopMode::Infinite)
-            .with_delay(delay),
-        );
+        transform
+            .animate_to(
+                Transform {
+                    y: -30.0,
+                    scale: 1.5,
+                    rotation: 5.0 * (std::f32::consts::PI / 180.0),
+                    x: 0.0,
+                },
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_secs(1),
+                    easing: easer::functions::Sine::ease_in_out,
+                }))
+                .with_loop(LoopMode::Infinite)
+                .with_delay(delay),
+            )
+            .expect("valid animation configuration");
     });
 
     rsx! {

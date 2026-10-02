@@ -21,9 +21,9 @@ fn build_keyframes<T: dioxus_motion::animations::core::Animatable>(
 // A playful button that bounces on click
 #[component]
 pub fn RotatingButton() -> Element {
-    let mut scale = use_motion(1.0f32);
-    let mut rotation = use_motion(0.0f32);
-    let mut glow = use_motion(0.0f32);
+    let mut scale = use_motion(1.0f32)?;
+    let mut rotation = use_motion(0.0f32)?;
+    let mut glow = use_motion(0.0f32)?;
 
     let onclick = move |_| {
         // Smooth scale keyframe animation for bounce effect
@@ -60,13 +60,18 @@ pub fn RotatingButton() -> Element {
 
         // Only animate if keyframe creation succeeded
         if let Ok(scale_anim) = scale_keyframes {
-            scale.animate_keyframes(scale_anim);
+            scale
+                .animate_keyframes(scale_anim)
+                .expect("valid keyframe setup");
         }
         if let Ok(rotation_anim) = rotation_keyframes {
-            rotation.animate_keyframes(rotation_anim);
+            rotation
+                .animate_keyframes(rotation_anim)
+                .expect("valid keyframe setup");
         }
         if let Ok(glow_anim) = glow_keyframes {
-            glow.animate_keyframes(glow_anim);
+            glow.animate_keyframes(glow_anim)
+                .expect("valid keyframe setup");
         }
     };
 

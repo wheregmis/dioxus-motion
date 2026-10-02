@@ -16,11 +16,12 @@ use dioxus::prelude::*;
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use dioxus::prelude::*;
+/// use docs::components::page_not_found::PageNotFound;
 ///
-/// fn App(cx: Scope) -> Element {
-///     PageNotFound(vec!["nonexistent".to_string(), "path".to_string()])
+/// fn app() -> Element {
+///     rsx! { PageNotFound { route: vec!["missing".to_string()] } }
 /// }
 /// ```
 pub fn PageNotFound(route: Vec<String>) -> Element {

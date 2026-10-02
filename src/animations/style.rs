@@ -27,30 +27,22 @@ fn normalize_style_property(property: &str) -> String {
 }
 
 fn merge_style_properties(
-    left: &BTreeMap<String, CssValue>,
-    right: &BTreeMap<String, CssValue>,
+    mut left: BTreeMap<String, CssValue>,
+    right: BTreeMap<String, CssValue>,
     merge: impl Fn(CssValue, CssValue) -> CssValue,
+    right_only: impl Fn(CssValue) -> CssValue,
 ) -> BTreeMap<String, CssValue> {
-    let mut properties = BTreeMap::new();
-
-    for (property, left_value) in left {
-        if let Some(right_value) = right.get(property) {
-            properties.insert(
-                property.clone(),
-                merge(left_value.clone(), right_value.clone()),
-            );
-        } else {
-            properties.insert(property.clone(), left_value.clone());
+    for (property, right_value) in right {
+        match left.entry(property) {
+            std::collections::btree_map::Entry::Occupied(mut entry) => {
+                *entry.get_mut() = merge(entry.get().clone(), right_value);
+            }
+            std::collections::btree_map::Entry::Vacant(entry) => {
+                entry.insert(right_only(right_value));
+            }
         }
     }
-
-    for (property, right_value) in right {
-        properties
-            .entry(property.clone())
-            .or_insert_with(|| right_value.clone());
-    }
-
-    properties
+    left
 }
 
 /// Animatable CSS style value: opacity, transforms, and arbitrary typed CSS properties.
@@ -257,9 +249,12 @@ impl std::ops::Add for MotionStyle {
             skew_x: self.skew_x + other.skew_x,
             skew_y: self.skew_y + other.skew_y,
             perspective: self.perspective + other.perspective,
-            properties: merge_style_properties(&self.properties, &other.properties, |a, b| {
-                a.add(&b).unwrap_or(b)
-            }),
+            properties: merge_style_properties(
+                self.properties,
+                other.properties,
+                |a, b| a.add(&b).unwrap_or(b),
+                |value| value,
+            ),
         }
     }
 }
@@ -285,9 +280,15 @@ impl std::ops::Sub for MotionStyle {
             skew_x: self.skew_x - other.skew_x,
             skew_y: self.skew_y - other.skew_y,
             perspective: self.perspective - other.perspective,
-            properties: merge_style_properties(&self.properties, &other.properties, |a, b| {
-                a.sub(&b).unwrap_or(b)
-            }),
+            properties: merge_style_properties(
+                self.properties,
+                other.properties,
+                |a, b| a.sub(&b).unwrap_or(b),
+                |mut value| {
+                    value.scale(-1.0);
+                    value
+                },
+            ),
         }
     }
 }
@@ -313,17 +314,188 @@ impl std::ops::Mul<f32> for MotionStyle {
             skew_x: self.skew_x * factor,
             skew_y: self.skew_y * factor,
             perspective: self.perspective * factor,
-            properties: self
-                .properties
-                .iter()
-                .map(|(property, value)| (property.clone(), value.scale(factor)))
-                .collect(),
+            properties: {
+                let mut properties = self.properties;
+                for value in properties.values_mut() {
+                    value.scale(factor);
+                }
+                properties
+            },
         }
+    }
+}
+
+impl Animatable for MotionStyle {
+    fn is_spring_compatible(&self, target: &Self) -> bool {
+        self.properties.iter().all(|(property, initial)| {
+            target.properties.get(property).is_none_or(|target| {
+                matches!(
+                    (initial, target),
+                    (CssValue::Keyword(_), CssValue::Keyword(_))
+                ) || initial.sub(target).is_some()
+            })
+        })
+    }
+
+    fn is_finite(&self) -> bool {
+        [
+            self.opacity,
+            self.x,
+            self.y,
+            self.z,
+            self.scale,
+            self.scale_x,
+            self.scale_y,
+            self.scale_z,
+            self.rotate,
+            self.rotate_x,
+            self.rotate_y,
+            self.rotate_z,
+            self.skew,
+            self.skew_x,
+            self.skew_y,
+            self.perspective,
+        ]
+        .into_iter()
+        .all(f32::is_finite)
+            && self.properties.values().all(CssValue::is_finite)
+    }
+
+    fn interpolate(&self, target: &Self, t: f32) -> Self {
+        let t = t.clamp(0.0, 1.0);
+        let mut style = Self {
+            opacity: self.opacity.interpolate(&target.opacity, t),
+            x: self.x.interpolate(&target.x, t),
+            y: self.y.interpolate(&target.y, t),
+            z: self.z.interpolate(&target.z, t),
+            scale: self.scale.interpolate(&target.scale, t),
+            scale_x: self.scale_x.interpolate(&target.scale_x, t),
+            scale_y: self.scale_y.interpolate(&target.scale_y, t),
+            scale_z: self.scale_z.interpolate(&target.scale_z, t),
+            rotate: self.rotate.interpolate(&target.rotate, t),
+            rotate_x: self.rotate_x.interpolate(&target.rotate_x, t),
+            rotate_y: self.rotate_y.interpolate(&target.rotate_y, t),
+            rotate_z: self.rotate_z.interpolate(&target.rotate_z, t),
+            skew: self.skew.interpolate(&target.skew, t),
+            skew_x: self.skew_x.interpolate(&target.skew_x, t),
+            skew_y: self.skew_y.interpolate(&target.skew_y, t),
+            perspective: self.perspective.interpolate(&target.perspective, t),
+            properties: self.properties.clone(),
+        };
+
+        for (property, target_value) in &target.properties {
+            if let Some(current_value) = style.properties.get_mut(property) {
+                *current_value = current_value.interpolate(target_value, t);
+            } else {
+                style
+                    .properties
+                    .insert(property.clone(), target_value.clone());
+            }
+        }
+
+        style
+    }
+
+    fn magnitude(&self) -> f32 {
+        crate::animations::core::magnitude(
+            [
+                self.opacity,
+                self.x,
+                self.y,
+                self.z,
+                self.scale,
+                self.scale_x,
+                self.scale_y,
+                self.scale_z,
+                self.rotate,
+                self.rotate_x,
+                self.rotate_y,
+                self.rotate_z,
+                self.skew,
+                self.skew_x,
+                self.skew_y,
+                self.perspective,
+            ]
+            .into_iter()
+            .chain(self.properties.values().map(|value| value.number())),
+        )
+    }
+}
+
+impl fmt::Display for MotionStyle {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let perspective = if self.perspective > 0.0 {
+            format!(" perspective({}px)", self.perspective)
+        } else {
+            String::new()
+        };
+
+        write!(
+            formatter,
+            "opacity: {}; transform:{} translateX({}px) translateY({}px) translateZ({}px) scale({}) scaleX({}) scaleY({}) scaleZ({}) rotate({}deg) rotateX({}deg) rotateY({}deg) rotateZ({}deg) skew({}deg) skewX({}deg) skewY({}deg)",
+            self.opacity,
+            perspective,
+            self.x,
+            self.y,
+            self.z,
+            self.scale,
+            self.scale_x,
+            self.scale_y,
+            self.scale_z,
+            self.rotate,
+            self.rotate_x,
+            self.rotate_y,
+            self.rotate_z,
+            self.skew,
+            self.skew_x,
+            self.skew_y
+        )?;
+
+        for (property, value) in &self.properties {
+            write!(formatter, "; {property}: {}", value.to_css())?;
+        }
+
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::panic)]
+    #[test]
+    fn arithmetic_preserves_shared_and_disjoint_property_semantics() {
+        use super::*;
+        let left = MotionStyle::default()
+            .property("width", CssValue::Px(5.0))
+            .property("gap", CssValue::Percent(3.0))
+            .property("display", CssValue::Keyword("block".into()));
+        let right = MotionStyle::default()
+            .property("width", CssValue::Px(2.0))
+            .property("height", CssValue::Px(7.0))
+            .property("display", CssValue::Keyword("none".into()));
+        let expected = |width, height| {
+            BTreeMap::from([
+                ("width".into(), CssValue::Px(width)),
+                ("gap".into(), CssValue::Percent(3.0)),
+                ("height".into(), CssValue::Px(height)),
+                ("display".into(), CssValue::Keyword("none".into())),
+            ])
+        };
+        assert_eq!(
+            (left.clone() + right.clone()).properties,
+            expected(7.0, 7.0)
+        );
+        assert_eq!((left.clone() - right).properties, expected(3.0, -7.0));
+        assert_eq!(
+            (left * -2.0).properties,
+            BTreeMap::from([
+                ("width".into(), CssValue::Px(-10.0)),
+                ("gap".into(), CssValue::Percent(-6.0)),
+                ("display".into(), CssValue::Keyword("block".into())),
+            ])
+        );
+    }
+
     use super::*;
     use crate::animations::css::{CssColor, CssValue};
 
@@ -367,6 +539,49 @@ mod tests {
             Some(&CssValue::Px(12.0))
         );
         assert!(!style.properties.contains_key("backgroundColor"));
+    }
+
+    #[test]
+    fn interpolation_preserves_extreme_finite_style_components() {
+        fn filled(value: f32) -> MotionStyle {
+            let mut style = MotionStyle::default();
+            for field in [
+                &mut style.opacity,
+                &mut style.x,
+                &mut style.y,
+                &mut style.z,
+                &mut style.scale,
+                &mut style.scale_x,
+                &mut style.scale_y,
+                &mut style.scale_z,
+                &mut style.rotate,
+                &mut style.rotate_x,
+                &mut style.rotate_y,
+                &mut style.rotate_z,
+                &mut style.skew,
+                &mut style.skew_x,
+                &mut style.skew_y,
+                &mut style.perspective,
+            ] {
+                *field = value;
+            }
+            style
+                .property("width", CssValue::Px(value))
+                .property("gap", CssValue::Percent(value))
+        }
+        let start = filled(-f32::MAX);
+        let target = filled(f32::MAX);
+        for (t, expected) in [
+            (0.0, -f32::MAX),
+            (0.25, -f32::MAX * 0.5),
+            (0.5, 0.0),
+            (0.75, f32::MAX * 0.5),
+            (1.0, f32::MAX),
+        ] {
+            let actual = start.interpolate(&target, t);
+            assert!(actual.is_finite());
+            assert_eq!(actual, filled(expected));
+        }
     }
 
     #[test]
@@ -493,98 +708,5 @@ mod tests {
             250.0,
             1.0,
         );
-    }
-}
-
-impl Animatable for MotionStyle {
-    fn interpolate(&self, target: &Self, t: f32) -> Self {
-        let t = t.clamp(0.0, 1.0);
-        let mut style = self.clone() + (target.clone() - self.clone()) * t;
-
-        for (property, target_value) in &target.properties {
-            if let Some(current_value) = self.properties.get(property) {
-                style
-                    .properties
-                    .insert(property.clone(), current_value.interpolate(target_value, t));
-            } else {
-                style
-                    .properties
-                    .insert(property.clone(), target_value.clone());
-            }
-        }
-
-        for (property, current_value) in &self.properties {
-            if !target.properties.contains_key(property) {
-                style
-                    .properties
-                    .insert(property.clone(), current_value.clone());
-            }
-        }
-
-        style
-    }
-
-    fn magnitude(&self) -> f32 {
-        let property_magnitude: f32 = self
-            .properties
-            .values()
-            .map(|value| value.number() * value.number())
-            .sum();
-
-        (self.opacity * self.opacity
-            + self.x * self.x
-            + self.y * self.y
-            + self.z * self.z
-            + self.scale * self.scale
-            + self.scale_x * self.scale_x
-            + self.scale_y * self.scale_y
-            + self.scale_z * self.scale_z
-            + self.rotate * self.rotate
-            + self.rotate_x * self.rotate_x
-            + self.rotate_y * self.rotate_y
-            + self.rotate_z * self.rotate_z
-            + self.skew * self.skew
-            + self.skew_x * self.skew_x
-            + self.skew_y * self.skew_y
-            + self.perspective * self.perspective
-            + property_magnitude)
-            .sqrt()
-    }
-}
-
-impl fmt::Display for MotionStyle {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let perspective = if self.perspective > 0.0 {
-            format!(" perspective({}px)", self.perspective)
-        } else {
-            String::new()
-        };
-
-        write!(
-            formatter,
-            "opacity: {}; transform:{} translateX({}px) translateY({}px) translateZ({}px) scale({}) scaleX({}) scaleY({}) scaleZ({}) rotate({}deg) rotateX({}deg) rotateY({}deg) rotateZ({}deg) skew({}deg) skewX({}deg) skewY({}deg)",
-            self.opacity,
-            perspective,
-            self.x,
-            self.y,
-            self.z,
-            self.scale,
-            self.scale_x,
-            self.scale_y,
-            self.scale_z,
-            self.rotate,
-            self.rotate_x,
-            self.rotate_y,
-            self.rotate_z,
-            self.skew,
-            self.skew_x,
-            self.skew_y
-        )?;
-
-        for (property, value) in &self.properties {
-            write!(formatter, "; {property}: {}", value.to_css())?;
-        }
-
-        Ok(())
     }
 }
