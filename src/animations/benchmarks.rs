@@ -1,7 +1,5 @@
-//! Performance benchmarks for platform-specific optimizations
-//!
-//! This module contains benchmarks to validate the performance improvements
-//! from closure pooling on web platforms and sleep optimization on desktop.
+//! Manual measurements of active frame updates, value cloning, and platform scheduling.
+//! Run timing tests in release mode; their results depend on the host.
 
 #[cfg(test)]
 mod tests {
@@ -35,7 +33,7 @@ mod tests {
                             .update(black_box(1.0 / 60.0))
                             .expect("representable animation frame"),
                     );
-                    black_box(motion.get_value());
+                    black_box(&motion);
                 }
                 samples.push(start.elapsed());
                 assert!(motion.is_running());
@@ -129,6 +127,20 @@ mod tests {
             target: T,
             test_cases: &[(&str, Option<AnimationConfig>)],
         ) {
+            let motion = Motion::new(initial.clone()).expect("finite initial value");
+            let mut read_samples = Vec::with_capacity(7);
+            for _ in 0..7 {
+                let start = Instant::now();
+                for _ in 0..ITERATIONS {
+                    black_box(black_box(&motion).get_value());
+                }
+                read_samples.push(start.elapsed());
+            }
+            read_samples.sort_unstable();
+            println!(
+                "{value_type}/get_value: {:.2} ns/read (median of 7 samples, {ITERATIONS} reads/sample)",
+                read_samples[3].as_nanos() as f64 / ITERATIONS as f64,
+            );
             for (name, config) in test_cases {
                 let active = config.is_some();
                 let mut samples = Vec::with_capacity(7);
@@ -146,7 +158,7 @@ mod tests {
                                 .update(black_box(DT))
                                 .expect("representable animation frame"),
                         );
-                        black_box(motion.get_value());
+                        black_box(&motion);
                     }
                     samples.push(start.elapsed());
                     assert_eq!(motion.is_running(), active);

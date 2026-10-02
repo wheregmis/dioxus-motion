@@ -27,31 +27,22 @@ fn normalize_style_property(property: &str) -> String {
 }
 
 fn merge_style_properties(
-    left: &BTreeMap<String, CssValue>,
-    right: &BTreeMap<String, CssValue>,
+    mut left: BTreeMap<String, CssValue>,
+    right: BTreeMap<String, CssValue>,
     merge: impl Fn(CssValue, CssValue) -> CssValue,
-    right_only: impl Fn(&CssValue) -> CssValue,
+    right_only: impl Fn(CssValue) -> CssValue,
 ) -> BTreeMap<String, CssValue> {
-    let mut properties = BTreeMap::new();
-
-    for (property, left_value) in left {
-        if let Some(right_value) = right.get(property) {
-            properties.insert(
-                property.clone(),
-                merge(left_value.clone(), right_value.clone()),
-            );
-        } else {
-            properties.insert(property.clone(), left_value.clone());
+    for (property, right_value) in right {
+        match left.entry(property) {
+            std::collections::btree_map::Entry::Occupied(mut entry) => {
+                *entry.get_mut() = merge(entry.get().clone(), right_value);
+            }
+            std::collections::btree_map::Entry::Vacant(entry) => {
+                entry.insert(right_only(right_value));
+            }
         }
     }
-
-    for (property, right_value) in right {
-        properties
-            .entry(property.clone())
-            .or_insert_with(|| right_only(right_value));
-    }
-
-    properties
+    left
 }
 
 /// Animatable CSS style value: opacity, transforms, and arbitrary typed CSS properties.
@@ -259,10 +250,10 @@ impl std::ops::Add for MotionStyle {
             skew_y: self.skew_y + other.skew_y,
             perspective: self.perspective + other.perspective,
             properties: merge_style_properties(
-                &self.properties,
-                &other.properties,
+                self.properties,
+                other.properties,
                 |a, b| a.add(&b).unwrap_or(b),
-                Clone::clone,
+                |value| value,
             ),
         }
     }
@@ -290,8 +281,8 @@ impl std::ops::Sub for MotionStyle {
             skew_y: self.skew_y - other.skew_y,
             perspective: self.perspective - other.perspective,
             properties: merge_style_properties(
-                &self.properties,
-                &other.properties,
+                self.properties,
+                other.properties,
                 |a, b| a.sub(&b).unwrap_or(b),
                 |value| value.scale(-1.0),
             ),
@@ -320,11 +311,13 @@ impl std::ops::Mul<f32> for MotionStyle {
             skew_x: self.skew_x * factor,
             skew_y: self.skew_y * factor,
             perspective: self.perspective * factor,
-            properties: self
-                .properties
-                .iter()
-                .map(|(property, value)| (property.clone(), value.scale(factor)))
-                .collect(),
+            properties: {
+                let mut properties = self.properties;
+                for value in properties.values_mut() {
+                    *value = value.scale(factor);
+                }
+                properties
+            },
         }
     }
 }
@@ -466,6 +459,40 @@ impl fmt::Display for MotionStyle {
 #[cfg(test)]
 mod tests {
     #![allow(clippy::panic)]
+    #[test]
+    fn arithmetic_preserves_shared_and_disjoint_property_semantics() {
+        use super::*;
+        let left = MotionStyle::default()
+            .property("width", CssValue::Px(5.0))
+            .property("gap", CssValue::Percent(3.0))
+            .property("display", CssValue::Keyword("block".into()));
+        let right = MotionStyle::default()
+            .property("width", CssValue::Px(2.0))
+            .property("height", CssValue::Px(7.0))
+            .property("display", CssValue::Keyword("none".into()));
+        let expected = |width, height| {
+            BTreeMap::from([
+                ("width".into(), CssValue::Px(width)),
+                ("gap".into(), CssValue::Percent(3.0)),
+                ("height".into(), CssValue::Px(height)),
+                ("display".into(), CssValue::Keyword("none".into())),
+            ])
+        };
+        assert_eq!(
+            (left.clone() + right.clone()).properties,
+            expected(7.0, 7.0)
+        );
+        assert_eq!((left.clone() - right).properties, expected(3.0, -7.0));
+        assert_eq!(
+            (left * -2.0).properties,
+            BTreeMap::from([
+                ("width".into(), CssValue::Px(-10.0)),
+                ("gap".into(), CssValue::Percent(-6.0)),
+                ("display".into(), CssValue::Keyword("block".into())),
+            ])
+        );
+    }
+
     use super::*;
     use crate::animations::css::{CssColor, CssValue};
 
