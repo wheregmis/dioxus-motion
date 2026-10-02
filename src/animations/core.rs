@@ -362,7 +362,7 @@ mod tests {
                 .with_loop(LoopMode::AlternateTimes(count));
             assert_eq!(
                 config.get_duration(),
-                Duration::from_secs(u64::from(count) * 2)
+                Duration::from_secs((u64::from(count) * 2).max(1))
             );
         }
         assert_eq!(
@@ -567,26 +567,24 @@ impl AnimationConfig {
         self
     }
 
-    /// Gets the total duration of the animation
+    /// Returns total playback time, including the delay on every cycle.
+    /// Springs use an estimated one-second settling time per leg; their actual duration varies.
+    /// Infinite loops return `Duration::MAX`, and arithmetic saturates at that value.
+    /// A zero repeat count still plays one leg, matching motion playback.
     pub fn get_duration(&self) -> Duration {
-        match &self.mode {
-            AnimationMode::Spring(_) => {
-                // Springs don't have a fixed duration, estimate based on typical settling time
-                Duration::from_secs_f32(1.0) // You might want to adjust this based on spring parameters
-            }
-            AnimationMode::Tween(tween) => {
-                let base_duration = tween.duration;
-                match self.loop_mode {
-                    Some(LoopMode::Infinite) => Duration::from_secs(f32::INFINITY as u64),
-                    Some(LoopMode::Times(count)) => base_duration.saturating_mul(count.into()),
-                    Some(LoopMode::Alternate) => Duration::from_secs(f32::INFINITY as u64),
-                    Some(LoopMode::AlternateTimes(count)) => {
-                        base_duration.saturating_mul(u32::from(count) * 2)
-                    }
-                    Some(LoopMode::None) | None => base_duration,
-                }
-            }
-        }
+        let base_duration = match self.mode {
+            AnimationMode::Spring(_) => Duration::from_secs(1),
+            AnimationMode::Tween(tween) => tween.duration,
+        };
+        let legs = match self.loop_mode.unwrap_or_default() {
+            LoopMode::Infinite | LoopMode::Alternate => return Duration::MAX,
+            LoopMode::Times(count) => u32::from(count).max(1),
+            LoopMode::AlternateTimes(count) => (u32::from(count) * 2).max(1),
+            LoopMode::None => 1,
+        };
+        base_duration
+            .saturating_add(self.delay)
+            .saturating_mul(legs)
     }
 
     /// Executes the completion callback without blocking on a busy or poisoned mutex.

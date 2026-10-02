@@ -58,6 +58,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Animation duration reports include the delay on every loop leg, treat zero repeat counts as one playback leg, and saturate infinite loops at `Duration::MAX`. Spring estimates apply the same loop accounting.
+
 - Keyframe completion lands exactly on the last value when terminal offsets are duplicated, including zero-duration tracks. Endpoint settlement bypasses segment lookup and easing.
 
 - Keyframe setup captures its own reset value and final target instead of retaining those from previous playback. Empty tracks use the current value as their target.

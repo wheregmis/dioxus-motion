@@ -2005,6 +2005,62 @@ mod tests {
     }
 
     #[test]
+    fn reported_tween_duration_matches_delayed_loop_playback() {
+        for count in 0..=u8::MAX {
+            for (mode, legs) in [
+                (LoopMode::Times(count), u32::from(count).max(1)),
+                (
+                    LoopMode::AlternateTimes(count),
+                    (u32::from(count) * 2).max(1),
+                ),
+            ] {
+                let config = AnimationConfig::tween(Duration::from_millis(250))
+                    .with_delay(Duration::from_millis(125))
+                    .with_loop(mode);
+                assert_eq!(
+                    config.get_duration(),
+                    Duration::from_millis(375 * u64::from(legs))
+                );
+                let mut motion = Motion::new(0.0f32).unwrap();
+                motion.animate_to(1.0, config.clone()).unwrap();
+                for tick in 1..=legs * 3 {
+                    assert_eq!(
+                        motion.update(0.125),
+                        Ok(tick < legs * 3),
+                        "mode={mode:?}, tick={tick}"
+                    );
+                }
+                assert_eq!(
+                    config.get_duration(),
+                    Duration::from_millis(125 * u64::from(legs * 3))
+                );
+            }
+        }
+        for mode in [LoopMode::Infinite, LoopMode::Alternate] {
+            assert_eq!(
+                AnimationConfig::tween(Duration::ZERO)
+                    .with_loop(mode)
+                    .get_duration(),
+                Duration::MAX
+            );
+        }
+        assert_eq!(
+            AnimationConfig::spring(Spring::default())
+                .with_loop(LoopMode::AlternateTimes(2))
+                .with_delay(Duration::from_millis(125))
+                .get_duration(),
+            Duration::from_millis(4500)
+        );
+        assert_eq!(
+            AnimationConfig::tween(Duration::MAX)
+                .with_delay(Duration::MAX)
+                .with_loop(LoopMode::Times(255))
+                .get_duration(),
+            Duration::MAX
+        );
+    }
+
+    #[test]
     fn alternate_loop_counts_cover_entire_u8_range() {
         for count in 0..=u8::MAX {
             let mut motion = Motion::new(0.0f32).expect("finite initial value");
