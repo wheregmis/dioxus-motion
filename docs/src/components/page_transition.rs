@@ -116,7 +116,7 @@ pub fn PageTransition() -> Element {
                             "Add the transitions feature to your dioxus-motion dependency in Cargo.toml:"
                         }
                         CodeBlock {
-                            code: r#"dioxus-motion = { git = "https://github.com/wheregmis/dioxus-motion.git", branch = "main", default-features = false, optional = true }
+                            code: dioxus_code::advanced::HighlightedSource::from_static_parts(r#"dioxus-motion = { git = "https://github.com/wheregmis/dioxus-motion.git", branch = "main", default-features = false, optional = true }
 
 [features]
 default = ["web"]
@@ -126,7 +126,7 @@ desktop = [
     "dioxus-motion/desktop",
     "dioxus-motion/transitions",
 ]
-mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]"#.to_string(),
+mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]"#, dioxus_code::Language::Rust, &[]),
                             language: "toml".to_string(),
                         }
                     }
@@ -138,7 +138,7 @@ mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
                             "Add the MotionTransitions derive macro to your Route enum:"
                         }
                         CodeBlock {
-                            code: r#"#[derive(Routable, Clone, Debug, PartialEq, MotionTransitions)]
+                            code: dioxus_code::code_str!(r#"#[derive(Routable, Clone, Debug, PartialEq, MotionTransitions)]
 #[rustfmt::skip]
 enum Route {
     #[layout(NavBar)]
@@ -159,7 +159,7 @@ enum Route {
     #[end_layout]
     #[route("/:..route")]
     PageNotFound { route: Vec<String> },
-}"#.to_string(),
+}"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                             language: "rust".to_string(),
                         }
                     }
@@ -171,7 +171,7 @@ enum Route {
                             "Replace Outlet with AnimatedOutlet in your layout component:"
                         }
                         CodeBlock {
-                            code: r#"#[component]
+                            code: dioxus_code::code_str!(r#"#[component]
 fn NavBar() -> Element {
     rsx! {
         nav { id: "navbar",
@@ -180,7 +180,7 @@ fn NavBar() -> Element {
         }
         AnimatedOutlet::<Route> {}
     }
-}"#.to_string(),
+}"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                             language: "rust".to_string(),
                         }
                     }
@@ -238,7 +238,7 @@ fn NavBar() -> Element {
                         "Provide a store-backed tween or spring to all page transitions using a context provider:"
                     }
                     CodeBlock {
-                        code: r#"use dioxus::prelude::*;
+                        code: dioxus_code::code_str!(r#"use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
 use instant::Duration;
 
@@ -257,7 +257,7 @@ fn App() -> Element {
     rsx! {
         Router::<Route> {}
     }
-}"#.to_string(),
+}"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                         language: "rust".to_string(),
                     }
                 }
@@ -332,7 +332,7 @@ fn App() -> Element {
                         "You can provide different store-backed spring configurations for different parts of your application:"
                     }
                     CodeBlock {
-                        code: r#"#[component]
+                        code: dioxus_code::code_str!(r#"#[component]
 fn AdminSection() -> Element {
     // Faster, more aggressive animations for admin interfaces
     let admin_spring = use_store(|| Spring {
@@ -362,7 +362,7 @@ fn UserSection() -> Element {
     rsx! {
         AnimatedOutlet::<UserRoute> {}
     }
-}"#.to_string(),
+}"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                         language: "rust".to_string(),
                     }
                 }
@@ -432,7 +432,7 @@ fn UserSection() -> Element {
                 h2 { class: "text-2xl font-semibold text-text-primary", "Example with Nested Routes" }
                 div { class: "bg-dark-200/50 backdrop-blur-xs rounded-xl p-6 border border-primary/10",
                     CodeBlock {
-                        code: r#"#[derive(Routable, Clone, Debug, PartialEq, MotionTransitions)]
+                        code: dioxus_code::code_str!(r#"#[derive(Routable, Clone, Debug, PartialEq, MotionTransitions)]
 #[rustfmt::skip]
 enum Route {
     #[layout(NavBar)]
@@ -458,7 +458,7 @@ enum Route {
     #[route("/:..route")]
     #[transition(Fade)]
     PageNotFound { route: Vec<String> },
-}"#.to_string(),
+}"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                         language: "rust".to_string(),
                     }
                 }
@@ -527,7 +527,7 @@ enum Route {
                         "Provide a resolver function via context that receives the previous and next route, and returns the appropriate transition variant."
                     }
                     CodeBlock {
-                        code: r#"use dioxus_motion::prelude::{TransitionVariant, TransitionVariantResolver};
+                        code: dioxus_code::code_str!(r#"use dioxus_motion::prelude::{TransitionVariant, TransitionVariantResolver};
 
 // NOTE: Route::Card { idx } is a hypothetical example variant for illustration purposes.
 // Replace with your actual route variants as needed.
@@ -545,7 +545,7 @@ let resolver: TransitionVariantResolver<Route> = std::rc::Rc::new(|from, to| {
         _ => to.get_transition(),
     }
 });
-use_context_provider(move || resolver);"#.to_string(),
+use_context_provider(move || resolver);"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                         language: "rust".to_string(),
                     }
                 }

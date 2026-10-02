@@ -156,7 +156,7 @@ fn StepOne() -> Element {
             div { class: "space-y-2",
                 div { class: "bg-dark-200/50 p-3 rounded-lg",
                     CodeBlock {
-                        code: r#"// Infinite loop (0 -> 100 -> 0 -> 100...)
+                        code: dioxus_code::code_str!(r#"// Infinite loop (0 -> 100 -> 0 -> 100...)
 value.animate_to(
     100.0,
     config.with_loop(LoopMode::Infinite)
@@ -178,7 +178,7 @@ value.animate_to(
 value.animate_to(
     100.0,
     config.with_loop(LoopMode::AlternateTimes(3))
-).expect("valid animation configuration");"#.to_string(),
+).expect("valid animation configuration");"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                         language: "rust".to_string(),
                     }
                 }
@@ -314,11 +314,11 @@ fn StepTwo() -> Element {
             div { class: "space-y-2",
                 div { class: "bg-dark-200/50 p-3 rounded-lg",
                     CodeBlock {
-                        code: r#"value.animate_to(
+                        code: dioxus_code::code_str!(r#"value.animate_to(
     100.0,
     AnimationConfig::new(AnimationMode::Spring(Spring::default()))
         .with_delay(Duration::from_millis(1000))  // 1 second delay
-).expect("valid animation configuration");"#.to_string(),
+).expect("valid animation configuration");"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                         language: "rust".to_string(),
                     }
                 }
@@ -429,7 +429,7 @@ fn StepThree() -> Element {
                 // Code example
                 div { class: "bg-dark-200/50 p-3 rounded-lg",
                     CodeBlock {
-                        code: r#"// Sequence animation
+                        code: dioxus_code::code_str!(r#"// Sequence animation
 let sequence = AnimationSequence::new()
     .then(100.0, spring_config.clone())
     .then(50.0, spring_config.clone())
@@ -443,7 +443,7 @@ let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
     .and_then(|kf| kf.add_keyframe(50.0, 0.7, Some(easer::functions::Bounce::ease_out)))
     .and_then(|kf| kf.add_keyframe(0.0, 1.0, Some(easer::functions::Back::ease_in_out)))
     .unwrap();
-value.animate_keyframes(keyframes).expect("valid keyframe setup");"#.to_string(),
+value.animate_keyframes(keyframes).expect("valid keyframe setup");"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                         language: "rust".to_string(),
                     }
                 }
@@ -636,14 +636,14 @@ fn StepFour() -> Element {
                     }
                     div { class: "bg-dark-200/50 p-3 rounded-lg",
                         CodeBlock {
-                            code: r#"// Create a transform motion value
+                            code: dioxus_code::code_str!(r#"// Create a transform motion value
 let mut transform = use_motion(Transform::identity()).expect("finite initial value");
 
 // Animate to new position, scale, and rotation
 transform.animate_to(
     Transform::new(100.0, 50.0, 1.2, 45.0), // x, y, scale, rotation(deg)
     AnimationConfig::new(AnimationMode::Spring(Spring::default()))
-).expect("valid animation configuration");"#.to_string(),
+).expect("valid animation configuration");"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                             language: "rust".to_string(),
                         }
                     }
@@ -657,14 +657,14 @@ transform.animate_to(
                     }
                     div { class: "bg-dark-200/50 p-3 rounded-lg",
                         CodeBlock {
-                            code: r#"// Create a color motion value (RGBA format)
+                            code: dioxus_code::code_str!(r#"// Create a color motion value (RGBA format)
 let mut color = use_motion(Color::from_rgba(59, 130, 246, 255)).expect("finite initial value"); // Blue
 
 // Animate to a new color
 color.animate_to(
     Color::from_rgba(236, 72, 153, 255), // Pink
     AnimationConfig::new(AnimationMode::Spring(Spring::default()))
-).expect("valid animation configuration");"#.to_string(),
+).expect("valid animation configuration");"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                             language: "rust".to_string(),
                         }
                     }
@@ -689,7 +689,7 @@ color.animate_to(
                 // Code example
                 div { class: "bg-dark-200/50 p-3 rounded-lg mb-4",
                     CodeBlock {
-                        code: r#"// Transform sequence
+                        code: dioxus_code::code_str!(r#"// Transform sequence
 let transform_sequence = AnimationSequence::new()
     .then(
         Transform::new(100.0, 0.0, 1.2, 45.0),
@@ -708,7 +708,7 @@ let transform_sequence = AnimationSequence::new()
 let color_sequence = AnimationSequence::new()
     .then(Color::from_rgba(236, 72, 153, 255), spring_config.clone())
     .then(Color::from_rgba(34, 197, 94, 255), spring_config.clone())
-    .then(Color::from_rgba(59, 130, 246, 255), spring_config);"#.to_string(),
+    .then(Color::from_rgba(59, 130, 246, 255), spring_config);"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                         language: "rust".to_string(),
                     }
                 }
@@ -748,7 +748,7 @@ let color_sequence = AnimationSequence::new()
                 // Code example
                 div { class: "bg-dark-200/50 p-3 rounded-lg mb-4",
                     CodeBlock {
-                        code: r#"// Transform keyframes
+                        code: dioxus_code::code_str!(r#"// Transform keyframes
 let transform_keyframes = KeyframeAnimation::new(Duration::from_secs(2))
     .add_keyframe(
         Transform::identity(),
@@ -789,7 +789,7 @@ let color_keyframes = KeyframeAnimation::new(Duration::from_secs(2))
         1.0,
         Some(easer::functions::Cubic::ease_in_out),
     ))
-    .unwrap();"#.to_string(),
+    .unwrap();"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                         language: "rust".to_string(),
                     }
                 }

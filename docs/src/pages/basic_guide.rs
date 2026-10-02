@@ -24,14 +24,14 @@ pub fn BasicAnimationGuide() -> Element {
                         div { class: "p-3 bg-dark-200/50 rounded-lg",
                             p { class: "font-medium text-text-primary mb-1", "1. Create a motion value" }
                             code { class: "text-sm text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm",
-                                "let mut value = use_motion(0.0f32);"
+                                "let mut value = use_motion(0.0f32)?;"
                             }
                         }
                         // Key concept 2
                         div { class: "p-3 bg-dark-200/50 rounded-lg",
                             p { class: "font-medium text-text-primary mb-1", "2. Animate the value" }
                             code { class: "text-sm text-primary/90 bg-primary/10 px-1 py-0.5 rounded-sm",
-                                "value.animate_to(100.0, config);"
+                                "value.animate_to(100.0, config)?;"
                             }
                         }
                     }
@@ -92,7 +92,7 @@ fn StepOne() -> Element {
                     h3 { class: "font-medium text-text-primary", "The Code" }
                     div { class: "bg-dark-200/50 p-3 rounded-lg",
                         CodeBlock {
-                            code: r#"// 1. Import the prelude
+                            code: dioxus_code::code_str!(r#"// 1. Import the prelude
 use dioxus_motion::prelude::*;
 
 // 2. Create a motion value
@@ -105,7 +105,7 @@ value.animate_to(
         duration: Duration::from_millis(1000),
         easing: easer::functions::Linear::ease_in_out,
     })),
-).expect("valid animation configuration");"#.to_string(),
+).expect("valid animation configuration");"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                             language: "rust".to_string(),
                         }
                     }
@@ -161,7 +161,7 @@ value.animate_to(
                 ul { class: "list-disc list-inside text-text-secondary space-y-2",
                     li {
                         span { class: "font-medium", "Different value types: " }
-                        "You can animate f32, f64, Transform, Color, and custom types."
+                        "You can animate f32, Transform, Color, MotionStyle, and custom types."
                     }
                     li {
                         span { class: "font-medium", "Reading values: " }

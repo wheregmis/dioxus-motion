@@ -1,595 +1,103 @@
-# Dioxus Motion 🚀
+# Dioxus Motion
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/wheregmis/dioxus-motion/blob/main/LICENSE)
 [![Crates.io](https://img.shields.io/crates/v/dioxus-motion.svg)](https://crates.io/crates/dioxus-motion)
-[![Docs](https://docs.rs/dioxus-motion/badge.svg)](https://docs.rs/dioxus-motion/0.1.4/dioxus_motion/)
+[![API](https://docs.rs/dioxus-motion/badge.svg)](https://docs.rs/dioxus-motion)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A lightweight, cross-platform animation library for Dioxus, designed to bring smooth, flexible animations to your Rust web, desktop, and mobile applications.
+Typed, interruptible animation for Dioxus. Animate a value, read it in your component, and let springs or tweens carry it to the next destination.
 
-## ⚠️ Important Note
+[Documentation & playground](https://wheregmis.github.io/dioxus-motion/) · [Examples](docs/src) · [Release notes](CHANGELOG.md)
 
-This repository follows Dioxus's main branch for the latest features and improvements. For production use, we recommend using the stable version from [crates.io](https://crates.io/crates/dioxus-motion) instead of directly depending on the repository.
+## Development API
 
-```toml
-# Recommended: Stable version from crates.io
-dioxus-motion = "0.3.4"
+This branch targets **Dioxus 0.7.10** and **Rust 1.89+**. It contains breaking changes for the next release. Examples below describe this branch; use the published [API documentation](https://docs.rs/dioxus-motion) when depending on the crates.io release.
 
-# Development version: Follows Dioxus main branch
-dioxus-motion = { git = "https://github.com/wheregmis/dioxus-motion.git", branch = "main" }
-```
-
-## 🎯 Live Examples
-
-<img src="example.gif" width="100%" height="400" />
-
-Visit our [Example Website](https://wheregmis.github.io/dioxus-motion/) to see these animations in action:
-
-## 🚀 Page Transitions
-
-```rust
-use dioxus_motion::prelude::*;
-
-#[derive(Routable, Clone, Debug, PartialEq, MotionTransitions )]
-#[rustfmt::skip]
-enum Route {
-    #[layout(NavBar)]
-        #[route("/")]
-        #[transition(Fade)]
-        Home {},
-        #[route("/slide-left")]
-        #[transition(ZoomIn)]
-        SlideLeft {},
-        #[route("/slide-right")]
-        SlideRight {},
-        #[route("/slide-up")]
-        SlideUp {},
-        #[route("/slide-down")]
-        SlideDown {},
-        #[route("/fade")]
-        Fade {},
-    #[end_layout]
-    #[route("/:..route")]
-    PageNotFound { route: Vec<String> },
-}
-```
-
-And replace all your `Outlet::<Route> {}` with `AnimatedOutlet::<Route> {}` and place the layout containing OutletRouter on top with something like this
-
-```rust
-#[component]
-fn NavBar() -> Element {
-    rsx! {
-        nav { id: "navbar take it",
-            Link { to: Route::Home {}, "Home" }
-            Link { to: Route::SlideLeft {}, "Blog" }
-        }
-        AnimatedOutlet::<Route> {}
-    }
-}
-```
-
-Each route can have its own transition effect:
-
-- `Fade`: Smooth opacity transition
-- `ZoomIn`: Scale and fade combination
-- `SlideLeft`: Horizontal slide animation
-- [And more!](https://github.com/wheregmis/dioxus-motion/blob/main/src/transitions/page_transitions.rs)
-- Also, add transitions feature to support page transitions. [Example](https://github.com/wheregmis/animated_router/blob/main/src/main.rs) which was translated from router [example](https://github.com/DioxusLabs/dioxus/blob/main/examples/router.rs) of Dioxus. More detailed guide will be updated soon.
-
-### Quick Value Animation Example
-
-```rust
-use dioxus_motion::prelude::*;
-
-#[component]
-fn PulseEffect() -> Element {
-    let mut scale = use_motion(1.0f32).expect("finite initial value");
-
-    use_effect(move || {
-        scale.animate_to(
-            1.2,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 100.0,
-                damping: 5.0,
-                mass: 0.5,
-            }))
-            .with_loop(LoopMode::Infinite)
-        ).expect("valid animation configuration");
-        scale.set_velocity(1.0).expect("finite velocity");
-    });
-
-    rsx! {
-        div {
-            class: "w-20 h-20 bg-blue-500 rounded-full",
-            style: "transform: scale({scale.get_value()})"
-        }
-    }
-}
-```
-
-### Animation Sequences Example
-
-Chain multiple animations together with different configurations:
-
-```rust
-let mut scale = use_motion(1.0f32).expect("finite initial value");
-
-// Create a bouncy sequence
-let sequence = AnimationSequence::new()
-    .then(
-        1.2, // Scale up
-        AnimationConfig::new(AnimationMode::Spring(Spring {
-            stiffness: 400.0,
-            damping: 10.0,
-            mass: 1.0,
-        }))
-    )
-    .then(
-        0.8, // Scale down
-        AnimationConfig::new(AnimationMode::Spring(Spring {
-            stiffness: 300.0,
-            damping: 15.0,
-            mass: 1.0,
-        }))
-    )
-    .then(
-        1.0, // Return to original
-        AnimationConfig::new(AnimationMode::Spring(Spring::default()))
-    );
-
-// Start the sequence
-scale.animate_sequence(sequence).expect("valid animation configuration");
-// Each step in the sequence can have its own timing, easing, and spring physics configuration. Sequences can also be looped or chained with other animations.
-```
-
-`Motion::new`, `AnimationManager::new`, `use_motion`, and presence motion/style hooks return `Result` for initial-value validation. Custom types implement `Animatable::is_finite` by checking every numerical component. Components can propagate hook errors with `?` to a Dioxus error boundary.
-
-`animate_to`, `animate_sequence`, and `animate_keyframes` return `Result<(), AnimationError>`. Propagate errors with `?` or handle them when parameters come from user input. Invalid configuration leaves the active animation unchanged; sequences validate all steps before starting. Use `AnimationConfig::validate()` or `AnimationSequence::validate()` to check configuration in advance.
-
-`Motion::update` and `AnimationManager::update` return `Result<bool, AnimationError>`. Nonfinite easing or frame results stop playback, preserve the last valid value, and skip completion callbacks. Handle the error or propagate it with `?`; the motion hook logs playback errors. Busy or poisoned completion callbacks return `CompletionBusy` or `CompletionPoisoned` after playback finishes; they do not block or silently disappear. `AnimationConfig::execute_completion` also returns `Result<(), AnimationError>`.
-
-`Motion` state fields are private. Read state with `get_value`, `get_target`, `get_velocity`, and `is_running`. `set_velocity` validates numerical components and preserves existing state on error; starting another animation resets velocity to zero. `Spring` configures stiffness, damping, and mass; velocity uses the animated type through `Motion::set_velocity` or `AnimationManager::set_velocity`, called during active spring playback. Idle, tween, and keyframe playback return `AnimationError::VelocityRequiresSpring`.
-
-## ✨ Features
-
-- **🔧 Simplified Animatable Trait**: Uses standard Rust operators (`+`, `-`, `*`) instead of custom methods
-- **🌍 Cross-Platform Support**: Works on web, desktop, and mobile
-- **⚙️ Flexible Animation Configuration**: Spring physics and tween animations
-- **📊 Custom Easing Functions**: Built-in and custom easing support
-- **🧩 Modular Feature Setup**: Choose only what you need
-- **💡 Simple, Intuitive API**: Easy to learn and use
-- **🎬 Page Transitions**: Smooth route transitions with the `transitions` feature
-
-## 🛠 Installation
-
-Add to your `Cargo.toml`:
+For a web app:
 
 ```toml
 [dependencies]
-dioxus-motion = { version = "0.3.4", optional = true, default-features = false }
-
-[features]
-default = ["web"]
-web = ["dioxus/web", "dioxus-motion/web"]
-desktop = ["dioxus/desktop", "dioxus-motion/desktop"]
-mobile = ["dioxus/mobile", "dioxus-motion/desktop"]
+dioxus = { version = "0.7.10", features = ["web"] }
+dioxus-motion = { git = "https://github.com/wheregmis/dioxus-motion", branch = "new_release", default-features = false, features = ["web"] }
 ```
 
-If you want to use page transiton dependency will look like,
+Commit `Cargo.lock` to pin the Git revision. For desktop apps, use the `desktop` feature. Add `transitions` for animated router outlets. The animation core is also available without the default features.
 
-```toml
-[dependencies]
-dioxus-motion = { version = "0.3.4", optional = true, default-features = false }
-
-[features]
-default = ["web"]
-web = ["dioxus/web", "dioxus-motion/web", "dioxus-motion/transitions"]
-desktop = [
-    "dioxus/desktop",
-    "dioxus-motion/desktop",
-    "dioxus-motion/transitions",
-]
-mobile = ["dioxus/mobile", "dioxus-motion/desktop", "dioxus-motion/transitions"]
-```
-
-## 🌐 Platform Support
-
-Choose the right feature for your platform:
-
-- `web`: For web applications using WASM
-- `desktop`: For desktop and mobile applications
-- `default`: Web support (if no feature specified)
-
-## 🚀 Quick Start
-
-## 🎨 Creating Custom Animatable Types
-
-The simplified `Animatable` trait makes it easy to create custom animatable types:
+## Your first spring
 
 ```rust
+use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
 
-#[derive(Debug, Copy, Clone, PartialEq, Default)]
-struct Point3D {
-    x: f32,
-    y: f32,
-    z: f32,
-}
-// Point3D automatically implements Send + 'static since all fields are Send + 'static
+#[component]
+fn MovingButton() -> Element {
+    let mut x = use_motion(0.0_f32)?;
+    let mut forward = use_signal(|| false);
+    let mut error = use_signal(|| None::<String>);
 
-// Implement standard Rust operator traits
-impl std::ops::Add for Point3D {
-    type Output = Self;
-    fn add(self, other: Self) -> Self {
-        Self {
-            x: self.x + other.x,
-            y: self.y + other.y,
-            z: self.z + other.z,
+    rsx! {
+        button {
+            onclick: move |_| {
+                let target = if forward() { 0.0 } else { 160.0 };
+                match x.animate_to(target, AnimationConfig::spring(Spring::default())) {
+                    Ok(()) => { forward.toggle(); error.set(None); }
+                    Err(problem) => error.set(Some(problem.to_string())),
+                }
+            },
+            style: "transform: translateX({x.get_value()}px)",
+            "Move me"
         }
-    }
-}
-
-impl std::ops::Sub for Point3D {
-    type Output = Self;
-    fn sub(self, other: Self) -> Self {
-        Self {
-            x: self.x - other.x,
-            y: self.y - other.y,
-            z: self.z - other.z,
-        }
-    }
-}
-
-impl std::ops::Mul<f32> for Point3D {
-    type Output = Self;
-    fn mul(self, factor: f32) -> Self {
-        Self {
-            x: self.x * factor,
-            y: self.y * factor,
-            z: self.z * factor,
-        }
-    }
-}
-
-// Implement Animatable with three methods!
-impl Animatable for Point3D {
-    fn is_finite(&self) -> bool {
-        [self.x, self.y, self.z].into_iter().all(f32::is_finite)
-    }
-
-    fn interpolate(&self, target: &Self, t: f32) -> Self {
-        *self + (*target - *self) * t
-    }
-    
-    fn magnitude(&self) -> f32 {
-        (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
-    }
-}
-
-// Now you can animate 3D points!
-let mut position = use_motion(Point3D::default()).expect("finite initial value");
-position.animate_to(
-    Point3D { x: 10.0, y: 5.0, z: -2.0 },
-    AnimationConfig::new(AnimationMode::Spring(Spring::default()))
-).expect("valid animation configuration");
-```
-
-**Previous vs. New Trait Complexity:**
-- **Before**: 7 required methods (`zero`, `epsilon`, `magnitude`, `scale`, `add`, `sub`, `interpolate`)
-- **After**: 3 required methods (`interpolate`, `magnitude`, `is_finite`) + standard Rust operators
-- **Result**: ~70% less boilerplate, more idiomatic Rust code!
-
-## 🔄 Migration Guide
-
-### Upcoming Release Notes
-
-- **Dioxus compatibility targets stable `0.7.10`**: The library and documentation app use the same Dioxus release.
-- **`transitions` now implies `dioxus`**: If you enable `dioxus-motion/transitions`, you no longer need a separate `dioxus-motion/dioxus` feature edge.
-- **Core builds work with `default-features = false`**: The Dioxus hook/store surface is feature-gated, so non-Dioxus consumers can compile the core animation types without pulling in Dioxus.
-
-### Breaking Changes
-
-- **`use_motion<T>` now requires `T: Send + 'static`**: The `use_motion<T>` function now requires types to implement `Send + 'static` in addition to `Animatable`. This enables better thread safety and resource management for animations.
-- **`use_motion`, `MotionHandle`, and `AnimationManager` remain Dioxus-only APIs**: They are now only exported when the `dioxus` feature is enabled, which is automatic for the `web`, `desktop`, and `transitions` feature paths.
-
-### Migration Steps
-
-- Most built-in types (`f32`, `Transform`, `Color`) already satisfy these bounds
-- If you use the hook API, keep one of the Dioxus-backed feature sets enabled: `web`, `desktop`, or `transitions`
-- If you only need core animation data types, `default-features = false` now compiles cleanly without the Dioxus hook layer
-- For custom types, ensure they implement `Send + 'static`:
-  - Types with non-Send fields (like `Rc<T>`) will need to be refactored
-  - Use `Arc<T>` instead of `Rc<T>` for shared ownership in animatable types
-- Minor exports might change so just import `prelude::*` if anything breaks on import
-
-```rust
-use dioxus_motion::prelude::*;
-
-// ✅ This works - f32 is Send + 'static
-let motion = use_motion(0.0f32).expect("finite initial value");
-
-// ✅ This works - custom type with Send + 'static
-#[derive(Copy, Clone, Default, PartialEq)]
-struct Point { x: f32, y: f32 } // Send + 'static automatically derived
-
-let point_motion = use_motion(Point::default()).expect("finite initial value");
-
-// ❌ This won't compile - Rc<T> is not Send
-// let bad_motion = use_motion(std::rc::Rc::new(0.0f32));
-
-// ✅ Use Arc<T> instead for shared ownership
-// Note: The type inside Arc must implement Animatable
-#[derive(Copy, Clone, Default, PartialEq)]
-struct SharedValue { value: f32 }
-
-impl std::ops::Add for SharedValue {
-    type Output = Self;
-    fn add(self, other: Self) -> Self {
-        Self { value: self.value + other.value }
-    }
-}
-
-impl std::ops::Sub for SharedValue {
-    type Output = Self;
-    fn sub(self, other: Self) -> Self {
-        Self { value: self.value - other.value }
-    }
-}
-
-impl std::ops::Mul<f32> for SharedValue {
-    type Output = Self;
-    fn mul(self, factor: f32) -> Self {
-        Self { value: self.value * factor }
-    }
-}
-
-impl dioxus_motion::animations::core::Animatable for SharedValue {
-    fn interpolate(&self, target: &Self, t: f32) -> Self {
-        Self { value: self.value + (target.value - self.value) * t }
-    }
-    
-    fn magnitude(&self) -> f32 {
-        self.value.abs()
-    }
-}
-
-let shared_motion = use_motion(SharedValue { value: 0.0 }).expect("finite initial value");
-
-// ✅ Alternative: Use Arc to share the motion itself (not the value)
-let shared_motion_handle = std::sync::Arc::new(use_motion(0.0f32).expect("finite initial value"));
-// Now you can clone the Arc and share the motion across components
-let motion_clone = shared_motion_handle.clone();
-```
-
-## 🔄 Migration Guide (v0.2.0)
-
-### Breaking Changes
-
-- Combined `use_value_animation` and `use_transform_animation` into `use_motion`
-- New animation configuration API
-- Updated spring physics parameters
-- Changed transform property names
-
-### New Animation API
-
-```rust
-use dioxus_motion::prelude::*;
-
-// Before (v0.1.x)
-let mut motion = use_value_animation(Motion::new(0.0).expect("finite initial value").to(100.0));
-
-// After (v0.2.x)
-let mut value = use_motion(0.0f32).expect("finite initial value");
-value.animate_to(
-    100.0,
-    AnimationConfig::new(AnimationMode::Tween(Tween {
-        duration: Duration::from_secs(2),
-        easing: easer::functions::Linear::ease_in_out,
-    }))
-).expect("valid animation configuration");
-
-// Before (v0.1.x)
-let mut transform = use_transform_animation(Transform::default());
-
-// After (v0.2.x)
-let mut transform = use_motion(Transform::default()).expect("finite initial value");
-transform.animate_to(
-    Transform::new(100.0, 0.0, 1.2, 45.0),
-    AnimationConfig::new(AnimationMode::Spring(Spring {
-        stiffness: 100.0,
-        damping: 10.0,
-        mass: 1.0,
-        ..Default::default()
-    }))
-).expect("valid animation configuration");
-```
-
-### If you were using transform.get_style(), that function is removed to make the library more generic so I recommend building something like
-
-```rust
-    let transform = use_motion(Transform::default()).expect("finite initial value");
-
-    let transform_style = use_memo(move || {
-        format!(
-            "transform: translate({}px, {}px) scale({}) rotate({}deg);",
-            transform.get_value().x,
-            transform.get_value().y,
-            transform.get_value().scale,
-            transform.get_value().rotation * 180.0 / std::f32::consts::PI
-        )
-    });
-
-    // and using the memo in the component
-      rsx! {
-        div {
-            class: "...",
-            style: "{transform_style.read()}",
-            // ...rest of component...
-        }
-    }
-```
-
-## 🆕 New Features
-
-### Loop Modes
-
-```rust
-.with_loop(LoopMode::Infinite)
-.with_loop(LoopMode::Times(3))
-```
-
-### Animation Delays
-
-```rust
-.with_delay(Duration::from_secs(1))
-```
-
-### On Complete
-
-```rust
-.with_on_complete(|| println!("Animation complete!"))
-```
-
-## 🎓 Advanced Guide: Extending Animations
-
-### Implementing the Animatable Trait
-
-[Cube Component Example](https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/old_showcase/components/cube_animation.rs)
-
-The `Animatable` trait allows you to animate any custom type.
-
-Definition of Animatable Trait
-
-```rust
-pub trait Animatable: 
-    Copy + 'static + Default + 
-    std::ops::Add<Output = Self> + 
-    std::ops::Sub<Output = Self> + 
-    std::ops::Mul<f32, Output = Self> 
-{
-    fn interpolate(&self, target: &Self, t: f32) -> Self;
-    fn magnitude(&self) -> f32;
-    fn epsilon() -> f32 { 0.01 } // Default implementation
-}
-```
-
-Here's how to implement it:
-
-### Custom Position Type
-
-```rust
-#[derive(Debug, Copy, Clone, PartialEq)]
-struct Position {
-    x: f32,
-    y: f32,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Default)]
-struct Position {
-    x: f32,
-    y: f32,
-}
-
-// Implement standard Rust operator traits
-impl std::ops::Add for Position {
-    type Output = Self;
-    fn add(self, other: Self) -> Self {
-        Self { x: self.x + other.x, y: self.y + other.y }
-    }
-}
-
-impl std::ops::Sub for Position {
-    type Output = Self;
-    fn sub(self, other: Self) -> Self {
-        Self { x: self.x - other.x, y: self.y - other.y }
-    }
-}
-
-impl std::ops::Mul<f32> for Position {
-    type Output = Self;
-    fn mul(self, factor: f32) -> Self {
-        Self { x: self.x * factor, y: self.y * factor }
-    }
-}
-
-// Implement Animatable with three methods!
-impl Animatable for Position {
-    fn is_finite(&self) -> bool {
-        [self.x, self.y].into_iter().all(f32::is_finite)
-    }
-
-    fn interpolate(&self, target: &Self, t: f32) -> Self {
-        *self + (*target - *self) * t
-    }
-    
-    fn magnitude(&self) -> f32 {
-        (self.x * self.x + self.y * self.y).sqrt()
+        if let Some(problem) = error() { p { role: "alert", "{problem}" } }
     }
 }
 ```
 
-### Best Practices
+Retargeting a running spring starts from its current value and momentum. Reading `get_value()` subscribes the component to value changes; reading `is_running()` subscribes to playback changes.
 
-- **Default State**: Implement `Default` trait for your type's neutral state
-- **Operator Traits**: Implement `Add`, `Sub`, and `Mul<f32>` using standard Rust operators
-- **Magnitude**: Return the square root of sum of squares for vector types
-- **Interpolate**: Use linear interpolation for smooth transitions
-- **Epsilon**: Uses default 0.01, or override with `with_epsilon()` for custom precision
+The [live quick start](docs/src/components/quick_start.rs) is compiled as part of the documentation app, and the docs display that same file.
 
-### Common Patterns
+## Pick the right animation
 
-#### Circular Values (e.g., angles)
+| Need | API | Guide |
+| --- | --- | --- |
+| Natural motion with momentum | `AnimationConfig::spring(Spring { stiffness, damping, mass })` | [Values & springs](docs/src/pages/basic_guide.rs) |
+| A fixed duration | `AnimationConfig::tween(Duration)` | [Loops & sequences](docs/src/pages/intermediate_guide.rs) |
+| Ordered steps or explicit keyframes | `AnimationSequence`, `KeyframeAnimation` | [Sequences](docs/src/pages/intermediate_guide.rs) |
+| Typed CSS properties | `MotionStyle`, `motion_style!` | [Animating CSS](docs/src/pages/motion_style_guide.rs) |
+| Enter, exit, and layout coordination | `AnimatePresence`, `use_presence_motion`, `use_presence_style` | [Presence](docs/src/pages/presence_guide.rs) |
+| Route changes | `MotionTransitions`, `AnimatedOutlet` | [Transitions](docs/src/components/page_transition.rs) |
+| Your own data | `Animatable` | [Custom types](docs/src/pages/complex_guide.rs) |
 
-```rust
-fn interpolate(&self, target: &Self, t: f32) -> Self {
-    let mut diff = target.angle - self.angle;
-    // Ensure shortest path
-    if diff > PI { diff -= 2.0 * PI; }
-    if diff < -PI { diff += 2.0 * PI; }
-    Self { angle: self.angle + diff * t }
-}
+## Predictable values and errors
+
+Construction, hooks, animation setup, velocity changes, and frame updates return typed errors. Handle `AnimationError` at the boundary where you accept user input or configure motion.
+
+- Initial values, targets, velocities, and frame results must be finite. `Animatable::is_finite` checks every numeric component of a custom type.
+- Invalid setup preserves existing playback. A failed frame stops playback and retains the last valid value.
+- CSS springs require compatible units and complex shapes for shared properties. Use a tween for changing units or discrete values. Invalid spring transitions return `IncompatibleSpringValues` before playback changes.
+- `set_velocity` takes the animated value’s type and requires an active spring. A scalar spring accepts `f32`; a transform spring accepts a `Transform` velocity.
+- Custom values implement `Clone + PartialEq + Animatable`. Exact equality controls reactive updates; epsilon controls spring convergence.
+- Read-only motion selectors do not expose mutable animation state. Use the checked setters to change values or playback.
+
+See [CHANGELOG.md](CHANGELOG.md) for the migration details, including the removed closure pool API.
+
+## Performance and validation
+
+Springs use a closed-form step with cached coefficients. Keyframe lookup uses a short scan for small tracks and binary search for larger tracks. Motion signals notify only when their observed value changes.
+
+The repository includes numerical stress tests, frame-error regressions, mutation tests, and a real-browser timing/cancellation harness. Benchmarks are measurements for a particular build and machine; they are not a guarantee of application frame rate.
+
+```sh
+cargo test --workspace --locked
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --release test_motion_update_cpu_usage -- --ignored --nocapture
 ```
 
-#### Normalized Values (e.g., colors)
+For documentation development and the GitHub Pages deployment, see [docs/README.md](docs/README.md).
 
-```rust
-fn scale(&self, factor: f32) -> Self {
-    Self {
-        value: (self.value * factor).clamp(0.0, 1.0)
-    }
-}
-```
+## Contributing
 
-## 🌈 Supported Easing Functions
+Keep examples aligned with the checked API, test changes at their observable boundary, and prefer a small implementation that is easy to maintain. Open an issue or pull request with a reproducible case.
 
-Leverages the `easer` crate, supporting:
+## License
 
-- Linear
-- Quadratic
-- Cubic
-- Quartic
-- And more!
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch
-3. Commit changes
-4. Push to the branch
-5. Create a Pull Request
-
-## 📄 License
-
-MIT License
-
-## 🐞 Reporting Issues
-
-Please report issues on the GitHub repository with:
-
-- Detailed description
-- Minimal reproducible example
-- Platform and feature configuration used
-
-## 🌟 Motivation
-
-Bringing elegant, performant motion animations to Rust's web and desktop ecosystems with minimal complexity.
+[MIT](LICENSE).

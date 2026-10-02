@@ -4,7 +4,12 @@ use dioxus_motion::{animations::core::Animatable, prelude::*};
 use easer::functions::Easing;
 
 #[component]
-fn AnimationStep(title: String, description: String, code: String, children: Element) -> Element {
+fn AnimationStep(
+    title: String,
+    description: String,
+    code: dioxus_code::advanced::HighlightedSource,
+    children: Element,
+) -> Element {
     rsx! {
         div {
             class: "flex flex-col lg:flex-row gap-6 p-6 bg-dark-200/50 backdrop-blur-xs rounded-xl border border-primary/10",
@@ -356,7 +361,7 @@ pub fn Animations() -> Element {
             AnimationStep {
                 title: "1. Basic Tween Animation".to_string(),
                 description: "Time-based animations with precise control over duration and easing. Perfect for fade effects and smooth transitions.".to_string(),
-                code: r#"// Initialize the motion value
+                code: dioxus_code::code_str!(r#"// Initialize the motion value
 let mut opacity = use_motion(0.0f32).expect("finite initial value");
 
 // Option 1: Trigger on mount
@@ -388,7 +393,7 @@ rsx! {
         },
         "Animate"
     }
-}"#.to_string(),
+}"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                 BasicValueAnimation {}
             }
 
@@ -396,7 +401,7 @@ rsx! {
             AnimationStep {
                 title: "2. Spring Animation".to_string(),
                 description: "Physics-based animations that create natural motion. Great for interactive elements that need organic movement.".to_string(),
-                code: r#"
+                code: dioxus_code::code_str!(r#"
 
 #[component]
 fn TransformAnimation() -> Element {
@@ -449,7 +454,7 @@ fn TransformAnimation() -> Element {
         }
     }
 }
-                "#.to_string(),
+                "#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                 TransformAnimation {}
             }
 
@@ -457,7 +462,7 @@ fn TransformAnimation() -> Element {
             AnimationStep {
                 title: "3. Transform Animation".to_string(),
                 description: "Built-in Transform type for animating position, scale, and rotation. Uses the same animation modes as basic values.".to_string(),
-                code: r#"// Transform combines multiple properties:
+                code: dioxus_code::code_str!(r#"// Transform combines multiple properties:
 // - x, y: Position
 // - scale: Size
 // - rotation: Angle in radians
@@ -480,7 +485,7 @@ transform.animate_to(
         duration: Duration::from_millis(300),
         easing: easer::functions::Cubic::ease_out,
     })),
-).expect("valid animation configuration");"#.to_string(),
+).expect("valid animation configuration");"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                 TransformAnimation {}
             }
 
@@ -488,7 +493,7 @@ transform.animate_to(
             AnimationStep {
                 title: "4. Custom Animation Type".to_string(),
                 description: "Create your own animatable types by implementing the Animatable trait. This example shows color interpolation.".to_string(),
-                code: r#"#[derive(Debug, Copy, Clone, PartialEq)]
+                code: dioxus_code::code_str!(r#"#[derive(Debug, Copy, Clone, PartialEq)]
 struct ColorValue {
     r: f32, g: f32, b: f32,
 }
@@ -553,7 +558,7 @@ let mut color = use_motion(ColorValue { r: 0.2, g: 0.5, b: 0.8 }).expect("finite
 color.animate_to(
     ColorValue { r: 0.8, g: 0.3, b: 0.2 },
     AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-).expect("valid animation configuration");"#.to_string(),
+).expect("valid animation configuration");"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                 CustomColorAnimation {}
             }
 
@@ -561,7 +566,7 @@ color.animate_to(
             AnimationStep {
                 title: "5. Animation Sequences".to_string(),
                 description: "Chain multiple animations together to create complex, coordinated motion. Perfect for multi-step animations and interactive counters.".to_string(),
-                code: r#"// Initialize multiple motion values
+                code: dioxus_code::code_str!(r#"// Initialize multiple motion values
 let mut value = use_motion(0.0f32).expect("finite initial value");
 let mut scale = use_motion(1.0f32).expect("finite initial value");
 let mut count = use_signal(|| 0);
@@ -600,7 +605,7 @@ rsx! {
         onclick: onclick,
         "Increment"
     }
-}"#.to_string(),
+}"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                 SequenceAnimation {}
             }
 
@@ -608,7 +613,7 @@ rsx! {
             AnimationStep {
                 title: "6. Advanced Animation Features".to_string(),
                 description: "Explore additional features like loops, delays, and completion callbacks for more control over your animations.".to_string(),
-                code: r#"// Loop animations infinitely or a specific number of times
+                code: dioxus_code::code_str!(r#"// Loop animations infinitely or a specific number of times
 value.animate_to(
     1.0,
     AnimationConfig::new(AnimationMode::Tween(Tween::default()))
@@ -633,7 +638,7 @@ value.animate_to(
     1.0,
     AnimationConfig::new(AnimationMode::Spring(Spring::default()))
         .with_on_complete(|| println!("Animation complete!"))
-).expect("valid animation configuration");"#.to_string(),
+).expect("valid animation configuration");"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                 AdvancedFeaturesAnimation {}  // You'll need to implement this component
             }
 

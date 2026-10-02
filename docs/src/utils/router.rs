@@ -15,22 +15,17 @@ use crate::pages::intermediate_guide::IntermediateAnimationGuide;
 use crate::pages::motion_style_guide::MotionStyleGuide;
 use crate::pages::presence_guide::PresenceGuide;
 
-// Turn off rustfmt since we're doing layouts and routes in the same enum
 #[derive(Routable, Clone, Debug, PartialEq, MotionTransitions)]
 #[rustfmt::skip]
 #[allow(clippy::empty_line_after_outer_attr)]
 pub enum Route {
-    // Wrap Home in a Navbar Layout
     #[layout(NavBar)]
-        // The default route is always "/" unless otherwise specified
         #[route("/")]
         #[transition(Fade)]
         Home {},
 
-        // Wrap the next routes in a layout and a nest
         #[nest("/docs")]
         #[layout(Docs)]
-            // At "/blog", we want to show a list of blog posts
             #[route("/")]
             #[transition(SlideLeft)]
             DocsLanding {},
@@ -60,16 +55,7 @@ pub enum Route {
             PresenceGuide {},
 
 
-            // // At "/blog/:name", we want to show a specific blog post, using the name slug
-            // #[route("/animations")]
-            // #[transition(SlideLeft)]
-            // Animations {},
 
-
-
-        // We need to end the blog layout and nest
-        // Note we don't need either - we could've just done `/blog/` and `/blog/:name` without nesting,
-        // but it's a bit cleaner this way
         #[end_layout]
         #[end_nest]
 
@@ -77,15 +63,13 @@ pub enum Route {
         #[transition(SlideDown)]
         Blog {},
 
-        #[route("/old_showcase")]
+        #[redirect("/old_showcase", || Route::ShowcaseGallery {})]
+        #[route("/examples")]
         #[transition(Fade)]
         ShowcaseGallery {},
 
-
-    // And the regular page layout
     #[end_layout]
 
-    // Finally, we need to handle the 404 page
     #[route("/:..route")]
     PageNotFound {
         route: Vec<String>,

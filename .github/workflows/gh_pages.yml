@@ -1,37 +1,67 @@
-name: github pages
+name: GitHub Pages
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'src/**'
+      - 'packages/**'
+      - 'Cargo.*'
+      - '.github/workflows/gh_pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build-deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          target: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v1
-      - uses: ilammy/setup-nasm@v1
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+      - name: Build styles
+        working-directory: docs
+        run: |
+          npm ci
+          npm run css -- --minify
       - uses: taiki-e/install-action@cargo-binstall
-      - name: Install dioxus-cli
-        run: cargo binstall -y dioxus-cli@0.7.2 --force --locked
-      - uses: actions/checkout@v2
-      - name: Build
-        run: |
-          cd docs
-          $HOME/.cargo/bin/dx bundle --release --platform web
-      - name: Copy index.html as 404.html for SPA routing
-        run: |
-          cp target/dx/docs/release/web/public/index.html target/dx/docs/release/web/public/404.html
-
-      - name: Deploy 🚀
-        uses: JamesIves/github-pages-deploy-action@v4.2.3
+      - name: Install matching Dioxus CLI
+        run: cargo binstall --no-confirm --locked dioxus-cli@0.7.10
+      - name: Bundle documentation
+        working-directory: docs
+        run: dx bundle --release --platform web --locked
+      - name: Add SPA fallback
+        run: cp target/dx/docs/release/web/public/index.html target/dx/docs/release/web/public/404.html
+      - uses: actions/upload-pages-artifact@v4
         with:
-          branch: gh-pages
-          folder: target/dx/docs/release/web/public
-          target-folder: docs
+          path: target/dx/docs/release/web/public
+
+  deploy:
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+      - name: Deploy documentation
+        id: deployment
+        uses: actions/deploy-pages@v4

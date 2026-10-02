@@ -113,7 +113,7 @@ fn FirstExitExample() -> Element {
                 "Wrap the conditional child in AnimatePresence, give the direct child a stable key, and animate one value with use_presence_motion. The hook calls safe_to_remove when the exit motion stops."
             }
             ExampleGrid {
-                code: {r#"#[component]
+                code: {dioxus_code::code_str!(r#"#[component]
 fn Example() -> Element {
     let mut visible = use_signal(|| true);
 
@@ -139,7 +139,7 @@ fn FadeBox() -> Element {
     rsx! {
         div { style: "opacity: {opacity.get_value()}", "Fades in and out" }
     }
-}"#},
+}"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust))},
                 div { class: "space-y-4",
                     button {
                         class: "px-4 py-2 rounded-lg bg-primary/20 text-primary transition-colors hover:bg-primary/30",
@@ -186,7 +186,7 @@ fn SpringExitExample() -> Element {
                 "Use a spring when the exit should feel physical instead of timed. The same presence lifecycle applies: the toast is removed from your state, stays mounted while the spring runs, then unmounts when motion settles."
             }
             ExampleGrid {
-                code: {r#"#[component]
+                code: {dioxus_code::code_str!(r#"#[component]
 fn SpringToast() -> Element {
     let style = use_presence_style(presence_style! {
         initial: { opacity: 0.0, y: 30.0, scale: 0.90 },
@@ -202,7 +202,7 @@ fn SpringToast() -> Element {
     rsx! {
         div { style: "{style.get_value()}", "Synced to device" }
     }
-}"#},
+}"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust))},
                 div { class: "space-y-4",
                     div { class: "flex flex-wrap gap-2",
                         button {
@@ -279,7 +279,7 @@ fn StableKeysExample() -> Element {
                 "Presence tracks children by key. A toast stack is a good place to see why durable IDs matter: dismissing one notification should animate that notification out, not whichever row inherited its index."
             }
             ExampleGrid {
-                code: {r#"// Good: the key follows the data item.
+                code: {dioxus_code::code_str!(r#"// Good: the key follows the data item.
 AnimatePresence {
     for item in items() {
         QueueRow {
@@ -290,7 +290,7 @@ AnimatePresence {
 }
 
 // Avoid index keys for presence lists. Removing the
-// first item shifts every later index to a different row."#},
+// first item shifts every later index to a different row."#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust))},
                 div { class: "space-y-4",
                     div { class: "flex flex-wrap gap-2",
                         button {
@@ -401,9 +401,9 @@ fn ModeGuideExample() -> Element {
             div { class: "rounded-lg bg-dark-200/50 p-3",
                 CodeBlock {
                     language: "rust".to_string(),
-                    code: r#"AnimatePresence { mode: PresenceMode::Sync, /* overlap */ }
+                    code: dioxus_code::code_str!(r#"AnimatePresence { mode: PresenceMode::Sync, /* overlap */ }
 AnimatePresence { mode: PresenceMode::Wait, /* exit before enter */ }
-AnimatePresence { mode: PresenceMode::PopLayout, /* reflow siblings */ }"#.to_string(),
+AnimatePresence { mode: PresenceMode::PopLayout, /* reflow siblings */ }"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                 }
             }
             div { class: "space-y-4 rounded-lg bg-dark-200/30 p-4",
@@ -490,14 +490,14 @@ fn LayoutPopExample() -> Element {
                 "PopLayout removes exiting children from layout immediately while they animate from their measured position. Add anchors when a popped child should hold its right or bottom edge instead of the default left/top edge."
             }
             ExampleGrid {
-                code: {r#"AnimatePresence {
+                code: {dioxus_code::code_str!(r#"AnimatePresence {
     mode: PresenceMode::PopLayout,
     anchor_x: PresenceAnchorX::Left,
     anchor_y: PresenceAnchorY::Top,
     for chip in chips() {
         Chip { key: "{chip}", label: chip }
     }
-}"#},
+}"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust))},
                 div { class: "space-y-4",
                     div { class: "flex flex-wrap gap-2",
                         button {
@@ -570,7 +570,7 @@ fn CustomDataExample() -> Element {
                 "The custom prop stores data on the presence boundary. Exiting children can still read the captured value with use_presence_data, even after the state that rendered them has moved on."
             }
             ExampleGrid {
-                code: {r#"AnimatePresence {
+                code: {dioxus_code::code_str!(r#"AnimatePresence {
     mode: PresenceMode::Wait,
     custom: PresenceCustom::new(direction),
     Slide {
@@ -585,7 +585,7 @@ fn Slide(label: &'static str) -> Element {
     let offset = 32.0 * direction as f32;
     let x = use_presence_motion(offset, 0.0, -offset, config)?;
     /* render with translateX(x) */
-}"#},
+}"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust))},
                 div { class: "space-y-4",
                     div { class: "flex flex-wrap gap-2",
                         button {
@@ -653,7 +653,7 @@ fn ManualRemovalExample() -> Element {
                 "Use use_presence when exit completion depends on work outside the built-in motion helpers. Call safe_to_remove exactly when the child can unmount."
             }
             ExampleGrid {
-                code: {r#"#[component]
+                code: {dioxus_code::code_str!(r#"#[component]
 fn AsyncPanel() -> Element {
     let presence = use_presence();
     let is_present = presence.is_present;
@@ -671,7 +671,7 @@ fn AsyncPanel() -> Element {
     rsx! {
         div { class: if is_present { "open" } else { "closing" } }
     }
-}"#},
+}"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust))},
                 div { class: "space-y-4",
                     div { class: "flex flex-wrap items-center gap-2",
                         button {
@@ -789,13 +789,13 @@ fn ReferenceItem(name: &'static str, detail: &'static str) -> Element {
 }
 
 #[component]
-fn ExampleGrid(code: &'static str, children: Element) -> Element {
+fn ExampleGrid(code: dioxus_code::advanced::HighlightedSource, children: Element) -> Element {
     rsx! {
         div { class: "grid grid-cols-1 lg:grid-cols-2 gap-6",
             div { class: "rounded-lg bg-dark-200/50 p-3",
                 CodeBlock {
                     language: "rust".to_string(),
-                    code: code.to_string(),
+                    code: code,
                 }
             }
             div { class: "min-w-0", {children} }

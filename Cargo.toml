@@ -67,6 +67,8 @@ inherits = "dev"
 inherits = "dev"
 
 [profile.dev]
+# Explicitly disable stripping: stripped proc macros can fail to load on macOS.
+strip = "none"
 debug = 0
 opt-level = 0
 incremental = true
@@ -82,6 +84,9 @@ lto = true        # Enables link-time-optimizations.
 opt-level = "s"   # Prioritizes small binary size. Use `3` if you prefer speed.
 panic = "abort"   # Higher performance by disabling panic handlers.
 # strip = true      # Ensures debug symbols are removed.
+
+[profile.release.build-override]
+strip = "none"
 
 [workspace]
 members = ["packages/dioxus-motion-transitions-macro", ".", "docs"]

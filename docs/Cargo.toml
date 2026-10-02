@@ -12,10 +12,12 @@ dioxus = { version = "0.7.10", features = ["router"] }
 dioxus-motion = { path = "../", default-features = false, optional = true }
 easer = { version = "0.3.0", default-features = false }
 wide = "1.2.0"
+dioxus-code = "=0.1.2"
+dioxus-primitives = { git = "https://github.com/DioxusLabs/dioxus-components", rev = "9a758255ea26e2b20c8cecf4c1c946feb9e71da7", default-features = false }
 
 [features]
 default = ["web"]
-web = ["dioxus/web", "dioxus-motion/web", "dioxus-motion/transitions"]
+web = ["dioxus-primitives/web", "dioxus/web", "dioxus-motion/web", "dioxus-motion/transitions"]
 desktop = [
     "dioxus/desktop",
     "dioxus-motion/desktop",

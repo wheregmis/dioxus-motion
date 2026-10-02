@@ -89,7 +89,7 @@ pub fn MotionStyleGuide() -> Element {
                 h3 { class: "text-xl font-semibold text-text-primary", "The Pattern" }
                 div { class: "bg-dark-200/50 backdrop-blur-xs rounded-xl p-6 border border-primary/10",
                     CodeBlock {
-                        code: MOTION_STYLE_EXAMPLE.to_string(),
+                        code: MOTION_STYLE_EXAMPLE,
                         language: "rust".to_string(),
                     }
                 }
@@ -235,7 +235,8 @@ fn MotionStyleShowcase() -> Element {
     }
 }
 
-const MOTION_STYLE_EXAMPLE: &str = r##"use dioxus::prelude::*;
+const MOTION_STYLE_EXAMPLE: dioxus_code::advanced::HighlightedSource = dioxus_code::code_str!(
+    r##"use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
 
 #[component]
@@ -293,4 +294,6 @@ fn Card() -> Element {
 fn next_number(seed: &mut u32, min: f32, max: f32) -> f32 {
     *seed = seed.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
     min + (max - min) * (((*seed >> 8) as f32) / 16_777_215.0)
-}"##;
+}"##,
+    dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)
+);

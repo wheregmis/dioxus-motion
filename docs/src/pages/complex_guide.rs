@@ -141,7 +141,7 @@ fn StepOne() -> Element {
             div { class: "space-y-2",
                 div { class: "bg-dark-200/50 p-3 rounded-lg",
                     CodeBlock {
-                        code: r#"// Define the custom struct
+                        code: dioxus_code::code_str!(r#"// Define the custom struct
 #[derive(Clone, Copy, PartialEq)]
 struct PetalTransform {
     rotate: f32,
@@ -237,7 +237,7 @@ impl std::ops::Sub for PetalTransform {
         }
     }
 }
-}"#.to_string(),
+}"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                         language: "rust".to_string(),
                     }
                 }
@@ -296,7 +296,7 @@ fn StepTwo() -> Element {
                 // Code example
                 div { class: "bg-dark-200/50 p-3 rounded-lg",
                     CodeBlock {
-                        code: r#"let mut petal = use_motion(PetalTransform::default()).expect("finite initial value");
+                        code: dioxus_code::code_str!(r#"let mut petal = use_motion(PetalTransform::default()).expect("finite initial value");
 
 // Animate to new values
 petal.animate_to(
@@ -306,7 +306,7 @@ petal.animate_to(
         damping: 10.0,
         mass: 1.0,
     })),
-).expect("valid animation configuration");"#.to_string(),
+).expect("valid animation configuration");"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                         language: "rust".to_string(),
                     }
                 }
@@ -439,7 +439,7 @@ fn StepThree() -> Element {
                 div { class: "bg-dark-200/50 p-3 rounded-lg",
                     h3 { class: "font-medium mb-2", "Sequence Animation" }
                     CodeBlock {
-                        code: r#"let sequence = AnimationSequence::new()
+                        code: dioxus_code::code_str!(r#"let sequence = AnimationSequence::new()
     .then(
         PetalTransform::new(45.0, 1.2, 10.0, -10.0),
         spring_config.clone(),
@@ -453,7 +453,7 @@ fn StepThree() -> Element {
         spring_config,
     );
 
-petal.animate_sequence(sequence).expect("valid animation configuration");"#.to_string(),
+petal.animate_sequence(sequence).expect("valid animation configuration");"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                         language: "rust".to_string(),
                     }
                 }
@@ -462,13 +462,13 @@ petal.animate_sequence(sequence).expect("valid animation configuration");"#.to_s
                 div { class: "bg-dark-200/50 p-3 rounded-lg mt-4",
                     h3 { class: "font-medium mb-2", "Keyframe Animation" }
                     CodeBlock {
-                        code: r#"let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
+                        code: dioxus_code::code_str!(r#"let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
     .add_keyframe(...)
     .and_then(|kf| kf.add_keyframe(...))
     .and_then(|kf| kf.add_keyframe(...))
     .and_then(|kf| kf.add_keyframe(...))
     .unwrap();
-petal.animate_keyframes(keyframes).expect("valid keyframe setup");"#.to_string(),
+petal.animate_keyframes(keyframes).expect("valid keyframe setup");"#, dioxus_code::CodeOptions::builder().with_language(dioxus_code::Language::Rust)),
                         language: "rust".to_string(),
                     }
                 }

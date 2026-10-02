@@ -1,11 +1,6 @@
 use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
 
-pub mod components;
-pub mod old_showcase;
-pub mod pages;
-pub mod utils;
-
 use easer::functions::Easing;
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
