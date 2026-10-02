@@ -145,20 +145,21 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     }
 
     /// Starts keyframes after validation. Errors leave the active animation unchanged.
+    /// Captures the current value for `reset`; `get_target` reports the final keyframe
+    /// (or the current value for an empty track).
     pub fn animate_keyframes(
         &mut self,
         animation: KeyframeAnimation<T>,
     ) -> Result<(), AnimationError> {
         self.config.validate_for::<T>()?;
         validate_value(&self.current, "current value")?;
+        let target = animation
+            .keyframes()
+            .last()
+            .map_or_else(|| self.current.clone(), |frame| frame.value.clone());
+        self.start_animation(target, self.config.clone());
         self.sequence = None;
         self.keyframe_animation = Some(animation);
-        self.running = true;
-        self.elapsed = Duration::default();
-        self.delay_elapsed = Duration::default();
-        self.velocity = T::default() * 0.0;
-        self.current_loop = 0;
-        self.reverse = false;
         Ok(())
     }
 
@@ -1703,6 +1704,39 @@ mod tests {
         assert!(!settled.update(0.1).expect("representable animation frame"));
         assert_eq!(settled.current, 5.0);
         assert_eq!(settled.velocity, 0.0);
+    }
+
+    #[test]
+    fn keyframe_retargeting_updates_target_and_captures_its_reset_value() {
+        for empty in [false, true] {
+            let mut motion = Motion::new(0.0f32).expect("finite initial value");
+            motion
+                .animate_to(100.0, AnimationConfig::tween_ms(1000))
+                .expect("valid tween");
+            assert_eq!(motion.update(0.25), Ok(true));
+            assert_eq!(motion.get_value(), 25.0);
+            let mut track = KeyframeAnimation::new(Duration::from_secs(1));
+            if !empty {
+                track = track
+                    .add_keyframe(10.0, 0.0, None)
+                    .expect("valid first frame")
+                    .add_keyframe(50.0, 1.0, None)
+                    .expect("valid final frame");
+            }
+            motion.animate_keyframes(track).expect("valid keyframes");
+            assert_eq!(motion.get_target(), if empty { 25.0 } else { 50.0 });
+            assert_eq!(
+                motion.get_value(),
+                25.0,
+                "setup preserves the rendered value"
+            );
+            assert_eq!(motion.update(0.5), Ok(!empty));
+            assert_eq!(motion.get_value(), if empty { 25.0 } else { 30.0 });
+            motion.reset();
+            assert_eq!(motion.get_value(), 25.0);
+            assert_eq!(motion.get_target(), 25.0);
+            assert!(!motion.is_running());
+        }
     }
 
     #[test]

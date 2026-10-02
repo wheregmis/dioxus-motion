@@ -58,6 +58,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Keyframe setup captures its own reset value and final target instead of retaining those from previous playback. Empty tracks use the current value as their target.
+
 - Reject malformed hex syntax before slicing color components, preventing panics on non-ASCII CSS input such as `#éx`. Short hex colors parse without allocating repeated digit strings. Deterministic UTF-8 checks exercise parsing and serialization through the public CSS conversion API.
 
 - Presence hooks return invalid state, transition, and layout configuration errors during setup instead of deferring them to logged animation failures. Spring setup also checks interrupted re-entry from the exit state.
