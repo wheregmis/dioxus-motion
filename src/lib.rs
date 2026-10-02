@@ -5,15 +5,15 @@
 //!
 //! # Features
 //! - **Simplified Animatable trait** - Uses standard Rust operators (`+`, `-`, `*`) for math operations
-//! - **High-performance optimizations** - Automatic memory pooling, state machine dispatch, and resource management
-//! - Spring physics animations with optimized integration
+//! - Exact spring transitions with cached frame coefficients
+//! - Spring physics and validated tween interpolation
 //! - Tween animations with custom easing
 //! - Color interpolation
 //! - Transform animations
 //! - Configurable animation loops
-//! - Animation sequences with atomic step management
-//! - Single default epsilon (0.01) for consistent animation completion
-//! - Automatic resource pool management for maximum performance
+//! - Animation sequences with independent playback state
+//! - Type-specific completion tolerances with validated overrides
+//! - Browser timers that release callbacks on completion or cancellation
 //!
 //! # Example
 //! ```rust,no_run
@@ -111,8 +111,6 @@ pub mod keyframes;
 #[cfg(feature = "dioxus")]
 pub mod manager;
 pub mod motion;
-#[allow(dead_code)]
-pub(crate) mod pool;
 #[cfg(feature = "dioxus")]
 pub mod presence;
 #[cfg(feature = "dioxus")]

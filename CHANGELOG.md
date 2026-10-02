@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Removed the unused private config/resource pools and legacy RK4 integrator, along with their standalone tests and config-pool benchmark. Playback already uses exact cached spring transitions and owns browser timer callbacks directly. Updated crate docs to describe those production paths.
+- Removed unused `AnimationStep.predicted_next` storage and builder interpolation. Sequence construction now only queues targets/configuration, leaving validation to setup. Capacity/reserve hints use `usize`, matching step indices and `Vec`. Clone tests verify independent progress and single-owner completion callbacks.
 - Removed the ignored `Spring.velocity: f32` field and its presence-macro option. `Motion::set_velocity` and `AnimationManager::set_velocity` accept the animated type (`f32`, `Transform`, `Color`, etc.) and reject nonfinite components. Call the setter during active spring playback; idle, tween, and keyframe states return `AnimationError::VelocityRequiresSpring`. Animation setup resets velocity to zero.
 - `Motion` fields are no longer publicly mutable. Use `get_value`, `get_target`, `get_velocity`, and `is_running` to inspect state, and `set_velocity` for a checked velocity change. Use animation setup methods to change targets/tracks and `stop`/`reset` for lifecycle control.
 - Presence exit completion now removes stopped motion even if a runtime failure occurs before an effect observes its first running frame. Raw motion, presence motion, and presence styles share this completion effect. Measured style preparation rejects nonfinite values before entering a store.

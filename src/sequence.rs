@@ -10,7 +10,6 @@ use std::sync::{Arc, MutexGuard};
 pub struct AnimationStep<T: Animatable> {
     pub target: T,
     pub config: Arc<AnimationConfig>,
-    pub predicted_next: Option<T>,
 }
 
 struct SequenceState {
@@ -55,9 +54,9 @@ impl<T: Animatable> AnimationSequence<T> {
     }
 
     /// Creates a new animation sequence with specified capacity hint.
-    pub fn with_capacity(capacity: u8) -> Self {
+    pub fn with_capacity(capacity: usize) -> Self {
         Self {
-            steps: Vec::with_capacity(capacity as usize),
+            steps: Vec::with_capacity(capacity),
             state: Mutex::new(SequenceState {
                 current_step: 0,
                 on_complete: None,
@@ -91,24 +90,15 @@ impl<T: Animatable> AnimationSequence<T> {
     }
 
     /// Reserve additional capacity for future steps.
-    pub fn reserve(&mut self, additional: u8) {
-        self.steps.reserve(additional as usize);
+    pub fn reserve(&mut self, additional: usize) {
+        self.steps.reserve(additional);
     }
 
     /// Adds a new step to the sequence and returns a new sequence
     pub fn then(mut self, target: T, config: AnimationConfig) -> Self {
-        let predicted_next = if self.steps.is_empty() {
-            None
-        } else {
-            self.steps
-                .last()
-                .map(|last_step| last_step.target.interpolate(&target, 0.5))
-        };
-
         let new_step = AnimationStep {
             target,
             config: Arc::new(config),
-            predicted_next,
         };
 
         self.steps.push(new_step);
@@ -239,7 +229,6 @@ mod tests {
                 .map(|index| AnimationStep {
                     target: index as f32,
                     config: Arc::new(AnimationConfig::tween_ms(index as u64 + 1)),
-                    predicted_next: None,
                 })
                 .collect();
             let sequence = AnimationSequence::from_steps(steps);
@@ -300,21 +289,18 @@ mod tests {
                 config: Arc::new(AnimationConfig::new(AnimationMode::Spring(
                     Spring::default(),
                 ))),
-                predicted_next: None,
             },
             AnimationStep {
                 target: 20.0f32,
                 config: Arc::new(AnimationConfig::new(AnimationMode::Spring(
                     Spring::default(),
                 ))),
-                predicted_next: None,
             },
             AnimationStep {
                 target: 30.0f32,
                 config: Arc::new(AnimationConfig::new(AnimationMode::Spring(
                     Spring::default(),
                 ))),
-                predicted_next: None,
             },
         ];
 
@@ -385,7 +371,6 @@ mod tests {
             config: Arc::new(AnimationConfig::new(AnimationMode::Spring(
                 Spring::default(),
             ))),
-            predicted_next: None,
         }];
 
         let sequence = AnimationSequence::with_on_complete(steps, move || {
@@ -408,7 +393,6 @@ mod tests {
             config: Arc::new(AnimationConfig::new(AnimationMode::Spring(
                 Spring::default(),
             ))),
-            predicted_next: None,
         }];
 
         let sequence = AnimationSequence::with_on_complete(steps, move || {
@@ -437,26 +421,80 @@ mod tests {
 
     #[test]
     fn test_animation_sequence_clone() {
-        let steps = vec![AnimationStep {
-            target: 10.0f32,
-            config: Arc::new(AnimationConfig::new(AnimationMode::Spring(
-                Spring::default(),
-            ))),
-            predicted_next: None,
-        }];
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let calls = Arc::new(AtomicUsize::new(0));
+        let completed = calls.clone();
+        let original = AnimationSequence::new()
+            .then(10.0f32, AnimationConfig::tween_ms(1000))
+            .then(20.0, AnimationConfig::tween_ms(1000))
+            .then(30.0, AnimationConfig::tween_ms(1000))
+            .on_complete(move || {
+                completed.fetch_add(1, Ordering::Relaxed);
+            });
+        assert!(original.advance_step());
+        let cloned = original.clone();
+        assert_eq!(cloned.current_step_index(), 1);
+        assert_eq!(cloned.total_steps(), 3);
+        assert!(cloned.advance_step());
+        assert_eq!(cloned.current_target(), Some(30.0));
+        assert_eq!(original.current_target(), Some(20.0));
+        original.reset();
+        assert_eq!(original.current_target(), Some(10.0));
+        assert_eq!(cloned.current_target(), Some(30.0));
+        cloned.execute_completion();
+        assert_eq!(calls.load(Ordering::Relaxed), 0);
+        original.execute_completion();
+        original.execute_completion();
+        assert_eq!(calls.load(Ordering::Relaxed), 1);
+    }
 
-        let sequence1 = AnimationSequence::from_steps(steps);
-        sequence1.advance_step(); // This won't work since there's only one step, but let's test the clone
-
-        let sequence2 = sequence1.clone();
-
-        // Both sequences should have the same step data but independent counters
+    #[test]
+    #[allow(clippy::panic)] // Sentinel: this interpolation must never execute during construction.
+    fn building_steps_never_interpolates_before_validation() {
+        #[derive(Clone, Default)]
+        struct NoInterpolation(f32);
+        impl std::ops::Add for NoInterpolation {
+            type Output = Self;
+            fn add(self, rhs: Self) -> Self {
+                Self(self.0 + rhs.0)
+            }
+        }
+        impl std::ops::Sub for NoInterpolation {
+            type Output = Self;
+            fn sub(self, rhs: Self) -> Self {
+                Self(self.0 - rhs.0)
+            }
+        }
+        impl std::ops::Mul<f32> for NoInterpolation {
+            type Output = Self;
+            fn mul(self, rhs: f32) -> Self {
+                Self(self.0 * rhs)
+            }
+        }
+        impl Animatable for NoInterpolation {
+            fn is_finite(&self) -> bool {
+                self.0.is_finite()
+            }
+            fn magnitude(&self) -> f32 {
+                self.0.abs()
+            }
+            fn interpolate(&self, _: &Self, _: f32) -> Self {
+                panic!("building a sequence must not interpolate values");
+            }
+        }
+        let mut sequence = AnimationSequence::with_capacity(1024usize)
+            .then(NoInterpolation(1.0), AnimationConfig::tween_ms(1000))
+            .then(NoInterpolation(2.0), AnimationConfig::tween_ms(1000));
+        assert!(sequence.steps.capacity() >= 1024);
+        sequence.reserve(2048usize);
+        assert!(sequence.steps.capacity() >= 2050);
+        assert_eq!(sequence.total_steps(), 2);
+        assert_eq!(sequence.validate(), Ok(()));
+        let invalid = sequence.then(NoInterpolation(f32::NAN), AnimationConfig::tween_ms(1000));
         assert_eq!(
-            sequence1.current_step_index(),
-            sequence2.current_step_index()
+            invalid.validate(),
+            Err(AnimationError::NonFiniteValue("sequence target"))
         );
-        assert_eq!(sequence1.total_steps(), sequence2.total_steps());
-        assert_eq!(sequence1.current_target(), sequence2.current_target());
     }
 
     #[test]
@@ -476,10 +514,10 @@ mod tests {
         assert_eq!(sequence.current_step(), 0);
         assert_eq!(sequence.steps().len(), 2);
 
-        // Test with_capacity (should work but be a no-op)
+        // Test capacity helpers.
         let _sequence_with_capacity = AnimationSequence::<f32>::with_capacity(10);
 
-        // Test reserve (should work but be a no-op)
+        // Reserve additional slots.
         let mut sequence_mut = sequence.clone();
         sequence_mut.reserve(5);
     }
