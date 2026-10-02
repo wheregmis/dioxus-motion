@@ -129,17 +129,10 @@ impl Animatable for Color {
         let b = [target.r, target.g, target.b, target.a];
         let va = f32x4::new(a);
         let vb = f32x4::new(b);
-        let progress = t.clamp(0.0, 1.0);
-        let delta = vb - va;
-        let out = if progress == 0.0 {
-            a
-        } else if progress == 1.0 {
-            b
-        } else if delta.is_finite().all() {
-            (va + delta * f32x4::splat(progress)).to_array()
-        } else {
-            std::array::from_fn(|index| a[index].interpolate(&b[index], progress))
-        };
+        let progress = f32x4::splat(t.clamp(0.0, 1.0));
+        // A weighted blend avoids overflowing the difference between finite endpoints.
+        // Any overflow of the sum saturates correctly when converted to a display color.
+        let out = (va * (f32x4::splat(1.0) - progress) + vb * progress).to_array();
         Color::new(out[0], out[1], out[2], out[3])
     }
 
