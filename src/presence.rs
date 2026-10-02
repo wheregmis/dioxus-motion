@@ -722,6 +722,8 @@ struct PresenceProjectionNode {
     transition: Duration,
     #[cfg(feature = "web")]
     snapshot: Option<PresenceProjectionSnapshot>,
+    #[cfg(feature = "web")]
+    finish: Option<ProjectionTask>,
 }
 
 #[cfg(feature = "web")]
@@ -735,6 +737,12 @@ const PROJECTION_PREVIOUS_TRANSITION_ATTR: &str =
 impl PresenceProjectionRoot {
     fn register(&mut self, key: String, mounted: Rc<MountedData>, transition: Duration) {
         if let Some(node) = self.nodes.get_mut(&key) {
+            #[cfg(feature = "web")]
+            if !Rc::ptr_eq(&node.mounted, &mounted) {
+                node.finish = None;
+                reset_projection_styles(&node.mounted);
+                node.snapshot = None;
+            }
             node.mounted = mounted;
             node.transition = transition;
         } else {
@@ -745,6 +753,8 @@ impl PresenceProjectionRoot {
                     transition,
                     #[cfg(feature = "web")]
                     snapshot: None,
+                    #[cfg(feature = "web")]
+                    finish: None,
                 },
             );
         }
@@ -757,6 +767,7 @@ impl PresenceProjectionRoot {
     #[cfg(feature = "web")]
     fn will_update(&mut self) {
         for (key, node) in self.nodes.iter_mut() {
+            node.finish = None;
             reset_projection_styles(&node.mounted);
             node.snapshot = measure_projection_snapshot(&node.mounted);
             if let Some(snapshot) = node.snapshot {
@@ -795,7 +806,8 @@ impl PresenceProjectionRoot {
                 );
                 continue;
             };
-            apply_projection_animation(key, &node.mounted, previous, next, node.transition);
+            node.finish =
+                apply_projection_animation(key, &node.mounted, previous, next, node.transition);
         }
     }
 
@@ -858,7 +870,7 @@ fn apply_projection_animation(
     previous: PresenceProjectionSnapshot,
     next: PresenceProjectionSnapshot,
     transition: Duration,
-) {
+) -> Option<ProjectionTask> {
     let translate_x = previous.left - next.left;
     let translate_y = previous.top - next.top;
     let scale_x = if next.width.abs() > f64::EPSILON {
@@ -882,7 +894,7 @@ fn apply_projection_animation(
             None,
             "unchanged",
         );
-        return;
+        return None;
     }
 
     let Some(element) = projection_element(mounted) else {
@@ -894,7 +906,7 @@ fn apply_projection_animation(
             None,
             "unmounted",
         );
-        return;
+        return None;
     };
     let style = element.style();
     let previous_transform = style.get_property_value("transform").unwrap_or_default();
@@ -930,14 +942,47 @@ fn apply_projection_animation(
         Some((translate_x, translate_y, scale_x, scale_y)),
         "animate",
     );
-    schedule_projection_finish(element, transition);
+    Some(schedule_projection_finish(element, transition))
 }
 
 #[cfg(feature = "web")]
-fn schedule_projection_finish(element: web_sys::HtmlElement, transition: Duration) {
-    use wasm_bindgen::{JsCast, closure::Closure};
+struct ProjectionTask {
+    task: dioxus_core::Task,
+    runtime: std::rc::Weak<dioxus_core::Runtime>,
+}
 
-    let callback = Closure::once(move || {
+#[cfg(feature = "web")]
+impl ProjectionTask {
+    fn new(task: dioxus_core::Task) -> Self {
+        Self {
+            task,
+            runtime: Rc::downgrade(&dioxus_core::Runtime::current()),
+        }
+    }
+}
+
+#[cfg(feature = "web")]
+impl Drop for ProjectionTask {
+    fn drop(&mut self) {
+        if let Some(runtime) = self.runtime.upgrade() {
+            let _guard = dioxus_core::RuntimeGuard::new(runtime);
+            self.task.cancel();
+        }
+    }
+}
+
+#[cfg(feature = "web")]
+fn schedule_projection_finish(
+    element: web_sys::HtmlElement,
+    transition: Duration,
+) -> ProjectionTask {
+    ProjectionTask::new(spawn(async move {
+        if let Err(error) = Time::delay(Duration::from_millis(16)).await {
+            tracing::warn!(%error, "settling layout projection without a frame");
+        }
+        if element.get_attribute(PROJECTION_ACTIVE_ATTR).is_none() {
+            return;
+        }
         let style = element.style();
         let previous_transition = element
             .get_attribute(PROJECTION_PREVIOUS_TRANSITION_ATTR)
@@ -950,12 +995,7 @@ fn schedule_projection_finish(element: web_sys::HtmlElement, transition: Duratio
             "transform",
             &compose_projection_identity_transform(previous_transform.as_deref()),
         );
-    });
-
-    if let Some(window) = web_sys::window() {
-        let _ = window.request_animation_frame(callback.as_ref().unchecked_ref());
-        callback.forget();
-    }
+    }))
 }
 
 #[cfg(feature = "web")]
@@ -2188,6 +2228,69 @@ mod tests {
     use dioxus::prelude::*;
     use dioxus_core::ScopeId;
     use std::collections::BTreeMap;
+
+    #[cfg(feature = "web")]
+    #[test]
+    fn projection_owner_cancels_and_releases_pending_work() {
+        use std::{cell::Cell, rc::Rc};
+        struct Release(Rc<Cell<usize>>);
+        impl Drop for Release {
+            fn drop(&mut self) {
+                self.0.set(self.0.get() + 1);
+            }
+        }
+        let released = Rc::new(Cell::new(0));
+        let mut dom = VirtualDom::new(VNode::empty);
+        dom.rebuild_in_place();
+        dom.in_scope(ScopeId::APP, || {
+            let mut pending = None;
+            for _ in 0..1000 {
+                let release = Release(released.clone());
+                pending = Some(super::ProjectionTask::new(spawn(async move {
+                    let _release = release;
+                    std::future::pending::<()>().await;
+                })));
+            }
+            assert_eq!(
+                released.get(),
+                999,
+                "replacing projection cancels its previous work"
+            );
+            drop(pending);
+            assert_eq!(
+                released.get(),
+                1000,
+                "removing projection releases its last task"
+            );
+        });
+        let release = Release(released.clone());
+        let owner = dom.in_scope(ScopeId::APP, || {
+            super::ProjectionTask::new(spawn(async move {
+                let _release = release;
+                std::future::pending::<()>().await;
+            }))
+        });
+        drop(owner);
+        assert_eq!(
+            released.get(),
+            1001,
+            "owner can be dropped outside its runtime scope"
+        );
+        let release = Release(released.clone());
+        let owner = dom.in_scope(ScopeId::APP, || {
+            super::ProjectionTask::new(spawn(async move {
+                let _release = release;
+                std::future::pending::<()>().await;
+            }))
+        });
+        drop(dom);
+        assert_eq!(
+            released.get(),
+            1002,
+            "unmount cancels the task without an ownership cycle"
+        );
+        drop(owner);
+    }
 
     #[test]
     fn exit_completion_handles_failure_before_the_first_running_observation() {

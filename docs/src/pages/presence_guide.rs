@@ -1,3 +1,4 @@
+use crate::pages::lessons::layout::LayoutDemo;
 use crate::{
     components::{guide_navigation::GuideNavigation, lesson::Lesson},
     pages::lessons::presence::{ManualPresenceDemo, PresenceDemo, PresenceModeDemo},
@@ -26,15 +27,21 @@ pub fn PresenceGuide() -> Element {
                 source: dioxus_code::code!("/src/pages/lessons/presence.rs"), PresenceModeDemo {}
             }
             Lesson {
-                title: "3. Finish work before manual removal",
+                title: "3. Let the remaining items reflow",
+                summary: "PopLayout removes an exiting child from document flow while its exit still renders. Measured layout changes let the remaining keyed items move toward their new positions instead of leaving a gap until the exit finishes.",
+                exercise: "Remove the first item, then restore the list before the exit settles. The stable IDs let the same items return. Compare with Sync mode, which keeps exiting children in the layout until removal.",
+                source: dioxus_code::code!("/src/pages/lessons/layout.rs"), LayoutDemo {}
+            }
+            Lesson {
+                title: "4. Finish work before manual removal",
                 summary: "use_presence exposes is_present and safe_to_remove. An explicit use_reactive dependency reruns the effect when that boolean changes. This panel waits 500ms after exit starts, then reports that it can unmount. If the platform timer fails, it still reports completion so the child cannot remain stuck.",
                 exercise: "Remove the panel and watch its pending state. Replace the delay with your own completion signal when integrating an external animation or resource cleanup.",
                 source: dioxus_code::code!("/src/pages/lessons/presence.rs"), ManualPresenceDemo {}
             }
             section { class: "lesson",
-                h2 { "4. Add layout behavior deliberately" }
+                h2 { "5. Add layout behavior deliberately" }
                 p { "PresenceMode::PopLayout takes exiting children out of layout where platform measurement supports it. PresenceLayout::Size animates measured content size; it does not provide general shared-element layout transitions. Native renderers may have different measurement support." }
-                p { "The presence_style! macro supports layout: size and a separate layout tween inside transition. Use propagate for nested presence boundaries that should follow an ancestor's exit; custom carries PresenceCustom data into exiting children." }
+                p { "The presence_style! macro supports layout: size and a separate layout_transition tween. Use propagate for nested presence boundaries that should follow an ancestor's exit; custom carries PresenceCustom data into exiting children." }
                 p { "AnimatePresence also exposes initial, on_exit_complete, anchor_x, and anchor_y. Keep direct children keyed, and choose one completion owner per exit instead of mixing manual removal with a hook that already removes automatically." }
             }
             GuideNavigation {}
