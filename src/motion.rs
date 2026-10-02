@@ -3,7 +3,7 @@ use crate::animations::core::{
     Animatable, AnimationError, AnimationMode, LoopMode, OnComplete, validate_value,
 };
 use crate::animations::spring::{Spring, SpringState, SpringStep};
-use crate::keyframes::KeyframeAnimation;
+use crate::keyframes::{Keyframe, KeyframeAnimation};
 use crate::prelude::AnimationConfig;
 use crate::sequence::AnimationSequence;
 
@@ -336,16 +336,7 @@ impl<T: Animatable + Send + 'static> Motion<T> {
                 return Ok(true);
             }
 
-            // Linear lookup wins on small tracks; binary search bounds large-track work.
-            let end_index = if keyframes.len() <= 32 {
-                keyframes
-                    .iter()
-                    .position(|frame| frame.offset >= progress)
-                    .unwrap_or(keyframes.len())
-            } else {
-                keyframes.partition_point(|frame| frame.offset < progress)
-            }
-            .max(1);
+            let end_index = keyframe_end_index(keyframes, |frame| frame.offset < progress);
             let (start, end) = if progress < keyframes[0].offset {
                 let first = &keyframes[0];
                 (first, first)
@@ -526,6 +517,23 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         std::mem::swap(&mut self.initial, &mut self.target);
         self.restart_motion();
     }
+}
+
+// Countable predicate keeps work bounds testable without instrumenting production benchmarks.
+fn keyframe_end_index<T: Animatable>(
+    keyframes: &[Keyframe<T>],
+    mut before: impl FnMut(&Keyframe<T>) -> bool,
+) -> usize {
+    // Linear lookup stops early on small tracks; binary search bounds large-track work.
+    if keyframes.len() <= 32 {
+        keyframes
+            .iter()
+            .position(|frame| !before(frame))
+            .unwrap_or(keyframes.len())
+    } else {
+        keyframes.partition_point(before)
+    }
+    .max(1)
 }
 
 #[cfg(test)]
@@ -768,6 +776,23 @@ mod tests {
             assert_eq!(motion.current.0, 0.0);
             assert_eq!(motion.elapsed, Duration::ZERO);
             assert!(!motion.running);
+        }
+        // Exact eased endpoints copy the value even when custom interpolation is invalid.
+        for (easing, expected) in [
+            ((|_, _, _, _| 0.0) as crate::keyframes::EasingFn, -f32::MAX),
+            ((|_, _, _, _| 1.0) as crate::keyframes::EasingFn, f32::MAX),
+        ] {
+            let mut motion = Motion::new(BadInterpolation(-f32::MAX)).unwrap();
+            motion
+                .animate_to(
+                    BadInterpolation(f32::MAX),
+                    AnimationConfig::new(AnimationMode::Tween(
+                        Tween::new(Duration::from_secs(1)).with_easing(easing),
+                    )),
+                )
+                .unwrap();
+            assert_eq!(motion.update(0.25), Ok(true));
+            assert_eq!(motion.current.0, expected);
         }
     }
 
@@ -1509,6 +1534,31 @@ mod tests {
                 .expect("valid animation configuration");
             assert!(motion.update(0.5).expect("representable animation frame"));
             assert_eq!(motion.current, expected);
+        }
+    }
+
+    #[test]
+    fn keyframe_lookup_stops_early_on_small_tracks_and_is_logarithmic_on_large_tracks() {
+        for (count, progress, expected_index, maximum_comparisons) in
+            [(32, 1.0 / 64.0, 1, 2), (1024, 0.5, 512, 11)]
+        {
+            let frames: Vec<_> = (0..count)
+                .map(|index| Keyframe {
+                    value: index as f32,
+                    offset: index as f32 / count as f32,
+                    easing: None,
+                })
+                .collect();
+            let mut comparisons = 0;
+            let index = keyframe_end_index(&frames, |frame| {
+                comparisons += 1;
+                frame.offset < progress
+            });
+            assert_eq!(index, expected_index);
+            assert!(
+                comparisons <= maximum_comparisons,
+                "{count} frames required {comparisons} comparisons"
+            );
         }
     }
 

@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Strengthened runtime mutation coverage for exact tween endpoints and bounded keyframe lookup work. Lookup comparison counts are checked through a predicate helper, keeping timing benchmarks free of instrumentation.
 - Completion callbacks use nonblocking mutex acquisition. Reentrant/locked callbacks return `AnimationError::CompletionBusy`; poisoned callbacks return `CompletionPoisoned`. `AnimationConfig::execute_completion` now returns `Result<(), AnimationError>`, and motion updates propagate callback errors after finalizing playback and releasing the store guard.
 - Removed the unused private config/resource pools and legacy RK4 integrator, along with their standalone tests and config-pool benchmark. Playback already uses exact cached spring transitions and owns browser timer callbacks directly. Updated crate docs to describe those production paths.
 - Removed unused `AnimationStep.predicted_next` storage and builder interpolation. Sequence construction now only queues targets/configuration, leaving validation to setup. Capacity/reserve hints use `usize`, matching step indices and `Vec`. Clone tests verify independent progress and single-owner completion callbacks.
