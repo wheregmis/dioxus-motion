@@ -12,7 +12,9 @@ use instant::Duration;
 ///
 /// This trait leverages standard Rust operator traits for mathematical operations,
 /// reducing boilerplate and making implementations more intuitive.
-/// Requires interpolation, magnitude calculation, and component validation.
+/// Requires interpolation, magnitude calculation, component validation, and exact
+/// value equality through `PartialEq`. Equality must include discrete properties
+/// and units so reactive views observe every changed value; use epsilon only for convergence.
 ///
 /// Arithmetic operates on values, displacements, forces, and velocities.
 /// Preserve signed components and avoid clamping intermediate arithmetic.
@@ -20,6 +22,7 @@ use instant::Duration;
 /// itself may represent a display value such as an identity transform.
 pub trait Animatable:
     Clone
+    + PartialEq
     + 'static
     + Default
     + std::ops::Add<Output = Self>

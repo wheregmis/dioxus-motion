@@ -354,16 +354,22 @@ impl<T: Animatable + Send + 'static> Motion<T> {
                 (progress - start.offset) / (end.offset - start.offset)
             };
 
-            let eased_progress = end
-                .easing
-                .map_or(local_progress, |ease| (ease)(local_progress, 0.0, 1.0, 1.0));
-
-            validate_value(&eased_progress, "easing progress")?;
-            (
-                start.value.interpolate(&end.value, eased_progress),
-                next_elapsed,
-                progress >= 1.0,
-            )
+            let current = match local_progress {
+                0.0 => start.value.clone(),
+                1.0 => end.value.clone(),
+                _ => {
+                    let eased_progress = end
+                        .easing
+                        .map_or(local_progress, |ease| (ease)(local_progress, 0.0, 1.0, 1.0));
+                    validate_value(&eased_progress, "easing progress")?;
+                    match eased_progress {
+                        0.0 => start.value.clone(),
+                        1.0 => end.value.clone(),
+                        _ => start.value.interpolate(&end.value, eased_progress),
+                    }
+                }
+            };
+            (current, next_elapsed, progress >= 1.0)
         };
 
         validate_value(&current, "keyframe value")?;
@@ -548,7 +554,7 @@ mod tests {
 
     #[test]
     fn construction_rejects_nonfinite_default_velocity() {
-        #[derive(Clone)]
+        #[derive(Clone, PartialEq)]
         struct BadDefault(f32);
         impl Default for BadDefault {
             fn default() -> Self {
@@ -717,7 +723,7 @@ mod tests {
 
     #[test]
     fn custom_interpolation_cannot_commit_nonfinite_frames() {
-        #[derive(Clone, Default)]
+        #[derive(Clone, Default, PartialEq)]
         struct BadInterpolation(f32);
         impl std::ops::Add for BadInterpolation {
             type Output = Self;
@@ -793,6 +799,44 @@ mod tests {
                 .unwrap();
             assert_eq!(motion.update(0.25), Ok(true));
             assert_eq!(motion.current.0, expected);
+
+            motion
+                .animate_keyframes(
+                    KeyframeAnimation::new(Duration::from_secs(1))
+                        .add_keyframe(BadInterpolation(-f32::MAX), 0.0, None)
+                        .unwrap()
+                        .add_keyframe(BadInterpolation(f32::MAX), 1.0, Some(easing))
+                        .unwrap(),
+                )
+                .unwrap();
+            assert_eq!(motion.update(0.25), Ok(true));
+            assert_eq!(motion.current.0, expected);
+        }
+        // Holding a frame or hitting an offset must bypass easing and interpolation.
+        for easing in [
+            (|_, _, _, _| f32::NAN) as crate::keyframes::EasingFn,
+            |_, _, _, _| 0.25,
+        ] {
+            for (dt, expected) in [
+                (0.25, -f32::MAX),
+                (0.5, -f32::MAX),
+                (0.75, f32::MAX),
+                (0.9, f32::MAX),
+                (1.0, f32::MAX),
+            ] {
+                let mut motion = Motion::new(BadInterpolation(0.0)).unwrap();
+                motion
+                    .animate_keyframes(
+                        KeyframeAnimation::new(Duration::from_secs(1))
+                            .add_keyframe(BadInterpolation(-f32::MAX), 0.5, Some(easing))
+                            .unwrap()
+                            .add_keyframe(BadInterpolation(f32::MAX), 0.75, Some(easing))
+                            .unwrap(),
+                    )
+                    .unwrap();
+                assert_eq!(motion.update(dt), Ok(dt < 1.0));
+                assert_eq!(motion.current.0, expected);
+            }
         }
     }
 
@@ -1190,7 +1234,7 @@ mod tests {
 
     #[test]
     fn invalid_type_epsilon_requires_a_valid_override() {
-        #[derive(Clone, Default)]
+        #[derive(Clone, Default, PartialEq)]
         struct InvalidEpsilon;
         impl std::ops::Add for InvalidEpsilon {
             type Output = Self;

@@ -451,7 +451,7 @@ mod tests {
     #[test]
     #[allow(clippy::panic)] // Sentinel: this interpolation must never execute during construction.
     fn building_steps_never_interpolates_before_validation() {
-        #[derive(Clone, Default)]
+        #[derive(Clone, Default, PartialEq)]
         struct NoInterpolation(f32);
         impl std::ops::Add for NoInterpolation {
             type Output = Self;

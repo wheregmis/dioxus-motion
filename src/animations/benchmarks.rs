@@ -48,62 +48,6 @@ mod tests {
         }
     }
 
-    /// Test web closure pooling performance
-    #[cfg(feature = "web")]
-    #[test]
-    #[ignore = "manual performance measurement; wall-clock timing is host-dependent"]
-    fn test_web_closure_pooling_performance() {
-        use crate::animations::closure_pool::{
-            closure_pool_stats, execute_and_return_pooled_closure, register_pooled_callback,
-        };
-
-        const ITERATIONS: usize = 100;
-
-        // Test that closure pooling doesn't significantly impact performance
-        let start = Instant::now();
-
-        // Register multiple callbacks to test pool performance
-        let mut callback_ids = Vec::with_capacity(ITERATIONS);
-        for i in 0..ITERATIONS {
-            let callback = Box::new(move || {
-                // Simple callback that captures the loop variable
-                let _result = i * 2;
-            });
-            let id = register_pooled_callback(callback);
-            callback_ids.push(id);
-        }
-
-        let registration_time = start.elapsed();
-
-        // Execute all callbacks
-        let execution_start = Instant::now();
-        for id in callback_ids {
-            execute_and_return_pooled_closure(id);
-        }
-        let execution_time = execution_start.elapsed();
-
-        // Verify pool statistics
-        let (_available, in_use) = closure_pool_stats();
-
-        // Performance assertions
-        assert!(
-            registration_time < Duration::from_millis(10),
-            "Callback registration took too long: {:?}",
-            registration_time
-        );
-        assert!(
-            execution_time < Duration::from_millis(10),
-            "Callback execution took too long: {:?}",
-            execution_time
-        );
-
-        // Pool should be clean after execution
-        assert_eq!(
-            in_use, 0,
-            "Pool should have no callbacks in use after execution"
-        );
-    }
-
     /// Test desktop sleep optimization performance
     #[cfg(not(feature = "web"))]
     #[tokio::test]

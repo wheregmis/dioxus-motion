@@ -3,7 +3,7 @@ use dioxus_motion::{animations::core::Animatable, prelude::*};
 use std::f32::consts::PI;
 use wide::f32x4;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Transform3D {
     rotate_x: f32,
     rotate_y: f32,

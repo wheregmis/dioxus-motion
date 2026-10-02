@@ -130,7 +130,7 @@ fn TransformAnimation() -> Element {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 struct ColorValue {
     r: f32,
     g: f32,
@@ -488,7 +488,7 @@ transform.animate_to(
             AnimationStep {
                 title: "4. Custom Animation Type".to_string(),
                 description: "Create your own animatable types by implementing the Animatable trait. This example shows color interpolation.".to_string(),
-                code: r#"#[derive(Debug, Copy, Clone)]
+                code: r#"#[derive(Debug, Copy, Clone, PartialEq)]
 struct ColorValue {
     r: f32, g: f32, b: f32,
 }

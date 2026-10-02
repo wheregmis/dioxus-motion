@@ -309,7 +309,7 @@ use dioxus_motion::prelude::*;
 let motion = use_motion(0.0f32).expect("finite initial value");
 
 // ✅ This works - custom type with Send + 'static
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, PartialEq)]
 struct Point { x: f32, y: f32 } // Send + 'static automatically derived
 
 let point_motion = use_motion(Point::default()).expect("finite initial value");
@@ -319,7 +319,7 @@ let point_motion = use_motion(Point::default()).expect("finite initial value");
 
 // ✅ Use Arc<T> instead for shared ownership
 // Note: The type inside Arc must implement Animatable
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, PartialEq)]
 struct SharedValue { value: f32 }
 
 impl std::ops::Add for SharedValue {
@@ -478,7 +478,7 @@ Here's how to implement it:
 ### Custom Position Type
 
 ```rust
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 struct Position {
     x: f32,
     y: f32,

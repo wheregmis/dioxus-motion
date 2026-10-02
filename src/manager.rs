@@ -52,6 +52,15 @@ impl<T: Animatable + Send + 'static> MotionHandle<T> {
         })
     }
 
+    /// Read-only reactive view of the current value. Change playback through `AnimationManager`.
+    ///
+    /// ```compile_fail,E0599
+    /// use dioxus_motion::MotionHandle;
+    /// use dioxus::prelude::*;
+    /// fn overwrite(motion: MotionHandle<f32>) {
+    ///     *motion.current().write() = f32::NAN;
+    /// }
+    /// ```
     pub fn current(self) -> ReadStore<T> {
         let scope =
             self.state
@@ -61,6 +70,15 @@ impl<T: Animatable + Send + 'static> MotionHandle<T> {
         store.into()
     }
 
+    /// Read-only reactive view of playback state. Use `stop` to finish playback.
+    ///
+    /// ```compile_fail,E0599
+    /// use dioxus_motion::MotionHandle;
+    /// use dioxus::prelude::*;
+    /// fn overwrite(motion: MotionHandle<f32>) {
+    ///     *motion.running().write() = true;
+    /// }
+    /// ```
     pub fn running(self) -> ReadStore<bool> {
         let scope =
             self.state
@@ -68,10 +86,6 @@ impl<T: Animatable + Send + 'static> MotionHandle<T> {
                 .child(RUNNING_SCOPE, running_ref::<T>, running_mut::<T>);
         let store: Store<bool, _> = scope.into();
         store.into()
-    }
-
-    pub(crate) fn epsilon(&self) -> f32 {
-        self.state.peek().get_epsilon()
     }
 
     pub(crate) fn set_current(&mut self, value: T) -> Result<(), AnimationError> {
@@ -89,12 +103,10 @@ impl<T: Animatable + Send + 'static> MotionHandle<T> {
         let previous_running = motion.running;
 
         let result = f(&mut motion);
-        let next_current = motion.current.clone();
+        let current_changed = motion.current != previous_current;
         let next_running = motion.running;
         drop(motion);
-        let epsilon = self.epsilon();
-
-        if (next_current - previous_current).magnitude() > epsilon {
+        if current_changed {
             selector.child_unmapped(CURRENT_SCOPE).mark_dirty();
         }
 
@@ -111,6 +123,8 @@ pub trait AnimationManager<T: Animatable + Send + 'static>: Clone + Copy {
     fn animate_to(&mut self, target: T, config: AnimationConfig) -> Result<(), AnimationError>;
     fn animate_sequence(&mut self, sequence: AnimationSequence<T>) -> Result<(), AnimationError>;
     fn animate_keyframes(&mut self, animation: KeyframeAnimation<T>) -> Result<(), AnimationError>;
+    /// Advances playback and reports whether motion is running after completion callbacks.
+    /// A callback that starts another animation keeps a caller's frame loop running.
     fn update(&mut self, dt: f32) -> Result<bool, AnimationError>;
     /// Changes velocity during spring playback in value units per second without restarting it.
     fn set_velocity(&mut self, velocity: T) -> Result<(), AnimationError>;
@@ -148,6 +162,7 @@ impl<T: Animatable + Send + 'static> AnimationManager<T> for MotionHandle<T> {
             self.write_motion(|motion| motion.update_with_completion(dt))?;
         if let Some(completion) = completion {
             completion.run()?;
+            return Ok(self.state.peek().is_running());
         }
         Ok(running)
     }
@@ -224,6 +239,166 @@ mod tests {
                 Err(AnimationError::NonFiniteValue("initial value"))
             ));
         }
+    }
+
+    #[test]
+    fn reactive_views_notify_small_changes_and_only_the_changed_field() {
+        use std::rc::Rc;
+        #[derive(Clone)]
+        struct Props {
+            motion: Rc<Cell<Option<MotionHandle<f32>>>>,
+            renders: Rc<Cell<usize>>,
+            value: Rc<Cell<f32>>,
+            running: Rc<Cell<bool>>,
+            watch_running: bool,
+        }
+        fn host(props: Props) -> Element {
+            let motion = MotionHandle::new_hook(0.0f32)?;
+            props.motion.set(Some(motion));
+            props.renders.set(props.renders.get() + 1);
+            if props.watch_running {
+                props.running.set(motion.is_running());
+            } else {
+                props.value.set(motion.get_value());
+            }
+            VNode::empty()
+        }
+        for watch_running in [false, true] {
+            let props = Props {
+                motion: Rc::new(Cell::new(None)),
+                renders: Rc::new(Cell::new(0)),
+                value: Rc::new(Cell::new(0.0)),
+                running: Rc::new(Cell::new(false)),
+                watch_running,
+            };
+            let mut dom = VirtualDom::new_with_props(host, props.clone());
+            dom.rebuild_in_place();
+            let mut motion = props.motion.get().expect("initialized hook");
+            dom.in_scope(ScopeId::APP, || {
+                motion
+                    .animate_to(1.0, AnimationConfig::tween_ms(1000))
+                    .expect("valid test input");
+            });
+            dom.render_immediate_to_vec();
+            assert_eq!(props.renders.get(), if watch_running { 2 } else { 1 });
+            dom.in_scope(ScopeId::APP, || assert_eq!(motion.update(0.005), Ok(true)));
+            dom.render_immediate_to_vec();
+            assert_eq!(props.renders.get(), 2);
+            assert!(if watch_running {
+                props.running.get()
+            } else {
+                props.value.get() > 0.0
+            });
+            let renders = props.renders.get();
+            dom.in_scope(ScopeId::APP, || {
+                motion
+                    .set_current(motion.get_value())
+                    .expect("valid test input")
+            });
+            dom.render_immediate_to_vec();
+            assert_eq!(props.renders.get(), renders);
+            dom.in_scope(ScopeId::APP, || assert_eq!(motion.update(0.995), Ok(false)));
+            dom.render_immediate_to_vec();
+            assert_eq!(props.renders.get(), renders + 1);
+            assert!(if watch_running {
+                !props.running.get()
+            } else {
+                props.value.get() == 1.0
+            });
+            if !watch_running {
+                for value in [0.0, -f32::MIN_POSITIVE, 0.0] {
+                    let renders = props.renders.get();
+                    dom.in_scope(ScopeId::APP, || {
+                        motion.set_current(value).expect("valid test input")
+                    });
+                    dom.render_immediate_to_vec();
+                    assert_eq!(props.renders.get(), renders + 1);
+                    assert_eq!(props.value.get(), value);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn reactive_style_views_observe_discrete_and_zero_numeric_changes() {
+        use crate::prelude::{CssValue, MotionStyle};
+        use std::{cell::RefCell, rc::Rc};
+        #[derive(Clone)]
+        struct Props {
+            motion: Rc<Cell<Option<MotionHandle<MotionStyle>>>>,
+            renders: Rc<Cell<usize>>,
+            observed: Rc<RefCell<MotionStyle>>,
+        }
+        fn host(props: Props) -> Element {
+            let motion = MotionHandle::new_hook(MotionStyle::default())?;
+            props.motion.set(Some(motion));
+            props.renders.set(props.renders.get() + 1);
+            *props.observed.borrow_mut() = motion.get_value();
+            VNode::empty()
+        }
+        let props = Props {
+            motion: Rc::new(Cell::new(None)),
+            renders: Rc::new(Cell::new(0)),
+            observed: Rc::new(RefCell::new(MotionStyle::default())),
+        };
+        let mut dom = VirtualDom::new_with_props(host, props.clone());
+        dom.rebuild_in_place();
+        let mut motion = props.motion.get().expect("initialized hook");
+        let targets = [
+            MotionStyle::default().property("width", CssValue::Px(0.0)),
+            MotionStyle::default().property("width", CssValue::Percent(0.0)),
+            MotionStyle::default().property("display", CssValue::Keyword("none".into())),
+            MotionStyle::default().property("display", CssValue::Keyword("block".into())),
+            MotionStyle::default(),
+        ];
+        for target in targets {
+            let renders = props.renders.get();
+            dom.in_scope(ScopeId::APP, || {
+                motion
+                    .animate_to(target.clone(), AnimationConfig::tween(Duration::ZERO))
+                    .expect("finite style target");
+                assert_eq!(motion.update(0.01), Ok(false));
+            });
+            dom.render_immediate_to_vec();
+            assert_eq!(props.renders.get(), renders + 1);
+            assert_eq!(*props.observed.borrow(), target);
+            dom.in_scope(ScopeId::APP, || {
+                motion.set_current(target).expect("finite unchanged style");
+            });
+            dom.render_immediate_to_vec();
+            assert_eq!(props.renders.get(), renders + 1);
+        }
+    }
+
+    #[test]
+    fn handle_keyframes_honor_delay_and_reset_playback() {
+        let mut dom = VirtualDom::new(|| rsx! { div {} });
+        dom.rebuild_in_place();
+        dom.in_scope(ScopeId::APP, || {
+            let mut motion = MotionHandle::new(5.0f32).expect("valid test input");
+            motion
+                .animate_keyframes(
+                    KeyframeAnimation::new(Duration::from_secs(1))
+                        .add_keyframe(10.0, 0.0, None)
+                        .expect("valid test input")
+                        .add_keyframe(20.0, 1.0, None)
+                        .expect("valid test input"),
+                )
+                .expect("valid test input");
+            assert!(motion.is_running());
+            motion.delay(Duration::from_millis(250));
+            for expected in [5.0, 10.0] {
+                assert_eq!(motion.update(0.125), Ok(true));
+                assert_eq!(motion.get_value(), expected);
+            }
+            assert_eq!(motion.update(0.25), Ok(true));
+            assert_eq!(motion.get_value(), 12.5);
+            motion.reset();
+            assert_eq!(motion.get_value(), 5.0);
+            assert!(!motion.is_running());
+            assert_eq!(motion.update(1.0), Ok(false));
+            assert_eq!(motion.get_value(), 5.0);
+        });
     }
 
     #[test]
@@ -442,12 +617,15 @@ mod tests {
                     assert_eq!(calls.load(Ordering::Relaxed), 0);
                 }
                 if case != 4 {
-                    assert!(!motion.update(0.01).expect("representable animation frame"));
+                    assert!(motion.update(0.01).expect("representable animation frame"));
                 }
                 assert_eq!(calls.load(Ordering::Relaxed), 1);
                 assert!(motion.is_running());
                 assert!(motion.update(0.5).expect("representable animation frame"));
                 assert!(motion.get_value() > expected);
+                assert!(!motion.update(0.5).expect("representable animation frame"));
+                assert_eq!(motion.get_value(), 2.0);
+                assert!(!motion.is_running());
                 assert_eq!(calls.load(Ordering::Relaxed), 1);
             }
             CALLBACK_MOTION.set(None);

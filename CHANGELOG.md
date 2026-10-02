@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `Animatable` now requires `PartialEq` for exact reactive change detection, including CSS keywords, units, and property keys. Derive or implement it for custom animated values. Store updates avoid cloning the new value and computing an arithmetic difference/magnitude.
+- Value subscribers receive every nonzero motion change, including frames smaller than spring completion epsilon. Running subscribers remain independent, and unchanged values do not trigger renders.
+- Removed the public `animations::closure_pool` module and its unused benchmark. Browser timers own their JavaScript closures directly; consumers of the legacy registry must likewise own each closure and cancel its scheduled browser request before dropping it.
+- Handle updates report running state after completion callbacks, so a callback that restarts motion keeps manually driven frame loops alive. Ordinary frames retain their existing update path.
+- Keyframes copy exact segment endpoints and held values without calling easing or interpolation. Exact eased endpoints also bypass interpolation, matching tween behavior.
 - Strengthened runtime mutation coverage for exact tween endpoints and bounded keyframe lookup work. Lookup comparison counts are checked through a predicate helper, keeping timing benchmarks free of instrumentation.
 - Completion callbacks use nonblocking mutex acquisition. Reentrant/locked callbacks return `AnimationError::CompletionBusy`; poisoned callbacks return `CompletionPoisoned`. `AnimationConfig::execute_completion` now returns `Result<(), AnimationError>`, and motion updates propagate callback errors after finalizing playback and releasing the store guard.
 - Removed the unused private config/resource pools and legacy RK4 integrator, along with their standalone tests and config-pool benchmark. Playback already uses exact cached spring transitions and owns browser timer callbacks directly. Updated crate docs to describe those production paths.

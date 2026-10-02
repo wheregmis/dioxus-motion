@@ -6,7 +6,7 @@ use crate::components::code_block::CodeBlock;
 use crate::components::guide_navigation::GuideNavigation;
 
 // Custom struct for our animation
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 struct PetalTransform {
     rotate: f32,
     scale: f32,
@@ -142,7 +142,7 @@ fn StepOne() -> Element {
                 div { class: "bg-dark-200/50 p-3 rounded-lg",
                     CodeBlock {
                         code: r#"// Define the custom struct
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 struct PetalTransform {
     rotate: f32,
     scale: f32,
