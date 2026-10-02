@@ -19,12 +19,13 @@ pub fn ValueAnimationShowcase() -> Element {
             .expect("valid animation configuration");
     };
 
-    let angle = -90.0 + value.get_value() * 1.8;
+    // Needle sweeps left (0) up over the dome to right (100), matching the arc
+    let tip_angle = 180.0 - value.get_value() * 1.8;
 
     rsx! {
         div { class: "flex flex-col items-center gap-6",
             div { class: "relative",
-                svg { width: "280", height: "160", view_box: "0 0 280 160",
+                svg { width: "280", height: "150", view_box: "0 0 280 150",
                     defs {
                         linearGradient {
                             id: "gauge-fill",
@@ -71,15 +72,16 @@ pub fn ValueAnimationShowcase() -> Element {
                     line {
                         x1: "140",
                         y1: "140",
-                        x2: "{140.0 + 92.0 * f32::cos(angle * std::f32::consts::PI / 180.0)}",
-                        y2: "{140.0 + 92.0 * f32::sin(angle * std::f32::consts::PI / 180.0)}",
+                        x2: "{140.0 + 92.0 * f32::cos(tip_angle * std::f32::consts::PI / 180.0)}",
+                        y2: "{140.0 - 92.0 * f32::sin(tip_angle * std::f32::consts::PI / 180.0)}",
                         stroke: "#eaffd0",
                         stroke_width: "3",
                         stroke_linecap: "round",
                     }
                     circle { cx: "140", cy: "140", r: "7", fill: "#b9f078" }
                 }
-                div { class: "absolute inset-x-0 bottom-0 text-center",
+                // Readout sits below the dial, clear of the needle's sweep
+                div { class: "text-center -mt-1",
                     span { class: "font-mono text-3xl font-bold text-white tabular-nums",
                         "{value.get_value().round() as i32}"
                     }
