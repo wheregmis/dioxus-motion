@@ -342,6 +342,8 @@ pub type OnComplete = Arc<Mutex<dyn FnMut() + Send + 'static>>;
 /// Invalid animation setup or a frame result that cannot be represented.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum AnimationError {
+    #[error("velocity can only be changed during spring playback")]
+    VelocityRequiresSpring,
     #[error("animation {0} contains a nonfinite numerical component")]
     NonFiniteValue(&'static str),
     #[error("animation epsilon must be finite and positive")]

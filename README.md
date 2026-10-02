@@ -148,7 +148,7 @@ scale.animate_sequence(sequence).expect("valid animation configuration");
 
 `Motion::update` and `AnimationManager::update` return `Result<bool, AnimationError>`. Nonfinite easing or frame results stop playback, preserve the last valid value, and skip completion callbacks. Handle the error or propagate it with `?`; the motion hook logs playback errors.
 
-`Motion` state fields are private. Read state with `get_value`, `get_target`, `get_velocity`, and `is_running`. `set_velocity` validates numerical components and preserves existing state on error; starting another animation resets velocity to zero. `Spring` configures stiffness, damping, and mass; velocity uses the animated type through `Motion::set_velocity` or `AnimationManager::set_velocity`, called after starting playback.
+`Motion` state fields are private. Read state with `get_value`, `get_target`, `get_velocity`, and `is_running`. `set_velocity` validates numerical components and preserves existing state on error; starting another animation resets velocity to zero. `Spring` configures stiffness, damping, and mass; velocity uses the animated type through `Motion::set_velocity` or `AnimationManager::set_velocity`, called during active spring playback. Idle, tween, and keyframe playback return `AnimationError::VelocityRequiresSpring`.
 
 ## ✨ Features
 

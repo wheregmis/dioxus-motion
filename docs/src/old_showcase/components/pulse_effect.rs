@@ -15,7 +15,6 @@ pub fn PulseEffect(color: &'static str, size: &'static str) -> Element {
                     stiffness: 100.0,
                     damping: 5.0,
                     mass: 0.5,
-                    ..Default::default()
                 }))
                 .with_loop(LoopMode::Infinite),
             )
@@ -29,7 +28,6 @@ pub fn PulseEffect(color: &'static str, size: &'static str) -> Element {
                     stiffness: 80.0,
                     damping: 10.0,
                     mass: 0.5,
-                    ..Default::default()
                 }))
                 .with_loop(LoopMode::Infinite),
             )

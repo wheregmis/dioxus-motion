@@ -54,7 +54,6 @@ fn App() -> Element {
     //     stiffness: 220.0,
     //     damping: 30.0,
     //     mass: 1.0,
-    //     velocity: 0.0,
     // });
     // use_context_provider(move || spring);
 

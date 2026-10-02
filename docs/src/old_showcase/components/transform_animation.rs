@@ -18,7 +18,6 @@ pub fn TransformAnimationShowcase() -> Element {
                     stiffness: 180.0, // Softer spring
                     damping: 12.0,    // Less damping for bounce
                     mass: 1.0,
-                    ..Default::default()
                 })),
             )
             .expect("valid animation configuration");
@@ -32,7 +31,6 @@ pub fn TransformAnimationShowcase() -> Element {
                     stiffness: 200.0,
                     damping: 20.0,
                     mass: 1.0,
-                    ..Default::default()
                 })),
             )
             .expect("valid animation configuration");

@@ -112,7 +112,7 @@ pub trait AnimationManager<T: Animatable + Send + 'static>: Clone + Copy {
     fn animate_sequence(&mut self, sequence: AnimationSequence<T>) -> Result<(), AnimationError>;
     fn animate_keyframes(&mut self, animation: KeyframeAnimation<T>) -> Result<(), AnimationError>;
     fn update(&mut self, dt: f32) -> Result<bool, AnimationError>;
-    /// Changes spring velocity in value units per second without restarting playback.
+    /// Changes velocity during spring playback in value units per second without restarting it.
     fn set_velocity(&mut self, velocity: T) -> Result<(), AnimationError>;
     fn get_value(&self) -> T;
     fn is_running(&self) -> bool;
@@ -274,6 +274,53 @@ mod tests {
             assert_eq!(motion.set_current(0.25), Ok(()));
             assert_eq!(motion.get_value(), 0.25);
             assert!(motion.is_running());
+        });
+    }
+
+    #[test]
+    fn typed_handle_velocity_changes_scalar_and_compound_spring_trajectories() {
+        use crate::animations::colors::Color;
+        let mut dom = VirtualDom::new(|| rsx! { div {} });
+        dom.rebuild_in_place();
+        dom.in_scope(ScopeId::APP, || {
+            let config = AnimationConfig::spring(crate::prelude::Spring {
+                stiffness: 0.0,
+                damping: 0.0,
+                mass: 1.0,
+            });
+            let mut scalar = MotionHandle::new(0.0f32).expect("finite initial value");
+            scalar
+                .animate_to(1.0, config.clone())
+                .expect("valid animation configuration");
+            scalar.set_velocity(2.0).expect("finite velocity");
+            for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+                assert_eq!(
+                    scalar.set_velocity(bad),
+                    Err(AnimationError::NonFiniteValue("velocity"))
+                );
+                assert_eq!(scalar.get_value(), 0.0);
+                assert!(scalar.is_running());
+            }
+            assert_eq!(scalar.update(0.1), Ok(true));
+            assert!((scalar.get_value() - 0.2).abs() < 1e-6);
+            let mut color = MotionHandle::new(Color::default()).expect("finite initial value");
+            color
+                .animate_to(Color::default(), config)
+                .expect("valid animation configuration");
+            color
+                .set_velocity(Color {
+                    r: 2.0,
+                    g: -1.0,
+                    b: 0.5,
+                    a: 0.0,
+                })
+                .expect("finite component velocities");
+            assert_eq!(color.update(0.1), Ok(true));
+            let value = color.get_value();
+            assert!((value.r - 0.2).abs() < 1e-6);
+            assert!((value.g + 0.1).abs() < 1e-6);
+            assert!((value.b - 0.05).abs() < 1e-6);
+            assert_eq!(value.a, 1.0);
         });
     }
 

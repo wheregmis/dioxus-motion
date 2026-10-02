@@ -30,11 +30,14 @@ impl Completion {
 /// ```
 /// use dioxus_motion::motion::Motion;
 /// let mut motion = Motion::new(1.0f32).expect("finite initial value");
-/// motion.set_velocity(2.0).expect("finite velocity");
+/// use dioxus_motion::prelude::{AnimationConfig, Spring};
+/// motion.animate_to(2.0, AnimationConfig::spring(Spring::default()))
+///     .expect("valid spring configuration");
+/// motion.set_velocity(2.0).expect("finite velocity during spring playback");
 /// assert_eq!(motion.get_value(), 1.0);
-/// assert_eq!(motion.get_target(), 1.0);
+/// assert_eq!(motion.get_target(), 2.0);
 /// assert_eq!(motion.get_velocity(), 2.0);
-/// assert!(!motion.is_running());
+/// assert!(motion.is_running());
 /// ```
 ///
 /// ```compile_fail,E0616
@@ -168,9 +171,15 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     }
 
     /// Changes spring velocity without restarting playback. Invalid values leave state unchanged.
-    /// Starting another animation resets this velocity to zero.
+    /// Requires an active spring animation. Starting another animation resets velocity to zero.
     pub fn set_velocity(&mut self, velocity: T) -> Result<(), AnimationError> {
         validate_value(&velocity, "velocity")?;
+        if !self.running
+            || self.keyframe_animation.is_some()
+            || !matches!(self.config.mode, AnimationMode::Spring(_))
+        {
+            return Err(AnimationError::VelocityRequiresSpring);
+        }
         self.velocity = velocity;
         Ok(())
     }
@@ -845,9 +854,54 @@ mod tests {
     }
 
     #[test]
+    fn velocity_changes_require_active_spring_playback() {
+        let mut motion = Motion::new(0.0f32).expect("finite initial value");
+        for mode in 0..3 {
+            match mode {
+                1 => motion
+                    .animate_to(1.0, AnimationConfig::tween_ms(1000))
+                    .expect("valid animation configuration"),
+                2 => {
+                    motion
+                        .animate_to(1.0, AnimationConfig::spring(Spring::default()))
+                        .expect("valid animation configuration");
+                    motion
+                        .animate_keyframes(KeyframeAnimation::new(Duration::from_secs(1)))
+                        .expect("valid keyframe setup");
+                }
+                _ => {}
+            }
+            let running = motion.is_running();
+            assert_eq!(
+                motion.set_velocity(2.0),
+                Err(AnimationError::VelocityRequiresSpring)
+            );
+            assert_eq!(motion.get_value(), 0.0);
+            assert_eq!(motion.get_velocity(), 0.0);
+            assert_eq!(motion.is_running(), running);
+        }
+        motion
+            .animate_to(1.0, AnimationConfig::spring(Spring::default()))
+            .expect("valid animation configuration");
+        assert_eq!(motion.set_velocity(2.0), Ok(()));
+        motion.stop();
+        assert_eq!(
+            motion.set_velocity(2.0),
+            Err(AnimationError::VelocityRequiresSpring)
+        );
+        assert_eq!(motion.get_velocity(), 0.0);
+    }
+
+    #[test]
     fn checked_compound_velocity_validates_every_component() {
         use crate::animations::colors::Color;
         let mut motion = Motion::new(Color::new(0.0, 0.0, 0.0, 1.0)).expect("finite initial value");
+        motion
+            .animate_to(
+                Color::new(1.0, 0.0, 0.0, 1.0),
+                AnimationConfig::spring(Spring::default()),
+            )
+            .expect("valid animation configuration");
         let velocity = Color {
             r: 2.0,
             g: -1.0,

@@ -1,4 +1,15 @@
 /// Builds a presence style animation config from initial, animate, exit, and transition variants.
+/// Velocity uses the animated type's checked setter after starting playback.
+///
+/// ```compile_fail
+/// use dioxus_motion::presence_style;
+/// let config = presence_style! {
+///     initial: { opacity: 0.0 },
+///     animate: { opacity: 1.0 },
+///     exit: { opacity: 0.0 },
+///     transition: spring { velocity: 2.0 },
+/// };
+/// ```
 #[macro_export]
 macro_rules! presence_style {
     (
