@@ -134,7 +134,7 @@ impl<T: Animatable + Send + 'static> AnimationManager<T> for MotionHandle<T> {
         let completion =
             self.write_motion(|motion| motion.animate_sequence_with_completion(sequence))?;
         if let Some(completion) = completion {
-            completion.run();
+            completion.run()?;
         }
         Ok(())
     }
@@ -147,7 +147,7 @@ impl<T: Animatable + Send + 'static> AnimationManager<T> for MotionHandle<T> {
         let (running, completion) =
             self.write_motion(|motion| motion.update_with_completion(dt))?;
         if let Some(completion) = completion {
-            completion.run();
+            completion.run()?;
         }
         Ok(running)
     }
@@ -347,6 +347,39 @@ mod tests {
                 .expect("valid animation configuration");
             assert_eq!(motion.update(0.5), Ok(true));
             assert_eq!(motion.get_value(), 0.5);
+        });
+    }
+
+    #[test]
+    fn busy_completion_errors_are_returned_after_motion_finishes() {
+        let mut dom = VirtualDom::new(|| rsx! { div {} });
+        dom.rebuild_in_place();
+        dom.in_scope(ScopeId::APP, || {
+            let calls = Arc::new(AtomicUsize::new(0));
+            let callback_calls = calls.clone();
+            let mut config = AnimationConfig::tween_ms(0).with_on_complete(move || {
+                callback_calls.fetch_add(1, Ordering::Relaxed);
+            });
+            let callback = config.on_complete.as_ref().expect("test callback").clone();
+            let guard = callback.lock().expect("callback mutex");
+            let mut raw = Motion::new(0.0f32).expect("finite initial value");
+            raw.animate_to(1.0, config.clone())
+                .expect("valid animation configuration");
+            assert_eq!(raw.update(0.1), Err(AnimationError::CompletionBusy));
+            assert_eq!(raw.get_value(), 1.0);
+            assert!(!raw.is_running());
+            let mut motion = MotionHandle::new(0.0f32).expect("finite initial value");
+            motion
+                .animate_to(1.0, config.clone())
+                .expect("valid animation configuration");
+            assert_eq!(motion.update(0.1), Err(AnimationError::CompletionBusy));
+            assert_eq!(motion.get_value(), 1.0);
+            assert!(!motion.is_running());
+            assert_eq!(motion.update(0.1), Ok(false));
+            assert_eq!(calls.load(Ordering::Relaxed), 0);
+            drop(guard);
+            assert_eq!(config.execute_completion(), Ok(()));
+            assert_eq!(calls.load(Ordering::Relaxed), 1);
         });
     }
 

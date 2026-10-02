@@ -14,13 +14,14 @@ pub(crate) enum Completion {
 }
 
 impl Completion {
-    pub(crate) fn run(self) {
+    pub(crate) fn run(self) -> Result<(), AnimationError> {
         match self {
             Self::Animation(callback) => {
-                crate::animations::core::execute_completion_callback(&callback);
+                crate::animations::core::execute_completion_callback(&callback)?;
             }
             Self::Sequence(callback) => callback(),
         }
+        Ok(())
     }
 }
 
@@ -113,7 +114,7 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         sequence: AnimationSequence<T>,
     ) -> Result<(), AnimationError> {
         if let Some(completion) = self.animate_sequence_with_completion(sequence)? {
-            completion.run();
+            completion.run()?;
         }
         Ok(())
     }
@@ -218,10 +219,11 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     /// Spring simulation caps a frame at 100 ms to bound work after stalls.
     /// Nonfinite frame results stop playback without firing completion callbacks
     /// or replacing the last valid value, and return a typed error.
+    /// A busy or poisoned completion callback also returns an error after playback finishes.
     pub fn update(&mut self, dt: f32) -> Result<bool, AnimationError> {
         let (running, completion) = self.update_with_completion(dt)?;
         if let Some(completion) = completion {
-            completion.run();
+            completion.run()?;
         }
         Ok(running)
     }

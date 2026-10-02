@@ -211,6 +211,72 @@ mod tests {
     }
 
     #[test]
+    fn shared_completion_reentry_returns_an_error_instead_of_blocking() {
+        use std::sync::{
+            atomic::{AtomicUsize, Ordering},
+            mpsc,
+        };
+        let holder = Arc::new(Mutex::new(None::<AnimationConfig>));
+        let weak = Arc::downgrade(&holder);
+        let nested_result = Arc::new(Mutex::new(None));
+        let observed = nested_result.clone();
+        let calls = Arc::new(AtomicUsize::new(0));
+        let callback_calls = calls.clone();
+        let mut config = AnimationConfig::tween_ms(0).with_on_complete(move || {
+            callback_calls.fetch_add(1, Ordering::Relaxed);
+            let holder = weak.upgrade().expect("test config holder");
+            let mut nested = holder
+                .lock()
+                .expect("holder mutex")
+                .as_ref()
+                .expect("shared config")
+                .clone();
+            *observed.lock().expect("result mutex") = Some(nested.execute_completion());
+        });
+        *holder.lock().expect("holder mutex") = Some(config.clone());
+        let (sender, receiver) = mpsc::channel();
+        let mut worker_config = config.clone();
+        let worker = std::thread::spawn(move || {
+            let _ = sender.send(worker_config.execute_completion());
+        });
+        assert_eq!(
+            receiver
+                .recv_timeout(Duration::from_secs(2))
+                .expect("reentrant callback must not block"),
+            Ok(())
+        );
+        worker.join().expect("completion worker");
+        assert_eq!(
+            *nested_result.lock().expect("result mutex"),
+            Some(Err(AnimationError::CompletionBusy))
+        );
+        assert_eq!(calls.load(Ordering::Relaxed), 1);
+        assert_eq!(config.execute_completion(), Ok(()));
+        assert_eq!(calls.load(Ordering::Relaxed), 2);
+        assert_eq!(AnimationConfig::tween_ms(0).execute_completion(), Ok(()));
+    }
+
+    #[test]
+    #[allow(clippy::panic)] // Deliberately poison only this test callback's mutex.
+    fn poisoned_completion_is_reported_instead_of_silently_skipped() {
+        let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let callback_calls = calls.clone();
+        let mut config = AnimationConfig::tween_ms(0).with_on_complete(move || {
+            callback_calls.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        });
+        let callback = config.on_complete.as_ref().expect("test callback").clone();
+        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _guard = callback.lock().expect("callback mutex");
+            panic!("poison sentinel");
+        }));
+        assert_eq!(
+            config.execute_completion(),
+            Err(AnimationError::CompletionPoisoned)
+        );
+        assert_eq!(calls.load(std::sync::atomic::Ordering::Relaxed), 0);
+    }
+
+    #[test]
     fn configuration_rejects_invalid_numbers_and_accepts_boundaries() {
         for epsilon in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY, 0.0, -0.0, -1.0] {
             assert_eq!(
@@ -342,6 +408,10 @@ pub type OnComplete = Arc<Mutex<dyn FnMut() + Send + 'static>>;
 /// Invalid animation setup or a frame result that cannot be represented.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum AnimationError {
+    #[error("completion callback is already executing or locked")]
+    CompletionBusy,
+    #[error("completion callback mutex is poisoned")]
+    CompletionPoisoned,
     #[error("velocity can only be changed during spring playback")]
     VelocityRequiresSpring,
     #[error("animation {0} contains a nonfinite numerical component")]
@@ -491,11 +561,12 @@ impl AnimationConfig {
         }
     }
 
-    /// Execute the completion callback if it exists
-    pub fn execute_completion(&mut self) {
+    /// Executes the completion callback without blocking on a busy or poisoned mutex.
+    pub fn execute_completion(&mut self) -> Result<(), AnimationError> {
         if let Some(on_complete) = &self.on_complete {
-            execute_completion_callback(on_complete);
+            execute_completion_callback(on_complete)?;
         }
+        Ok(())
     }
 }
 
@@ -507,8 +578,11 @@ fn validate_completion_epsilon(epsilon: f32) -> Result<(), AnimationError> {
     }
 }
 
-pub(crate) fn execute_completion_callback(on_complete: &OnComplete) {
-    if let Ok(mut callback) = on_complete.lock() {
-        callback();
-    }
+pub(crate) fn execute_completion_callback(on_complete: &OnComplete) -> Result<(), AnimationError> {
+    let mut callback = on_complete.try_lock().map_err(|error| match error {
+        std::sync::TryLockError::WouldBlock => AnimationError::CompletionBusy,
+        std::sync::TryLockError::Poisoned(_) => AnimationError::CompletionPoisoned,
+    })?;
+    callback();
+    Ok(())
 }

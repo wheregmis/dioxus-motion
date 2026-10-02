@@ -63,6 +63,31 @@ pub fn check_spring_numerics() -> Result<(), JsValue> {
             return Err(error("nonfinite initial value entered motion state"));
         }
     }
+    let mut completion_config = AnimationConfig::tween_ms(0).with_on_complete(|| {});
+    let callback = completion_config
+        .on_complete
+        .as_ref()
+        .expect("test callback")
+        .clone();
+    let guard = callback
+        .lock()
+        .map_err(|_| error("callback mutex poisoned"))?;
+    let mut completed = Motion::new(0.0f32).map_err(|e| error(&e.to_string()))?;
+    completed
+        .animate_to(1.0, completion_config.clone())
+        .map_err(|e| error(&e.to_string()))?;
+    if completed.update(0.1) != Err(AnimationError::CompletionBusy)
+        || completed.get_value() != 1.0
+        || completed.is_running()
+    {
+        return Err(error(
+            "busy completion must return an error after finishing playback",
+        ));
+    }
+    drop(guard);
+    completion_config
+        .execute_completion()
+        .map_err(|e| error(&e.to_string()))?;
     for (initial, role) in [(-f32::MAX, "spring value"), (0.0, "spring velocity")] {
         let mut motion = Motion::new(initial).map_err(|e| error(&e.to_string()))?;
         motion
