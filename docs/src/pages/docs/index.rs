@@ -23,7 +23,7 @@ fn DocsNavigation(#[props(default)] on_navigate: EventHandler<()>) -> Element {
             }
             p { class: "eyebrow nav-group", "REFERENCE" }
             a { href: "https://docs.rs/dioxus-motion", "Published API ↗" }
-            a { href: "https://github.com/wheregmis/dioxus-motion/blob/new_release/CHANGELOG.md", "Release notes ↗" }
+            a { href: "https://github.com/wheregmis/dioxus-motion/blob/main/CHANGELOG.md", "Release notes ↗" }
         }
     }
 }
@@ -74,7 +74,7 @@ pub fn DocsLanding() -> Element {
                     code: dioxus_code::advanced::HighlightedSource::from_static_parts(
                         r#"[dependencies]
 dioxus = { version = "0.7.10", features = ["web"] }
-dioxus-motion = { git = "https://github.com/wheregmis/dioxus-motion", branch = "new_release", default-features = false, features = ["web"] }"#, Language::Rust, &[]),
+dioxus-motion = { git = "https://github.com/wheregmis/dioxus-motion", branch = "main", default-features = false, features = ["web"] }"#, Language::Rust, &[]),
                 }
             }
             section {
