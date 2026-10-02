@@ -356,6 +356,17 @@ pub enum AnimationError {
     InvalidSpringParameter(&'static str),
 }
 
+pub(crate) fn validate_value<T: Animatable>(
+    value: &T,
+    role: &'static str,
+) -> Result<(), AnimationError> {
+    if value.is_finite() {
+        Ok(())
+    } else {
+        Err(AnimationError::NonFiniteValue(role))
+    }
+}
+
 /// Configuration for an animation
 #[derive(Clone, Default)]
 pub struct AnimationConfig {

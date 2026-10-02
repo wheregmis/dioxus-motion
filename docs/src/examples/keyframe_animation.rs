@@ -29,7 +29,7 @@ fn KeyframeExample() -> Element {
             )
             .with_loop_mode(LoopMode::Alternate);
 
-        transform.animate_keyframes(animation);
+        transform.animate_keyframes(animation).expect("valid keyframe setup");
     };
 
     rsx! {

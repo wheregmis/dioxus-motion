@@ -25,7 +25,9 @@ mod tests {
             let mut samples = Vec::with_capacity(7);
             for _ in 0..7 {
                 let mut motion = Motion::new(0.0f32).expect("finite initial value");
-                motion.animate_keyframes(animation.clone());
+                motion
+                    .animate_keyframes(animation.clone())
+                    .expect("valid keyframe setup");
                 let start = Instant::now();
                 for _ in 0..ITERATIONS {
                     black_box(motion.update(black_box(1.0 / 60.0)));

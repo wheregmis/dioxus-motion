@@ -1,6 +1,6 @@
 //! `AnimationSequence<T>` - Optimized animation step sequences
 
-use crate::animations::core::{Animatable, AnimationError};
+use crate::animations::core::{Animatable, AnimationError, validate_value};
 use crate::prelude::AnimationConfig;
 
 use std::sync::Mutex;
@@ -31,9 +31,7 @@ impl<T: Animatable> AnimationSequence<T> {
     pub fn validate(&self) -> Result<(), AnimationError> {
         for step in &self.steps {
             step.config.validate_for::<T>()?;
-            if !step.target.is_finite() {
-                return Err(AnimationError::NonFiniteValue("sequence target"));
-            }
+            validate_value(&step.target, "sequence target")?;
         }
         Ok(())
     }

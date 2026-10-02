@@ -1,5 +1,7 @@
 use crate::Duration;
-use crate::animations::core::{Animatable, AnimationError, AnimationMode, LoopMode, OnComplete};
+use crate::animations::core::{
+    Animatable, AnimationError, AnimationMode, LoopMode, OnComplete, validate_value,
+};
 use crate::animations::spring::{Spring, SpringState, SpringStep};
 use crate::keyframes::KeyframeAnimation;
 use crate::prelude::AnimationConfig;
@@ -41,13 +43,9 @@ pub struct Motion<T: Animatable + Send + 'static> {
 
 impl<T: Animatable + Send + 'static> Motion<T> {
     pub fn new(initial: T) -> Result<Self, AnimationError> {
-        if !initial.is_finite() {
-            return Err(AnimationError::NonFiniteValue("initial value"));
-        }
+        validate_value(&initial, "initial value")?;
         let velocity = T::default() * 0.0;
-        if !velocity.is_finite() {
-            return Err(AnimationError::NonFiniteValue("zero velocity"));
-        }
+        validate_value(&velocity, "zero velocity")?;
         Ok(Self {
             initial: initial.clone(),
             current: initial.clone(),
@@ -68,12 +66,8 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     /// Starts an animation, leaving the current animation unchanged on invalid configuration.
     pub fn animate_to(&mut self, target: T, config: AnimationConfig) -> Result<(), AnimationError> {
         config.validate_for::<T>()?;
-        if !self.current.is_finite() {
-            return Err(AnimationError::NonFiniteValue("current value"));
-        }
-        if !target.is_finite() {
-            return Err(AnimationError::NonFiniteValue("target"));
-        }
+        validate_value(&self.current, "current value")?;
+        validate_value(&target, "target")?;
         self.sequence = None;
         self.keyframe_animation = None;
         self.start_animation(target, config);
@@ -96,9 +90,7 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         sequence: AnimationSequence<T>,
     ) -> Result<Option<Completion>, AnimationError> {
         sequence.validate()?;
-        if !self.current.is_finite() {
-            return Err(AnimationError::NonFiniteValue("current value"));
-        }
+        validate_value(&self.current, "current value")?;
         self.stop();
         sequence.reset();
         if let Some(first_step) = sequence.current_step_data() {
@@ -113,7 +105,13 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         }
     }
 
-    pub fn animate_keyframes(&mut self, animation: KeyframeAnimation<T>) {
+    /// Starts keyframes after validation. Errors leave the active animation unchanged.
+    pub fn animate_keyframes(
+        &mut self,
+        animation: KeyframeAnimation<T>,
+    ) -> Result<(), AnimationError> {
+        self.config.validate_for::<T>()?;
+        validate_value(&self.current, "current value")?;
         self.sequence = None;
         self.keyframe_animation = Some(animation);
         self.running = true;
@@ -122,6 +120,7 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         self.velocity = T::default() * 0.0;
         self.current_loop = 0;
         self.reverse = false;
+        Ok(())
     }
 
     pub fn get_value(&self) -> T {
@@ -800,12 +799,59 @@ mod tests {
             motion.animate_sequence(AnimationSequence::new().then(InvalidEpsilon, instant_tween())),
             Err(AnimationError::InvalidEpsilon)
         );
+        assert_eq!(
+            motion.animate_keyframes(KeyframeAnimation::new(Duration::ZERO)),
+            Err(AnimationError::InvalidEpsilon)
+        );
         assert!(!motion.running);
         assert_eq!(
             motion.animate_to(InvalidEpsilon, instant_tween().with_epsilon(0.125)),
             Ok(())
         );
         assert!(!motion.update(0.01));
+        assert_eq!(
+            motion.animate_keyframes(KeyframeAnimation::new(Duration::ZERO)),
+            Ok(())
+        );
+        assert!(!motion.update(0.01));
+    }
+
+    #[test]
+    fn keyframe_setup_rejects_corrupted_current_without_replacing_playback() {
+        for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            for keyframes in [false, true] {
+                let mut motion = Motion::new(0.0f32).unwrap();
+                let track = KeyframeAnimation::new(Duration::from_secs(1))
+                    .add_keyframe(0.0, 0.0, None)
+                    .unwrap()
+                    .add_keyframe(1.0, 1.0, None)
+                    .unwrap();
+                if keyframes {
+                    motion.animate_keyframes(track.clone()).unwrap();
+                } else {
+                    motion
+                        .animate_sequence(
+                            AnimationSequence::new().then(1.0, AnimationConfig::tween_ms(1000)),
+                        )
+                        .unwrap();
+                }
+                assert!(motion.update(0.25));
+                motion.current = bad;
+                assert_eq!(
+                    motion.animate_keyframes(track),
+                    Err(AnimationError::NonFiniteValue("current value"))
+                );
+                assert_eq!(motion.current.to_bits(), bad.to_bits());
+                assert!(motion.running);
+                assert_eq!(motion.elapsed, Duration::from_millis(250));
+                assert_eq!(motion.keyframe_animation.is_some(), keyframes);
+                assert_eq!(motion.sequence.is_some(), !keyframes);
+                // Restoring the public value lets the original playback finish.
+                motion.current = 0.25;
+                assert!(!motion.update(0.75));
+                assert_eq!(motion.current, 1.0);
+            }
+        }
     }
 
     #[test]
@@ -813,13 +859,15 @@ mod tests {
         for keyframes in [false, true] {
             let mut motion = Motion::new(0.0f32).expect("finite initial value");
             if keyframes {
-                motion.animate_keyframes(
-                    KeyframeAnimation::new(Duration::from_secs(1))
-                        .add_keyframe(0.0, 0.0, None)
-                        .unwrap()
-                        .add_keyframe(1.0, 1.0, None)
-                        .unwrap(),
-                );
+                motion
+                    .animate_keyframes(
+                        KeyframeAnimation::new(Duration::from_secs(1))
+                            .add_keyframe(0.0, 0.0, None)
+                            .unwrap()
+                            .add_keyframe(1.0, 1.0, None)
+                            .unwrap(),
+                    )
+                    .expect("valid keyframe setup");
             } else {
                 motion
                     .animate_sequence(
@@ -870,7 +918,9 @@ mod tests {
                 .expect("valid animation configuration");
             assert!(!motion.update(0.01));
             assert_eq!(motion.velocity.magnitude(), 0.0);
-            motion.animate_keyframes(KeyframeAnimation::new(Duration::ZERO));
+            motion
+                .animate_keyframes(KeyframeAnimation::new(Duration::ZERO))
+                .expect("valid keyframe setup");
             assert_eq!(motion.velocity.magnitude(), 0.0);
             motion.stop();
             assert_eq!(motion.velocity.magnitude(), 0.0);
@@ -1069,7 +1119,9 @@ mod tests {
                     tick as f32 / 500.0
                 };
                 let mut motion = Motion::new(0.0f32).expect("finite initial value");
-                motion.animate_keyframes(animation.clone());
+                motion
+                    .animate_keyframes(animation.clone())
+                    .expect("valid keyframe setup");
                 motion.update(dt);
                 let progress = motion.elapsed.as_secs_f32() / animation.duration.as_secs_f32();
                 let frames = animation.keyframes();
@@ -1104,13 +1156,15 @@ mod tests {
     #[test]
     fn sequence_replaces_keyframes_and_handles_empty_input() {
         let mut motion = Motion::new(0.0f32).expect("finite initial value");
-        motion.animate_keyframes(
-            KeyframeAnimation::new(Duration::from_secs(1))
-                .add_keyframe(50.0, 0.0, None)
-                .unwrap()
-                .add_keyframe(100.0, 1.0, None)
-                .unwrap(),
-        );
+        motion
+            .animate_keyframes(
+                KeyframeAnimation::new(Duration::from_secs(1))
+                    .add_keyframe(50.0, 0.0, None)
+                    .unwrap()
+                    .add_keyframe(100.0, 1.0, None)
+                    .unwrap(),
+            )
+            .expect("valid keyframe setup");
         motion
             .animate_sequence(AnimationSequence::new().then(2.0, instant_tween()))
             .expect("valid animation configuration");
@@ -1282,7 +1336,9 @@ mod tests {
             .add_keyframe(100.0, 1.0, None)
             .unwrap();
 
-        motion.animate_keyframes(animation);
+        motion
+            .animate_keyframes(animation)
+            .expect("valid keyframe setup");
 
         assert!(motion.update(0.5));
         assert!(motion.current > 0.0);

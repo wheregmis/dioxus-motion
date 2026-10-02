@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Motion springs use the closed-form damped oscillator on native and web, with coefficients cached for repeated frame deltas. Stiff, low-mass, and heavily damped springs no longer diverge through frame integration. Spring trajectories change slightly from the previous RK4/Euler approximation; zero-force springs remain supported.
 
-- `Motion` and `AnimationManager` setup methods `animate_to` and `animate_sequence` now return `Result<(), AnimationError>`. Handle the error or propagate it with `?`; fixed, known-valid configurations in examples use `.expect("valid animation configuration")`. Invalid epsilon or spring parameters leave the existing animation unchanged, and sequences validate every step before playback. `AnimationConfig::validate` and `AnimationSequence::validate` expose the checks.
+- `Motion` and `AnimationManager` setup methods `animate_to`, `animate_sequence`, and `animate_keyframes` now return `Result<(), AnimationError>`. Handle the error or propagate it with `?`; fixed, known-valid configurations in examples use `.expect("valid animation configuration")`. Invalid epsilon or spring parameters leave the existing animation unchanged, and sequences validate every step before playback. `AnimationConfig::validate` and `AnimationSequence::validate` expose the checks.
 
 - Color arithmetic now preserves signed, unbounded components so spring displacement, forces, and velocity are valid. `Color::new`, interpolation, and `to_rgba` continue to clamp display values.
 

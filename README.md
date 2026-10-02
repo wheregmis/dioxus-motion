@@ -146,7 +146,7 @@ scale.animate_sequence(sequence).expect("valid animation configuration");
 
 `Motion::new`, `AnimationManager::new`, `use_motion`, and presence motion/style hooks return `Result` for initial-value validation. Custom types implement `Animatable::is_finite` by checking every numerical component. Components can propagate hook errors with `?` to a Dioxus error boundary.
 
-`animate_to` and `animate_sequence` return `Result<(), AnimationError>`. Propagate errors with `?` or handle them when parameters come from user input. Invalid configuration leaves the active animation unchanged; sequences validate all steps before starting. Use `AnimationConfig::validate()` or `AnimationSequence::validate()` to check configuration in advance.
+`animate_to`, `animate_sequence`, and `animate_keyframes` return `Result<(), AnimationError>`. Propagate errors with `?` or handle them when parameters come from user input. Invalid configuration leaves the active animation unchanged; sequences validate all steps before starting. Use `AnimationConfig::validate()` or `AnimationSequence::validate()` to check configuration in advance.
 
 ## ✨ Features
 

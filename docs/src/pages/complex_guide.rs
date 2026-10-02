@@ -425,7 +425,9 @@ fn StepThree() -> Element {
             })
             .unwrap();
 
-        petal.animate_keyframes(keyframes);
+        petal
+            .animate_keyframes(keyframes)
+            .expect("valid keyframe setup");
     };
 
     rsx! {
@@ -471,7 +473,7 @@ petal.animate_sequence(sequence).expect("valid animation configuration");"#.to_s
     .and_then(|kf| kf.add_keyframe(...))
     .and_then(|kf| kf.add_keyframe(...))
     .unwrap();
-petal.animate_keyframes(keyframes);"#.to_string(),
+petal.animate_keyframes(keyframes).expect("valid keyframe setup");"#.to_string(),
                         language: "rust".to_string(),
                     }
                 }

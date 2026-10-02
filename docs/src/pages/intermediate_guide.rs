@@ -401,7 +401,9 @@ fn StepThree() -> Element {
             .and_then(|kf| kf.add_keyframe(0.0, 1.0, Some(easer::functions::Back::ease_in_out)))
             .unwrap();
 
-        keyframe_value.animate_keyframes(keyframes);
+        keyframe_value
+            .animate_keyframes(keyframes)
+            .expect("valid keyframe setup");
     };
 
     // Simplify with a single reset function
@@ -445,7 +447,7 @@ let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
     .and_then(|kf| kf.add_keyframe(50.0, 0.7, Some(easer::functions::Bounce::ease_out)))
     .and_then(|kf| kf.add_keyframe(0.0, 1.0, Some(easer::functions::Back::ease_in_out)))
     .unwrap();
-value.animate_keyframes(keyframes);"#.to_string(),
+value.animate_keyframes(keyframes).expect("valid keyframe setup");"#.to_string(),
                         language: "rust".to_string(),
                     }
                 }
@@ -569,11 +571,15 @@ fn StepFour() -> Element {
 
     let start_keyframes = move |_| {
         match create_transform_keyframes() {
-            Ok(transform_keyframes) => keyframe_transform.animate_keyframes(transform_keyframes),
+            Ok(transform_keyframes) => keyframe_transform
+                .animate_keyframes(transform_keyframes)
+                .expect("valid keyframe setup"),
             Err(e) => error!("Failed to create transform keyframes: {e}"),
         }
         match create_color_keyframes() {
-            Ok(color_keyframes) => keyframe_color.animate_keyframes(color_keyframes),
+            Ok(color_keyframes) => keyframe_color
+                .animate_keyframes(color_keyframes)
+                .expect("valid keyframe setup"),
             Err(e) => error!("Failed to create color keyframes: {e}"),
         }
     };

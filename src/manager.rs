@@ -108,7 +108,7 @@ pub trait AnimationManager<T: Animatable + Send + 'static>: Clone + Copy {
     fn new(initial: T) -> Result<Self, AnimationError>;
     fn animate_to(&mut self, target: T, config: AnimationConfig) -> Result<(), AnimationError>;
     fn animate_sequence(&mut self, sequence: AnimationSequence<T>) -> Result<(), AnimationError>;
-    fn animate_keyframes(&mut self, animation: KeyframeAnimation<T>);
+    fn animate_keyframes(&mut self, animation: KeyframeAnimation<T>) -> Result<(), AnimationError>;
     fn update(&mut self, dt: f32) -> bool;
     fn get_value(&self) -> T;
     fn is_running(&self) -> bool;
@@ -135,8 +135,8 @@ impl<T: Animatable + Send + 'static> AnimationManager<T> for MotionHandle<T> {
         Ok(())
     }
 
-    fn animate_keyframes(&mut self, animation: KeyframeAnimation<T>) {
-        self.write_motion(|motion| motion.animate_keyframes(animation));
+    fn animate_keyframes(&mut self, animation: KeyframeAnimation<T>) -> Result<(), AnimationError> {
+        self.write_motion(|motion| motion.animate_keyframes(animation))
     }
 
     fn update(&mut self, dt: f32) -> bool {

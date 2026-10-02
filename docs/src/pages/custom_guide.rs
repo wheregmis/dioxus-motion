@@ -317,7 +317,7 @@ fn StepThree() -> Element {
                 Some(easer::functions::Back::ease_in_out),
             );
 
-        petal.animate_keyframes(keyframes);
+        petal.animate_keyframes(keyframes).expect("valid keyframe setup");
     };
 
     rsx! {
@@ -379,7 +379,7 @@ petal.animate_sequence(sequence).expect("valid animation configuration");"#.to_s
         Some(easer::functions::Back::ease_in_out),
     );
 
-petal.animate_keyframes(keyframes);"#.to_string(),
+petal.animate_keyframes(keyframes).expect("valid keyframe setup");"#.to_string(),
                         language: "rust".to_string(),
                     }
                 }

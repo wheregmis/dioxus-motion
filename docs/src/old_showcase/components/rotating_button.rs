@@ -60,13 +60,18 @@ pub fn RotatingButton() -> Element {
 
         // Only animate if keyframe creation succeeded
         if let Ok(scale_anim) = scale_keyframes {
-            scale.animate_keyframes(scale_anim);
+            scale
+                .animate_keyframes(scale_anim)
+                .expect("valid keyframe setup");
         }
         if let Ok(rotation_anim) = rotation_keyframes {
-            rotation.animate_keyframes(rotation_anim);
+            rotation
+                .animate_keyframes(rotation_anim)
+                .expect("valid keyframe setup");
         }
         if let Ok(glow_anim) = glow_keyframes {
-            glow.animate_keyframes(glow_anim);
+            glow.animate_keyframes(glow_anim)
+                .expect("valid keyframe setup");
         }
     };
 
