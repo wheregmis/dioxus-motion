@@ -55,7 +55,7 @@ pub fn retained_js_values() -> u32 {
 pub fn check_spring_numerics() -> Result<(), JsValue> {
     use dioxus_motion::{
         motion::Motion,
-        prelude::{AnimationConfig, AnimationError, MotionStyle, Spring},
+        prelude::{AnimationConfig, AnimationError, CssValue, MotionStyle, Spring},
     };
     let error = |message: &str| JsValue::from_str(message);
     for initial in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
@@ -172,6 +172,30 @@ pub fn check_spring_numerics() -> Result<(), JsValue> {
         {
             return Err(error("nonfinite target replaced the current animation"));
         }
+    }
+    let initial = MotionStyle {
+        x: -f32::MAX,
+        ..MotionStyle::default()
+    }
+    .property("width", CssValue::Px(-f32::MAX));
+    let target = MotionStyle {
+        x: f32::MAX,
+        ..MotionStyle::default()
+    }
+    .property("width", CssValue::Px(f32::MAX));
+    if target.to_css().contains("inf") {
+        return Err(error("finite style formatted as infinite CSS"));
+    }
+    let mut extreme_style = Motion::new(initial).map_err(|e| error(&e.to_string()))?;
+    extreme_style
+        .animate_to(target, AnimationConfig::tween_ms(1000))
+        .map_err(|e| error(&e.to_string()))?;
+    extreme_style
+        .update(0.5)
+        .map_err(|e| error(&e.to_string()))?;
+    let midpoint = extreme_style.get_value();
+    if midpoint.x != 0.0 || midpoint.properties.get("width") != Some(&CssValue::Px(0.0)) {
+        return Err(error("extreme style interpolation overflowed"));
     }
     let mut initial = MotionStyle::default();
     initial.add_css_property("color", "rgba(0, 0, 0, 0)");

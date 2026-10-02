@@ -370,10 +370,8 @@ impl Animatable for MotionStyle {
         };
 
         for (property, target_value) in &target.properties {
-            if let Some(current_value) = self.properties.get(property) {
-                style
-                    .properties
-                    .insert(property.clone(), current_value.interpolate(target_value, t));
+            if let Some(current_value) = style.properties.get_mut(property) {
+                *current_value = current_value.interpolate(target_value, t);
             } else {
                 style
                     .properties
