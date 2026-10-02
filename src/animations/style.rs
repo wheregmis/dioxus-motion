@@ -284,7 +284,10 @@ impl std::ops::Sub for MotionStyle {
                 self.properties,
                 other.properties,
                 |a, b| a.sub(&b).unwrap_or(b),
-                |value| value.scale(-1.0),
+                |mut value| {
+                    value.scale(-1.0);
+                    value
+                },
             ),
         }
     }
@@ -314,7 +317,7 @@ impl std::ops::Mul<f32> for MotionStyle {
             properties: {
                 let mut properties = self.properties;
                 for value in properties.values_mut() {
-                    *value = value.scale(factor);
+                    value.scale(factor);
                 }
                 properties
             },

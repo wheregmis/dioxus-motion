@@ -145,10 +145,11 @@ mod tests {
             .is_finite()
         );
         assert!(Transform::new(f32::MAX, f32::MAX, f32::MAX, f32::MAX).is_finite());
-        let complex = "translateX(2px)".into_css_value("transform");
+        let mut complex = "translateX(2px)".into_css_value("transform");
         assert!(matches!(complex, CssValue::Complex(_)));
         assert!(complex.is_finite());
-        assert!(!complex.scale(f32::MAX).is_finite());
+        complex.scale(f32::MAX);
+        assert!(!complex.is_finite());
         assert!(CssValue::Keyword("inherit".into()).is_finite());
     }
 

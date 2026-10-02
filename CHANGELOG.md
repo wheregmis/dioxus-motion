@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Scale owned CSS values and complex tokens in place, avoiding replacement token vectors and keyword clones during style spring arithmetic. Extend manual benchmarks with shadow and filter properties.
+
 - Reuse owned CSS property maps during style addition, subtraction, and scaling instead of rebuilding and cloning their keys. Manual benchmarks measure value reads separately from frame updates.
 
 - Breaking: presence tween `duration` fields take `Duration` instead of floating-point milliseconds. Use `Duration::from_millis(350)` or `Duration::from_micros(220_500)`; dynamic seconds can use `Duration::try_from_secs_f64`. The macro no longer performs a conversion that can panic on negative, nonfinite, or overflowing input.

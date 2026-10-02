@@ -75,18 +75,18 @@ impl CssValue {
         }
     }
 
-    /// Scales a CSS value for vector-style animation math.
-    pub(crate) fn scale(&self, factor: f32) -> Self {
+    /// Scales an owned CSS value in place for vector-style animation math.
+    pub(crate) fn scale(&mut self, factor: f32) {
         match self {
-            Self::Number(value) => Self::Number(value * factor),
-            Self::Px(value) => Self::Px(value * factor),
-            Self::Percent(value) => Self::Percent(value * factor),
-            Self::Vw(value) => Self::Vw(value * factor),
-            Self::Vh(value) => Self::Vh(value * factor),
-            Self::Deg(value) => Self::Deg(value * factor),
-            Self::Color(value) => Self::Color(value.scale(factor)),
-            Self::Complex(value) => Self::Complex(value.scale(factor)),
-            Self::Keyword(value) => Self::Keyword(value.clone()),
+            Self::Number(value)
+            | Self::Px(value)
+            | Self::Percent(value)
+            | Self::Vw(value)
+            | Self::Vh(value)
+            | Self::Deg(value) => *value *= factor,
+            Self::Color(value) => *value = value.scale(factor),
+            Self::Complex(value) => value.scale(factor),
+            Self::Keyword(_) => {}
         }
     }
 
@@ -341,17 +341,13 @@ impl CssComplexValue {
         })
     }
 
-    fn scale(&self, factor: f32) -> Self {
-        Self {
-            tokens: self
-                .tokens
-                .iter()
-                .map(|token| match token {
-                    CssComplexToken::Text(_) => CssComplexToken::Text(String::new()),
-                    CssComplexToken::Number(value) => CssComplexToken::Number(value * factor),
-                    CssComplexToken::Color(value) => CssComplexToken::Color(value.scale(factor)),
-                })
-                .collect(),
+    fn scale(&mut self, factor: f32) {
+        for token in &mut self.tokens {
+            match token {
+                CssComplexToken::Text(text) => text.clear(),
+                CssComplexToken::Number(value) => *value *= factor,
+                CssComplexToken::Color(value) => *value = value.scale(factor),
+            }
         }
     }
 
@@ -1114,6 +1110,34 @@ mod tests {
     }
 
     #[test]
+    fn css_scaling_matches_signed_vector_arithmetic() {
+        for value in [
+            CssValue::Number(3.0),
+            CssValue::Px(3.0),
+            CssValue::Percent(3.0),
+            CssValue::Vw(3.0),
+            CssValue::Vh(3.0),
+            CssValue::Deg(3.0),
+            CssValue::Color(CssColor::rgba(3.0, 4.0, 5.0, 0.5)),
+            "X(12px, 4%) rgba(3, 4, 5, 0.5)".into_css_value("filter"),
+        ] {
+            let zero = value.sub(&value).expect("compatible vector subtraction");
+            let negative = zero.sub(&value).expect("compatible signed vector");
+            let double = value.sub(&negative).expect("compatible doubled vector");
+            for (factor, expected) in [(-1.0, negative), (0.0, zero), (2.0, double)] {
+                let mut scaled = value.clone();
+                scaled.scale(factor);
+                assert_eq!(scaled, expected, "factor {factor}, value {value:?}");
+            }
+        }
+        let mut keyword = CssValue::Keyword("var(--surface)".into());
+        for factor in [-1.0, 0.0, 2.0] {
+            keyword.scale(factor);
+            assert_eq!(keyword, CssValue::Keyword("var(--surface)".into()));
+        }
+    }
+
+    #[test]
     fn css_value_number_color() {
         let c = CssColor::rgba(3.0, 4.0, 0.0, 1.0);
         assert!(approx_eq(CssValue::Color(c).number(), 26.0_f32.sqrt()));
@@ -1121,9 +1145,10 @@ mod tests {
 
     #[test]
     fn complex_magnitude_combines_color_and_numeric_components() {
-        let value = CssComplexValue::parse("X(12px) rgba(3, 4, 0, 0)").unwrap();
+        let mut value = CssComplexValue::parse("X(12px) rgba(3, 4, 0, 0)").unwrap();
         assert_eq!(value.magnitude(), 13.0);
-        assert_eq!(value.scale(-1.0).magnitude(), 13.0);
+        value.scale(-1.0);
+        assert_eq!(value.magnitude(), 13.0);
         let alpha = CssComplexValue::parse("rgba(0, 0, 0, 0.5)").unwrap();
         assert_eq!(alpha.magnitude(), 0.5);
     }

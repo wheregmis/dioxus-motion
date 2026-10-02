@@ -116,6 +116,10 @@ On ARM64 macOS on 2026-10-02, reusing owned property maps reduced the two-proper
 samples, and 100,000 updates per sample. This is a host-specific baseline for that
 case, not an end-to-end browser or many-component performance guarantee.
 
+The shadow-and-filter case exercises complex numeric/color tokens separately.
+On the same host and date, scaling those tokens in place reduced a paired run from
+3,620 to 3,060 ns/update (about 15% less time), using the same sample settings.
+
 The deterministic fuzz checks sample float bit patterns for spring coefficients,
 values, and frame deltas. They check finite state and preservation of the last valid
 value when a frame fails; they do not prove correctness for every input or platform.

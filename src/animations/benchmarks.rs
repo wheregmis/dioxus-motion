@@ -101,7 +101,7 @@ mod tests {
         use crate::Motion;
         use crate::animations::core::{Animatable, AnimationMode};
         use crate::prelude::{AnimationConfig, LoopMode, Spring, Tween};
-        use crate::prelude::{Color, CssValue, MotionStyle, Transform};
+        use crate::prelude::{Color, CssValue, IntoCssValue, MotionStyle, Transform};
         use std::hint::black_box;
 
         const ITERATIONS: usize = 100_000;
@@ -179,6 +179,25 @@ mod tests {
             MotionStyle::default()
                 .property("width", CssValue::Px(100.0))
                 .property("gap", CssValue::Percent(100.0)),
+            &test_cases,
+        );
+        measure(
+            "MotionStyle/complex",
+            MotionStyle::default()
+                .property(
+                    "box-shadow",
+                    "0px 0px 0px rgba(0, 0, 0, 0)".into_css_value("box-shadow"),
+                )
+                .property("filter", "blur(0px) brightness(1)".into_css_value("filter")),
+            MotionStyle::default()
+                .property(
+                    "box-shadow",
+                    "20px 10px 30px rgba(255, 64, 128, 0.8)".into_css_value("box-shadow"),
+                )
+                .property(
+                    "filter",
+                    "blur(6px) brightness(1.2)".into_css_value("filter"),
+                ),
             &test_cases,
         );
         measure(
