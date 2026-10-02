@@ -63,7 +63,9 @@ mod tests {
 
         for duration in test_durations {
             let start = Instant::now();
-            MotionTime::delay(duration).await;
+            MotionTime::delay(duration)
+                .await
+                .expect("available test timer");
             let elapsed = start.elapsed();
 
             // Validate performance characteristics

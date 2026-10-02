@@ -27,6 +27,7 @@ try {
     assert(queue.size === 1, 'wrong timer selection');
     queue.values().next().value();
     assert(probe.poll_delay(), 'callback did not complete delay');
+    assert(!probe.delay_failed(), 'successful delay returned a timer error');
     assert(frames.size === 0 && timers.size === 0, 'completed request retained');
   }
 
@@ -43,8 +44,10 @@ try {
 
   window.requestAnimationFrame = () => { throw new Error('test frame failure'); };
   assert(probe.start_delay(16), 'frame scheduling failure did not complete');
+  assert(probe.delay_failed(), 'failed frame was reported as a successful delay');
   window.setTimeout = () => { throw new Error('test timeout failure'); };
   assert(probe.start_delay(17), 'timeout scheduling failure did not complete');
+  assert(probe.delay_failed(), 'failed timeout was reported as a successful delay');
   assert(probe.retained_js_values() === baseline, 'failed schedule retained a JS reference');
 
   window.requestAnimationFrame = realFrame;
@@ -57,7 +60,22 @@ try {
   assert(!probe.start_delay(17), 'real timeout delay must be pending');
   await new Promise(resolve => realTimeout(resolve, 50));
   assert(probe.poll_delay(), 'real timeout did not complete');
-  result.textContent = 'PASS: spring physics, completion, 1000 cancellations, failures, timeout bounds, native browser APIs';
+  const workerModule = new URL('/target/browser-delay/browser_delay_check.js', location.href).href;
+  const workerUrl = URL.createObjectURL(new Blob([
+    `import init, * as probe from ${JSON.stringify(workerModule)};
+     await init();
+     postMessage({ready: probe.start_delay(16), failed: probe.delay_failed()});`
+  ], {type: 'text/javascript'}));
+  const worker = new Worker(workerUrl, {type: 'module'});
+  try {
+    const missingWindow = await new Promise((resolve, reject) => {
+      const timeout = realTimeout(() => reject(new Error('worker timer check timed out')), 3000);
+      worker.onmessage = event => { realClearTimeout(timeout); resolve(event.data); };
+      worker.onerror = event => { realClearTimeout(timeout); reject(new Error(event.message)); };
+    });
+    assert(missingWindow.ready && missingWindow.failed, 'missing Window was reported as successful timing');
+  } finally { worker.terminate(); URL.revokeObjectURL(workerUrl); }
+  result.textContent = 'PASS: spring physics, completion, 1000 cancellations, typed timer failures, missing Window, timeout bounds, native browser APIs';
 } catch (error) {
   result.textContent = 'FAIL: ' + error.stack;
 }

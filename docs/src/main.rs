@@ -1,57 +1,9 @@
 use dioxus::prelude::*;
-use dioxus_motion::prelude::*;
-
-use easer::functions::Easing;
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 
-fn route_index(route: &docs::utils::router::Route) -> i32 {
-    match route {
-        docs::utils::router::Route::Home { .. } => 0,
-        docs::utils::router::Route::DocsLanding { .. } => 1,
-        docs::utils::router::Route::ShowcaseGallery { .. } => 2,
-        _ => -1,
-    }
-}
-
-fn transition_resolver() -> TransitionVariantResolver<docs::utils::router::Route> {
-    std::rc::Rc::new(|from, to| {
-        let from_idx = route_index(from);
-        let to_idx = route_index(to);
-
-        if from_idx != -1 && to_idx != -1 {
-            if to_idx > from_idx {
-                TransitionVariant::SlideLeft
-            } else if to_idx < from_idx {
-                TransitionVariant::SlideRight
-            } else {
-                TransitionVariant::Fade
-            }
-        } else {
-            to.get_transition()
-        }
-    })
-}
-
 #[component]
 fn App() -> Element {
-    use_context_provider(transition_resolver);
-
-    // Provide the transition animation mode through store-backed context.
-    let tween = use_store(|| Tween {
-        duration: std::time::Duration::from_millis(500),
-        easing: easer::functions::Cubic::ease_in_out,
-    });
-    use_context_provider(move || tween);
-
-    // Swap to a store-backed spring when you want physics-based transitions:
-    // let spring = use_store(|| Spring {
-    //     stiffness: 220.0,
-    //     damping: 30.0,
-    //     mass: 1.0,
-    // });
-    // use_context_provider(move || spring);
-
     rsx! {
         head {
             link {
@@ -66,8 +18,7 @@ fn App() -> Element {
 
 /// Launches the Dioxus documentation app.
 ///
-/// The docs site wires up a route transition resolver plus an optional store-backed
-/// tween or spring context, then renders the router and site stylesheet.
+/// The docs site uses plain navigation; route motion runs inside its isolated lesson.
 fn main() {
     dioxus::launch(App);
 }

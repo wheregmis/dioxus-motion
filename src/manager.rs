@@ -13,24 +13,29 @@ use dioxus::{
 const CURRENT_SCOPE: u16 = 0;
 const RUNNING_SCOPE: u16 = 1;
 
-fn current_ref<T: Animatable + Send + 'static>(motion: &Motion<T>) -> &T {
-    &motion.current
+struct ManagedMotion<T: Animatable + Send + 'static> {
+    motion: Motion<T>,
+    driver_failed: bool,
 }
 
-fn current_mut<T: Animatable + Send + 'static>(motion: &mut Motion<T>) -> &mut T {
-    &mut motion.current
+fn current_ref<T: Animatable + Send + 'static>(motion: &ManagedMotion<T>) -> &T {
+    &motion.motion.current
 }
 
-fn running_ref<T: Animatable + Send + 'static>(motion: &Motion<T>) -> &bool {
-    &motion.running
+fn current_mut<T: Animatable + Send + 'static>(motion: &mut ManagedMotion<T>) -> &mut T {
+    &mut motion.motion.current
 }
 
-fn running_mut<T: Animatable + Send + 'static>(motion: &mut Motion<T>) -> &mut bool {
-    &mut motion.running
+fn running_ref<T: Animatable + Send + 'static>(motion: &ManagedMotion<T>) -> &bool {
+    &motion.motion.running
+}
+
+fn running_mut<T: Animatable + Send + 'static>(motion: &mut ManagedMotion<T>) -> &mut bool {
+    &mut motion.motion.running
 }
 
 pub struct MotionHandle<T: Animatable + Send + 'static> {
-    state: Store<Motion<T>>,
+    state: Store<ManagedMotion<T>>,
 }
 
 impl<T: Animatable + Send + 'static> Clone for MotionHandle<T> {
@@ -48,7 +53,10 @@ impl<T: Animatable + Send + 'static> MotionHandle<T> {
 
     fn new_detached(initial: T) -> Result<Self, AnimationError> {
         Motion::new(initial).map(|motion| Self {
-            state: Store::new(motion),
+            state: Store::new(ManagedMotion {
+                motion,
+                driver_failed: false,
+            }),
         })
     }
 
@@ -96,16 +104,30 @@ impl<T: Animatable + Send + 'static> MotionHandle<T> {
         Ok(())
     }
 
+    pub(crate) fn fail_driver(&mut self) {
+        self.state.into_selector().write_untracked().driver_failed = true;
+        self.write_motion(Motion::stop);
+    }
+
+    fn ensure_driver(&self) -> Result<(), AnimationError> {
+        if self.state.peek().driver_failed {
+            Err(AnimationError::TimerUnavailable)
+        } else {
+            Ok(())
+        }
+    }
+
     fn write_motion<R>(&mut self, f: impl FnOnce(&mut Motion<T>) -> R) -> R {
         let selector = self.state.into_selector();
-        let mut motion = selector.write_untracked();
+        let mut state = selector.write_untracked();
+        let motion = &mut state.motion;
         let previous_current = motion.current.clone();
         let previous_running = motion.running;
 
-        let result = f(&mut motion);
+        let result = f(motion);
         let current_changed = motion.current != previous_current;
         let next_running = motion.running;
-        drop(motion);
+        drop(state);
         if current_changed {
             selector.child_unmapped(CURRENT_SCOPE).mark_dirty();
         }
@@ -141,10 +163,12 @@ impl<T: Animatable + Send + 'static> AnimationManager<T> for MotionHandle<T> {
     }
 
     fn animate_to(&mut self, target: T, config: AnimationConfig) -> Result<(), AnimationError> {
+        self.ensure_driver()?;
         self.write_motion(|motion| motion.animate_to(target, config))
     }
 
     fn animate_sequence(&mut self, sequence: AnimationSequence<T>) -> Result<(), AnimationError> {
+        self.ensure_driver()?;
         let completion =
             self.write_motion(|motion| motion.animate_sequence_with_completion(sequence))?;
         if let Some(completion) = completion {
@@ -154,6 +178,7 @@ impl<T: Animatable + Send + 'static> AnimationManager<T> for MotionHandle<T> {
     }
 
     fn animate_keyframes(&mut self, animation: KeyframeAnimation<T>) -> Result<(), AnimationError> {
+        self.ensure_driver()?;
         self.write_motion(|motion| motion.animate_keyframes(animation))
     }
 
@@ -162,12 +187,13 @@ impl<T: Animatable + Send + 'static> AnimationManager<T> for MotionHandle<T> {
             self.write_motion(|motion| motion.update_with_completion(dt))?;
         if let Some(completion) = completion {
             completion.run()?;
-            return Ok(self.state.peek().is_running());
+            return Ok(self.state.peek().motion.is_running());
         }
         Ok(running)
     }
 
     fn set_velocity(&mut self, velocity: T) -> Result<(), AnimationError> {
+        self.ensure_driver()?;
         self.write_motion(|motion| motion.set_velocity(velocity))
     }
 
@@ -203,6 +229,60 @@ mod tests {
         Arc,
         atomic::{AtomicUsize, Ordering},
     };
+
+    #[test]
+    fn failed_timer_stops_playback_and_rejects_future_requests() {
+        use std::rc::Rc;
+        let shared = Rc::new(Cell::new(None::<MotionHandle<f32>>));
+        fn host(shared: Rc<Cell<Option<MotionHandle<f32>>>>) -> Element {
+            let motion = MotionHandle::new_hook(0.0)?;
+            shared.set(Some(motion));
+            rsx! { "{motion.is_running()}" }
+        }
+        let mut dom = VirtualDom::new_with_props(host, shared.clone());
+        dom.rebuild_in_place();
+        let mut motion = shared.get().expect("valid timer regression setup");
+        dom.in_scope(ScopeId::APP, || {
+            motion
+                .animate_to(100.0, AnimationConfig::tween_ms(1000))
+                .expect("valid timer regression setup");
+            motion.update(0.2).expect("valid timer regression setup");
+            let saved = motion.get_value();
+            motion.fail_driver();
+            assert!(!motion.is_running());
+            assert_eq!(motion.get_value(), saved);
+            assert_eq!(
+                motion.animate_to(50.0, AnimationConfig::tween_ms(0)),
+                Err(AnimationError::TimerUnavailable)
+            );
+            assert_eq!(
+                motion.animate_sequence(
+                    AnimationSequence::new().then(50.0, AnimationConfig::tween_ms(0))
+                ),
+                Err(AnimationError::TimerUnavailable)
+            );
+            let frames = KeyframeAnimation::new(Duration::from_millis(100))
+                .add_keyframe(0.0, 0.0, None)
+                .expect("valid timer regression setup")
+                .add_keyframe(1.0, 1.0, None)
+                .expect("valid timer regression setup");
+            assert_eq!(
+                motion.animate_keyframes(frames),
+                Err(AnimationError::TimerUnavailable)
+            );
+            assert_eq!(
+                motion.set_velocity(1.0),
+                Err(AnimationError::TimerUnavailable)
+            );
+            assert_eq!(motion.get_value(), saved);
+            motion.reset();
+            assert_eq!(
+                motion.animate_to(50.0, AnimationConfig::tween_ms(0)),
+                Err(AnimationError::TimerUnavailable)
+            );
+        });
+        dom.render_immediate_to_vec();
+    }
 
     #[test]
     fn hook_initialization_caches_success_and_error_without_an_invalid_store() {

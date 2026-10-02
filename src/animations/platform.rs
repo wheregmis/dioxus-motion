@@ -3,6 +3,7 @@
 //! Provides cross-platform timing operations for animations.
 //! Supports both web (WASM) and native platforms.
 
+use super::core::AnimationError;
 use instant::{Duration, Instant};
 use std::future::Future;
 
@@ -39,8 +40,9 @@ pub trait TimeProvider {
     /// Returns the current instant
     fn now() -> Instant;
 
-    /// Creates a future that completes after the specified duration
-    fn delay(duration: Duration) -> impl Future<Output = ()>;
+    /// Creates a future that completes after the specified duration.
+    /// Returns an error if a platform timer cannot be scheduled.
+    fn delay(duration: Duration) -> impl Future<Output = Result<(), AnimationError>>;
 }
 
 /// Default time provider implementation for motion animations
@@ -63,12 +65,12 @@ impl TimeProvider for MotionTime {
     /// Uses setTimeout for longer delays, capped at i32::MAX milliseconds
     ///
     /// # Native
-    /// Uses tokio::time::sleep
+    /// Uses tokio::time::sleep in a Tokio runtime with time enabled.
     #[cfg(feature = "web")]
-    async fn delay(duration: Duration) {
+    async fn delay(duration: Duration) -> Result<(), AnimationError> {
         use wasm_bindgen::prelude::*;
         let Some(window) = web_sys::window() else {
-            return;
+            return Err(AnimationError::TimerUnavailable);
         };
         let (sender, receiver) = futures_channel::oneshot::channel::<()>();
         let callback = Closure::once(move || {
@@ -88,23 +90,24 @@ impl TimeProvider for MotionTime {
                 )
                 .map(BrowserRequest::Timeout)
         };
-        if let Ok(request) = request {
-            let _timer = BrowserTimer {
-                window,
-                request,
-                _callback: callback,
-            };
-            let _ = receiver.await;
-        }
+        let request = request.map_err(|_| AnimationError::TimerUnavailable)?;
+        let _timer = BrowserTimer {
+            window,
+            request,
+            _callback: callback,
+        };
+        receiver.await.map_err(|_| AnimationError::TimerUnavailable)
     }
 
     #[cfg(not(feature = "web"))]
-    async fn delay(duration: Duration) {
+    async fn delay(duration: Duration) -> Result<(), AnimationError> {
+        tokio::runtime::Handle::try_current().map_err(|_| AnimationError::TimerUnavailable)?;
         if duration >= Duration::from_millis(1) {
             tokio::time::sleep(duration).await;
         } else {
             tokio::task::yield_now().await;
         }
+        Ok(())
     }
 }
 
@@ -130,6 +133,17 @@ mod tests {
     }
 
     #[cfg(not(feature = "web"))]
+    #[test]
+    fn missing_runtime_returns_error() {
+        let mut delay = Box::pin(MotionTime::delay(Duration::from_millis(10)));
+        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+        assert_eq!(
+            delay.as_mut().poll(&mut context),
+            std::task::Poll::Ready(Err(AnimationError::TimerUnavailable))
+        );
+    }
+
+    #[cfg(not(feature = "web"))]
     #[tokio::test(start_paused = true)]
     async fn test_desktop_sleep_threshold_optimization() {
         let start = tokio::time::Instant::now();
@@ -137,7 +151,7 @@ mod tests {
         futures_util::pin_mut!(delay);
         let mut context = std::task::Context::from_waker(std::task::Waker::noop());
         assert!(delay.as_mut().poll(&mut context).is_pending());
-        delay.await;
+        delay.await.expect("available test timer");
         assert_eq!(start.elapsed(), Duration::ZERO);
     }
 
@@ -146,7 +160,9 @@ mod tests {
     async fn test_desktop_sleep_longer_duration() {
         let duration = Duration::from_millis(10);
         let start = tokio::time::Instant::now();
-        MotionTime::delay(duration).await;
+        MotionTime::delay(duration)
+            .await
+            .expect("available test timer");
         assert_eq!(start.elapsed(), duration);
     }
 
@@ -155,7 +171,9 @@ mod tests {
     async fn test_desktop_sleep_threshold_boundary() {
         let duration = Duration::from_millis(1);
         let start = tokio::time::Instant::now();
-        MotionTime::delay(duration).await;
+        MotionTime::delay(duration)
+            .await
+            .expect("available test timer");
         assert_eq!(start.elapsed(), duration);
     }
 }

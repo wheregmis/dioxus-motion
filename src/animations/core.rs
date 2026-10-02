@@ -417,6 +417,8 @@ pub type OnComplete = Arc<Mutex<dyn FnMut() + Send + 'static>>;
 /// Invalid animation setup or a frame result that cannot be represented.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum AnimationError {
+    #[error("animation timer is unavailable or could not be scheduled")]
+    TimerUnavailable,
     #[error(
         "spring values have incompatible units or component shapes; use a tween for discrete transitions"
     )]

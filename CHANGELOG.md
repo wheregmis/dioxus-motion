@@ -11,9 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Reject nonfinite epsilon values in validation. Keep scalar and transform interpolation finite for opposite extreme endpoints, preserve exact translation/scale endpoints, and wrap rotations spanning multiple turns along the shortest path.
 
-- Update documentation examples to current Dioxus component syntax and compile-check them; run private syntax-highlighting examples as a unit test.
+- Update documentation examples to current Dioxus component syntax and compile-check them; highlight guide examples at compile time with `dioxus-code`.
 
 ### Changed
+
+- Rebuild the six documentation lessons with compiled-source previews, concrete exercises, ordered navigation, and isolated route-transition history. Remove duplicate unrouted guide examples.
+
+- Breaking: `TimeProvider::delay` returns `Result<(), AnimationError>`; failed scheduling returns `TimerUnavailable` and stops the motion driver instead of spinning. Later playback requests on that failed hook also return `TimerUnavailable`. Presence layout falls back to immediate settlement.
 
 - Springs reject shared CSS properties with incompatible units or complex-string shapes before replacing active playback, including sequence steps and velocity changes. Use tweens for discrete transitions. Removing numeric properties now springs toward zero before dropping them at completion.
 - Style fields and typed/complex CSS numbers reuse overflow-safe scalar interpolation. Style tween frames avoid temporary vector arithmetic/property maps, and CSS number formatting widens rounding arithmetic so finite extremes remain finite strings.

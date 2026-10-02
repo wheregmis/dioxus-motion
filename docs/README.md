@@ -46,3 +46,7 @@ The workflow copies `index.html` to `404.html`, allowing direct navigation to gu
 `quick_start.rs` is both a compiled live example and the source shown by `code!`. Keep other displayed examples synchronized with their live components, and use `code_str!` for static snippets. The docs describe the development branch until the new API is published; do not label it as the published 0.3.6 API.
 
 The primitives dependency is pinned to an upstream revision. Review and verify keyboard behavior before updating it. The highlighter is pinned to a published version.
+
+## Maintaining lessons
+
+Keep each runnable example in `src/pages/lessons/`. Guide code panels load that file with `dioxus_code::code!`, so displayed code cannot diverge from the preview. Use `Lesson` for a goal, preview, concrete exercise, and complete source. Keep examples finite or provide a Stop control. Compile and browser-check the guide after changes.

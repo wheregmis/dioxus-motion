@@ -243,28 +243,26 @@ pub fn use_motion<T: Animatable + Send + 'static>(
                 let now = Time::now();
                 let is_running = state.is_running();
 
-                if is_running && running_frames == 0 {
+                let delay = if is_running && running_frames == 0 {
                     last_frame = now;
                     running_frames = 1;
-                    Time::delay(Duration::from_millis(8)).await;
-                    continue;
-                }
-
-                let dt = (now.duration_since(last_frame).as_secs_f32()).min(0.1);
-                last_frame = now;
-
-                // Only check if running first, then write to the signal
-                if is_running {
+                    Duration::from_millis(8)
+                } else if is_running {
+                    let dt = now.duration_since(last_frame).as_secs_f32().min(0.1);
+                    last_frame = now;
                     running_frames = running_frames.saturating_add(1);
                     if let Err(error) = state.update(dt) {
                         tracing::error!(%error, "animation playback stopped");
                     }
-
-                    let delay = calculate_delay(dt, running_frames);
-                    Time::delay(delay).await;
+                    calculate_delay(dt, running_frames)
                 } else {
                     running_frames = 0;
-                    Time::delay(idle_poll_rate).await;
+                    idle_poll_rate
+                };
+                if let Err(error) = Time::delay(delay).await {
+                    state.fail_driver();
+                    tracing::error!(%error, "animation timer stopped");
+                    break;
                 }
             }
         });

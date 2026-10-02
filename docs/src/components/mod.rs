@@ -1,4 +1,3 @@
-pub mod animations;
 pub mod code_block;
 pub mod extras;
 pub mod footer;
@@ -9,3 +8,5 @@ pub mod page_transition;
 
 pub mod motion_lab;
 pub mod quick_start;
+
+pub mod lesson;

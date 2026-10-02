@@ -1,7 +1,10 @@
 //! Browser timing and physics harness; run scripts/check_browser_delay.py.
 #![cfg(target_arch = "wasm32")]
 
-use dioxus_motion::animations::platform::{MotionTime, TimeProvider};
+use dioxus_motion::{
+    animations::platform::{MotionTime, TimeProvider},
+    prelude::AnimationError,
+};
 use std::{
     cell::RefCell,
     future::Future,
@@ -11,11 +14,13 @@ use std::{
 use wasm_bindgen::prelude::*;
 
 thread_local! {
-    static DELAY: RefCell<Option<Pin<Box<dyn Future<Output = ()>>>>> = const { RefCell::new(None) };
+    static FAILED: RefCell<bool> = const { RefCell::new(false) };
+    static DELAY: RefCell<Option<Pin<Box<dyn Future<Output = Result<(), AnimationError>>>>>> = const { RefCell::new(None) };
 }
 
 #[wasm_bindgen]
 pub fn start_delay(milliseconds: u32) -> bool {
+    FAILED.with(|failed| *failed.borrow_mut() = false);
     DELAY.with(|delay| {
         *delay.borrow_mut() = Some(Box::pin(MotionTime::delay(
             std::time::Duration::from_millis(u64::from(milliseconds)),
@@ -32,13 +37,21 @@ pub fn poll_delay() -> bool {
             return true;
         };
         let mut context = Context::from_waker(Waker::noop());
-        if future.as_mut().poll(&mut context).is_ready() {
+        if let std::task::Poll::Ready(result) = future.as_mut().poll(&mut context) {
+            FAILED.with(|failed| {
+                *failed.borrow_mut() = result == Err(AnimationError::TimerUnavailable)
+            });
             *delay = None;
             true
         } else {
             false
         }
     })
+}
+
+#[wasm_bindgen]
+pub fn delay_failed() -> bool {
+    FAILED.with(|failed| *failed.borrow())
 }
 
 #[wasm_bindgen]

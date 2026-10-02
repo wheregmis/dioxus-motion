@@ -103,7 +103,10 @@ pub fn MorphingShape(shapes: Vec<&'static str>, duration: f32) -> Element {
         // Shape transition loop
         spawn(async move {
             loop {
-                Time::delay(Duration::from_secs_f32(duration)).await;
+                if let Err(error) = Time::delay(Duration::from_secs_f32(duration)).await {
+                    dioxus::logger::tracing::error!(%error, "shape loop stopped");
+                    break;
+                }
                 let next = (*current_shape.read() + 1) % shape_configs.len();
                 current_shape.set(next);
             }

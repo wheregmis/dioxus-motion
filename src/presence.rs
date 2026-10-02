@@ -1194,7 +1194,9 @@ async fn measure_presence_layout_size_stable(
     mounted: Rc<MountedData>,
 ) -> Result<PresenceMeasuredSize, MountedError> {
     let _ = measure_presence_layout_size(mounted.clone()).await?;
-    Time::delay(Duration::from_millis(16)).await;
+    if let Err(error) = Time::delay(Duration::from_millis(16)).await {
+        tracing::warn!(%error, "presence layout proceeds without a timer");
+    }
     measure_presence_layout_size(mounted).await
 }
 
@@ -1215,9 +1217,13 @@ fn schedule_presence_layout_measurement(
                     .as_ref()
                     .map(AnimationConfig::get_duration)
                     .unwrap_or_default();
-                Time::delay(Duration::from_millis(16)).await;
+                if let Err(error) = Time::delay(Duration::from_millis(16)).await {
+                    tracing::warn!(%error, "presence layout proceeds without a timer");
+                }
                 expand_enter.set(true);
-                Time::delay(duration).await;
+                if let Err(error) = Time::delay(duration).await {
+                    tracing::warn!(%error, "presence layout settles without a timer");
+                }
                 settle_enter.set(true);
             }
         }
@@ -1342,7 +1348,9 @@ fn PresenceLayoutChildBoundary(
     use_effect(use_reactive((&is_present,), move |_| {
         if !is_present {
             spawn(async move {
-                Time::delay(Duration::from_millis(16)).await;
+                if let Err(error) = Time::delay(Duration::from_millis(16)).await {
+                    tracing::warn!(%error, "presence layout proceeds without a timer");
+                }
                 collapse_exit.set(true);
             });
         }
