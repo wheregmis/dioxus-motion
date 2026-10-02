@@ -71,6 +71,8 @@ The [live quick start](docs/src/components/quick_start.rs) is compiled as part o
 
 Construction, hooks, animation setup, velocity changes, and frame updates return typed errors. Handle `AnimationError` at the boundary where you accept user input or configure motion.
 
+Presence hooks validate initial, animate, and exit values and their transitions before registering work. `PresenceConfig::validate()` also checks the optional layout transition. Spring entry must support re-entry from the exit state; use a tween when those states use incompatible CSS units.
+
 - Initial values, targets, velocities, and frame results must be finite. `Animatable::is_finite` checks every numeric component of a custom type.
 - Invalid setup preserves existing playback. A failed frame stops playback and retains the last valid value.
 - CSS springs require compatible units and complex shapes for shared properties. Use a tween for changing units or discrete values. Invalid spring transitions return `IncompatibleSpringValues` before playback changes.

@@ -56,6 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Presence hooks return invalid state, transition, and layout configuration errors during setup instead of deferring them to logged animation failures. Spring setup also checks interrupted re-entry from the exit state.
+
 - Layout projection owns and cancels its pending frame instead of forgetting RAF closures. Replacing or removing a projection releases its task, and timer failures settle the temporary transform immediately.
 
 - Include alpha in CSS color convergence and combine embedded color/number components as a Euclidean magnitude. Alpha-only style springs now animate instead of snapping at setup. Compound magnitudes use a wider fallback for squared-component overflow/underflow, and spring completion compares magnitudes directly to avoid squaring extreme epsilon values.

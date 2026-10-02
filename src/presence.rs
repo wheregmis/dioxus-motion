@@ -248,6 +248,22 @@ pub struct PresenceConfig {
 }
 
 impl PresenceConfig {
+    /// Validates all presence states and enter, exit, and optional layout transitions.
+    /// Spring transitions must support both initial entry and interrupted re-entry.
+    pub fn validate(&self) -> Result<(), crate::prelude::AnimationError> {
+        validate_presence_animation(
+            &self.initial,
+            &self.animate,
+            &self.exit,
+            &self.enter_transition,
+            &self.exit_transition,
+        )?;
+        if let Some(layout) = &self.layout_transition {
+            layout.validate()?;
+        }
+        Ok(())
+    }
+
     /// Creates a presence style animation config with one transition for enter and exit.
     pub fn new(
         initial: MotionStyle,
@@ -1961,6 +1977,7 @@ where
 }
 
 /// Creates a motion handle with separate enter and exit transitions.
+/// Returns setup errors for invalid states, parameters, or incompatible spring units.
 pub fn use_presence_motion_with_transitions<T>(
     initial: T,
     animate: T,
@@ -1971,6 +1988,7 @@ pub fn use_presence_motion_with_transitions<T>(
 where
     T: Animatable + Send + 'static,
 {
+    validate_presence_animation(&initial, &animate, &exit, &enter_config, &exit_config)?;
     let presence = use_presence();
     let context = try_consume_context::<PresenceContext>();
     let status = context.as_ref().map(|context| context.status);
@@ -2058,9 +2076,11 @@ fn use_exit_completion<T: Animatable + Send + 'static>(
 }
 
 /// Creates a CSS-ready presence style handle for opacity and transform animations.
+/// Validates the supplied configuration before registering presence or layout work.
 pub fn use_presence_style(
     config: PresenceConfig,
 ) -> Result<MotionHandle<MotionStyle>, crate::prelude::AnimationError> {
+    config.validate()?;
     let presence = use_presence();
     let context = try_consume_context::<PresenceContext>();
     let status = context.as_ref().map(|context| context.status);
@@ -2155,6 +2175,24 @@ pub fn use_presence_style(
     Ok(motion)
 }
 
+fn validate_presence_animation<T: Animatable>(
+    initial: &T,
+    animate: &T,
+    exit: &T,
+    enter: &AnimationConfig,
+    leaving: &AnimationConfig,
+) -> Result<(), crate::prelude::AnimationError> {
+    use crate::animations::core::{validate_spring_transition, validate_value};
+    validate_value(initial, "presence initial")?;
+    validate_value(animate, "presence animate")?;
+    validate_value(exit, "presence exit")?;
+    enter.validate_for::<T>()?;
+    leaving.validate_for::<T>()?;
+    validate_spring_transition(initial, animate, enter.mode)?;
+    validate_spring_transition(animate, exit, leaving.mode)?;
+    validate_spring_transition(exit, animate, enter.mode)
+}
+
 fn presence_style_enter_start(
     mut current: MotionStyle,
     animate: &MotionStyle,
@@ -2228,6 +2266,81 @@ mod tests {
     use dioxus::prelude::*;
     use dioxus_core::ScopeId;
     use std::collections::BTreeMap;
+
+    #[test]
+    fn presence_hooks_return_setup_errors_for_future_states_and_transitions() {
+        use crate::prelude::{AnimationConfig, AnimationError, PresenceConfig, Spring};
+        use std::{cell::Cell, rc::Rc};
+        type Shared = Rc<Cell<Option<AnimationError>>>;
+        fn host((case, result): (usize, Shared)) -> Element {
+            let tween = AnimationConfig::tween_ms(200);
+            let invalid_spring = AnimationConfig::spring(Spring {
+                mass: 0.0,
+                ..Spring::default()
+            });
+            let error = if case < 5 {
+                super::use_presence_motion_with_transitions(
+                    if case == 0 { f32::NAN } else { 0.0 },
+                    if case == 1 { f32::NAN } else { 1.0 },
+                    if case == 2 { f32::NAN } else { 0.0 },
+                    if case == 3 {
+                        invalid_spring.clone()
+                    } else {
+                        tween.clone()
+                    },
+                    if case == 4 { invalid_spring } else { tween },
+                )
+                .err()
+            } else {
+                let style = MotionStyle::default().property("width", CssValue::Px(20.0));
+                let mut config =
+                    PresenceConfig::new(style.clone(), style.clone(), style, tween.clone());
+                match case {
+                    5 => config.initial.opacity = f32::NAN,
+                    6 => config.exit.opacity = f32::NAN,
+                    7 => config.layout_transition = Some(invalid_spring),
+                    8 => {
+                        config.exit = config.exit.property("width", CssValue::Percent(0.0));
+                        config.exit_transition = AnimationConfig::spring(Spring::default());
+                    }
+                    _ => {
+                        config.exit = config.exit.property("width", CssValue::Percent(0.0));
+                        config.enter_transition = AnimationConfig::spring(Spring::default());
+                    }
+                }
+                // A tween exit is valid here, but an interrupted spring entry is incompatible.
+                super::use_presence_style(config).err()
+            };
+            result.set(error);
+            VNode::empty()
+        }
+        let errors = [
+            AnimationError::NonFiniteValue("presence initial"),
+            AnimationError::NonFiniteValue("presence animate"),
+            AnimationError::NonFiniteValue("presence exit"),
+            AnimationError::InvalidSpringParameter("mass"),
+            AnimationError::InvalidSpringParameter("mass"),
+            AnimationError::NonFiniteValue("presence initial"),
+            AnimationError::NonFiniteValue("presence exit"),
+            AnimationError::InvalidSpringParameter("mass"),
+            AnimationError::IncompatibleSpringValues,
+            AnimationError::IncompatibleSpringValues,
+        ];
+        for (case, expected) in errors.into_iter().enumerate() {
+            let result = Shared::default();
+            let mut dom = VirtualDom::new_with_props(host, (case, result.clone()));
+            dom.rebuild_in_place();
+            assert_eq!(result.get(), Some(expected), "presence case {case}");
+        }
+        let style = MotionStyle::default().property("width", CssValue::Px(20.0));
+        let config = PresenceConfig::new(
+            style.clone(),
+            style.clone(),
+            style.property("width", CssValue::Percent(0.0)),
+            AnimationConfig::tween_ms(200),
+        );
+        assert_eq!(config.validate(), Ok(()), "discrete tween units are valid");
+    }
 
     #[cfg(feature = "web")]
     #[test]
