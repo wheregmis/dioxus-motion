@@ -130,7 +130,15 @@ With `cargo-mutants` installed, audit a changed function, for example:
 
 ```bash
 cargo mutants --cap-lints true --file src/animations/style.rs --re 'merge_style_properties|std::ops::Mul' -- --lib --locked
+cargo mutants --cap-lints true --file src/motion.rs --re 'update_keyframes' -- --lib --locked
 ```
+
+On 2026-10-02, the keyframe update audit caught all 33 generated mutations, with
+zero survivors, timeouts, or unviable cases. Coverage includes held frames,
+duplicate terminal offsets, zero duration, invalid easing, custom interpolation
+failures, and agreement between binary lookup and an independent linear reference.
+This result covers that function and those mutations; it is not a whole-library
+correctness proof.
 
 Inspect survivors and build failures individually. A timeout or unviable mutation
 is not a caught mutation. Mutable selector callbacks required by Dioxus are private
