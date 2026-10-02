@@ -12,7 +12,12 @@ use instant::Duration;
 ///
 /// This trait leverages standard Rust operator traits for mathematical operations,
 /// reducing boilerplate and making implementations more intuitive.
-/// Only requires implementing interpolation and magnitude calculation.
+/// Requires interpolation, magnitude calculation, and component validation.
+///
+/// Arithmetic operates on values, displacements, forces, and velocities.
+/// Preserve signed components and avoid clamping intermediate arithmetic.
+/// `Self::default() * 0.0` must produce an additive zero value; `Default`
+/// itself may represent a display value such as an identity transform.
 pub trait Animatable:
     Clone
     + 'static
@@ -28,6 +33,10 @@ pub trait Animatable:
     /// Used for determining animation completion
     fn magnitude(&self) -> f32;
 
+    /// Returns true only when every numerical component is finite.
+    /// Check components directly; a magnitude can overflow for a finite vector.
+    fn is_finite(&self) -> bool;
+
     /// Returns the epsilon threshold for this type
     /// Default implementation provides a reasonable value for most use cases
     fn epsilon() -> f32 {
@@ -35,9 +44,234 @@ pub trait Animatable:
     }
 }
 
+/// Euclidean magnitude with the normal f32 path and a wider fallback for
+/// squared components that overflow or underflow. No allocation is needed.
+#[inline]
+pub(crate) fn magnitude(values: impl Iterator<Item = f32> + Clone) -> f32 {
+    let squared = values
+        .clone()
+        .map(|value| value * value)
+        .reduce(|sum, value| sum + value)
+        .unwrap_or(0.0);
+    if squared.is_normal() {
+        squared.sqrt()
+    } else {
+        values
+            .map(|value| f64::from(value).powi(2))
+            .sum::<f64>()
+            .sqrt() as f32
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn finite_validation_checks_components_including_css_properties() {
+        use crate::prelude::{Color, CssColor, CssValue, IntoCssValue, MotionStyle, Transform};
+        for value in [0.0, f32::MAX, f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            let expected = value.is_finite();
+            for index in 0..4 {
+                let mut components = [0.0; 4];
+                components[index] = value;
+                let [r, g, b, a] = components;
+                assert_eq!(Color { r, g, b, a }.is_finite(), expected);
+                assert_eq!(Transform::new(r, g, b, a).is_finite(), expected);
+                assert_eq!(
+                    CssValue::Color(CssColor {
+                        red: r,
+                        green: g,
+                        blue: b,
+                        alpha: a
+                    })
+                    .is_finite(),
+                    expected
+                );
+            }
+            for css in [
+                CssValue::Number(value),
+                CssValue::Px(value),
+                CssValue::Percent(value),
+                CssValue::Vw(value),
+                CssValue::Vh(value),
+                CssValue::Deg(value),
+            ] {
+                assert_eq!(css.is_finite(), expected);
+                let mut style = MotionStyle::default();
+                style.properties.insert("width".into(), css);
+                assert_eq!(style.is_finite(), expected);
+            }
+            for index in 0..16 {
+                let mut style = MotionStyle::default();
+                let fields = [
+                    &mut style.opacity,
+                    &mut style.x,
+                    &mut style.y,
+                    &mut style.z,
+                    &mut style.scale,
+                    &mut style.scale_x,
+                    &mut style.scale_y,
+                    &mut style.scale_z,
+                    &mut style.rotate,
+                    &mut style.rotate_x,
+                    &mut style.rotate_y,
+                    &mut style.rotate_z,
+                    &mut style.skew,
+                    &mut style.skew_x,
+                    &mut style.skew_y,
+                    &mut style.perspective,
+                ];
+                *fields[index] = value;
+                assert_eq!(style.is_finite(), expected, "style field {index}");
+            }
+        }
+        assert!(
+            Color {
+                r: f32::MAX,
+                g: f32::MAX,
+                b: f32::MAX,
+                a: f32::MAX
+            }
+            .is_finite()
+        );
+        assert!(Transform::new(f32::MAX, f32::MAX, f32::MAX, f32::MAX).is_finite());
+        let complex = "translateX(2px)".into_css_value("transform");
+        assert!(matches!(complex, CssValue::Complex(_)));
+        assert!(complex.is_finite());
+        assert!(!complex.scale(f32::MAX).is_finite());
+        assert!(CssValue::Keyword("inherit".into()).is_finite());
+    }
+
+    #[test]
+    fn magnitude_preserves_extreme_components_and_euclidean_distance() {
+        use crate::prelude::{Color, CssColor, CssValue, MotionStyle, Transform};
+        for value in [
+            f32::from_bits(1),
+            f32::MIN_POSITIVE / 4.0,
+            1.0,
+            1e20,
+            f32::MAX,
+        ] {
+            for index in 0..4 {
+                let mut components = [0.0; 4];
+                components[index] = -value;
+                assert_eq!(magnitude(components.into_iter()), value);
+                let [r, g, b, a] = components;
+                assert_eq!(Color { r, g, b, a }.magnitude(), value);
+                assert_eq!(Transform::new(r, g, b, a).magnitude(), value);
+                assert_eq!(
+                    CssValue::Color(CssColor {
+                        red: r,
+                        green: g,
+                        blue: b,
+                        alpha: a
+                    })
+                    .number(),
+                    value
+                );
+            }
+            for index in 0..17 {
+                let mut style = MotionStyle::default() * 0.0;
+                if index == 16 {
+                    style
+                        .properties
+                        .insert("width".into(), CssValue::Px(-value));
+                } else {
+                    let fields = [
+                        &mut style.opacity,
+                        &mut style.x,
+                        &mut style.y,
+                        &mut style.z,
+                        &mut style.scale,
+                        &mut style.scale_x,
+                        &mut style.scale_y,
+                        &mut style.scale_z,
+                        &mut style.rotate,
+                        &mut style.rotate_x,
+                        &mut style.rotate_y,
+                        &mut style.rotate_z,
+                        &mut style.skew,
+                        &mut style.skew_x,
+                        &mut style.skew_y,
+                        &mut style.perspective,
+                    ];
+                    *fields[index] = -value;
+                }
+                assert_eq!(style.magnitude(), value, "style field {index}");
+            }
+        }
+        assert_eq!(magnitude([3.0, 4.0].into_iter()), 5.0);
+        assert_eq!(magnitude([0.0; 4].into_iter()), 0.0);
+        assert!(magnitude([f32::NAN, 0.0].into_iter()).is_nan());
+        assert_eq!(magnitude([f32::INFINITY].into_iter()), f32::INFINITY);
+        for value in [f32::MIN_POSITIVE / 4.0, f32::MAX / 4.0] {
+            assert_eq!(magnitude([value; 4].into_iter()), value * 2.0);
+        }
+    }
+
+    #[test]
+    fn configuration_rejects_invalid_numbers_and_accepts_boundaries() {
+        for epsilon in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY, 0.0, -0.0, -1.0] {
+            assert_eq!(
+                AnimationConfig::tween_ms(1)
+                    .with_epsilon(epsilon)
+                    .validate(),
+                Err(AnimationError::InvalidEpsilon)
+            );
+        }
+        for epsilon in [f32::from_bits(1), 0.125, f32::MAX] {
+            assert_eq!(
+                AnimationConfig::tween_ms(1)
+                    .with_epsilon(epsilon)
+                    .validate(),
+                Ok(())
+            );
+        }
+        for field in ["stiffness", "damping", "mass", "velocity"] {
+            for (value, coefficient_valid, mass_valid, velocity_valid) in [
+                (f32::NAN, false, false, false),
+                (f32::INFINITY, false, false, false),
+                (f32::NEG_INFINITY, false, false, false),
+                (-1.0, false, false, true),
+                (-0.0, true, false, true),
+                (0.0, true, false, true),
+                (f32::from_bits(1), true, false, true),
+                (1.0, true, true, true),
+                (f32::MAX, true, true, true),
+            ] {
+                let mut spring = Spring::default();
+                let valid = match field {
+                    "stiffness" => {
+                        spring.stiffness = value;
+                        coefficient_valid
+                    }
+                    "damping" => {
+                        spring.damping = value;
+                        coefficient_valid
+                    }
+                    "mass" => {
+                        spring.mass = value;
+                        mass_valid
+                    }
+                    _ => {
+                        spring.velocity = value;
+                        velocity_valid
+                    }
+                };
+                let expected = if valid {
+                    Ok(())
+                } else {
+                    Err(AnimationError::InvalidSpringParameter(field))
+                };
+                assert_eq!(
+                    AnimationConfig::spring(spring).validate(),
+                    expected,
+                    "{field}={value}"
+                );
+            }
+        }
+    }
 
     #[test]
     fn tween_ms_creates_tween_config_with_millisecond_duration() {
@@ -47,6 +281,24 @@ mod tests {
             config.mode,
             AnimationMode::Tween(Tween { duration, .. }) if duration == Duration::from_millis(220)
         ));
+    }
+
+    #[test]
+    fn alternate_duration_covers_entire_u8_range() {
+        for count in 0..=u8::MAX {
+            let config = AnimationConfig::tween(Duration::from_secs(1))
+                .with_loop(LoopMode::AlternateTimes(count));
+            assert_eq!(
+                config.get_duration(),
+                Duration::from_secs(u64::from(count) * 2)
+            );
+        }
+        assert_eq!(
+            AnimationConfig::tween(Duration::MAX)
+                .with_loop(LoopMode::Times(2))
+                .get_duration(),
+            Duration::MAX,
+        );
     }
 
     #[test]
@@ -90,6 +342,20 @@ pub enum LoopMode {
 }
 
 pub type OnComplete = Arc<Mutex<dyn FnMut() + Send + 'static>>;
+
+/// Invalid animation configuration, rejected before changing motion state.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+pub enum AnimationError {
+    #[error("animation {0} contains a nonfinite numerical component")]
+    NonFiniteValue(&'static str),
+    #[error("animation epsilon must be finite and positive")]
+    InvalidEpsilon,
+    #[error(
+        "spring {0} is invalid: coefficients must be finite and nonnegative, mass and its reciprocal must be finite and positive, and velocity must be finite"
+    )]
+    InvalidSpringParameter(&'static str),
+}
+
 /// Configuration for an animation
 #[derive(Clone, Default)]
 pub struct AnimationConfig {
@@ -107,6 +373,33 @@ pub struct AnimationConfig {
 }
 
 impl AnimationConfig {
+    /// Checks numerical parameters without imposing an application-specific epsilon range.
+    /// Animated values and velocities still need to remain representable in their value type.
+    pub fn validate(&self) -> Result<(), AnimationError> {
+        if let Some(epsilon) = self.epsilon {
+            validate_completion_epsilon(epsilon)?;
+        }
+        if let AnimationMode::Spring(spring) = self.mode {
+            for (name, value) in [("stiffness", spring.stiffness), ("damping", spring.damping)] {
+                if !value.is_finite() || value < 0.0 {
+                    return Err(AnimationError::InvalidSpringParameter(name));
+                }
+            }
+            if !spring.mass.is_finite() || spring.mass <= 0.0 || !(1.0 / spring.mass).is_finite() {
+                return Err(AnimationError::InvalidSpringParameter("mass"));
+            }
+            if !spring.velocity.is_finite() {
+                return Err(AnimationError::InvalidSpringParameter("velocity"));
+            }
+        }
+        Ok(())
+    }
+
+    pub(crate) fn validate_for<T: Animatable>(&self) -> Result<(), AnimationError> {
+        self.validate()?;
+        validate_completion_epsilon(self.epsilon.unwrap_or_else(T::epsilon))
+    }
+
     /// Creates a new animation configuration with specified mode
     pub fn new(mode: AnimationMode) -> Self {
         Self {
@@ -181,9 +474,11 @@ impl AnimationConfig {
                 let base_duration = tween.duration;
                 match self.loop_mode {
                     Some(LoopMode::Infinite) => Duration::from_secs(f32::INFINITY as u64),
-                    Some(LoopMode::Times(count)) => base_duration * count.into(),
+                    Some(LoopMode::Times(count)) => base_duration.saturating_mul(count.into()),
                     Some(LoopMode::Alternate) => Duration::from_secs(f32::INFINITY as u64),
-                    Some(LoopMode::AlternateTimes(count)) => base_duration * (count * 2).into(),
+                    Some(LoopMode::AlternateTimes(count)) => {
+                        base_duration.saturating_mul(u32::from(count) * 2)
+                    }
                     Some(LoopMode::None) | None => base_duration,
                 }
             }
@@ -192,10 +487,22 @@ impl AnimationConfig {
 
     /// Execute the completion callback if it exists
     pub fn execute_completion(&mut self) {
-        if let Some(on_complete) = &self.on_complete
-            && let Ok(mut callback) = on_complete.lock()
-        {
-            callback();
+        if let Some(on_complete) = &self.on_complete {
+            execute_completion_callback(on_complete);
         }
+    }
+}
+
+fn validate_completion_epsilon(epsilon: f32) -> Result<(), AnimationError> {
+    if epsilon.is_finite() && epsilon > 0.0 {
+        Ok(())
+    } else {
+        Err(AnimationError::InvalidEpsilon)
+    }
+}
+
+pub(crate) fn execute_completion_callback(on_complete: &OnComplete) {
+    if let Ok(mut callback) = on_complete.lock() {
+        callback();
     }
 }

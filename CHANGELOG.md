@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Remove the allocation and redundant spin-sleep from native frame delays. Use Tokio virtual time in delay tests so machine load cannot create false failures.
+
+- Reject nonfinite epsilon values in validation. Keep scalar and transform interpolation finite for opposite extreme endpoints, preserve exact translation/scale endpoints, and wrap rotations spanning multiple turns along the shortest path.
+
+- Update documentation examples to current Dioxus component syntax and compile-check them; run private syntax-highlighting examples as a unit test.
+
+### Changed
+
+- `Motion::new`, `AnimationManager::new`, `use_motion`, and presence motion/style hooks now return `Result` so invalid initial components or nonfinite default zero velocity cannot enter a store. Components can propagate errors with `?` to a Dioxus error boundary. Hook initialization validates once per component lifetime, matching the existing initial-value semantics.
+
+- `Animatable` now requires `is_finite()`, checking every numerical component directly. Built-in values validate components independently of magnitude. Motion targets, sequence targets, and keyframe values reject NaN/infinity with typed errors; invalid setup preserves active motion. Add `is_finite` to custom implementations, for example `[self.x, self.y].into_iter().all(f32::is_finite)`.
+
+- Motion springs use the closed-form damped oscillator on native and web, with coefficients cached for repeated frame deltas. Stiff, low-mass, and heavily damped springs no longer diverge through frame integration. Spring trajectories change slightly from the previous RK4/Euler approximation; zero-force springs remain supported.
+
+- `Motion` and `AnimationManager` setup methods `animate_to` and `animate_sequence` now return `Result<(), AnimationError>`. Handle the error or propagate it with `?`; fixed, known-valid configurations in examples use `.expect("valid animation configuration")`. Invalid epsilon or spring parameters leave the existing animation unchanged, and sequences validate every step before playback. `AnimationConfig::validate` and `AnimationSequence::validate` expose the checks.
+
+- Color arithmetic now preserves signed, unbounded components so spring displacement, forces, and velocity are valid. `Color::new`, interpolation, and `to_rgba` continue to clamp display values.
+
+- Update Dioxus to 0.7.10 and declare Rust 1.89 as the minimum toolchain.
+- Sequence step indices now return `usize`; `Motion::current_loop` is `u16` to support all alternate loop counts.
+- `KeyframeAnimation::keyframes` is private. Read frames with `keyframes()` and add frames with `add_keyframe()` to preserve validated, sorted offsets.
+- Keyframe insertion preserves ordering without re-sorting the track. Large tracks use binary lookup; small tracks retain linear lookup.
+- Remove redundant value clones and comparisons from the hook frame loop; store updates already notify changed values.
+
+### Fixed
+
+- Include alpha in CSS color convergence and combine embedded color/number components as a Euclidean magnitude. Alpha-only style springs now animate instead of snapping at setup. Compound magnitudes use a wider fallback for squared-component overflow/underflow, and spring completion compares magnitudes directly to avoid squaring extreme epsilon values.
+
+- Browser delays own and release their closures, cancel pending RAF/timeout requests when dropped, and finish safely if scheduling fails. Large timeout values saturate instead of wrapping negative.
+- Run browser registry callbacks after releasing the registry borrow; remove duplicate in-use tracking and correct the registry documentation.
+
+- Initialize and reset spring velocity to the additive zero value, including transform scale and color alpha; identity defaults no longer introduce motion at rest.
+
+- Ignore invalid frame deltas, preserve time left after delays, and bound spring work after stalls.
+- Execute completion callbacks after finalizing the animation and releasing the Dioxus store write, so callbacks can read and restart their handle. Support sequences longer than 255 steps and clear previous animations when starting a sequence.
+
+### Tests
+
+- Check closed-form spring trajectories, coefficient extremes, and alpha-only springs in the real browser/WASM harness. Cache regression tests count coefficient calculations without clock-based assertions.
+
+- Add `just check-browser-delay` for browser completion, cancellation, scheduling failure, timeout bounds, and JS reference retention checks. Requires Chrome, matching ChromeDriver, and a wasm-bindgen CLI matching Cargo.lock (`CHROME_BIN`, `CHROMEDRIVER`, and `WASM_BINDGEN` can override tool paths).
+
+- Compare color and transform spring trajectories with scalar motion in both directions; check zero velocity across lifecycle operations and benchmark all three value types.
+
+- Add deterministic frame-delta fuzzing, exhaustive loop-count checks, sequence boundary checks, and interpolation/physics regression checks informed by mutation testing.
+- Keep host-dependent timing measurements as manual benchmarks and remove misleading idle-heavy and battery-simulation checks.
+
 ## [0.3.6](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-v0.3.5...dioxus-motion-v0.3.6) - 2026-05-22
 
 ### <!-- 2 -->Fixes

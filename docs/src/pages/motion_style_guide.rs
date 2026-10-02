@@ -151,50 +151,54 @@ pub fn MotionStyleGuide() -> Element {
 fn MotionStyleShowcase() -> Element {
     let mut seed = use_signal(|| 0xC0FFEE_u32);
     let mut target_count = use_signal(|| 0_u32);
-    let mut surface = use_motion(initial_card_style());
+    let mut surface = use_motion(initial_card_style())?;
 
     let randomize = move |_| {
         let mut next_seed = seed();
         let target = random_card_style(&mut next_seed);
         seed.set(next_seed);
         target_count.set(target_count() + 1);
-        surface.animate_to(
-            target,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 120.0,
-                damping: 10.0,
-                mass: 1.0,
-                velocity: 0.0,
-            })),
-        );
+        surface
+            .animate_to(
+                target,
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 120.0,
+                    damping: 10.0,
+                    mass: 1.0,
+                    velocity: 0.0,
+                })),
+            )
+            .expect("valid animation configuration");
     };
 
     let pulse = move |_| {
         target_count.set(target_count() + 1);
-        surface.animate_to(
-            motion_style! {
-                opacity: 1.0,
-                x: 0.0,
-                y: -28.0,
-                z: 80.0,
-                scale: 1.14,
-                rotate: 10.0,
-                rotateX: 12.0,
-                rotateY: -20.0,
-                skew: 0.0,
-                perspective: 900.0,
-                border_radius: 36.0,
-                color: "#f0fdf4",
-                background_color: "#16a34a",
-                border_color: "#86efac",
-                box_shadow: "0px 34px 68px rgba(22, 163, 74, 0.42)",
-                letter_spacing: "1.2px",
-            },
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(520),
-                easing: easer::functions::Back::ease_out,
-            })),
-        );
+        surface
+            .animate_to(
+                motion_style! {
+                    opacity: 1.0,
+                    x: 0.0,
+                    y: -28.0,
+                    z: 80.0,
+                    scale: 1.14,
+                    rotate: 10.0,
+                    rotateX: 12.0,
+                    rotateY: -20.0,
+                    skew: 0.0,
+                    perspective: 900.0,
+                    border_radius: 36.0,
+                    color: "#f0fdf4",
+                    background_color: "#16a34a",
+                    border_color: "#86efac",
+                    box_shadow: "0px 34px 68px rgba(22, 163, 74, 0.42)",
+                    letter_spacing: "1.2px",
+                },
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_millis(520),
+                    easing: easer::functions::Back::ease_out,
+                })),
+            )
+            .expect("valid animation configuration");
     };
 
     let current_style = surface.get_value().to_css();
@@ -250,7 +254,7 @@ fn Card() -> Element {
         background_color: "#2563eb",
         border_color: "#60a5fa",
         box_shadow: "0px 18px 36px rgba(37, 99, 235, 0.28)",
-    });
+    }).expect("finite initial value");
 
     let randomize = move |_| {
         let mut next_seed = seed();
@@ -276,7 +280,7 @@ fn Card() -> Element {
                 border_color: border,
             },
             AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-        );
+        ).expect("valid animation configuration");
 
         seed.set(next_seed);
     };

@@ -13,42 +13,41 @@ use crate::utils::router::Route;
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```no_run
 /// use dioxus::prelude::*;
+/// use docs::components::navbar::NavBar;
 ///
-/// fn main() {
-///     dioxus::web::launch(app);
-/// }
-///
-/// fn app(cx: Scope) -> Element {
-///     cx.render(rsx! {
-///         NavBar {}
-///     })
+/// fn app() -> Element {
+///     rsx! { NavBar {} }
 /// }
 /// ```
 pub fn NavBar() -> Element {
-    let mut nav_bg = use_motion(Transform::new(0.0, -100.0, 1.0, 0.0));
-    let mut nav_opacity = use_motion(0.0f32);
+    let mut nav_bg = use_motion(Transform::new(0.0, -100.0, 1.0, 0.0))?;
+    let mut nav_opacity = use_motion(0.0f32)?;
     let mut is_menu_open = use_signal(|| false);
 
     use_effect(move || {
-        nav_bg.animate_to(
-            Transform::new(0.0, 0.0, 1.0, 0.0),
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 100.0,
-                damping: 20.0,
-                mass: 1.0,
-                velocity: 0.0,
-            })),
-        );
+        nav_bg
+            .animate_to(
+                Transform::new(0.0, 0.0, 1.0, 0.0),
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 100.0,
+                    damping: 20.0,
+                    mass: 1.0,
+                    velocity: 0.0,
+                })),
+            )
+            .expect("valid animation configuration");
 
-        nav_opacity.animate_to(
-            1.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(300),
-                easing: easer::functions::Cubic::ease_out,
-            })),
-        );
+        nav_opacity
+            .animate_to(
+                1.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_millis(300),
+                    easing: easer::functions::Cubic::ease_out,
+                })),
+            )
+            .expect("valid animation configuration");
     });
 
     rsx! {
@@ -220,25 +219,6 @@ pub fn NavBar() -> Element {
 /// * `to` - The destination route for the link.
 /// * `children` - The content displayed within the link.
 ///
-/// # Examples
-///
-/// ```
-/// use dioxus::prelude::*;
-///
-/// // Example route enum for demonstration.
-/// #[derive(PartialEq, Eq)]
-/// enum Route {
-///     Home,
-///     About,
-/// }
-///
-/// // An example component utilizing NavLink.
-/// fn App(cx: Scope) -> Element {
-///     cx.render(rsx! {
-///         NavLink(Route::Home, rsx! { "Home" })
-///     })
-/// }
-/// ```
 fn NavLink(to: Route, children: Element) -> Element {
     let current_route = use_route::<Route>();
     let is_active = current_route == to;

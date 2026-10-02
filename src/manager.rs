@@ -1,12 +1,12 @@
 use crate::Duration;
-use crate::animations::core::Animatable;
+use crate::animations::core::{Animatable, AnimationError};
 use crate::keyframes::KeyframeAnimation;
 use crate::motion::Motion;
 use crate::prelude::AnimationConfig;
 use crate::sequence::AnimationSequence;
 
 use dioxus::{
-    prelude::{ReadStore, Store, use_store},
+    prelude::{ReadStore, Store, use_hook},
     signals::ReadableExt,
 };
 
@@ -42,16 +42,14 @@ impl<T: Animatable + Send + 'static> Clone for MotionHandle<T> {
 impl<T: Animatable + Send + 'static> Copy for MotionHandle<T> {}
 
 impl<T: Animatable + Send + 'static> MotionHandle<T> {
-    pub(crate) fn new_hook(initial: T) -> Self {
-        Self {
-            state: use_store(|| Motion::new(initial)),
-        }
+    pub(crate) fn new_hook(initial: T) -> Result<Self, AnimationError> {
+        use_hook(|| Self::new_detached(initial))
     }
 
-    fn new_detached(initial: T) -> Self {
-        Self {
-            state: Store::new(Motion::new(initial)),
-        }
+    fn new_detached(initial: T) -> Result<Self, AnimationError> {
+        Motion::new(initial).map(|motion| Self {
+            state: Store::new(motion),
+        })
     }
 
     pub fn current(self) -> ReadStore<T> {
@@ -107,9 +105,9 @@ impl<T: Animatable + Send + 'static> MotionHandle<T> {
 }
 
 pub trait AnimationManager<T: Animatable + Send + 'static>: Clone + Copy {
-    fn new(initial: T) -> Self;
-    fn animate_to(&mut self, target: T, config: AnimationConfig);
-    fn animate_sequence(&mut self, sequence: AnimationSequence<T>);
+    fn new(initial: T) -> Result<Self, AnimationError>;
+    fn animate_to(&mut self, target: T, config: AnimationConfig) -> Result<(), AnimationError>;
+    fn animate_sequence(&mut self, sequence: AnimationSequence<T>) -> Result<(), AnimationError>;
     fn animate_keyframes(&mut self, animation: KeyframeAnimation<T>);
     fn update(&mut self, dt: f32) -> bool;
     fn get_value(&self) -> T;
@@ -120,16 +118,21 @@ pub trait AnimationManager<T: Animatable + Send + 'static>: Clone + Copy {
 }
 
 impl<T: Animatable + Send + 'static> AnimationManager<T> for MotionHandle<T> {
-    fn new(initial: T) -> Self {
+    fn new(initial: T) -> Result<Self, AnimationError> {
         Self::new_detached(initial)
     }
 
-    fn animate_to(&mut self, target: T, config: AnimationConfig) {
-        self.write_motion(|motion| motion.animate_to(target, config));
+    fn animate_to(&mut self, target: T, config: AnimationConfig) -> Result<(), AnimationError> {
+        self.write_motion(|motion| motion.animate_to(target, config))
     }
 
-    fn animate_sequence(&mut self, sequence: AnimationSequence<T>) {
-        self.write_motion(|motion| motion.animate_sequence(sequence));
+    fn animate_sequence(&mut self, sequence: AnimationSequence<T>) -> Result<(), AnimationError> {
+        let completion =
+            self.write_motion(|motion| motion.animate_sequence_with_completion(sequence))?;
+        if let Some(completion) = completion {
+            completion.run();
+        }
+        Ok(())
     }
 
     fn animate_keyframes(&mut self, animation: KeyframeAnimation<T>) {
@@ -137,7 +140,11 @@ impl<T: Animatable + Send + 'static> AnimationManager<T> for MotionHandle<T> {
     }
 
     fn update(&mut self, dt: f32) -> bool {
-        self.write_motion(|motion| motion.update(dt))
+        let (running, completion) = self.write_motion(|motion| motion.update_with_completion(dt));
+        if let Some(completion) = completion {
+            completion.run();
+        }
+        running
     }
 
     fn get_value(&self) -> T {
@@ -159,5 +166,153 @@ impl<T: Animatable + Send + 'static> AnimationManager<T> for MotionHandle<T> {
 
     fn delay(&mut self, duration: Duration) {
         self.write_motion(|motion| motion.delay(duration));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::LoopMode;
+    use dioxus::prelude::*;
+    use std::cell::Cell;
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+
+    #[test]
+    fn hook_initialization_caches_success_and_error_without_an_invalid_store() {
+        use std::rc::Rc;
+        #[derive(Clone)]
+        struct Props {
+            initial: Rc<Cell<f32>>,
+            valid: Rc<Cell<bool>>,
+        }
+        fn host(props: Props) -> Element {
+            props
+                .valid
+                .set(MotionHandle::<f32>::new_hook(props.initial.get()).is_ok());
+            VNode::empty()
+        }
+        for initial in [0.0, f32::NAN] {
+            let props = Props {
+                initial: Rc::new(Cell::new(initial)),
+                valid: Rc::new(Cell::new(false)),
+            };
+            let mut dom = VirtualDom::new_with_props(host, props.clone());
+            dom.rebuild_in_place();
+            assert_eq!(props.valid.get(), initial.is_finite());
+            props
+                .initial
+                .set(if initial.is_finite() { f32::NAN } else { 0.0 });
+            dom.mark_dirty(ScopeId::APP);
+            dom.render_immediate_to_vec();
+            assert_eq!(props.valid.get(), initial.is_finite());
+        }
+        for value in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            assert!(matches!(
+                MotionHandle::<f32>::new(value),
+                Err(AnimationError::NonFiniteValue("initial value"))
+            ));
+        }
+    }
+
+    #[test]
+    fn handle_propagates_setup_errors_without_replacing_motion() {
+        let mut dom = VirtualDom::new(|| rsx! { div {} });
+        dom.rebuild_in_place();
+        dom.in_scope(ScopeId::APP, || {
+            let mut motion = MotionHandle::new(0.0f32).expect("finite initial value");
+            motion
+                .animate_to(1.0, AnimationConfig::tween_ms(1000))
+                .expect("valid configuration");
+            assert!(motion.update(0.25));
+            assert_eq!(
+                motion.animate_to(99.0, AnimationConfig::tween_ms(0).with_epsilon(0.0)),
+                Err(AnimationError::InvalidEpsilon)
+            );
+            assert_eq!(
+                motion.animate_sequence(
+                    AnimationSequence::new()
+                        .then(99.0, AnimationConfig::tween_ms(0).with_epsilon(f32::NAN))
+                ),
+                Err(AnimationError::InvalidEpsilon)
+            );
+            assert!(motion.is_running());
+            assert_eq!(motion.get_value(), 0.25);
+            assert!(!motion.update(0.75));
+            assert_eq!(motion.get_value(), 1.0);
+        });
+    }
+
+    #[test]
+    fn completion_can_read_and_restart_the_same_handle() {
+        // Completion callbacks are Send; Dioxus handles stay on their owner thread.
+        thread_local! { static CALLBACK_MOTION: Cell<Option<MotionHandle<f32>>> = const { Cell::new(None) }; }
+        let mut dom = VirtualDom::new(|| rsx! { div {} });
+        dom.rebuild_in_place();
+        dom.in_scope(ScopeId::APP, || {
+            for case in 0..5 {
+                let mut motion = MotionHandle::new(0.0f32).expect("finite initial value");
+                CALLBACK_MOTION.set(Some(motion));
+                let calls = Arc::new(AtomicUsize::new(0));
+                let callback_calls = calls.clone();
+                let expected = if case == 2 || case == 4 { 0.0 } else { 1.0 };
+                let callback = move || {
+                    let mut callback_motion = CALLBACK_MOTION.get().expect("current test handle");
+                    assert!(!callback_motion.is_running());
+                    assert_eq!(callback_motion.get_value(), expected);
+                    callback_calls.fetch_add(1, Ordering::Relaxed);
+                    callback_motion
+                        .animate_to(2.0, AnimationConfig::tween_ms(1000))
+                        .expect("valid animation configuration");
+                };
+                let instant = AnimationConfig::tween(Duration::ZERO);
+                match case {
+                    0 => motion
+                        .animate_to(1.0, instant.with_on_complete(callback))
+                        .expect("valid animation configuration"),
+                    1 => motion
+                        .animate_to(
+                            1.0,
+                            instant
+                                .with_loop(LoopMode::Times(2))
+                                .with_on_complete(callback),
+                        )
+                        .expect("valid animation configuration"),
+                    2 => motion
+                        .animate_to(
+                            1.0,
+                            instant
+                                .with_loop(LoopMode::AlternateTimes(1))
+                                .with_on_complete(callback),
+                        )
+                        .expect("valid animation configuration"),
+                    3 => motion
+                        .animate_sequence(
+                            AnimationSequence::new()
+                                .then(1.0, instant)
+                                .on_complete(callback),
+                        )
+                        .expect("valid animation configuration"),
+                    _ => motion
+                        .animate_sequence(AnimationSequence::new().on_complete(callback))
+                        .expect("valid animation configuration"),
+                }
+                if case == 1 || case == 2 {
+                    assert!(motion.update(0.01));
+                    assert_eq!(calls.load(Ordering::Relaxed), 0);
+                }
+                if case != 4 {
+                    assert!(!motion.update(0.01));
+                }
+                assert_eq!(calls.load(Ordering::Relaxed), 1);
+                assert!(motion.is_running());
+                assert!(motion.update(0.5));
+                assert!(motion.get_value() > expected);
+                assert_eq!(calls.load(Ordering::Relaxed), 1);
+            }
+            CALLBACK_MOTION.set(None);
+        });
     }
 }

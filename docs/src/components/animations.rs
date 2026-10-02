@@ -32,26 +32,30 @@ fn AnimationStep(title: String, description: String, code: String, children: Ele
 
 #[component]
 fn BasicValueAnimation() -> Element {
-    let mut opacity = use_motion(0.0f32);
+    let mut opacity = use_motion(0.0f32)?;
     let mut is_visible = use_signal(|| false);
 
     use_effect(move || {
         if *is_visible.read() {
-            opacity.animate_to(
-                1.0,
-                AnimationConfig::new(AnimationMode::Tween(Tween {
-                    duration: std::time::Duration::from_millis(500),
-                    easing: easer::functions::Cubic::ease_in_out,
-                })),
-            );
+            opacity
+                .animate_to(
+                    1.0,
+                    AnimationConfig::new(AnimationMode::Tween(Tween {
+                        duration: std::time::Duration::from_millis(500),
+                        easing: easer::functions::Cubic::ease_in_out,
+                    })),
+                )
+                .expect("valid animation configuration");
         } else {
-            opacity.animate_to(
-                0.0,
-                AnimationConfig::new(AnimationMode::Tween(Tween {
-                    duration: std::time::Duration::from_millis(500),
-                    easing: easer::functions::Cubic::ease_in_out,
-                })),
-            );
+            opacity
+                .animate_to(
+                    0.0,
+                    AnimationConfig::new(AnimationMode::Tween(Tween {
+                        duration: std::time::Duration::from_millis(500),
+                        easing: easer::functions::Cubic::ease_in_out,
+                    })),
+                )
+                .expect("valid animation configuration");
         }
     });
 
@@ -72,30 +76,34 @@ fn BasicValueAnimation() -> Element {
 
 #[component]
 fn TransformAnimation() -> Element {
-    let mut transform = use_motion(Transform::new(0.0, 0.0, 1.0, 0.0));
+    let mut transform = use_motion(Transform::new(0.0, 0.0, 1.0, 0.0))?;
     let mut is_animated = use_signal(|| false);
 
     use_effect(move || {
         if *is_animated.read() {
-            transform.animate_to(
-                Transform::new(100.0, 50.0, 1.2, 45.0),
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 100.0,
-                    damping: 10.0,
-                    mass: 1.0,
-                    velocity: 0.0,
-                })),
-            );
+            transform
+                .animate_to(
+                    Transform::new(100.0, 50.0, 1.2, 45.0),
+                    AnimationConfig::new(AnimationMode::Spring(Spring {
+                        stiffness: 100.0,
+                        damping: 10.0,
+                        mass: 1.0,
+                        velocity: 0.0,
+                    })),
+                )
+                .expect("valid animation configuration");
         } else {
-            transform.animate_to(
-                Transform::new(0.0, 0.0, 1.0, 0.0),
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 100.0,
-                    damping: 10.0,
-                    mass: 1.0,
-                    velocity: 0.0,
-                })),
-            );
+            transform
+                .animate_to(
+                    Transform::new(0.0, 0.0, 1.0, 0.0),
+                    AnimationConfig::new(AnimationMode::Spring(Spring {
+                        stiffness: 100.0,
+                        damping: 10.0,
+                        mass: 1.0,
+                        velocity: 0.0,
+                    })),
+                )
+                .expect("valid animation configuration");
         }
     });
 
@@ -145,9 +153,9 @@ impl std::ops::Add for ColorValue {
     type Output = Self;
     fn add(self, other: Self) -> Self {
         ColorValue {
-            r: (self.r + other.r).clamp(0.0, 1.0),
-            g: (self.g + other.g).clamp(0.0, 1.0),
-            b: (self.b + other.b).clamp(0.0, 1.0),
+            r: self.r + other.r,
+            g: self.g + other.g,
+            b: self.b + other.b,
         }
     }
 }
@@ -156,9 +164,9 @@ impl std::ops::Sub for ColorValue {
     type Output = Self;
     fn sub(self, other: Self) -> Self {
         ColorValue {
-            r: (self.r - other.r).clamp(0.0, 1.0),
-            g: (self.g - other.g).clamp(0.0, 1.0),
-            b: (self.b - other.b).clamp(0.0, 1.0),
+            r: self.r - other.r,
+            g: self.g - other.g,
+            b: self.b - other.b,
         }
     }
 }
@@ -167,14 +175,18 @@ impl std::ops::Mul<f32> for ColorValue {
     type Output = Self;
     fn mul(self, factor: f32) -> Self {
         ColorValue {
-            r: (self.r * factor).clamp(0.0, 1.0),
-            g: (self.g * factor).clamp(0.0, 1.0),
-            b: (self.b * factor).clamp(0.0, 1.0),
+            r: self.r * factor,
+            g: self.g * factor,
+            b: self.b * factor,
         }
     }
 }
 
 impl Animatable for ColorValue {
+    fn is_finite(&self) -> bool {
+        [self.r, self.g, self.b].into_iter().all(f32::is_finite)
+    }
+
     fn interpolate(&self, target: &Self, t: f32) -> Self {
         *self + (*target - *self) * t
     }
@@ -190,38 +202,42 @@ fn CustomColorAnimation() -> Element {
         r: 0.2,
         g: 0.5,
         b: 0.8,
-    });
+    })?;
     let mut is_warm = use_signal(|| false);
 
     use_effect(move || {
         if *is_warm.read() {
-            color.animate_to(
-                ColorValue {
-                    r: 0.8,
-                    g: 0.3,
-                    b: 0.2,
-                },
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 100.0,
-                    damping: 10.0,
-                    mass: 1.0,
-                    velocity: 0.0,
-                })),
-            );
+            color
+                .animate_to(
+                    ColorValue {
+                        r: 0.8,
+                        g: 0.3,
+                        b: 0.2,
+                    },
+                    AnimationConfig::new(AnimationMode::Spring(Spring {
+                        stiffness: 100.0,
+                        damping: 10.0,
+                        mass: 1.0,
+                        velocity: 0.0,
+                    })),
+                )
+                .expect("valid animation configuration");
         } else {
-            color.animate_to(
-                ColorValue {
-                    r: 0.2,
-                    g: 0.5,
-                    b: 0.8,
-                },
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 100.0,
-                    damping: 10.0,
-                    mass: 1.0,
-                    velocity: 0.0,
-                })),
-            );
+            color
+                .animate_to(
+                    ColorValue {
+                        r: 0.2,
+                        g: 0.5,
+                        b: 0.8,
+                    },
+                    AnimationConfig::new(AnimationMode::Spring(Spring {
+                        stiffness: 100.0,
+                        damping: 10.0,
+                        mass: 1.0,
+                        velocity: 0.0,
+                    })),
+                )
+                .expect("valid animation configuration");
         }
     });
 
@@ -251,8 +267,8 @@ fn CustomColorAnimation() -> Element {
 
 #[component]
 fn SequenceAnimation() -> Element {
-    let mut value = use_motion(0.0f32);
-    let mut scale = use_motion(1.0f32);
+    let mut value = use_motion(0.0f32)?;
+    let mut scale = use_motion(1.0f32)?;
     let mut count = use_signal(|| 0);
 
     let onclick = move |_| {
@@ -266,11 +282,15 @@ fn SequenceAnimation() -> Element {
             })),
         );
 
-        scale.animate_to(
-            1.2,
-            AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-        );
-        value.animate_sequence(sequence);
+        scale
+            .animate_to(
+                1.2,
+                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+            )
+            .expect("valid animation configuration");
+        value
+            .animate_sequence(sequence)
+            .expect("valid animation configuration");
         count.set((*count)() + 1);
     };
 
@@ -342,7 +362,7 @@ pub fn Animations() -> Element {
                 title: "1. Basic Tween Animation".to_string(),
                 description: "Time-based animations with precise control over duration and easing. Perfect for fade effects and smooth transitions.".to_string(),
                 code: r#"// Initialize the motion value
-let mut opacity = use_motion(0.0f32);
+let mut opacity = use_motion(0.0f32).expect("finite initial value");
 
 // Option 1: Trigger on mount
 use_effect(move || {
@@ -352,16 +372,16 @@ use_effect(move || {
             duration: Duration::from_millis(500),
             easing: easer::functions::Cubic::ease_in_out,
         })),
-    );
+    ).expect("valid animation configuration");
 });
 
 // Option 2: Trigger on state change
 let mut is_visible = use_signal(|| false);
 use_effect(move || {
     if *is_visible.read() {
-        opacity.animate_to(1.0, /* config */);
+        opacity.animate_to(1.0, /* config */).expect("valid animation configuration");
     } else {
-        opacity.animate_to(0.0, /* config */);
+        opacity.animate_to(0.0, /* config */).expect("valid animation configuration");
     }
 });
 
@@ -369,7 +389,7 @@ use_effect(move || {
 rsx! {
     button {
         onclick: move |_| {
-            opacity.animate_to(1.0, /* config */);
+            opacity.animate_to(1.0, /* config */).expect("valid animation configuration");
         },
         "Animate"
     }
@@ -385,7 +405,7 @@ rsx! {
 
 #[component]
 fn TransformAnimation() -> Element {
-    let mut transform = use_motion(Transform::new(0.0, 0.0, 1.0, 0.0));
+    let mut transform = use_motion(Transform::new(0.0, 0.0, 1.0, 0.0)).expect("finite initial value");
     let mut is_animated = use_signal(|| false);
 
     use_effect(move || {
@@ -398,7 +418,7 @@ fn TransformAnimation() -> Element {
                     mass: 1.0,
                     velocity: 0.0,
                 })),
-            );
+            ).expect("valid animation configuration");
         } else {
             transform.animate_to(
                 Transform::new(0.0, 0.0, 1.0, 0.0),
@@ -408,7 +428,7 @@ fn TransformAnimation() -> Element {
                     mass: 1.0,
                     velocity: 0.0,
                 })),
-            );
+            ).expect("valid animation configuration");
         }
     });
 
@@ -448,7 +468,7 @@ fn TransformAnimation() -> Element {
 // - x, y: Position
 // - scale: Size
 // - rotation: Angle in radians
-let mut transform = use_motion(Transform::new(0.0, 0.0, 1.0, 0.0));
+let mut transform = use_motion(Transform::new(0.0, 0.0, 1.0, 0.0)).expect("finite initial value");
 
 // Animate with spring for natural motion
 transform.animate_to(
@@ -459,7 +479,7 @@ transform.animate_to(
         mass: 1.0,
         velocity: 0.0,
     })),
-);
+).expect("valid animation configuration");
 
 // Or use tween for precise timing
 transform.animate_to(
@@ -468,7 +488,7 @@ transform.animate_to(
         duration: Duration::from_millis(300),
         easing: easer::functions::Cubic::ease_out,
     })),
-);"#.to_string(),
+).expect("valid animation configuration");"#.to_string(),
                 TransformAnimation {}
             }
 
@@ -486,9 +506,9 @@ impl std::ops::Add for ColorValue {
     type Output = Self;
     fn add(self, other: Self) -> Self {
         ColorValue {
-            r: (self.r + other.r).clamp(0.0, 1.0),
-            g: (self.g + other.g).clamp(0.0, 1.0),
-            b: (self.b + other.b).clamp(0.0, 1.0),
+            r: self.r + other.r,
+            g: self.g + other.g,
+            b: self.b + other.b,
         }
     }
 }
@@ -497,9 +517,9 @@ impl std::ops::Sub for ColorValue {
     type Output = Self;
     fn sub(self, other: Self) -> Self {
         ColorValue {
-            r: (self.r - other.r).clamp(0.0, 1.0),
-            g: (self.g - other.g).clamp(0.0, 1.0),
-            b: (self.b - other.b).clamp(0.0, 1.0),
+            r: self.r - other.r,
+            g: self.g - other.g,
+            b: self.b - other.b,
         }
     }
 }
@@ -508,9 +528,9 @@ impl std::ops::Mul<f32> for ColorValue {
     type Output = Self;
     fn mul(self, factor: f32) -> Self {
         ColorValue {
-            r: (self.r * factor).clamp(0.0, 1.0),
-            g: (self.g * factor).clamp(0.0, 1.0),
-            b: (self.b * factor).clamp(0.0, 1.0),
+            r: self.r * factor,
+            g: self.g * factor,
+            b: self.b * factor,
         }
     }
 }
@@ -521,8 +541,12 @@ impl Default for ColorValue {
     }
 }
 
-// Implement Animatable with only 2 required methods
+// Implement Animatable with three required methods
 impl Animatable for ColorValue {
+    fn is_finite(&self) -> bool {
+        [self.r, self.g, self.b].into_iter().all(f32::is_finite)
+    }
+
     fn interpolate(&self, target: &Self, t: f32) -> Self {
         *self + (*target - *self) * t
     }
@@ -533,11 +557,11 @@ impl Animatable for ColorValue {
 }
 
 // Use it like any other motion value
-let mut color = use_motion(ColorValue { r: 0.2, g: 0.5, b: 0.8 });
+let mut color = use_motion(ColorValue { r: 0.2, g: 0.5, b: 0.8 }).expect("finite initial value");
 color.animate_to(
     ColorValue { r: 0.8, g: 0.3, b: 0.2 },
     AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-);"#.to_string(),
+).expect("valid animation configuration");"#.to_string(),
                 CustomColorAnimation {}
             }
 
@@ -546,8 +570,8 @@ color.animate_to(
                 title: "5. Animation Sequences".to_string(),
                 description: "Chain multiple animations together to create complex, coordinated motion. Perfect for multi-step animations and interactive counters.".to_string(),
                 code: r#"// Initialize multiple motion values
-let mut value = use_motion(0.0f32);
-let mut scale = use_motion(1.0f32);
+let mut value = use_motion(0.0f32).expect("finite initial value");
+let mut scale = use_motion(1.0f32).expect("finite initial value");
 let mut count = use_signal(|| 0);
 
 // Create and trigger a sequence on button click
@@ -568,10 +592,10 @@ let onclick = move |_| {
     scale.animate_to(
         1.2,
         AnimationConfig::new(AnimationMode::Spring(Spring::default()))
-    );
+    ).expect("valid animation configuration");
 
     // Start the sequence animation
-    value.animate_sequence(sequence);
+    value.animate_sequence(sequence).expect("valid animation configuration");
     count += 1;
 }
 
@@ -598,27 +622,27 @@ value.animate_to(
     1.0,
     AnimationConfig::new(AnimationMode::Tween(Tween::default()))
         .with_loop(LoopMode::Infinite)  // Loop forever
-);
+).expect("valid animation configuration");
 
 value.animate_to(
     1.0,
     AnimationConfig::new(AnimationMode::Tween(Tween::default()))
         .with_loop(LoopMode::Times(3))  // Loop 3 times
-);
+).expect("valid animation configuration");
 
 // Add delays before starting animations
 value.animate_to(
     1.0,
     AnimationConfig::new(AnimationMode::Spring(Spring::default()))
         .with_delay(Duration::from_secs(1))  // Wait 1 second before starting
-);
+).expect("valid animation configuration");
 
 // Execute callbacks when animations complete
 value.animate_to(
     1.0,
     AnimationConfig::new(AnimationMode::Spring(Spring::default()))
         .with_on_complete(|| println!("Animation complete!"))
-);"#.to_string(),
+).expect("valid animation configuration");"#.to_string(),
                 AdvancedFeaturesAnimation {}  // You'll need to implement this component
             }
 
@@ -652,66 +676,78 @@ value.animate_to(
 
 #[component]
 fn AdvancedFeaturesAnimation() -> Element {
-    let mut infinite_value = use_motion(0.0f32);
-    let mut delayed_value = use_motion(0.0f32);
-    let mut callback_value = use_motion(0.0f32);
+    let mut infinite_value = use_motion(0.0f32)?;
+    let mut delayed_value = use_motion(0.0f32)?;
+    let mut callback_value = use_motion(0.0f32)?;
     // Infinite loop animation
     let start_infinite = move |_| {
-        infinite_value.animate_to(
-            1.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(1000),
-                easing: easer::functions::Cubic::ease_in_out,
-            }))
-            .with_loop(LoopMode::Infinite),
-        );
+        infinite_value
+            .animate_to(
+                1.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_millis(1000),
+                    easing: easer::functions::Cubic::ease_in_out,
+                }))
+                .with_loop(LoopMode::Infinite),
+            )
+            .expect("valid animation configuration");
     };
 
     // Delayed animation
     let start_delayed = move |_| {
-        delayed_value.animate_to(
-            1.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring::default()))
-                .with_delay(Duration::from_secs(1)),
-        );
+        delayed_value
+            .animate_to(
+                1.0,
+                AnimationConfig::new(AnimationMode::Spring(Spring::default()))
+                    .with_delay(Duration::from_secs(1)),
+            )
+            .expect("valid animation configuration");
     };
 
     // Animation with completion callback
     let start_callback = move |_| {
-        callback_value.animate_to(
-            1.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(1000),
-                easing: easer::functions::Cubic::ease_in_out,
-            }))
-            .with_loop(LoopMode::Times(3))
-            .with_on_complete(|| println!("Animation completed after 3 loops!")),
-        );
+        callback_value
+            .animate_to(
+                1.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_millis(1000),
+                    easing: easer::functions::Cubic::ease_in_out,
+                }))
+                .with_loop(LoopMode::Times(3))
+                .with_on_complete(|| println!("Animation completed after 3 loops!")),
+            )
+            .expect("valid animation configuration");
     };
 
     // Reset all animations
     let reset_all = move |_| {
-        infinite_value.animate_to(
-            0.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(500),
-                easing: easer::functions::Cubic::ease_out,
-            })),
-        );
-        delayed_value.animate_to(
-            0.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(500),
-                easing: easer::functions::Cubic::ease_out,
-            })),
-        );
-        callback_value.animate_to(
-            0.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(500),
-                easing: easer::functions::Cubic::ease_out,
-            })),
-        );
+        infinite_value
+            .animate_to(
+                0.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_millis(500),
+                    easing: easer::functions::Cubic::ease_out,
+                })),
+            )
+            .expect("valid animation configuration");
+        delayed_value
+            .animate_to(
+                0.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_millis(500),
+                    easing: easer::functions::Cubic::ease_out,
+                })),
+            )
+            .expect("valid animation configuration");
+        callback_value
+            .animate_to(
+                0.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_millis(500),
+                    easing: easer::functions::Cubic::ease_out,
+                })),
+            )
+            .expect("valid animation configuration");
     };
 
     rsx! {

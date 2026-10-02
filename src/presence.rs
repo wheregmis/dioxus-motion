@@ -416,14 +416,14 @@ impl PresenceStateMachine {
 
             let tracked_keys = self.records.keys().cloned().collect::<Vec<_>>();
             for key in tracked_keys {
-                if !incoming_keys.contains(&key) {
-                    if let Some(record) = self.records.get_mut(&key) {
-                        if record.state == PresenceRecordState::Present {
-                            notify_scopes.extend(record.subscriber_scopes());
-                        }
-                        record.state = PresenceRecordState::Exiting;
-                        record.custom = custom.clone();
+                if !incoming_keys.contains(&key)
+                    && let Some(record) = self.records.get_mut(&key)
+                {
+                    if record.state == PresenceRecordState::Present {
+                        notify_scopes.extend(record.subscriber_scopes());
                     }
+                    record.state = PresenceRecordState::Exiting;
+                    record.custom = custom.clone();
                 }
             }
 
@@ -473,14 +473,14 @@ impl PresenceStateMachine {
 
         let tracked_keys = self.records.keys().cloned().collect::<Vec<_>>();
         for key in tracked_keys {
-            if !incoming_keys.contains(&key) {
-                if let Some(record) = self.records.get_mut(&key) {
-                    if record.state == PresenceRecordState::Present {
-                        notify_scopes.extend(record.subscriber_scopes());
-                    }
-                    record.state = PresenceRecordState::Exiting;
-                    record.custom = custom.clone();
+            if !incoming_keys.contains(&key)
+                && let Some(record) = self.records.get_mut(&key)
+            {
+                if record.state == PresenceRecordState::Present {
+                    notify_scopes.extend(record.subscriber_scopes());
                 }
+                record.state = PresenceRecordState::Exiting;
+                record.custom = custom.clone();
             }
         }
 
@@ -522,12 +522,11 @@ impl PresenceStateMachine {
     }
 
     fn complete(&mut self, key: &str, token: PresenceToken) {
-        if let Some(record) = self.records.get_mut(key) {
-            if record.generation == token.generation {
-                if let Some(subscriber) = record.subscribers.get_mut(&token.subscriber_id) {
-                    subscriber.completed = true;
-                }
-            }
+        if let Some(record) = self.records.get_mut(key)
+            && record.generation == token.generation
+            && let Some(subscriber) = record.subscribers.get_mut(&token.subscriber_id)
+        {
+            subscriber.completed = true;
         }
         if self.remove_completed_exits() {
             self.exit_completed_since_last_reconcile = true;
@@ -535,10 +534,10 @@ impl PresenceStateMachine {
     }
 
     fn unregister(&mut self, key: &str, token: PresenceToken) {
-        if let Some(record) = self.records.get_mut(key) {
-            if record.generation == token.generation {
-                record.subscribers.remove(&token.subscriber_id);
-            }
+        if let Some(record) = self.records.get_mut(key)
+            && record.generation == token.generation
+        {
+            record.subscribers.remove(&token.subscriber_id);
         }
         if self.remove_completed_exits() {
             self.exit_completed_since_last_reconcile = true;
@@ -566,23 +565,23 @@ impl PresenceStateMachine {
 
         let completed_all_exits = removed_any && !self.has_exiting_children();
 
-        if !self.has_exiting_children() {
-            if let Some(pending) = self.pending_wait_children.take() {
-                for (order, child) in pending.children.into_iter().enumerate() {
-                    if let Some(record) = self.records.get_mut(&child.key) {
-                        record.child = child;
-                        record.state = PresenceRecordState::Present;
-                        record.last_order = order;
-                        record.initial_allowed = true;
-                        record.layout_enter_allowed = true;
-                        record.enter_on_next_reconcile = true;
-                        record.custom = pending.custom.clone();
-                    } else {
-                        let mut record =
-                            PresenceRecord::new(child, order, true, true, pending.custom.clone());
-                        record.enter_on_next_reconcile = true;
-                        self.records.insert(record.child.key.clone(), record);
-                    }
+        if !self.has_exiting_children()
+            && let Some(pending) = self.pending_wait_children.take()
+        {
+            for (order, child) in pending.children.into_iter().enumerate() {
+                if let Some(record) = self.records.get_mut(&child.key) {
+                    record.child = child;
+                    record.state = PresenceRecordState::Present;
+                    record.last_order = order;
+                    record.initial_allowed = true;
+                    record.layout_enter_allowed = true;
+                    record.enter_on_next_reconcile = true;
+                    record.custom = pending.custom.clone();
+                } else {
+                    let mut record =
+                        PresenceRecord::new(child, order, true, true, pending.custom.clone());
+                    record.enter_on_next_reconcile = true;
+                    self.records.insert(record.child.key.clone(), record);
                 }
             }
         }
@@ -1599,21 +1598,21 @@ fn measure_pop_layout_snapshot(
                     position != "static"
                 })
                 .unwrap_or(true);
-            if !parent_positioned {
-                if let Some(parent_html) = parent_element.dyn_ref::<web_sys::HtmlElement>() {
-                    let previous_position = parent_html
-                        .style()
-                        .get_property_value("position")
-                        .unwrap_or_default();
-                    let _ = parent_html.style().set_property("position", "relative");
-                    if parent_style_mutation.borrow().is_none() {
-                        parent_style_mutation
-                            .borrow_mut()
-                            .replace(ParentStyleMutation {
-                                element: parent_html.clone(),
-                                previous_position,
-                            });
-                    }
+            if !parent_positioned
+                && let Some(parent_html) = parent_element.dyn_ref::<web_sys::HtmlElement>()
+            {
+                let previous_position = parent_html
+                    .style()
+                    .get_property_value("position")
+                    .unwrap_or_default();
+                let _ = parent_html.style().set_property("position", "relative");
+                if parent_style_mutation.borrow().is_none() {
+                    parent_style_mutation
+                        .borrow_mut()
+                        .replace(ParentStyleMutation {
+                            element: parent_html.clone(),
+                            previous_position,
+                        });
                 }
             }
 
@@ -1749,8 +1748,8 @@ fn PopLayoutBoundary(
 
     rsx! {
         div {
-            id: "{pop_id}",
-            style: "{pop_style}",
+            id: pop_id,
+            style: pop_style,
             onmounted: move |event| {
                 let mounted = event.data.clone();
                 content_node.set(Some(mounted.clone()));
@@ -1903,7 +1902,7 @@ pub fn use_presence_motion<T>(
     animate: T,
     exit: T,
     config: AnimationConfig,
-) -> MotionHandle<T>
+) -> Result<MotionHandle<T>, crate::prelude::AnimationError>
 where
     T: Animatable + Send + 'static,
 {
@@ -1917,7 +1916,7 @@ pub fn use_presence_motion_with_transitions<T>(
     exit: T,
     enter_config: AnimationConfig,
     exit_config: AnimationConfig,
-) -> MotionHandle<T>
+) -> Result<MotionHandle<T>, crate::prelude::AnimationError>
 where
     T: Animatable + Send + 'static,
 {
@@ -1934,7 +1933,7 @@ where
             }
         })
         .unwrap_or_else(|| animate.clone());
-    let mut motion = use_motion(start);
+    let mut motion = use_motion(start)?;
     let mut last_target_present = use_signal(|| None::<bool>);
     let mut awaiting_exit_completion = use_signal(|| false);
     let mut exit_observed_running = use_signal(|| false);
@@ -1948,11 +1947,18 @@ where
             if is_present {
                 awaiting_exit_completion.set(false);
                 exit_observed_running.set(false);
-                motion.animate_to(animate.clone(), enter_config.clone());
+                if let Err(error) = motion.animate_to(animate.clone(), enter_config.clone()) {
+                    tracing::error!(%error, "cannot start presence enter animation");
+                }
             } else {
                 awaiting_exit_completion.set(true);
                 exit_observed_running.set(false);
-                motion.animate_to(exit.clone(), exit_config.clone());
+                if let Err(error) = motion.animate_to(exit.clone(), exit_config.clone()) {
+                    tracing::error!(%error, "cannot start presence exit animation");
+                    motion.stop();
+                    awaiting_exit_completion.set(false);
+                    presence.safe_to_remove.call(());
+                }
             }
         }
     });
@@ -1968,7 +1974,7 @@ where
         }
     });
 
-    motion
+    Ok(motion)
 }
 
 /// Completes presence removal when a custom motion handle finishes its exit work.
@@ -2007,7 +2013,9 @@ where
 }
 
 /// Creates a CSS-ready presence style handle for opacity and transform animations.
-pub fn use_presence_style(config: PresenceConfig) -> MotionHandle<MotionStyle> {
+pub fn use_presence_style(
+    config: PresenceConfig,
+) -> Result<MotionHandle<MotionStyle>, crate::prelude::AnimationError> {
     let presence = use_presence();
     let context = try_consume_context::<PresenceContext>();
     let status = context.as_ref().map(|context| context.status);
@@ -2049,7 +2057,7 @@ pub fn use_presence_style(config: PresenceConfig) -> MotionHandle<MotionStyle> {
             }
         })
         .unwrap_or_else(|| config.animate.clone());
-    let mut motion = use_motion(start);
+    let mut motion = use_motion(start)?;
     let mut last_target_present = use_signal(|| None::<bool>);
     let mut awaiting_exit_completion = use_signal(|| false);
     let mut exit_observed_running = use_signal(|| false);
@@ -2073,7 +2081,11 @@ pub fn use_presence_style(config: PresenceConfig) -> MotionHandle<MotionStyle> {
                     );
                     motion.set_current(enter_start);
                 }
-                motion.animate_to(config.animate.clone(), config.enter_transition.clone());
+                if let Err(error) =
+                    motion.animate_to(config.animate.clone(), config.enter_transition.clone())
+                {
+                    tracing::error!(%error, "cannot start presence enter animation");
+                }
             } else {
                 awaiting_exit_completion.set(true);
                 exit_observed_running.set(false);
@@ -2083,7 +2095,14 @@ pub fn use_presence_style(config: PresenceConfig) -> MotionHandle<MotionStyle> {
                     motion.set_current(exit_start);
                 }
 
-                motion.animate_to(config.exit.clone(), config.exit_transition.clone());
+                if let Err(error) =
+                    motion.animate_to(config.exit.clone(), config.exit_transition.clone())
+                {
+                    tracing::error!(%error, "cannot start presence exit animation");
+                    motion.stop();
+                    awaiting_exit_completion.set(false);
+                    presence.safe_to_remove.call(());
+                }
             }
         }
     });
@@ -2099,7 +2118,7 @@ pub fn use_presence_style(config: PresenceConfig) -> MotionHandle<MotionStyle> {
         }
     });
 
-    motion
+    Ok(motion)
 }
 
 fn presence_style_enter_start(
@@ -2180,7 +2199,7 @@ mod tests {
         let children = rsx! {
             div {
                 key: "{key}",
-                "{key}"
+                {key}
             }
         };
 
@@ -3100,7 +3119,7 @@ mod tests {
             for item in items {
                 div {
                     key: "{item}",
-                    "{item}"
+                    {item}
                 }
             }
         };
@@ -3119,7 +3138,7 @@ mod tests {
     #[component]
     fn Row(id: String) -> Element {
         rsx! {
-            div { "{id}" }
+            div { {id} }
         }
     }
 
@@ -3166,7 +3185,7 @@ mod tests {
             for item in [first, second] {
                 div {
                     key: "{item}",
-                    "{item}"
+                    {item}
                 }
             }
         };

@@ -26,6 +26,23 @@ pub enum CssValue {
 }
 
 impl CssValue {
+    pub(crate) fn is_finite(&self) -> bool {
+        match self {
+            Self::Number(value)
+            | Self::Px(value)
+            | Self::Percent(value)
+            | Self::Vw(value)
+            | Self::Vh(value)
+            | Self::Deg(value) => value.is_finite(),
+            Self::Color(color) => color.is_finite(),
+            Self::Complex(value) => value.tokens.iter().all(|token| match token {
+                CssComplexToken::Number(value) => value.is_finite(),
+                CssComplexToken::Color(color) => color.is_finite(),
+                CssComplexToken::Text(_) => true,
+            }),
+            Self::Keyword(_) => true,
+        }
+    }
     /// Adds compatible CSS values for vector-style animation math.
     pub(crate) fn add(&self, other: &Self) -> Option<Self> {
         match (self, other) {
@@ -134,6 +151,11 @@ pub struct CssColor {
 }
 
 impl CssColor {
+    fn is_finite(&self) -> bool {
+        [self.red, self.green, self.blue, self.alpha]
+            .into_iter()
+            .all(f32::is_finite)
+    }
     /// Creates a color from RGBA components.
     pub fn rgba(red: f32, green: f32, blue: f32, alpha: f32) -> Self {
         Self {
@@ -181,7 +203,9 @@ impl CssColor {
     }
 
     pub(crate) fn magnitude(&self) -> f32 {
-        (self.red * self.red + self.green * self.green + self.blue * self.blue).sqrt()
+        crate::animations::core::magnitude(
+            [self.red, self.green, self.blue, self.alpha].into_iter(),
+        )
     }
 
     pub(crate) fn to_css(self) -> String {
@@ -347,15 +371,11 @@ impl CssComplexValue {
     }
 
     fn magnitude(&self) -> f32 {
-        self.tokens
-            .iter()
-            .map(|token| match token {
-                CssComplexToken::Number(value) => value * value,
-                CssComplexToken::Color(value) => value.magnitude(),
-                CssComplexToken::Text(_) => 0.0,
-            })
-            .sum::<f32>()
-            .sqrt()
+        crate::animations::core::magnitude(self.tokens.iter().flat_map(|token| match token {
+            CssComplexToken::Number(value) => [*value, 0.0, 0.0, 0.0],
+            CssComplexToken::Color(value) => [value.red, value.green, value.blue, value.alpha],
+            CssComplexToken::Text(_) => [0.0; 4],
+        }))
     }
 
     fn to_css(&self) -> String {
@@ -702,6 +722,7 @@ fn parse_number_prefix(value: &str) -> Option<(usize, f32)> {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used, clippy::panic)]
     use super::*;
 
     // ── helpers ──────────────────────────────────────────────────────────────
@@ -773,7 +794,7 @@ mod tests {
 
     #[test]
     fn parse_f32_valid() {
-        assert_eq!(parse_f32("  3.14  "), Some(3.14_f32));
+        assert_eq!(parse_f32("  3.25  "), Some(3.25_f32));
     }
 
     #[test]
@@ -1022,7 +1043,7 @@ mod tests {
     #[test]
     fn css_color_magnitude() {
         let c = CssColor::rgba(3.0, 4.0, 0.0, 1.0);
-        assert!(approx_eq(c.magnitude(), 5.0));
+        assert!(approx_eq(c.magnitude(), 26.0_f32.sqrt()));
     }
 
     #[test]
@@ -1057,7 +1078,16 @@ mod tests {
     #[test]
     fn css_value_number_color() {
         let c = CssColor::rgba(3.0, 4.0, 0.0, 1.0);
-        assert!(approx_eq(CssValue::Color(c).number(), 5.0));
+        assert!(approx_eq(CssValue::Color(c).number(), 26.0_f32.sqrt()));
+    }
+
+    #[test]
+    fn complex_magnitude_combines_color_and_numeric_components() {
+        let value = CssComplexValue::parse("X(12px) rgba(3, 4, 0, 0)").unwrap();
+        assert_eq!(value.magnitude(), 13.0);
+        assert_eq!(value.scale(-1.0).magnitude(), 13.0);
+        let alpha = CssComplexValue::parse("rgba(0, 0, 0, 0.5)").unwrap();
+        assert_eq!(alpha.magnitude(), 0.5);
     }
 
     // ── CssValue::interpolate ────────────────────────────────────────────────

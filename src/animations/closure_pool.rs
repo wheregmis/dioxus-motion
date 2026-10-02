@@ -1,22 +1,20 @@
-//! Web closure pooling system for performance optimization
+//! Registry for one-shot browser callbacks.
 //!
-//! Provides a pool of reusable JavaScript closures to avoid the overhead
-//! of creating new closures for every animation frame callback.
+//! The registry reuses its map allocation; JavaScript closures are created fresh.
+//! Browser frame delays own their closures directly so cancellation releases them.
 
 #[cfg(feature = "web")]
 use std::cell::RefCell;
 #[cfg(feature = "web")]
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 #[cfg(feature = "web")]
 use wasm_bindgen::prelude::*;
 
-/// Pool of reusable JavaScript closures for web platform optimization
+/// Registry of one-shot callbacks with accounting for reusable callback slots.
 #[cfg(feature = "web")]
 pub struct WebClosurePool {
     /// Count of available closure slots
     available_count: usize,
-    /// Set of currently in-use closure IDs
-    in_use_ids: HashSet<u32>,
     /// Registry mapping closure IDs to their callbacks
     callback_registry: HashMap<u32, Box<dyn FnOnce() + Send>>,
     /// Next available closure ID
@@ -31,7 +29,6 @@ impl WebClosurePool {
     pub fn new() -> Self {
         Self {
             available_count: 0,
-            in_use_ids: HashSet::new(),
             callback_registry: HashMap::new(),
             next_id: 1,
             max_pool_size: 16, // Reasonable default for most use cases
@@ -52,9 +49,6 @@ impl WebClosurePool {
         // Store the callback in the registry
         self.callback_registry.insert(callback_id, callback);
 
-        // Mark this closure as in use
-        self.in_use_ids.insert(callback_id);
-
         // If we had available closures, use one
         if self.available_count > 0 {
             self.available_count -= 1;
@@ -68,17 +62,17 @@ impl WebClosurePool {
     /// # Arguments
     /// * `callback_id` - The ID of the callback to execute
     pub fn execute_callback(&mut self, callback_id: u32) {
-        if let Some(callback) = self.callback_registry.remove(&callback_id) {
+        if let Some(callback) = self.take_callback(callback_id) {
             callback();
-
-            // Mark closure as no longer in use
-            self.in_use_ids.remove(&callback_id);
-
-            // Return to available pool if we haven't exceeded max size
-            if self.available_count < self.max_pool_size {
-                self.available_count += 1;
-            }
         }
+    }
+
+    fn take_callback(&mut self, callback_id: u32) -> Option<Box<dyn FnOnce() + Send>> {
+        let callback = self.callback_registry.remove(&callback_id)?;
+        if self.available_count < self.max_pool_size {
+            self.available_count += 1;
+        }
+        Some(callback)
     }
 
     /// Creates a JavaScript closure that will execute the callback with the given ID
@@ -102,13 +96,12 @@ impl WebClosurePool {
 
     /// Gets the number of closures currently in use
     pub fn in_use_count(&self) -> usize {
-        self.in_use_ids.len()
+        self.callback_registry.len()
     }
 
     /// Clears all closures from the pool
     pub fn clear(&mut self) {
         self.available_count = 0;
-        self.in_use_ids.clear();
         self.callback_registry.clear();
     }
 }
@@ -147,10 +140,10 @@ pub fn create_pooled_closure(callback_id: u32) -> Closure<dyn FnMut()> {
 /// Executes and returns a closure to the global pool
 #[cfg(feature = "web")]
 pub fn execute_and_return_pooled_closure(closure_id: u32) {
-    CLOSURE_POOL.with(|pool| {
-        let mut pool = pool.borrow_mut();
-        pool.execute_callback(closure_id);
-    });
+    let callback = CLOSURE_POOL.with(|pool| pool.borrow_mut().take_callback(closure_id));
+    if let Some(callback) = callback {
+        callback();
+    }
 }
 
 /// Gets statistics about the global closure pool
@@ -179,6 +172,61 @@ pub fn closure_pool_stats() -> (usize, usize) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(feature = "web")]
+    #[test]
+    fn callback_accounting_is_bounded_and_execution_is_once() {
+        use std::sync::{
+            Arc,
+            atomic::{AtomicUsize, Ordering},
+        };
+        let calls = Arc::new(AtomicUsize::new(0));
+        let mut pool = WebClosurePool::new();
+        let ids: Vec<_> = (0..20)
+            .map(|_| {
+                let calls = calls.clone();
+                pool.register_callback(Box::new(move || {
+                    calls.fetch_add(1, Ordering::Relaxed);
+                }))
+            })
+            .collect();
+        assert_eq!((pool.available_count(), pool.in_use_count()), (0, 20));
+        for id in ids {
+            pool.execute_callback(id);
+            pool.execute_callback(id);
+        }
+        assert_eq!(calls.load(Ordering::Relaxed), 20);
+        assert_eq!((pool.available_count(), pool.in_use_count()), (16, 0));
+        let id = pool.register_callback(Box::new(|| {}));
+        assert_eq!((pool.available_count(), pool.in_use_count()), (15, 1));
+        pool.clear();
+        pool.execute_callback(id);
+        assert_eq!((pool.available_count(), pool.in_use_count()), (0, 0));
+    }
+
+    #[cfg(feature = "web")]
+    #[test]
+    fn global_callback_can_read_and_register_another_callback() {
+        use std::sync::{
+            Arc,
+            atomic::{AtomicUsize, Ordering},
+        };
+        CLOSURE_POOL.with(|pool| pool.borrow_mut().clear());
+        let calls = Arc::new(AtomicUsize::new(0));
+        let callback_calls = calls.clone();
+        let id = register_pooled_callback(Box::new(move || {
+            assert_eq!(closure_pool_stats(), (1, 0));
+            let nested_calls = callback_calls.clone();
+            let nested = register_pooled_callback(Box::new(move || {
+                nested_calls.fetch_add(1, Ordering::Relaxed);
+            }));
+            execute_and_return_pooled_closure(nested);
+        }));
+        execute_and_return_pooled_closure(id);
+        execute_and_return_pooled_closure(id);
+        assert_eq!(calls.load(Ordering::Relaxed), 1);
+        assert_eq!(closure_pool_stats(), (1, 0));
+    }
 
     #[cfg(feature = "web")]
     #[test]

@@ -7,17 +7,6 @@ use dioxus::prelude::*;
 /// comments in a gray-colored span and string literals in a green-colored span, while other tokens
 /// are processed to apply additional styling relevant to Dioxus patterns.
 ///
-/// # Examples
-///
-/// ```
-/// let code = r#"fn main() {
-///     // This is a comment
-///     println!("Hello, Dioxus!");
-/// }"#;
-///
-/// let highlighted = highlight_rust_syntax(code);
-/// assert!(highlighted.contains("<span class='text-gray-500'>"));
-/// assert!(highlighted.contains("<span class='text-green-500'>"));
 fn highlight_rust_syntax(code: &str) -> String {
     // Create a more robust token-based approach rather than simple replacement
     let mut result = String::new();
@@ -131,15 +120,6 @@ fn highlight_rust_syntax(code: &str) -> String {
 /// - Tokens ending with a colon are styled in a lighter blue.
 /// - Numeric tokens (including decimals) are styled in orange.
 ///
-/// # Examples
-///
-/// ```
-/// let highlighted_fn = highlight_token("fn", false);
-/// assert!(highlighted_fn.contains("text-blue-500"));
-///
-/// let token_in_string = highlight_token("any_token", true);
-/// // When the token is inside a string literal, no highlighting is applied
-/// assert_eq!(token_in_string, "any_token");
 fn highlight_token(token: &str, in_string: bool) -> String {
     if in_string {
         return token.to_string();
@@ -217,17 +197,6 @@ fn highlight_token(token: &str, in_string: bool) -> String {
 /// in a span with a gray color, string literals in a span with a green color,
 /// and brackets in a span with blue coloring.
 ///
-/// # Examples
-///
-/// ```
-/// let toml_code = "\
-/// [section]\n\
-/// key = \"value\" # This is a comment\n\
-/// ";
-///
-/// let highlighted = highlight_toml_syntax(toml_code);
-/// assert!(highlighted.contains("text-green-500"));
-/// assert!(highlighted.contains("text-gray-500"));
 fn highlight_toml_syntax(code: &str) -> String {
     let mut result = String::new();
     let mut in_string = false;
@@ -340,22 +309,6 @@ fn highlight_toml_syntax(code: &str) -> String {
 /// - Tokens ending with '=' (indicating keys) are highlighted in purple.
 /// - Tokens consisting solely of digits, dots, or quotes (e.g., version numbers or literals) are styled with an orange class.
 ///   If the token is empty after trimming or if `in_string` is true, the original token is returned unmodified.
-/// # Examples
-///
-/// ```
-/// // Highlight a section header
-/// let token = "[section]";
-/// let highlighted = highlight_toml_token(token, false);
-/// assert_eq!(highlighted, "<span class='text-blue-400'>[section]</span>");
-///
-/// // Highlight a version number or literal
-/// let token_literal = "1.2.3";
-/// let highlighted_literal = highlight_toml_token(token_literal, false);
-/// assert_eq!(highlighted_literal, "<span class='text-orange-400'>1.2.3</span>");
-///
-/// // Token inside a string is returned unchanged
-/// assert_eq!(highlight_toml_token("data", true), "data");
-/// ```
 fn highlight_toml_token(token: &str, in_string: bool) -> String {
     if in_string {
         return token.to_string();
@@ -409,20 +362,6 @@ fn highlight_toml_token(token: &str, in_string: bool) -> String {
 /// while quoted strings are highlighted with a green color. If the value does not match any of these patterns,
 /// it is returned unmodified.
 ///
-/// # Examples
-///
-/// ```
-/// let highlighted_bool = highlight_toml_value("true");
-/// assert_eq!(highlighted_bool, "<span class='text-orange-400'>true</span>");
-///
-/// let highlighted_num = highlight_toml_value("123.45");
-/// assert_eq!(highlighted_num, "<span class='text-orange-400'>123.45</span>");
-///
-/// let highlighted_string = highlight_toml_value("\"hello\"");
-/// assert_eq!(highlighted_string, "<span class='text-green-500'>\"hello\"</span>");
-///
-/// let unchanged = highlight_toml_value("example");
-/// assert_eq!(unchanged, "example");
 fn highlight_toml_value(value: &str) -> String {
     // Handle boolean values
     if value == "true" || value == "false" {
@@ -463,15 +402,13 @@ fn highlight_toml_value(value: &str) -> String {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use dioxus::prelude::*;
+/// use docs::components::code_block::CodeBlock;
 ///
-/// // Example: Render a Rust code snippet with syntax highlighting.
-/// let code = String::from("fn main() { println!(\"Hello, world!\"); }");
-/// let language = String::from("rust");
-/// let code_block = CodeBlock(code, language);
-///
-/// // The `code_block` component can be included in a Dioxus application's view.
+/// fn app() -> Element {
+///     rsx! { CodeBlock { code: "fn main() {}".to_string(), language: "rust".to_string() } }
+/// }
 /// ```
 pub fn CodeBlock(code: String, language: String) -> Element {
     let highlighted = match language.to_lowercase().as_str() {
@@ -486,7 +423,83 @@ pub fn CodeBlock(code: String, language: String) -> Element {
                 "language-{} overflow-x-auto rounded-lg bg-dark-300/50 p-4 font-mono",
                 language,
             ),
-            dangerous_inner_html: "{highlighted}",
+            dangerous_inner_html: highlighted,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn highlighting_examples() {
+        {
+            let code = r#"fn main() {
+                // This is a comment
+                println!("Hello, Dioxus!");
+            }"#;
+
+            let highlighted = highlight_rust_syntax(code);
+            assert!(highlighted.contains("<span class='text-gray-500'>"));
+            assert!(highlighted.contains("<span class='text-green-500'>"));
+        }
+        {
+            let highlighted_fn = highlight_token("fn", false);
+            assert!(highlighted_fn.contains("text-blue-500"));
+
+            let token_in_string = highlight_token("any_token", true);
+            // When the token is inside a string literal, no highlighting is applied
+            assert_eq!(token_in_string, "any_token");
+        }
+        {
+            let toml_code = "\
+            [section]\n\
+            key = \"value\" # This is a comment\n\
+            ";
+
+            let highlighted = highlight_toml_syntax(toml_code);
+            assert!(highlighted.contains("text-green-500"));
+            assert!(highlighted.contains("text-gray-500"));
+        }
+        {
+            // Highlight a section header
+            let token = "[section]";
+            let highlighted = highlight_toml_token(token, false);
+            assert_eq!(highlighted, "<span class='text-blue-400'>[section]</span>");
+
+            // Highlight a version number or literal
+            let token_literal = "1.2.3";
+            let highlighted_literal = highlight_toml_token(token_literal, false);
+            assert_eq!(
+                highlighted_literal,
+                "<span class='text-orange-400'>1.2.3</span>"
+            );
+
+            // Token inside a string is returned unchanged
+            assert_eq!(highlight_toml_token("data", true), "data");
+        }
+        {
+            let highlighted_bool = highlight_toml_value("true");
+            assert_eq!(
+                highlighted_bool,
+                "<span class='text-orange-400'>true</span>"
+            );
+
+            let highlighted_num = highlight_toml_value("123.45");
+            assert_eq!(
+                highlighted_num,
+                "<span class='text-orange-400'>123.45</span>"
+            );
+
+            let highlighted_string = highlight_toml_value("\"hello\"");
+            assert_eq!(
+                highlighted_string,
+                "<span class='text-green-500'>\"hello\"</span>"
+            );
+
+            let unchanged = highlight_toml_value("example");
+            assert_eq!(unchanged, "example");
         }
     }
 }

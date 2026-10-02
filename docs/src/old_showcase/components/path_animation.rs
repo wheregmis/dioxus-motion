@@ -4,24 +4,26 @@ use easer::functions::Easing;
 
 #[component]
 pub fn PathAnimation(path: &'static str, duration: f32) -> Element {
-    let mut dash_offset = use_motion(1000.0f32);
+    let mut dash_offset = use_motion(1000.0f32)?;
 
     use_effect(move || {
-        dash_offset.animate_to(
-            0.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_secs_f32(duration),
-                easing: easer::functions::Cubic::ease_in_out,
-            }))
-            .with_loop(LoopMode::Infinite),
-        );
+        dash_offset
+            .animate_to(
+                0.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_secs_f32(duration),
+                    easing: easer::functions::Cubic::ease_in_out,
+                }))
+                .with_loop(LoopMode::Infinite),
+            )
+            .expect("valid animation configuration");
     });
 
     rsx! {
         div { class: "w-full h-48 flex items-center justify-center rounded-xl",
             svg { class: "w-full h-full", view_box: "0 0 200 200",
                 path {
-                    d: "{path}",
+                    d: path,
                     fill: "none",
                     stroke: "url(#gradient)",
                     stroke_width: "4",

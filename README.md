@@ -83,7 +83,7 @@ use dioxus_motion::prelude::*;
 
 #[component]
 fn PulseEffect() -> Element {
-    let scale = use_motion(1.0f32);
+    let mut scale = use_motion(1.0f32).expect("finite initial value");
 
     use_effect(move || {
         scale.animate_to(
@@ -95,7 +95,7 @@ fn PulseEffect() -> Element {
                 velocity: 1.0
             }))
             .with_loop(LoopMode::Infinite)
-        );
+        ).expect("valid animation configuration");
     });
 
     rsx! {
@@ -112,7 +112,7 @@ fn PulseEffect() -> Element {
 Chain multiple animations together with different configurations:
 
 ```rust
-let scale = use_motion(1.0f32);
+let mut scale = use_motion(1.0f32).expect("finite initial value");
 
 // Create a bouncy sequence
 let sequence = AnimationSequence::new()
@@ -140,9 +140,13 @@ let sequence = AnimationSequence::new()
     );
 
 // Start the sequence
-scale.animate_sequence(sequence);
+scale.animate_sequence(sequence).expect("valid animation configuration");
 // Each step in the sequence can have its own timing, easing, and spring physics configuration. Sequences can also be looped or chained with other animations.
 ```
+
+`Motion::new`, `AnimationManager::new`, `use_motion`, and presence motion/style hooks return `Result` for initial-value validation. Custom types implement `Animatable::is_finite` by checking every numerical component. Components can propagate hook errors with `?` to a Dioxus error boundary.
+
+`animate_to` and `animate_sequence` return `Result<(), AnimationError>`. Propagate errors with `?` or handle them when parameters come from user input. Invalid configuration leaves the active animation unchanged; sequences validate all steps before starting. Use `AnimationConfig::validate()` or `AnimationSequence::validate()` to check configuration in advance.
 
 ## ✨ Features
 
@@ -245,8 +249,12 @@ impl std::ops::Mul<f32> for Point3D {
     }
 }
 
-// Implement Animatable with just two methods!
+// Implement Animatable with three methods!
 impl Animatable for Point3D {
+    fn is_finite(&self) -> bool {
+        [self.x, self.y, self.z].into_iter().all(f32::is_finite)
+    }
+
     fn interpolate(&self, target: &Self, t: f32) -> Self {
         *self + (*target - *self) * t
     }
@@ -257,23 +265,23 @@ impl Animatable for Point3D {
 }
 
 // Now you can animate 3D points!
-let mut position = use_motion(Point3D::default());
+let mut position = use_motion(Point3D::default()).expect("finite initial value");
 position.animate_to(
     Point3D { x: 10.0, y: 5.0, z: -2.0 },
     AnimationConfig::new(AnimationMode::Spring(Spring::default()))
-);
+).expect("valid animation configuration");
 ```
 
 **Previous vs. New Trait Complexity:**
 - **Before**: 7 required methods (`zero`, `epsilon`, `magnitude`, `scale`, `add`, `sub`, `interpolate`)
-- **After**: 2 required methods (`interpolate`, `magnitude`) + standard Rust operators
+- **After**: 3 required methods (`interpolate`, `magnitude`, `is_finite`) + standard Rust operators
 - **Result**: ~70% less boilerplate, more idiomatic Rust code!
 
 ## 🔄 Migration Guide
 
 ### Upcoming Release Notes
 
-- **Dioxus compatibility stays on the published `0.7.4` line for this release prep**: `0.7.5` is not yet available on crates.io, so the release notes and manifests stay aligned with the latest publishable Dioxus release.
+- **Dioxus compatibility targets stable `0.7.10`**: The library and documentation app use the same Dioxus release.
 - **`transitions` now implies `dioxus`**: If you enable `dioxus-motion/transitions`, you no longer need a separate `dioxus-motion/dioxus` feature edge.
 - **Core builds work with `default-features = false`**: The Dioxus hook/store surface is feature-gated, so non-Dioxus consumers can compile the core animation types without pulling in Dioxus.
 
@@ -296,13 +304,13 @@ position.animate_to(
 use dioxus_motion::prelude::*;
 
 // ✅ This works - f32 is Send + 'static
-let motion = use_motion(0.0f32);
+let motion = use_motion(0.0f32).expect("finite initial value");
 
 // ✅ This works - custom type with Send + 'static
 #[derive(Copy, Clone, Default)]
 struct Point { x: f32, y: f32 } // Send + 'static automatically derived
 
-let point_motion = use_motion(Point::default());
+let point_motion = use_motion(Point::default()).expect("finite initial value");
 
 // ❌ This won't compile - Rc<T> is not Send
 // let bad_motion = use_motion(std::rc::Rc::new(0.0f32));
@@ -343,10 +351,10 @@ impl dioxus_motion::animations::core::Animatable for SharedValue {
     }
 }
 
-let shared_motion = use_motion(SharedValue { value: 0.0 });
+let shared_motion = use_motion(SharedValue { value: 0.0 }).expect("finite initial value");
 
 // ✅ Alternative: Use Arc to share the motion itself (not the value)
-let shared_motion_handle = std::sync::Arc::new(use_motion(0.0f32));
+let shared_motion_handle = std::sync::Arc::new(use_motion(0.0f32).expect("finite initial value"));
 // Now you can clone the Arc and share the motion across components
 let motion_clone = shared_motion_handle.clone();
 ```
@@ -366,23 +374,23 @@ let motion_clone = shared_motion_handle.clone();
 use dioxus_motion::prelude::*;
 
 // Before (v0.1.x)
-let mut motion = use_value_animation(Motion::new(0.0).to(100.0));
+let mut motion = use_value_animation(Motion::new(0.0).expect("finite initial value").to(100.0));
 
 // After (v0.2.x)
-let mut value = use_motion(0.0f32);
+let mut value = use_motion(0.0f32).expect("finite initial value");
 value.animate_to(
     100.0,
     AnimationConfig::new(AnimationMode::Tween(Tween {
         duration: Duration::from_secs(2),
         easing: easer::functions::Linear::ease_in_out,
     }))
-);
+).expect("valid animation configuration");
 
 // Before (v0.1.x)
 let mut transform = use_transform_animation(Transform::default());
 
 // After (v0.2.x)
-let mut transform = use_motion(Transform::default());
+let mut transform = use_motion(Transform::default()).expect("finite initial value");
 transform.animate_to(
     Transform::new(100.0, 0.0, 1.2, 45.0),
     AnimationConfig::new(AnimationMode::Spring(Spring {
@@ -391,13 +399,13 @@ transform.animate_to(
         mass: 1.0,
         ..Default::default()
     }))
-);
+).expect("valid animation configuration");
 ```
 
 ### If you were using transform.get_style(), that function is removed to make the library more generic so I recommend building something like
 
 ```rust
-    let transform = use_motion(Transform::default());
+    let transform = use_motion(Transform::default()).expect("finite initial value");
 
     let transform_style = use_memo(move || {
         format!(
@@ -502,8 +510,12 @@ impl std::ops::Mul<f32> for Position {
     }
 }
 
-// Implement Animatable with just two methods!
+// Implement Animatable with three methods!
 impl Animatable for Position {
+    fn is_finite(&self) -> bool {
+        [self.x, self.y].into_iter().all(f32::is_finite)
+    }
+
     fn interpolate(&self, target: &Self, t: f32) -> Self {
         *self + (*target - *self) * t
     }

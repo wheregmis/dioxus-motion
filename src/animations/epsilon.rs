@@ -22,8 +22,13 @@
 /// assert!(validate_epsilon(0.01).is_ok());
 /// assert!(validate_epsilon(0.0).is_err());
 /// assert!(validate_epsilon(0.2).is_err());
+/// assert!(validate_epsilon(f32::NAN).is_err());
 /// ```
 pub fn validate_epsilon(epsilon: f32) -> Result<(), String> {
+    if !epsilon.is_finite() {
+        return Err("Epsilon must be finite".to_string());
+    }
+
     if epsilon <= 0.0 {
         return Err("Epsilon must be positive".to_string());
     }
@@ -42,6 +47,23 @@ pub fn validate_epsilon(epsilon: f32) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn epsilon_validation_matches_finite_range() {
+        let mut bits = 1u32;
+        for _ in 0..4096 {
+            bits = bits.wrapping_mul(1664525).wrapping_add(1013904223);
+            let epsilon = f32::from_bits(bits);
+            assert_eq!(
+                validate_epsilon(epsilon).is_ok(),
+                epsilon > 0.000001 && epsilon <= 0.1,
+                "epsilon bits={bits:#x}",
+            );
+        }
+        for epsilon in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            assert!(validate_epsilon(epsilon).is_err());
+        }
+    }
 
     #[test]
     fn test_validate_epsilon() {

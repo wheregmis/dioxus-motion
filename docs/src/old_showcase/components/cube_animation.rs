@@ -82,6 +82,19 @@ impl std::ops::Mul<f32> for Transform3D {
 }
 
 impl Animatable for Transform3D {
+    fn is_finite(&self) -> bool {
+        [
+            self.rotate_x,
+            self.rotate_y,
+            self.rotate_z,
+            self.translate_x,
+            self.translate_y,
+            self.scale,
+        ]
+        .into_iter()
+        .all(f32::is_finite)
+    }
+
     fn interpolate(&self, target: &Self, t: f32) -> Self {
         // SIMD for the first 4 fields
         let a1 = [
@@ -225,64 +238,72 @@ const FACES: [[usize; 4]; 6] = [
 
 #[component]
 pub fn SwingingCube() -> Element {
-    let mut transform = use_motion(Transform3D::default());
-    let mut glow_scale = use_motion(1.0f32);
-    let mut pulse_scale = use_motion(1.0f32);
-    let mut highlight_opacity = use_motion(0.0f32);
+    let mut transform = use_motion(Transform3D::default())?;
+    let mut glow_scale = use_motion(1.0f32)?;
+    let mut pulse_scale = use_motion(1.0f32)?;
+    let mut highlight_opacity = use_motion(0.0f32)?;
 
     let animate = move |_| {
         // More dynamic cube animation
-        transform.animate_to(
-            Transform3D::new(
-                PI / 2.5, // More dramatic X rotation
-                PI,       // Full Y rotation
-                PI / 3.0, // Adjusted Z rotation
-                3.0,      // Larger X translation
-                -2.0,     // Larger Y translation
-                1.4,      // Larger scale
-            ),
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 25.0, // Softer spring for smoother motion
-                damping: 8.0,    // Adjusted damping for better bounce
-                mass: 1.2,       // Increased mass for more weight
-                velocity: 3.0,   // Faster initial velocity
-            }))
-            .with_loop(LoopMode::Alternate), // Makes the animation go back and forth
-        );
+        transform
+            .animate_to(
+                Transform3D::new(
+                    PI / 2.5, // More dramatic X rotation
+                    PI,       // Full Y rotation
+                    PI / 3.0, // Adjusted Z rotation
+                    3.0,      // Larger X translation
+                    -2.0,     // Larger Y translation
+                    1.4,      // Larger scale
+                ),
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 25.0, // Softer spring for smoother motion
+                    damping: 8.0,    // Adjusted damping for better bounce
+                    mass: 1.2,       // Increased mass for more weight
+                    velocity: 3.0,   // Faster initial velocity
+                }))
+                .with_loop(LoopMode::Alternate), // Makes the animation go back and forth
+            )
+            .expect("valid animation configuration");
 
         // Add glow and pulse animations
-        glow_scale.animate_to(
-            1.3,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 30.0,
-                damping: 5.0,
-                mass: 1.0,
-                velocity: 0.0,
-            }))
-            .with_loop(LoopMode::Alternate),
-        );
+        glow_scale
+            .animate_to(
+                1.3,
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 30.0,
+                    damping: 5.0,
+                    mass: 1.0,
+                    velocity: 0.0,
+                }))
+                .with_loop(LoopMode::Alternate),
+            )
+            .expect("valid animation configuration");
 
-        pulse_scale.animate_to(
-            1.2,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 40.0,
-                damping: 6.0,
-                mass: 0.8,
-                velocity: 0.0,
-            }))
-            .with_loop(LoopMode::Alternate),
-        );
+        pulse_scale
+            .animate_to(
+                1.2,
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 40.0,
+                    damping: 6.0,
+                    mass: 0.8,
+                    velocity: 0.0,
+                }))
+                .with_loop(LoopMode::Alternate),
+            )
+            .expect("valid animation configuration");
 
-        highlight_opacity.animate_to(
-            0.6,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 35.0,
-                damping: 7.0,
-                mass: 0.5,
-                velocity: 0.0,
-            }))
-            .with_loop(LoopMode::Alternate),
-        );
+        highlight_opacity
+            .animate_to(
+                0.6,
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 35.0,
+                    damping: 7.0,
+                    mass: 0.5,
+                    velocity: 0.0,
+                }))
+                .with_loop(LoopMode::Alternate),
+            )
+            .expect("valid animation configuration");
     };
 
     let projected_vertices: Vec<(f32, f32)> = VERTICES
@@ -389,14 +410,14 @@ pub fn SwingingCube() -> Element {
                                 g { key: "{i}",
                                     // Enhanced shadow
                                     path {
-                                        d: "{path}",
+                                        d: path.clone(),
                                         fill: "rgba(0,0,0,0.3)",
                                         transform: "translate(3.0 3.0)",
                                         filter: "url(#glow)",
                                     }
                                     // Main face with gradient and stroke
                                     path {
-                                        d: "{path}",
+                                        d: path.clone(),
                                         fill: "url(#cube-gradient)",
                                         stroke: "#ffffff",
                                         stroke_width: "1.0",
@@ -404,7 +425,7 @@ pub fn SwingingCube() -> Element {
                                     }
                                     // Highlight overlay
                                     path {
-                                        d: "{path}",
+                                        d: path,
                                         fill: "url(#highlight)",
                                         opacity: "{highlight_opacity.get_value()}",
                                     }

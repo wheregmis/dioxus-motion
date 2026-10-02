@@ -74,6 +74,12 @@ impl std::ops::Sub for PetalTransform {
 }
 
 impl dioxus_motion::animations::core::Animatable for PetalTransform {
+    fn is_finite(&self) -> bool {
+        [self.rotate, self.scale, self.translate_x, self.translate_y]
+            .into_iter()
+            .all(f32::is_finite)
+    }
+
     fn interpolate(&self, other: &Self, t: f32) -> Self {
         Self::new(
             self.rotate + (other.rotate - self.rotate) * t,
@@ -185,6 +191,10 @@ impl std::ops::Add for PetalTransform {
 }
 
 impl dioxus_motion::animations::core::Animatable for PetalTransform {
+    fn is_finite(&self) -> bool {
+        [self.rotate, self.scale, self.translate_x, self.translate_y].into_iter().all(f32::is_finite)
+    }
+
     fn interpolate(&self, other: &Self, t: f32) -> Self {
         Self::new(
             self.rotate + (other.rotate - self.rotate) * t,
@@ -249,25 +259,29 @@ impl std::ops::Sub for PetalTransform {
 
 #[component]
 fn StepTwo() -> Element {
-    let mut petal = use_motion(PetalTransform::default());
+    let mut petal = use_motion(PetalTransform::default())?;
 
     let animate = move |_| {
-        petal.animate_to(
-            PetalTransform::new(45.0, 1.2, 10.0, -10.0),
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 100.0,
-                damping: 10.0,
-                mass: 1.0,
-                velocity: 0.0,
-            })),
-        );
+        petal
+            .animate_to(
+                PetalTransform::new(45.0, 1.2, 10.0, -10.0),
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 100.0,
+                    damping: 10.0,
+                    mass: 1.0,
+                    velocity: 0.0,
+                })),
+            )
+            .expect("valid animation configuration");
     };
 
     let reset = move |_| {
-        petal.animate_to(
-            PetalTransform::default(),
-            AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-        );
+        petal
+            .animate_to(
+                PetalTransform::default(),
+                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+            )
+            .expect("valid animation configuration");
     };
 
     rsx! {
@@ -283,7 +297,7 @@ fn StepTwo() -> Element {
                 // Code example
                 div { class: "bg-dark-200/50 p-3 rounded-lg",
                     CodeBlock {
-                        code: r#"let mut petal = use_motion(PetalTransform::default());
+                        code: r#"let mut petal = use_motion(PetalTransform::default()).expect("finite initial value");
 
 // Animate to new values
 petal.animate_to(
@@ -294,7 +308,7 @@ petal.animate_to(
         mass: 1.0,
         velocity: 0.0,
     })),
-);"#.to_string(),
+).expect("valid animation configuration");"#.to_string(),
                         language: "rust".to_string(),
                     }
                 }
@@ -344,7 +358,7 @@ petal.animate_to(
 
 #[component]
 fn StepThree() -> Element {
-    let mut petal = use_motion(PetalTransform::default());
+    let mut petal = use_motion(PetalTransform::default())?;
 
     let animate_sequence = move |_| {
         let sequence = AnimationSequence::new()
@@ -376,7 +390,9 @@ fn StepThree() -> Element {
                 })),
             );
 
-        petal.animate_sequence(sequence);
+        petal
+            .animate_sequence(sequence)
+            .expect("valid animation configuration");
     };
 
     let animate_keyframes = move |_| {
@@ -440,7 +456,7 @@ fn StepThree() -> Element {
         spring_config,
     );
 
-petal.animate_sequence(sequence);"#.to_string(),
+petal.animate_sequence(sequence).expect("valid animation configuration");"#.to_string(),
                         language: "rust".to_string(),
                     }
                 }

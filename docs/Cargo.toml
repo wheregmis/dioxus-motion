@@ -3,11 +3,12 @@ name = "docs"
 version = "0.1.0"
 authors = ["Sabin Regmi <get2sabin@gmail.com>"]
 edition = "2024"
+rust-version = "1.89"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dioxus = { version = "0.7.4", features = ["router"] }
+dioxus = { version = "0.7.10", features = ["router"] }
 dioxus-motion = { path = "../", default-features = false, optional = true }
 easer = { version = "0.3.0", default-features = false }
 wide = "1.2.0"

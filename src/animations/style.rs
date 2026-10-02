@@ -322,8 +322,124 @@ impl std::ops::Mul<f32> for MotionStyle {
     }
 }
 
+impl Animatable for MotionStyle {
+    fn is_finite(&self) -> bool {
+        [
+            self.opacity,
+            self.x,
+            self.y,
+            self.z,
+            self.scale,
+            self.scale_x,
+            self.scale_y,
+            self.scale_z,
+            self.rotate,
+            self.rotate_x,
+            self.rotate_y,
+            self.rotate_z,
+            self.skew,
+            self.skew_x,
+            self.skew_y,
+            self.perspective,
+        ]
+        .into_iter()
+        .all(f32::is_finite)
+            && self.properties.values().all(CssValue::is_finite)
+    }
+
+    fn interpolate(&self, target: &Self, t: f32) -> Self {
+        let t = t.clamp(0.0, 1.0);
+        let mut style = self.clone() + (target.clone() - self.clone()) * t;
+
+        for (property, target_value) in &target.properties {
+            if let Some(current_value) = self.properties.get(property) {
+                style
+                    .properties
+                    .insert(property.clone(), current_value.interpolate(target_value, t));
+            } else {
+                style
+                    .properties
+                    .insert(property.clone(), target_value.clone());
+            }
+        }
+
+        for (property, current_value) in &self.properties {
+            if !target.properties.contains_key(property) {
+                style
+                    .properties
+                    .insert(property.clone(), current_value.clone());
+            }
+        }
+
+        style
+    }
+
+    fn magnitude(&self) -> f32 {
+        crate::animations::core::magnitude(
+            [
+                self.opacity,
+                self.x,
+                self.y,
+                self.z,
+                self.scale,
+                self.scale_x,
+                self.scale_y,
+                self.scale_z,
+                self.rotate,
+                self.rotate_x,
+                self.rotate_y,
+                self.rotate_z,
+                self.skew,
+                self.skew_x,
+                self.skew_y,
+                self.perspective,
+            ]
+            .into_iter()
+            .chain(self.properties.values().map(|value| value.number())),
+        )
+    }
+}
+
+impl fmt::Display for MotionStyle {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let perspective = if self.perspective > 0.0 {
+            format!(" perspective({}px)", self.perspective)
+        } else {
+            String::new()
+        };
+
+        write!(
+            formatter,
+            "opacity: {}; transform:{} translateX({}px) translateY({}px) translateZ({}px) scale({}) scaleX({}) scaleY({}) scaleZ({}) rotate({}deg) rotateX({}deg) rotateY({}deg) rotateZ({}deg) skew({}deg) skewX({}deg) skewY({}deg)",
+            self.opacity,
+            perspective,
+            self.x,
+            self.y,
+            self.z,
+            self.scale,
+            self.scale_x,
+            self.scale_y,
+            self.scale_z,
+            self.rotate,
+            self.rotate_x,
+            self.rotate_y,
+            self.rotate_z,
+            self.skew,
+            self.skew_x,
+            self.skew_y
+        )?;
+
+        for (property, value) in &self.properties {
+            write!(formatter, "; {property}: {}", value.to_css())?;
+        }
+
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::panic)]
     use super::*;
     use crate::animations::css::{CssColor, CssValue};
 
@@ -493,98 +609,5 @@ mod tests {
             250.0,
             1.0,
         );
-    }
-}
-
-impl Animatable for MotionStyle {
-    fn interpolate(&self, target: &Self, t: f32) -> Self {
-        let t = t.clamp(0.0, 1.0);
-        let mut style = self.clone() + (target.clone() - self.clone()) * t;
-
-        for (property, target_value) in &target.properties {
-            if let Some(current_value) = self.properties.get(property) {
-                style
-                    .properties
-                    .insert(property.clone(), current_value.interpolate(target_value, t));
-            } else {
-                style
-                    .properties
-                    .insert(property.clone(), target_value.clone());
-            }
-        }
-
-        for (property, current_value) in &self.properties {
-            if !target.properties.contains_key(property) {
-                style
-                    .properties
-                    .insert(property.clone(), current_value.clone());
-            }
-        }
-
-        style
-    }
-
-    fn magnitude(&self) -> f32 {
-        let property_magnitude: f32 = self
-            .properties
-            .values()
-            .map(|value| value.number() * value.number())
-            .sum();
-
-        (self.opacity * self.opacity
-            + self.x * self.x
-            + self.y * self.y
-            + self.z * self.z
-            + self.scale * self.scale
-            + self.scale_x * self.scale_x
-            + self.scale_y * self.scale_y
-            + self.scale_z * self.scale_z
-            + self.rotate * self.rotate
-            + self.rotate_x * self.rotate_x
-            + self.rotate_y * self.rotate_y
-            + self.rotate_z * self.rotate_z
-            + self.skew * self.skew
-            + self.skew_x * self.skew_x
-            + self.skew_y * self.skew_y
-            + self.perspective * self.perspective
-            + property_magnitude)
-            .sqrt()
-    }
-}
-
-impl fmt::Display for MotionStyle {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let perspective = if self.perspective > 0.0 {
-            format!(" perspective({}px)", self.perspective)
-        } else {
-            String::new()
-        };
-
-        write!(
-            formatter,
-            "opacity: {}; transform:{} translateX({}px) translateY({}px) translateZ({}px) scale({}) scaleX({}) scaleY({}) scaleZ({}) rotate({}deg) rotateX({}deg) rotateY({}deg) rotateZ({}deg) skew({}deg) skewX({}deg) skewY({}deg)",
-            self.opacity,
-            perspective,
-            self.x,
-            self.y,
-            self.z,
-            self.scale,
-            self.scale_x,
-            self.scale_y,
-            self.scale_z,
-            self.rotate,
-            self.rotate_x,
-            self.rotate_y,
-            self.rotate_z,
-            self.skew,
-            self.skew_x,
-            self.skew_y
-        )?;
-
-        for (property, value) in &self.properties {
-            write!(formatter, "; {property}: {}", value.to_css())?;
-        }
-
-        Ok(())
     }
 }

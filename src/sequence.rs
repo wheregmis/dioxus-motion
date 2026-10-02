@@ -1,6 +1,6 @@
 //! `AnimationSequence<T>` - Optimized animation step sequences
 
-use crate::animations::core::Animatable;
+use crate::animations::core::{Animatable, AnimationError};
 use crate::prelude::AnimationConfig;
 
 use std::sync::Mutex;
@@ -14,7 +14,7 @@ pub struct AnimationStep<T: Animatable> {
 }
 
 struct SequenceState {
-    current_step: u8,
+    current_step: usize,
     #[allow(clippy::type_complexity)]
     on_complete: Option<Box<dyn FnOnce() + Send>>,
 }
@@ -27,6 +27,17 @@ pub struct AnimationSequence<T: Animatable> {
 }
 
 impl<T: Animatable> AnimationSequence<T> {
+    /// Validates every step before playback, including the type's default epsilon.
+    pub fn validate(&self) -> Result<(), AnimationError> {
+        for step in &self.steps {
+            step.config.validate_for::<T>()?;
+            if !step.target.is_finite() {
+                return Err(AnimationError::NonFiniteValue("sequence target"));
+            }
+        }
+        Ok(())
+    }
+
     fn lock_state(&self) -> MutexGuard<'_, SequenceState> {
         match self.state.lock() {
             Ok(state) => state,
@@ -119,7 +130,7 @@ impl<T: Animatable> AnimationSequence<T> {
     pub fn advance_step(&self) -> bool {
         let mut state = self.lock_state();
         let current = state.current_step;
-        let total_steps = self.steps.len() as u8;
+        let total_steps = self.steps.len();
 
         if current < total_steps.saturating_sub(1) {
             state.current_step += 1;
@@ -130,30 +141,30 @@ impl<T: Animatable> AnimationSequence<T> {
     }
 
     /// Gets the current step index
-    pub fn current_step_index(&self) -> u8 {
+    pub fn current_step_index(&self) -> usize {
         self.lock_state().current_step
     }
 
-    /// Gets the current step index (kept for backward compatibility)
-    pub fn current_step(&self) -> u8 {
+    /// Alias for the current step index.
+    pub fn current_step(&self) -> usize {
         self.current_step_index()
     }
 
     /// Gets the configuration for the current step
     pub fn current_config(&self) -> Option<&AnimationConfig> {
-        let current = self.current_step_index() as usize;
+        let current = self.current_step_index();
         self.steps.get(current).map(|step| step.config.as_ref())
     }
 
     /// Gets the target value for the current step
     pub fn current_target(&self) -> Option<T> {
-        let current = self.current_step_index() as usize;
+        let current = self.current_step_index();
         self.steps.get(current).map(|step| step.target.clone())
     }
 
     /// Gets the current step data
     pub fn current_step_data(&self) -> Option<&AnimationStep<T>> {
-        let current = self.current_step_index() as usize;
+        let current = self.current_step_index();
         self.steps.get(current)
     }
 
@@ -165,7 +176,7 @@ impl<T: Animatable> AnimationSequence<T> {
     /// Checks if the sequence is complete (at the last step)
     pub fn is_complete(&self) -> bool {
         let current = self.current_step_index();
-        let total_steps = self.steps.len() as u8;
+        let total_steps = self.steps.len();
         current >= total_steps.saturating_sub(1)
     }
 
@@ -181,9 +192,14 @@ impl<T: Animatable> AnimationSequence<T> {
 
     /// Executes the completion callback if present
     pub fn execute_completion(&self) {
-        if let Some(callback) = self.lock_state().on_complete.take() {
+        let callback = self.take_completion();
+        if let Some(callback) = callback {
             callback();
         }
+    }
+
+    pub(crate) fn take_completion(&self) -> Option<Box<dyn FnOnce() + Send>> {
+        self.lock_state().on_complete.take()
     }
 }
 
@@ -217,6 +233,66 @@ mod tests {
     use crate::animations::core::AnimationMode;
     use crate::animations::spring::Spring;
     use std::sync::{Arc, Mutex};
+
+    #[test]
+    fn sequence_indices_follow_vector_length() {
+        for count in [0, 1, 2, 254, 255, 256, 257, 512, 1024] {
+            let steps = (0..count)
+                .map(|index| AnimationStep {
+                    target: index as f32,
+                    config: Arc::new(AnimationConfig::tween_ms(index as u64 + 1)),
+                    predicted_next: None,
+                })
+                .collect();
+            let sequence = AnimationSequence::from_steps(steps);
+            assert_eq!(sequence.total_steps(), count);
+            if count == 0 {
+                assert!(sequence.is_complete());
+                assert!(!sequence.advance_step());
+                assert!(sequence.current_target().is_none());
+                assert!(sequence.current_config().is_none());
+                assert!(sequence.current_step_data().is_none());
+                continue;
+            }
+            for index in 0..count {
+                assert_eq!(sequence.current_step_index(), index);
+                assert_eq!(sequence.current_step(), index);
+                assert_eq!(sequence.current_target(), Some(index as f32));
+                assert_eq!(sequence.current_step_data().unwrap().target, index as f32);
+                assert_eq!(
+                    sequence.current_config().unwrap().get_duration(),
+                    crate::Duration::from_millis(index as u64 + 1),
+                );
+                assert_eq!(sequence.is_complete(), index + 1 == count);
+                assert_eq!(sequence.advance_step(), index + 1 < count);
+            }
+            sequence.reset();
+            assert_eq!(sequence.current_target(), Some(0.0));
+        }
+    }
+
+    #[test]
+    fn completion_releases_lock_and_runs_once() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        let sequence = Arc::new(AnimationSequence::<f32>::new());
+        let weak = Arc::downgrade(&sequence);
+        let calls = Arc::new(AtomicUsize::new(0));
+        let callback_calls = calls.clone();
+        sequence.lock_state().on_complete = Some(Box::new(move || {
+            let sequence = weak.upgrade().unwrap();
+            assert!(
+                sequence.state.try_lock().is_ok(),
+                "callback still holds state lock"
+            );
+            sequence.reset();
+            sequence.execute_completion();
+            callback_calls.fetch_add(1, Ordering::Relaxed);
+        }));
+        sequence.execute_completion();
+        sequence.execute_completion();
+        assert_eq!(calls.load(Ordering::Relaxed), 1);
+    }
 
     #[test]
     fn test_animation_sequence_basic() {

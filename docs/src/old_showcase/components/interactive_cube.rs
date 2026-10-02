@@ -6,12 +6,12 @@ const PERSPECTIVE: f32 = 800.0; // Increased perspective for more dramatic 3D ef
 
 #[component]
 pub fn InteractiveCube() -> Element {
-    let mut rotation_x = use_motion(0.0f32);
-    let mut rotation_y = use_motion(0.0f32);
-    let mut rotation_z = use_motion(0.0f32); // Added Z rotation for more dynamics
-    let mut scale = use_motion(1.0f32);
-    let mut glow = use_motion(0.2f32); // Initial subtle glow
-    let mut hover_lift = use_motion(0.0f32); // New hover effect
+    let mut rotation_x = use_motion(0.0f32)?;
+    let mut rotation_y = use_motion(0.0f32)?;
+    let mut rotation_z = use_motion(0.0f32)?; // Added Z rotation for more dynamics
+    let mut scale = use_motion(1.0f32)?;
+    let mut glow = use_motion(0.2f32)?; // Initial subtle glow
+    let mut hover_lift = use_motion(0.0f32)?; // New hover effect
 
     let onclick = move |_e: Event<MouseData>| {
         // Enhanced spin animation
@@ -67,9 +67,15 @@ pub fn InteractiveCube() -> Element {
                 })),
             );
 
-        scale.animate_sequence(bounce_sequence);
-        rotation_y.animate_sequence(spin_sequence);
-        rotation_z.animate_sequence(wobble_sequence);
+        scale
+            .animate_sequence(bounce_sequence)
+            .expect("valid animation configuration");
+        rotation_y
+            .animate_sequence(spin_sequence)
+            .expect("valid animation configuration");
+        rotation_z
+            .animate_sequence(wobble_sequence)
+            .expect("valid animation configuration");
 
         // Enhanced glow effect
         glow.animate_to(
@@ -80,14 +86,16 @@ pub fn InteractiveCube() -> Element {
                 mass: 0.5,
                 velocity: 5.0,
             })),
-        );
+        )
+        .expect("valid animation configuration");
 
         // Reset glow after animation
         glow.animate_to(
             0.2,
             AnimationConfig::new(AnimationMode::Spring(Spring::default()))
                 .with_delay(std::time::Duration::from_millis(500)),
-        );
+        )
+        .expect("valid animation configuration");
     };
 
     let onmousemove = move |e: Event<MouseData>| {
@@ -96,70 +104,82 @@ pub fn InteractiveCube() -> Element {
         let y = (rect.y as f32 - CONTAINER_SIZE / 2.0) / (CONTAINER_SIZE / 2.0);
 
         // Smoother rotation response
-        rotation_x.animate_to(
-            -y * 30.0, // Inverted for natural movement
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 150.0,
-                damping: 15.0,
-                mass: 0.8,
-                velocity: 0.0,
-            })),
-        );
+        rotation_x
+            .animate_to(
+                -y * 30.0, // Inverted for natural movement
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 150.0,
+                    damping: 15.0,
+                    mass: 0.8,
+                    velocity: 0.0,
+                })),
+            )
+            .expect("valid animation configuration");
 
-        rotation_y.animate_to(
-            x * 30.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 150.0,
-                damping: 15.0,
-                mass: 0.8,
-                velocity: 0.0,
-            })),
-        );
+        rotation_y
+            .animate_to(
+                x * 30.0,
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 150.0,
+                    damping: 15.0,
+                    mass: 0.8,
+                    velocity: 0.0,
+                })),
+            )
+            .expect("valid animation configuration");
     };
 
     let onmouseenter = move |_| {
-        hover_lift.animate_to(
-            20.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 200.0,
-                damping: 15.0,
-                mass: 0.8,
-                velocity: 0.0,
-            })),
-        );
+        hover_lift
+            .animate_to(
+                20.0,
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 200.0,
+                    damping: 15.0,
+                    mass: 0.8,
+                    velocity: 0.0,
+                })),
+            )
+            .expect("valid animation configuration");
     };
 
     let onmouseleave = move |_| {
-        hover_lift.animate_to(
-            0.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 200.0,
-                damping: 15.0,
-                mass: 0.8,
-                velocity: 0.0,
-            })),
-        );
+        hover_lift
+            .animate_to(
+                0.0,
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 200.0,
+                    damping: 15.0,
+                    mass: 0.8,
+                    velocity: 0.0,
+                })),
+            )
+            .expect("valid animation configuration");
 
         // Reset rotations
-        rotation_x.animate_to(
-            0.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 150.0,
-                damping: 15.0,
-                mass: 0.8,
-                velocity: 0.0,
-            })),
-        );
+        rotation_x
+            .animate_to(
+                0.0,
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 150.0,
+                    damping: 15.0,
+                    mass: 0.8,
+                    velocity: 0.0,
+                })),
+            )
+            .expect("valid animation configuration");
 
-        rotation_y.animate_to(
-            0.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 150.0,
-                damping: 15.0,
-                mass: 0.8,
-                velocity: 0.0,
-            })),
-        );
+        rotation_y
+            .animate_to(
+                0.0,
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 150.0,
+                    damping: 15.0,
+                    mass: 0.8,
+                    velocity: 0.0,
+                })),
+            )
+            .expect("valid animation configuration");
     };
 
     rsx! {

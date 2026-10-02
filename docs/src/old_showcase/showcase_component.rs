@@ -52,7 +52,7 @@ fn ShowcaseCard(title: String, url: String, component: Element) -> Element {
             h3 {
                 class: "text-lg font-display font-semibold text-text-primary mb-4 w-full p-4",
                 class: "border-b border-surface-light/10",
-                "{title}"
+                {title}
             }
             // Component showcase area
             div {
@@ -78,7 +78,7 @@ fn ViewCodeButton(url: String) -> Element {
             class: "bg-surface hover:bg-surface-light/20",
             class: "text-text-primary hover:text-primary-light",
             class: "transition-all duration-300 ease-out",
-            href: "{url}",
+            href: url,
             target: "_blank",
             // Button content
             span { class: "transition-transform duration-300 group-hover:translate-x-1",

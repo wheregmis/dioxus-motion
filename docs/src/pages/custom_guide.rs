@@ -164,7 +164,7 @@ impl std::ops::Add for PetalTransform {
 
 #[component]
 fn StepTwo() -> Element {
-    let mut petal = use_motion(PetalTransform::zero());
+    let mut petal = use_motion(PetalTransform::zero())?;
 
     let animate = move |_| {
         petal.animate_to(
@@ -175,14 +175,14 @@ fn StepTwo() -> Element {
                 mass: 1.0,
                 velocity: 0.0,
             })),
-        );
+        ).expect("valid animation configuration");
     };
 
     let reset = move |_| {
         petal.animate_to(
             PetalTransform::zero(),
             AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-        );
+        ).expect("valid animation configuration");
     };
 
     rsx! {
@@ -198,7 +198,7 @@ fn StepTwo() -> Element {
                 // Code example
                 div { class: "bg-dark-200/50 p-3 rounded-lg",
                     CodeBlock {
-                        code: r#"let mut petal = use_motion(PetalTransform::zero());
+                        code: r#"let mut petal = use_motion(PetalTransform::zero()).expect("finite initial value");
 
 // Animate to new values
 petal.animate_to(
@@ -209,7 +209,7 @@ petal.animate_to(
         mass: 1.0,
         velocity: 0.0,
     })),
-);"#.to_string(),
+).expect("valid animation configuration");"#.to_string(),
                         language: "rust".to_string(),
                     }
                 }
@@ -259,7 +259,7 @@ petal.animate_to(
 
 #[component]
 fn StepThree() -> Element {
-    let mut petal = use_motion(PetalTransform::zero());
+    let mut petal = use_motion(PetalTransform::zero())?;
 
     let animate_sequence = move |_| {
         let sequence = AnimationSequence::new()
@@ -291,7 +291,7 @@ fn StepThree() -> Element {
                 })),
             );
 
-        petal.animate_sequence(sequence);
+        petal.animate_sequence(sequence).expect("valid animation configuration");
     };
 
     let animate_keyframes = move |_| {
@@ -348,7 +348,7 @@ fn StepThree() -> Element {
         spring_config,
     );
 
-petal.animate_sequence(sequence);"#.to_string(),
+petal.animate_sequence(sequence).expect("valid animation configuration");"#.to_string(),
                         language: "rust".to_string(),
                     }
                 }

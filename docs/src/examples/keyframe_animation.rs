@@ -3,7 +3,7 @@ use dioxus_motion::prelude::*;
 
 #[component]
 fn KeyframeExample() -> Element {
-    let mut transform = use_motion(Transform::default());
+    let mut transform = use_motion(Transform::default())?;
 
     let start = move |_| {
         let animation = KeyframeAnimation::new(Duration::from_secs(2))

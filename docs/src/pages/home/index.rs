@@ -14,18 +14,17 @@ use crate::utils::router::Route;
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use dioxus::prelude::*;
-/// // Adjust the import path below according to your project setup.
-/// use your_crate::Home;
+/// use docs::pages::home::index::Home;
 ///
-/// fn main() {
-///     dioxus::web::launch(Home);
+/// fn app() -> Element {
+///     rsx! { Home {} }
 /// }
 /// ```
 pub fn Home() -> Element {
-    let hero_opacity = use_motion(1.0f32); // Changed from 0.0 to 1.0
-    let mut demo_scale = use_motion(1.0f32);
+    let hero_opacity = use_motion(1.0f32)?; // Changed from 0.0 to 1.0
+    let mut demo_scale = use_motion(1.0f32)?;
     // Remove these animations since we don't want them
     // let mut title_y = use_motion(-20.0f32);
     // let mut subtitle_y = use_motion(20.0f32);
@@ -33,16 +32,18 @@ pub fn Home() -> Element {
     use_effect(move || {
         {
             // Remove title and subtitle animations
-            demo_scale.animate_to(
-                1.1,
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 100.0,
-                    damping: 10.0,
-                    mass: 1.0,
-                    velocity: 0.0,
-                }))
-                .with_loop(LoopMode::Infinite),
-            );
+            demo_scale
+                .animate_to(
+                    1.1,
+                    AnimationConfig::new(AnimationMode::Spring(Spring {
+                        stiffness: 100.0,
+                        damping: 10.0,
+                        mass: 1.0,
+                        velocity: 0.0,
+                    }))
+                    .with_loop(LoopMode::Infinite),
+                )
+                .expect("valid animation configuration");
         }
     });
 
@@ -198,20 +199,9 @@ pub fn Home() -> Element {
 ///
 /// A Dioxus `Element` representing the rendered feature card.
 ///
-/// # Examples
-///
-/// ```
-/// use dioxus::prelude::*;
-///
-/// fn app(cx: Scope) -> Element {
-///     cx.render(rsx! {
-///         FeatureCard("Efficiency", "Boosts performance significantly.", "⚡")
-///     })
-/// }
-/// ```
 fn FeatureCard(title: &'static str, description: &'static str, icon: &'static str) -> Element {
-    let mut card_scale = use_motion(1.0f32);
-    let mut card_y = use_motion(0.0f32);
+    let mut card_scale = use_motion(1.0f32)?;
+    let mut card_y = use_motion(0.0f32)?;
 
     rsx! {
         div {
@@ -231,7 +221,7 @@ fn FeatureCard(title: &'static str, description: &'static str, icon: &'static st
                                 velocity: 0.0,
                             }),
                         ),
-                    );
+                    ).expect("valid animation configuration");
                 card_y
                     .animate_to(
                         -5.0,
@@ -243,7 +233,7 @@ fn FeatureCard(title: &'static str, description: &'static str, icon: &'static st
                                 velocity: 0.0,
                             }),
                         ),
-                    );
+                    ).expect("valid animation configuration");
             },
             onmouseleave: move |_| {
                 card_scale
@@ -257,7 +247,7 @@ fn FeatureCard(title: &'static str, description: &'static str, icon: &'static st
                                 velocity: 0.0,
                             }),
                         ),
-                    );
+                    ).expect("valid animation configuration");
                 card_y
                     .animate_to(
                         0.0,
@@ -269,7 +259,7 @@ fn FeatureCard(title: &'static str, description: &'static str, icon: &'static st
                                 velocity: 0.0,
                             }),
                         ),
-                    );
+                    ).expect("valid animation configuration");
             },
             div { class: "flex items-center gap-3 mb-4",
                 span { class: "text-2xl", {icon} }

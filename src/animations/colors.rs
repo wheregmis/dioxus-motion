@@ -8,7 +8,9 @@ use wide::f32x4;
 
 /// Represents an RGBA color with normalized components
 ///
-/// Each component (r,g,b,a) is stored as a float between 0.0 and 1.0
+/// Constructors and interpolation clamp components to 0.0–1.0.
+/// Arithmetic preserves signed, unbounded components for spring displacement,
+/// force, and velocity; `to_rgba` saturates these values for display.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Color {
     /// Red component (0.0-1.0)
@@ -78,12 +80,12 @@ impl std::ops::Add for Color {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
-        Color::new(
-            (self.r + other.r).clamp(0.0, 1.0),
-            (self.g + other.g).clamp(0.0, 1.0),
-            (self.b + other.b).clamp(0.0, 1.0),
-            (self.a + other.a).clamp(0.0, 1.0),
-        )
+        Self {
+            r: self.r + other.r,
+            g: self.g + other.g,
+            b: self.b + other.b,
+            a: self.a + other.a,
+        }
     }
 }
 
@@ -91,12 +93,12 @@ impl std::ops::Sub for Color {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
-        Color::new(
-            (self.r - other.r).clamp(0.0, 1.0),
-            (self.g - other.g).clamp(0.0, 1.0),
-            (self.b - other.b).clamp(0.0, 1.0),
-            (self.a - other.a).clamp(0.0, 1.0),
-        )
+        Self {
+            r: self.r - other.r,
+            g: self.g - other.g,
+            b: self.b - other.b,
+            a: self.a - other.a,
+        }
     }
 }
 
@@ -104,18 +106,24 @@ impl std::ops::Mul<f32> for Color {
     type Output = Self;
 
     fn mul(self, factor: f32) -> Self {
-        Color::new(
-            (self.r * factor).clamp(0.0, 1.0),
-            (self.g * factor).clamp(0.0, 1.0),
-            (self.b * factor).clamp(0.0, 1.0),
-            (self.a * factor).clamp(0.0, 1.0),
-        )
+        Self {
+            r: self.r * factor,
+            g: self.g * factor,
+            b: self.b * factor,
+            a: self.a * factor,
+        }
     }
 }
 
 /// Implementation of Animatable for Color
 /// Much simpler with the new trait design - uses standard operators
 impl Animatable for Color {
+    fn is_finite(&self) -> bool {
+        [self.r, self.g, self.b, self.a]
+            .into_iter()
+            .all(f32::is_finite)
+    }
+
     fn interpolate(&self, target: &Self, t: f32) -> Self {
         let a = [self.r, self.g, self.b, self.a];
         let b = [target.r, target.g, target.b, target.a];
@@ -128,7 +136,7 @@ impl Animatable for Color {
     }
 
     fn magnitude(&self) -> f32 {
-        (self.r * self.r + self.g * self.g + self.b * self.b + self.a * self.a).sqrt()
+        crate::animations::core::magnitude([self.r, self.g, self.b, self.a].into_iter())
     }
 
     // Uses default epsilon of 0.01 from the trait - no need for COLOR_EPSILON
@@ -137,6 +145,45 @@ impl Animatable for Color {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn arithmetic_preserves_signed_components_and_display_saturates() {
+        let a = Color::new(0.125, 0.25, 0.5, 0.75);
+        let b = Color::new(0.75, 0.5, 0.25, 0.875);
+        assert_eq!(
+            a + b,
+            Color {
+                r: 0.875,
+                g: 0.75,
+                b: 0.75,
+                a: 1.625
+            }
+        );
+        assert_eq!(
+            a - b,
+            Color {
+                r: -0.625,
+                g: -0.25,
+                b: 0.25,
+                a: -0.125
+            }
+        );
+        assert_eq!(
+            a * 4.0,
+            Color {
+                r: 0.5,
+                g: 1.0,
+                b: 2.0,
+                a: 3.0
+            }
+        );
+        assert_eq!((a - b).to_rgba(), (0, 0, 64, 0));
+        assert_eq!((a * 4.0).to_rgba(), (128, 255, 255, 255));
+        assert_eq!(
+            Color::new(-1.0, 2.0, 0.5, 1.0).to_rgba(),
+            (0, 255, 128, 255)
+        );
+    }
 
     #[test]
     fn test_color_new() {

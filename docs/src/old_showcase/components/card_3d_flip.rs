@@ -3,35 +3,39 @@ use dioxus_motion::prelude::*;
 
 #[component]
 pub fn Card3DFlip() -> Element {
-    let mut transform = use_motion(Transform::identity());
+    let mut transform = use_motion(Transform::identity())?;
     let mut is_flipped = use_signal(|| false);
 
     let animate_flip = move |_| {
         if *is_flipped.read() {
-            transform.animate_to(
-                Transform::identity(),
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 200.0, // Increased for snappier response
-                    damping: 20.0,    // Increased for less oscillation
-                    mass: 0.8,        // Reduced for lighter feel
-                    velocity: 5.0,    // Reduced for smoother start
-                })),
-            );
+            transform
+                .animate_to(
+                    Transform::identity(),
+                    AnimationConfig::new(AnimationMode::Spring(Spring {
+                        stiffness: 200.0, // Increased for snappier response
+                        damping: 20.0,    // Increased for less oscillation
+                        mass: 0.8,        // Reduced for lighter feel
+                        velocity: 5.0,    // Reduced for smoother start
+                    })),
+                )
+                .expect("valid animation configuration");
         } else {
-            transform.animate_to(
-                Transform {
-                    rotation: 180.0,
-                    scale: 1.0,
-                    x: 0.0,
-                    y: 0.0,
-                },
-                AnimationConfig::new(AnimationMode::Spring(Spring {
-                    stiffness: 200.0, // Increased for snappier response
-                    damping: 20.0,    // Increased for less oscillation
-                    mass: 0.8,        // Reduced for lighter feel
-                    velocity: 5.0,    // Reduced for smoother start
-                })),
-            );
+            transform
+                .animate_to(
+                    Transform {
+                        rotation: 180.0,
+                        scale: 1.0,
+                        x: 0.0,
+                        y: 0.0,
+                    },
+                    AnimationConfig::new(AnimationMode::Spring(Spring {
+                        stiffness: 200.0, // Increased for snappier response
+                        damping: 20.0,    // Increased for less oscillation
+                        mass: 0.8,        // Reduced for lighter feel
+                        velocity: 5.0,    // Reduced for smoother start
+                    })),
+                )
+                .expect("valid animation configuration");
         }
         is_flipped.toggle();
     };

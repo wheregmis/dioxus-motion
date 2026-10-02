@@ -56,8 +56,8 @@ fn PresenceHero() -> Element {
 fn ConceptCard(title: &'static str, body: &'static str) -> Element {
     rsx! {
         div { class: "rounded-lg border border-primary/10 bg-primary/5 p-4",
-            h3 { class: "font-medium text-text-primary", "{title}" }
-            p { class: "mt-2 text-sm text-text-secondary", "{body}" }
+            h3 { class: "font-medium text-text-primary", {title} }
+            p { class: "mt-2 text-sm text-text-secondary", {body} }
         }
     }
 }
@@ -93,10 +93,10 @@ fn LifecycleStep(number: &'static str, title: &'static str, body: &'static str) 
     rsx! {
         div { class: "rounded-lg border border-primary/10 bg-dark-200/30 p-4",
             div { class: "mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-sm font-semibold text-primary",
-                "{number}"
+                {number}
             }
-            h4 { class: "font-medium text-text-primary", "{title}" }
-            p { class: "mt-2 text-sm text-text-secondary", "{body}" }
+            h4 { class: "font-medium text-text-primary", {title} }
+            p { class: "mt-2 text-sm text-text-secondary", {body} }
         }
     }
 }
@@ -134,7 +134,7 @@ fn FadeBox() -> Element {
         1.0,
         0.0,
         AnimationConfig::tween_ms(220),
-    );
+    ).expect("finite initial value");
 
     rsx! {
         div { style: "opacity: {opacity.get_value()}", "Fades in and out" }
@@ -163,7 +163,7 @@ fn FadeBox() -> Element {
 
 #[component]
 fn FadeBox() -> Element {
-    let opacity = use_presence_motion(0.0f32, 1.0, 0.0, AnimationConfig::tween_ms(220));
+    let opacity = use_presence_motion(0.0f32, 1.0, 0.0, AnimationConfig::tween_ms(220))?;
 
     rsx! {
         div {
@@ -197,7 +197,7 @@ fn SpringToast() -> Element {
             damping: 28.0,
             mass: 1.0,
         },
-    });
+    }).expect("finite initial value");
 
     rsx! {
         div { style: "{style.get_value()}", "Synced to device" }
@@ -240,7 +240,7 @@ fn SpringToast() -> Element {
         exit_transition: tween {
             duration: 100.0
         }
-    });
+    })?;
 
     rsx! {
         div {
@@ -371,7 +371,7 @@ fn QueueRow(item: QueueItem) -> Element {
         exit: { opacity: 0.0, y: -100.0, scale: 0.8 },
         layout: size,
         transition: tween { duration: 333.0 },
-    });
+    })?;
 
     rsx! {
         div {
@@ -443,8 +443,8 @@ fn ModePreview(
 ) -> Element {
     rsx! {
         div { class: "rounded-lg border border-primary/10 bg-background-secondary p-4",
-            h4 { class: "font-medium text-text-primary", "{title}" }
-            p { class: "mt-1 text-sm text-text-secondary", "{description}" }
+            h4 { class: "font-medium text-text-primary", {title} }
+            p { class: "mt-1 text-sm text-text-secondary", {description} }
             div { class: "mt-4 min-h-20 overflow-hidden",
                 AnimatePresence { mode,
                     ViewPanel {
@@ -468,13 +468,13 @@ fn ViewPanel(label: &'static str) -> Element {
             layout: tween { duration: 444.0 },
             duration: 440.0,
         },
-    });
+    })?;
 
     rsx! {
         div {
             class: "rounded-lg border border-primary/20 bg-primary/10 p-4 text-text-primary",
             style: "{style.get_value()}",
-            "{label}"
+            {label}
         }
     }
 }
@@ -545,13 +545,13 @@ fn PopChip(label: &'static str) -> Element {
         exit: { opacity: 0.0, scale: 0.9 },
         layout: size,
         transition: tween { duration: 220.0 },
-    });
+    })?;
 
     rsx! {
         div {
             class: "rounded-lg border border-secondary/20 bg-secondary/10 px-4 py-3 text-text-primary",
             style: "{style.get_value()}",
-            "{label}"
+            {label}
         }
     }
 }
@@ -583,7 +583,7 @@ fn CustomDataExample() -> Element {
 fn Slide(label: &'static str) -> Element {
     let direction = use_presence_data::<i32>().unwrap_or(1);
     let offset = 32.0 * direction as f32;
-    let x = use_presence_motion(offset, 0.0, -offset, config);
+    let x = use_presence_motion(offset, 0.0, -offset, config)?;
     /* render with translateX(x) */
 }"#},
                 div { class: "space-y-4",
@@ -628,14 +628,14 @@ fn Slide(label: &'static str) -> Element {
 fn SlideCard(label: &'static str) -> Element {
     let direction = use_presence_data::<i32>().unwrap_or(1);
     let offset = 32.0 * direction as f32;
-    let x = use_presence_motion(offset, 0.0, -offset, AnimationConfig::tween_ms(240));
-    let opacity = use_presence_motion(0.0f32, 1.0, 0.0, AnimationConfig::tween_ms(240));
+    let x = use_presence_motion(offset, 0.0, -offset, AnimationConfig::tween_ms(240))?;
+    let opacity = use_presence_motion(0.0f32, 1.0, 0.0, AnimationConfig::tween_ms(240))?;
 
     rsx! {
         div {
             class: "rounded-lg border border-primary/20 bg-primary/10 p-4 text-text-primary",
             style: "opacity: {opacity.get_value()}; transform: translateX({x.get_value()}px)",
-            "{label}"
+            {label}
         }
     }
 }
@@ -782,8 +782,8 @@ fn ApiReference() -> Element {
 fn ReferenceItem(name: &'static str, detail: &'static str) -> Element {
     rsx! {
         div { class: "rounded-lg border border-primary/10 bg-dark-200/30 p-4",
-            code { class: "text-sm text-primary", "{name}" }
-            p { class: "mt-2 text-sm text-text-secondary", "{detail}" }
+            code { class: "text-sm text-primary", {name} }
+            p { class: "mt-2 text-sm text-text-secondary", {detail} }
         }
     }
 }

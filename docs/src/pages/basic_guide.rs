@@ -52,23 +52,27 @@ pub fn BasicAnimationGuide() -> Element {
 
 #[component]
 fn StepOne() -> Element {
-    let mut value = use_motion(0.0f32);
+    let mut value = use_motion(0.0f32)?;
 
     let animate = move |_| {
-        value.animate_to(
-            100.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(1000),
-                easing: easer::functions::Linear::ease_in_out,
-            })),
-        );
+        value
+            .animate_to(
+                100.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_millis(1000),
+                    easing: easer::functions::Linear::ease_in_out,
+                })),
+            )
+            .expect("valid animation configuration");
     };
 
     let reset = move |_| {
-        value.animate_to(
-            0.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween::default())),
-        );
+        value
+            .animate_to(
+                0.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween::default())),
+            )
+            .expect("valid animation configuration");
     };
 
     rsx! {
@@ -92,7 +96,7 @@ fn StepOne() -> Element {
 use dioxus_motion::prelude::*;
 
 // 2. Create a motion value
-let mut value = use_motion(0.0f32);
+let mut value = use_motion(0.0f32).expect("finite initial value");
 
 // 3. Animate the value
 value.animate_to(
@@ -101,7 +105,7 @@ value.animate_to(
         duration: Duration::from_millis(1000),
         easing: easer::functions::Linear::ease_in_out,
     })),
-);"#.to_string(),
+).expect("valid animation configuration");"#.to_string(),
                             language: "rust".to_string(),
                         }
                     }
@@ -171,40 +175,48 @@ value.animate_to(
 
 #[component]
 fn StepTwo() -> Element {
-    let mut tween_value = use_motion(0.0f32);
-    let mut spring_value = use_motion(0.0f32);
+    let mut tween_value = use_motion(0.0f32)?;
+    let mut spring_value = use_motion(0.0f32)?;
 
     let animate_tween = move |_| {
-        tween_value.animate_to(
-            100.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(1000),
-                easing: easer::functions::Cubic::ease_in_out,
-            })),
-        );
+        tween_value
+            .animate_to(
+                100.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_millis(1000),
+                    easing: easer::functions::Cubic::ease_in_out,
+                })),
+            )
+            .expect("valid animation configuration");
     };
 
     let animate_spring = move |_| {
-        spring_value.animate_to(
-            100.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 100.0,
-                damping: 10.0,
-                mass: 1.0,
-                velocity: 0.0,
-            })),
-        );
+        spring_value
+            .animate_to(
+                100.0,
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 100.0,
+                    damping: 10.0,
+                    mass: 1.0,
+                    velocity: 0.0,
+                })),
+            )
+            .expect("valid animation configuration");
     };
 
     // Instead of using separate reset functions, let's simplify
     let reset_both = move |_| {
         // Reset tween value
         let tween_config = AnimationConfig::new(AnimationMode::Tween(Tween::default()));
-        tween_value.animate_to(0.0, tween_config);
+        tween_value
+            .animate_to(0.0, tween_config)
+            .expect("valid animation configuration");
 
         // Reset spring value
         let spring_config = AnimationConfig::new(AnimationMode::Spring(Spring::default()));
-        spring_value.animate_to(0.0, spring_config);
+        spring_value
+            .animate_to(0.0, spring_config)
+            .expect("valid animation configuration");
     };
 
     rsx! {

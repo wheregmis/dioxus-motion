@@ -4,24 +4,26 @@ use easer::functions::Easing;
 
 #[component]
 pub fn ProgressBar(title: &'static str) -> Element {
-    let mut progress = use_motion(0.0f32);
+    let mut progress = use_motion(0.0f32)?;
 
     use_effect(move || {
-        progress.animate_to(
-            100.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_secs(5),
-                easing: easer::functions::Sine::ease_in_out,
-            }))
-            .with_loop(LoopMode::Infinite),
-        );
+        progress
+            .animate_to(
+                100.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_secs(5),
+                    easing: easer::functions::Sine::ease_in_out,
+                }))
+                .with_loop(LoopMode::Infinite),
+            )
+            .expect("valid animation configuration");
     });
 
     rsx! {
         div { class: "w-full p-6  rounded-xl shadow-lg",
             // Title and percentage display
             div { class: "flex justify-between items-center mb-4",
-                span { class: "text-lg font-semibold", "{title}" }
+                span { class: "text-lg font-semibold", {title} }
                 span { class: "text-sm font-medium text-blue-600", "{progress.get_value() as i32}%" }
             }
 

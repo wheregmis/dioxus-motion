@@ -39,14 +39,12 @@ fn guide_sections() -> Vec<GuideSection> {
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```no_run
 /// use dioxus::prelude::*;
+/// use docs::components::guide_navigation::GuideNavigation;
 ///
 /// fn app() -> Element {
-///     rsx! {
-///         // Your page content
-///         GuideNavigation {}
-///     }
+///     rsx! { GuideNavigation {} }
 /// }
 /// ```
 pub fn GuideNavigation() -> Element {

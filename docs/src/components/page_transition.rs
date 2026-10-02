@@ -7,21 +7,6 @@ use dioxus::prelude::*;
 ///
 /// This component displays the transition's name, description, and an example usage. It is ideal for demonstrating various transition effects in a Dioxus-based application.
 ///
-/// # Examples
-///
-/// ```
-/// use dioxus::prelude::*;
-///
-/// fn app(cx: Scope) -> Element {
-///     render! {
-///         TransitionCard(
-///             "Fade",
-///             "Smoothly fades an element in or out.",
-///             "example: use for modal transitions"
-///         )
-///     }
-/// }
-/// ```
 fn TransitionCard(name: &'static str, description: &'static str, example: &'static str) -> Element {
     rsx! {
         div { class: "p-6 rounded-xl bg-dark-200/50 backdrop-blur-xs
@@ -44,10 +29,13 @@ fn TransitionCard(name: &'static str, description: &'static str, example: &'stat
 ///
 /// # Examples
 ///
-/// ```
-/// // Create the PageTransition component to render the transitions guide.
-/// let page = PageTransition();
-/// // Typically, you would integrate this element within your Dioxus app's view.
+/// ```no_run
+/// use dioxus::prelude::*;
+/// use docs::components::page_transition::PageTransition;
+///
+/// fn app() -> Element {
+///     rsx! { PageTransition {} }
+/// }
 /// ```
 pub fn PageTransition() -> Element {
     rsx! {

@@ -4,8 +4,8 @@ use dioxus_motion::prelude::*;
 // An animated counter that shows basic motion and sequences
 #[component]
 pub fn AnimatedCounter() -> Element {
-    let mut value = use_motion(0.0f32);
-    let mut scale = use_motion(1.0f32);
+    let mut value = use_motion(0.0f32)?;
+    let mut scale = use_motion(1.0f32)?;
     let mut count = use_signal(|| 0);
 
     let onclick = move |_| {
@@ -19,11 +19,15 @@ pub fn AnimatedCounter() -> Element {
             })),
         );
 
-        scale.animate_to(
-            1.2,
-            AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-        );
-        value.animate_sequence(sequence);
+        scale
+            .animate_to(
+                1.2,
+                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+            )
+            .expect("valid animation configuration");
+        value
+            .animate_sequence(sequence)
+            .expect("valid animation configuration");
         count.set((*count)() + 1);
     };
 

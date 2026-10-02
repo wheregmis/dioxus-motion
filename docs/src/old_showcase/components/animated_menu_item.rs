@@ -4,38 +4,48 @@ use dioxus_motion::prelude::*;
 // An interactive menu item with smooth transitions
 #[component]
 pub fn AnimatedMenuItem(label: String) -> Element {
-    let mut x_offset = use_motion(0.0f32);
-    let mut scale = use_motion(1.0f32);
-    let mut glow = use_motion(0.0f32);
+    let mut x_offset = use_motion(0.0f32)?;
+    let mut scale = use_motion(1.0f32)?;
+    let mut glow = use_motion(0.0f32)?;
 
     let onmouseenter = move |_| {
-        x_offset.animate_to(
-            20.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-        );
-        scale.animate_to(
-            1.1,
-            AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-        );
+        x_offset
+            .animate_to(
+                20.0,
+                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+            )
+            .expect("valid animation configuration");
+        scale
+            .animate_to(
+                1.1,
+                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+            )
+            .expect("valid animation configuration");
         glow.animate_to(
             1.0,
             AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-        );
+        )
+        .expect("valid animation configuration");
     };
 
     let onmouseleave = move |_| {
-        x_offset.animate_to(
-            0.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-        );
-        scale.animate_to(
-            1.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-        );
+        x_offset
+            .animate_to(
+                0.0,
+                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+            )
+            .expect("valid animation configuration");
+        scale
+            .animate_to(
+                1.0,
+                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+            )
+            .expect("valid animation configuration");
         glow.animate_to(
             0.0,
             AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-        );
+        )
+        .expect("valid animation configuration");
     };
 
     rsx! {
@@ -51,7 +61,7 @@ pub fn AnimatedMenuItem(label: String) -> Element {
             }
             // Content
             div { class: "relative z-10 flex items-center gap-2",
-                span { class: "text-lg font-medium", "{label}" }
+                span { class: "text-lg font-medium", {label} }
                 span { class: "text-blue-400 group-hover:translate-x-1 transition-transform duration-300",
                     "→"
                 }

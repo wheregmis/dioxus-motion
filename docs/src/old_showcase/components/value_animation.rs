@@ -4,26 +4,30 @@ use easer::functions::Easing;
 
 #[component]
 pub fn ValueAnimationShowcase() -> Element {
-    let mut value = use_motion(0.0f32);
+    let mut value = use_motion(0.0f32)?;
 
     let start_animation = move |_| {
-        value.animate_to(
-            100.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_secs(10),
-                easing: easer::functions::Sine::ease_in_out,
-            })),
-        );
+        value
+            .animate_to(
+                100.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_secs(10),
+                    easing: easer::functions::Sine::ease_in_out,
+                })),
+            )
+            .expect("valid animation configuration");
     };
 
     let reset_animation = move |_| {
-        value.animate_to(
-            0.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_secs(3),
-                easing: easer::functions::Sine::ease_out,
-            })),
-        );
+        value
+            .animate_to(
+                0.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_secs(3),
+                    easing: easer::functions::Sine::ease_out,
+                })),
+            )
+            .expect("valid animation configuration");
     };
 
     rsx! {

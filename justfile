@@ -12,7 +12,7 @@ test:
 
 # Run all tests with desktop features  
 test-desktop:
-    cargo test --features desktop
+    cargo test --no-default-features --features desktop
 
 # Run all tests with transitions features
 test-transitions:
@@ -50,7 +50,7 @@ clippy:
 
 # Run clippy with desktop features
 clippy-desktop:
-    cargo clippy --features desktop -- -D warnings
+    cargo clippy --no-default-features --features desktop -- -D warnings
 
 # Run clippy with all features
 clippy-all:
@@ -68,7 +68,7 @@ check:
 
 # Check compilation with desktop features
 check-desktop:
-    cargo check --features desktop
+    cargo check --no-default-features --features desktop
 
 # Check compilation with all features
 check-all:
@@ -84,7 +84,7 @@ build:
 
 # Build with desktop features
 build-desktop:
-    cargo build --features desktop
+    cargo build --no-default-features --features desktop
 
 # Build release version
 build-release:
@@ -140,15 +140,14 @@ update:
 
 # Run benchmark tests
 bench:
-    cargo test --features web --release animations::benchmarks::tests -- --nocapture
+    cargo test --features web --release test_motion_update_cpu_usage -- --ignored --nocapture
 
 # Run performance regression tests
-test-perf:
-    cargo test --features web test_performance_regression -- --nocapture
+test-perf: bench
 
 # Run config pool performance test
 test-pool-perf:
-    cargo test --features web test_config_pool_performance -- --nocapture
+    cargo test --features web --release test_config_pool_performance -- --ignored --nocapture
 
 # === CI Debugging ===
 
@@ -170,3 +169,17 @@ install-deps:
         echo "Unsupported OS: $OSTYPE"
         exit 1
     fi
+
+# Measure native integration without web features
+bench-native:
+    cargo test --no-default-features --release test_motion_update_cpu_usage -- --ignored --nocapture
+
+# Measure lookup cost for small and large keyframe tracks
+bench-keyframes:
+    cargo test --no-default-features --release test_keyframe_lookup_cpu_usage -- --ignored --nocapture
+
+# Check browser timer completion, cancellation, ownership, and scheduling errors.
+# Requires Chrome, matching ChromeDriver, and a wasm-bindgen CLI matching Cargo.lock.
+# Tool paths can be overridden with CHROME_BIN, CHROMEDRIVER, and WASM_BINDGEN.
+check-browser-delay:
+    python3 scripts/check_browser_delay.py

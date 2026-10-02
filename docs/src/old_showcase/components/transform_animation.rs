@@ -3,35 +3,39 @@ use dioxus_motion::prelude::*;
 
 #[component]
 pub fn TransformAnimationShowcase() -> Element {
-    let mut transform = use_motion(Transform::identity());
+    let mut transform = use_motion(Transform::identity())?;
 
     let animate_hover = move |_| {
-        transform.animate_to(
-            Transform::new(
-                0.0,                                  // x
-                -20.0,                                // y
-                1.1,                                  // scale
-                5.0 * (std::f32::consts::PI / 180.0), // rotation in radians
-            ),
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 180.0, // Softer spring
-                damping: 12.0,    // Less damping for bounce
-                mass: 1.0,
-                ..Default::default()
-            })),
-        );
+        transform
+            .animate_to(
+                Transform::new(
+                    0.0,                                  // x
+                    -20.0,                                // y
+                    1.1,                                  // scale
+                    5.0 * (std::f32::consts::PI / 180.0), // rotation in radians
+                ),
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 180.0, // Softer spring
+                    damping: 12.0,    // Less damping for bounce
+                    mass: 1.0,
+                    ..Default::default()
+                })),
+            )
+            .expect("valid animation configuration");
     };
 
     let animate_reset = move |_| {
-        transform.animate_to(
-            Transform::identity(),
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 200.0,
-                damping: 20.0,
-                mass: 1.0,
-                ..Default::default()
-            })),
-        );
+        transform
+            .animate_to(
+                Transform::identity(),
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 200.0,
+                    damping: 20.0,
+                    mass: 1.0,
+                    ..Default::default()
+                })),
+            )
+            .expect("valid animation configuration");
     };
 
     let transform_style = use_memo(move || {

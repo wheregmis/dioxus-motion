@@ -67,53 +67,61 @@ pub fn IntermediateAnimationGuide() -> Element {
 
 #[component]
 fn StepOne() -> Element {
-    let mut infinite_value = use_motion(0.0f32);
-    let mut times_value = use_motion(0.0f32);
-    let mut alternate_value = use_motion(0.0f32);
-    let mut alternate_times_value = use_motion(0.0f32);
+    let mut infinite_value = use_motion(0.0f32)?;
+    let mut times_value = use_motion(0.0f32)?;
+    let mut alternate_value = use_motion(0.0f32)?;
+    let mut alternate_times_value = use_motion(0.0f32)?;
 
     let start_infinite = move |_| {
-        infinite_value.animate_to(
-            100.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(1000),
-                easing: easer::functions::Cubic::ease_in_out,
-            }))
-            .with_loop(LoopMode::Infinite),
-        );
+        infinite_value
+            .animate_to(
+                100.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_millis(1000),
+                    easing: easer::functions::Cubic::ease_in_out,
+                }))
+                .with_loop(LoopMode::Infinite),
+            )
+            .expect("valid animation configuration");
     };
 
     let start_times = move |_| {
-        times_value.animate_to(
-            100.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(1000),
-                easing: easer::functions::Cubic::ease_in_out,
-            }))
-            .with_loop(LoopMode::Times(3)),
-        );
+        times_value
+            .animate_to(
+                100.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_millis(1000),
+                    easing: easer::functions::Cubic::ease_in_out,
+                }))
+                .with_loop(LoopMode::Times(3)),
+            )
+            .expect("valid animation configuration");
     };
 
     let start_alternate = move |_| {
-        alternate_value.animate_to(
-            100.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(1000),
-                easing: easer::functions::Cubic::ease_in_out,
-            }))
-            .with_loop(LoopMode::Alternate),
-        );
+        alternate_value
+            .animate_to(
+                100.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_millis(1000),
+                    easing: easer::functions::Cubic::ease_in_out,
+                }))
+                .with_loop(LoopMode::Alternate),
+            )
+            .expect("valid animation configuration");
     };
 
     let start_alternate_times = move |_| {
-        alternate_times_value.animate_to(
-            100.0,
-            AnimationConfig::new(AnimationMode::Tween(Tween {
-                duration: Duration::from_millis(1000),
-                easing: easer::functions::Cubic::ease_in_out,
-            }))
-            .with_loop(LoopMode::AlternateTimes(3)),
-        );
+        alternate_times_value
+            .animate_to(
+                100.0,
+                AnimationConfig::new(AnimationMode::Tween(Tween {
+                    duration: Duration::from_millis(1000),
+                    easing: easer::functions::Cubic::ease_in_out,
+                }))
+                .with_loop(LoopMode::AlternateTimes(3)),
+            )
+            .expect("valid animation configuration");
     };
 
     // Simplify by using a single reset function
@@ -122,10 +130,18 @@ fn StepOne() -> Element {
         let config = AnimationConfig::new(AnimationMode::Tween(Tween::default()));
 
         // Reset all values one by one
-        infinite_value.animate_to(0.0, config.clone());
-        times_value.animate_to(0.0, config.clone());
-        alternate_value.animate_to(0.0, config.clone());
-        alternate_times_value.animate_to(0.0, config);
+        infinite_value
+            .animate_to(0.0, config.clone())
+            .expect("valid animation configuration");
+        times_value
+            .animate_to(0.0, config.clone())
+            .expect("valid animation configuration");
+        alternate_value
+            .animate_to(0.0, config.clone())
+            .expect("valid animation configuration");
+        alternate_times_value
+            .animate_to(0.0, config)
+            .expect("valid animation configuration");
     };
 
     rsx! {
@@ -144,25 +160,25 @@ fn StepOne() -> Element {
 value.animate_to(
     100.0,
     config.with_loop(LoopMode::Infinite)
-);
+).expect("valid animation configuration");
 
 // Loop 3 times (0 -> 100) × 3
 value.animate_to(
     100.0,
     config.with_loop(LoopMode::Times(3))
-);
+).expect("valid animation configuration");
 
 // Alternate infinitely (0 -> 100 -> 0 -> 100...)
 value.animate_to(
     100.0,
     config.with_loop(LoopMode::Alternate)
-);
+).expect("valid animation configuration");
 
 // Alternate 3 times (0 -> 100 -> 0) × 3
 value.animate_to(
     100.0,
     config.with_loop(LoopMode::AlternateTimes(3))
-);"#.to_string(),
+).expect("valid animation configuration");"#.to_string(),
                         language: "rust".to_string(),
                     }
                 }
@@ -261,26 +277,30 @@ value.animate_to(
 
 #[component]
 fn StepTwo() -> Element {
-    let mut value = use_motion(0.0f32);
+    let mut value = use_motion(0.0f32)?;
 
     let start = move |_| {
-        value.animate_to(
-            100.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring {
-                stiffness: 100.0,
-                damping: 10.0,
-                mass: 1.0,
-                velocity: 0.0,
-            }))
-            .with_delay(Duration::from_millis(1000)),
-        );
+        value
+            .animate_to(
+                100.0,
+                AnimationConfig::new(AnimationMode::Spring(Spring {
+                    stiffness: 100.0,
+                    damping: 10.0,
+                    mass: 1.0,
+                    velocity: 0.0,
+                }))
+                .with_delay(Duration::from_millis(1000)),
+            )
+            .expect("valid animation configuration");
     };
 
     let reset = move |_| {
-        value.animate_to(
-            0.0,
-            AnimationConfig::new(AnimationMode::Spring(Spring::default())),
-        );
+        value
+            .animate_to(
+                0.0,
+                AnimationConfig::new(AnimationMode::Spring(Spring::default())),
+            )
+            .expect("valid animation configuration");
     };
 
     rsx! {
@@ -299,7 +319,7 @@ fn StepTwo() -> Element {
     100.0,
     AnimationConfig::new(AnimationMode::Spring(Spring::default()))
         .with_delay(Duration::from_millis(1000))  // 1 second delay
-);"#.to_string(),
+).expect("valid animation configuration");"#.to_string(),
                         language: "rust".to_string(),
                     }
                 }
@@ -335,8 +355,8 @@ fn StepTwo() -> Element {
 
 #[component]
 fn StepThree() -> Element {
-    let mut sequence_value = use_motion(0.0f32);
-    let mut keyframe_value = use_motion(0.0f32);
+    let mut sequence_value = use_motion(0.0f32)?;
+    let mut keyframe_value = use_motion(0.0f32)?;
 
     let start_sequence = move |_| {
         let sequence = AnimationSequence::new()
@@ -368,7 +388,9 @@ fn StepThree() -> Element {
                 })),
             );
 
-        sequence_value.animate_sequence(sequence);
+        sequence_value
+            .animate_sequence(sequence)
+            .expect("valid animation configuration");
     };
 
     let start_keyframes = move |_| {
@@ -388,8 +410,12 @@ fn StepThree() -> Element {
         let config = AnimationConfig::new(AnimationMode::Spring(Spring::default()));
 
         // Reset both values
-        sequence_value.animate_to(0.0, config.clone());
-        keyframe_value.animate_to(0.0, config);
+        sequence_value
+            .animate_to(0.0, config.clone())
+            .expect("valid animation configuration");
+        keyframe_value
+            .animate_to(0.0, config)
+            .expect("valid animation configuration");
     };
 
     rsx! {
@@ -410,7 +436,7 @@ let sequence = AnimationSequence::new()
     .then(100.0, spring_config.clone())
     .then(50.0, spring_config.clone())
     .then(0.0, spring_config);
-value.animate_sequence(sequence);
+value.animate_sequence(sequence).expect("valid animation configuration");
 
 // Keyframe animation
 let keyframes = KeyframeAnimation::new(Duration::from_secs(2))
@@ -484,10 +510,10 @@ value.animate_keyframes(keyframes);"#.to_string(),
 
 #[component]
 fn StepFour() -> Element {
-    let mut sequence_transform = use_motion(Transform::identity());
-    let mut sequence_color = use_motion(Color::from_rgba(59, 130, 246, 255));
-    let mut keyframe_transform = use_motion(Transform::identity());
-    let mut keyframe_color = use_motion(Color::from_rgba(59, 130, 246, 255));
+    let mut sequence_transform = use_motion(Transform::identity())?;
+    let mut sequence_color = use_motion(Color::from_rgba(59, 130, 246, 255))?;
+    let mut keyframe_transform = use_motion(Transform::identity())?;
+    let mut keyframe_color = use_motion(Color::from_rgba(59, 130, 246, 255))?;
 
     let start_sequence = move |_| {
         let transform_sequence = AnimationSequence::new()
@@ -533,8 +559,12 @@ fn StepFour() -> Element {
                 AnimationConfig::new(AnimationMode::Spring(Spring::default())),
             );
 
-        sequence_transform.animate_sequence(transform_sequence);
-        sequence_color.animate_sequence(color_sequence);
+        sequence_transform
+            .animate_sequence(transform_sequence)
+            .expect("valid animation configuration");
+        sequence_color
+            .animate_sequence(color_sequence)
+            .expect("valid animation configuration");
     };
 
     let start_keyframes = move |_| {
@@ -562,10 +592,14 @@ fn StepFour() -> Element {
         let initial_color = Color::from_rgba(59, 130, 246, 255); // Blue
 
         // Reset sequence transform
-        sequence_transform.animate_to(Transform::identity(), config.clone());
+        sequence_transform
+            .animate_to(Transform::identity(), config.clone())
+            .expect("valid animation configuration");
 
         // Reset sequence color
-        sequence_color.animate_to(initial_color, config.clone());
+        sequence_color
+            .animate_to(initial_color, config.clone())
+            .expect("valid animation configuration");
 
         // Create a new config for the next animations
         let config2 = AnimationConfig::new(AnimationMode::Spring(Spring {
@@ -576,10 +610,14 @@ fn StepFour() -> Element {
         }));
 
         // Reset keyframe transform
-        keyframe_transform.animate_to(Transform::identity(), config2.clone());
+        keyframe_transform
+            .animate_to(Transform::identity(), config2.clone())
+            .expect("valid animation configuration");
 
         // Reset keyframe color
-        keyframe_color.animate_to(initial_color, config2);
+        keyframe_color
+            .animate_to(initial_color, config2)
+            .expect("valid animation configuration");
     };
 
     rsx! {
@@ -602,13 +640,13 @@ fn StepFour() -> Element {
                     div { class: "bg-dark-200/50 p-3 rounded-lg",
                         CodeBlock {
                             code: r#"// Create a transform motion value
-let mut transform = use_motion(Transform::identity());
+let mut transform = use_motion(Transform::identity()).expect("finite initial value");
 
 // Animate to new position, scale, and rotation
 transform.animate_to(
     Transform::new(100.0, 50.0, 1.2, 45.0), // x, y, scale, rotation(deg)
     AnimationConfig::new(AnimationMode::Spring(Spring::default()))
-);"#.to_string(),
+).expect("valid animation configuration");"#.to_string(),
                             language: "rust".to_string(),
                         }
                     }
@@ -623,13 +661,13 @@ transform.animate_to(
                     div { class: "bg-dark-200/50 p-3 rounded-lg",
                         CodeBlock {
                             code: r#"// Create a color motion value (RGBA format)
-let mut color = use_motion(Color::from_rgba(59, 130, 246, 255)); // Blue
+let mut color = use_motion(Color::from_rgba(59, 130, 246, 255)).expect("finite initial value"); // Blue
 
 // Animate to a new color
 color.animate_to(
     Color::from_rgba(236, 72, 153, 255), // Pink
     AnimationConfig::new(AnimationMode::Spring(Spring::default()))
-);"#.to_string(),
+).expect("valid animation configuration");"#.to_string(),
                             language: "rust".to_string(),
                         }
                     }

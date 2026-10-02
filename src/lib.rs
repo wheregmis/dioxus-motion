@@ -20,17 +20,17 @@
 //! # #[cfg(feature = "dioxus")] {
 //! use dioxus_motion::prelude::*;
 //!
-//! let mut value = use_motion(0.0f32);
+//! let mut value = use_motion(0.0f32).expect("finite initial value");
 //!
 //! // Basic animation - automatically uses all optimizations
-//! value.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default())));
+//! value.animate_to(100.0, AnimationConfig::new(AnimationMode::Spring(Spring::default()))).expect("valid animation configuration");
 //!
 //! // Animation with custom epsilon for fine-tuned performance (optional)
 //! value.animate_to(
 //!     100.0,
 //!     AnimationConfig::new(AnimationMode::Spring(Spring::default()))
 //!         .with_epsilon(0.001) // Tighter threshold for high-precision animations
-//! );
+//! ).expect("valid animation configuration");
 //!
 //! // Check if animation is running
 //! if value.is_running() {
@@ -41,7 +41,7 @@
 //!
 //! # Creating Custom Animatable Types
 //!
-//! The simplified `Animatable` trait requires only two methods and leverages standard Rust traits:
+//! The simplified `Animatable` trait requires three methods and leverages standard Rust traits:
 //!
 //! ```rust
 //! use dioxus_motion::prelude::*;
@@ -72,8 +72,12 @@
 //!     }
 //! }
 //!
-//! // Implement Animatable with just two methods
+//! // Implement Animatable with three methods
 //! impl Animatable for Point {
+//!     fn is_finite(&self) -> bool {
+//!         [self.x, self.y].into_iter().all(f32::is_finite)
+//!     }
+
 //!     fn interpolate(&self, target: &Self, t: f32) -> Self {
 //!         self.clone() + (target.clone() - self.clone()) * t
 //!     }
@@ -131,7 +135,7 @@ pub(crate) use motion::Motion;
 
 // Re-exports
 pub mod prelude {
-    pub use crate::animations::core::{AnimationConfig, AnimationMode, LoopMode};
+    pub use crate::animations::core::{AnimationConfig, AnimationError, AnimationMode, LoopMode};
     pub use crate::animations::css::{CssColor, CssComplexValue, CssValue, IntoCssValue};
     pub use crate::animations::style::MotionStyle;
     pub use crate::animations::{
@@ -202,13 +206,13 @@ fn calculate_delay(dt: f32, running_frames: u32) -> Duration {
 /// use dioxus::prelude::*;
 ///
 /// fn app() -> Element {
-///     let mut value = use_motion(0.0f32);
+///     let mut value = use_motion(0.0f32).expect("finite initial value");
 ///
 ///     // Animate to 100 with spring physics
 ///     value.animate_to(
 ///         100.0,
 ///         AnimationConfig::new(AnimationMode::Spring(Spring::default()))
-///     );
+///     ).expect("valid animation configuration");
 ///
 ///     rsx! {
 ///         div {
@@ -220,8 +224,10 @@ fn calculate_delay(dt: f32, running_frames: u32) -> Duration {
 /// # }
 /// ```
 #[cfg(feature = "dioxus")]
-pub fn use_motion<T: Animatable + Send + 'static>(initial: T) -> MotionHandle<T> {
-    let mut state = MotionHandle::new_hook(initial);
+pub fn use_motion<T: Animatable + Send + 'static>(
+    initial: T,
+) -> Result<MotionHandle<T>, prelude::AnimationError> {
+    let mut state = MotionHandle::new_hook(initial)?;
 
     #[cfg(feature = "web")]
     let idle_poll_rate = Duration::from_millis(100);
@@ -251,18 +257,8 @@ pub fn use_motion<T: Animatable + Send + 'static>(initial: T) -> MotionHandle<T>
 
                 // Only check if running first, then write to the signal
                 if is_running {
-                    running_frames += 1;
-                    let prev_value = state.get_value();
-                    let updated = state.update(dt);
-                    let new_value = state.get_value();
-                    let epsilon = state.epsilon();
-                    // Only trigger a re-render if the value changed significantly
-                    if (new_value - prev_value).magnitude() <= epsilon && !updated {
-                        // Skip this frame's update to avoid unnecessary re-render
-                        let delay = calculate_delay(dt, running_frames);
-                        Time::delay(delay).await;
-                        continue;
-                    }
+                    running_frames = running_frames.saturating_add(1);
+                    state.update(dt);
 
                     let delay = calculate_delay(dt, running_frames);
                     Time::delay(delay).await;
@@ -274,5 +270,5 @@ pub fn use_motion<T: Animatable + Send + 'static>(initial: T) -> MotionHandle<T>
         });
     });
 
-    state
+    Ok(state)
 }

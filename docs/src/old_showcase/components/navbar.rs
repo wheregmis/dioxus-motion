@@ -3,7 +3,7 @@ use dioxus_motion::prelude::*;
 
 #[component]
 pub fn Navbar() -> Element {
-    let mut transform = use_motion(Transform::new(0.0, -100.0, 1.0, 0.0));
+    let mut transform = use_motion(Transform::new(0.0, -100.0, 1.0, 0.0))?;
 
     use_effect(move || {
         // Animate transform with spring physics
@@ -15,7 +15,7 @@ pub fn Navbar() -> Element {
                 mass: 1.0,
                 velocity: 10.0,
             })),
-        );
+        ).expect("valid animation configuration");
     });
 
     use_drop(move || {
