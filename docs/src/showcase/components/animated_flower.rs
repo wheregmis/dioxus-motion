@@ -239,6 +239,21 @@ pub fn AnimatedFlower() -> Element {
                 height: "300",
                 view_box: "-50 -50 100 100",
                 onmounted: animate_leaves,
+                defs {
+                    radialGradient { id: "glow_gradient",
+                        stop { offset: "0%", style: "stop-color: #b9f078" }
+                        stop { offset: "100%", style: "stop-color: #b9f078; stop-opacity: 0" }
+                    }
+                    linearGradient { id: "leaf_gradient", x1: "0%", y1: "0%", x2: "0%", y2: "100%",
+                        stop { offset: "0%", style: "stop-color: #8ed365" }
+                        stop { offset: "100%", style: "stop-color: #3f7a45" }
+                    }
+                    radialGradient { id: "center_gradient",
+                        stop { offset: "0%", style: "stop-color: #f5ffe0" }
+                        stop { offset: "60%", style: "stop-color: #d4f79a" }
+                        stop { offset: "100%", style: "stop-color: #9ccf5e" }
+                    }
+                }
 
                 // Enhanced leaves with gradient
                 {
@@ -262,7 +277,7 @@ pub fn AnimatedFlower() -> Element {
                 // Enhanced stem with dynamic curve
                 path {
                     d: "M 0 25 C {-4.0 + stem_sway.get_value()} 20, {4.0 - stem_sway.get_value()} 15, {-2.0 + stem_sway.get_value()} 10 C {4.0 - stem_sway.get_value()} 5, {-4.0 + stem_sway.get_value()} 0, 0 -2",
-                    stroke: "#2F855A",
+                    stroke: "#7fb95c",
                     stroke_width: "1.4",
                     fill: "none",
                     stroke_dasharray: "100",
@@ -286,12 +301,12 @@ pub fn AnimatedFlower() -> Element {
                         .map(|i| {
                             let base_angle = (i as f32) * PI / 4.0;
                             let transform_value = petal_transform.get_value();
-                            let hue = 340.0 + (i as f32 * 8.0);
+                            let hue = 75.0 + (i as f32 * 9.0);
                             rsx! {
                                 path {
                                     key: "petal_{i}",
                                     d: "M 0 -1 C 3 -6, 6 -8, 0 -14 C -6 -8, -3 -6, 0 -1",
-                                    fill: "hsl({hue}, 85%, 75%)",
+                                    fill: "hsl({hue}, 70%, 68%)",
                                     transform: "translate({transform_value.translate_x} {transform_value.translate_y})
                                                                                                                                                                                                           rotate({(base_angle + transform_value.rotate) * 180.0 / PI})
                                                                                                                                                                                                           scale({transform_value.scale})",

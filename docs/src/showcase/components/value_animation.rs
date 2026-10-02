@@ -1,61 +1,99 @@
 use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
-use easer::functions::Easing;
 
+const SPRING: Spring = Spring {
+    stiffness: 140.0,
+    damping: 16.0,
+    mass: 1.0,
+};
+
+/// A speedometer dial: presets spring the needle — hit a button mid-swing
+/// and it retargets without snapping.
 #[component]
 pub fn ValueAnimationShowcase() -> Element {
     let mut value = use_motion(0.0f32)?;
 
-    let start_animation = move |_| {
+    let mut target = move |v: f32| {
         value
-            .animate_to(
-                100.0,
-                AnimationConfig::new(AnimationMode::Tween(Tween {
-                    duration: Duration::from_secs(10),
-                    easing: easer::functions::Sine::ease_in_out,
-                })),
-            )
+            .animate_to(v, AnimationConfig::new(AnimationMode::Spring(SPRING)))
             .expect("valid animation configuration");
     };
 
-    let reset_animation = move |_| {
-        value
-            .animate_to(
-                0.0,
-                AnimationConfig::new(AnimationMode::Tween(Tween {
-                    duration: Duration::from_secs(3),
-                    easing: easer::functions::Sine::ease_out,
-                })),
-            )
-            .expect("valid animation configuration");
-    };
+    let angle = -90.0 + value.get_value() * 1.8;
 
     rsx! {
-        div { class: "h-[400px] flex items-center justify-center",
-            div { class: "flex flex-col items-center justify-center p-6 bg-linear-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg",
-                // Counter with smaller font
-                div { class: "text-4xl font-bold text-white mb-3", "{value.get_value() as i32}%" }
-
-                // Smaller progress circle
-                div {
-                    class: "relative w-24 h-24",
-                    style: "background: conic-gradient(from 0deg, #ffffff {value.get_value()}%, transparent 0)",
-                    div { class: "absolute inset-2 bg-blue-600 rounded-full" }
-                }
-
-                // Compact buttons
-                div { class: "flex gap-2 mt-4",
-                    button {
-                        class: "px-4 py-1.5 bg-white text-blue-600 rounded-full font-semibold
-                                hover:bg-opacity-90 transition-all text-sm flex items-center gap-2",
-                        onclick: start_animation,
-                        "Start"
+        div { class: "flex flex-col items-center gap-6",
+            div { class: "relative",
+                svg { width: "280", height: "160", view_box: "0 0 280 160",
+                    defs {
+                        linearGradient {
+                            id: "gauge-fill",
+                            x1: "0%",
+                            y1: "0%",
+                            x2: "100%",
+                            y2: "0%",
+                            stop { offset: "0%", style: "stop-color: #6ee7b7" }
+                            stop { offset: "100%", style: "stop-color: #b9f078" }
+                        }
                     }
+                    // Track arc
+                    path {
+                        d: "M 30 140 A 110 110 0 0 1 250 140",
+                        fill: "none",
+                        stroke: "#ffffff12",
+                        stroke_width: "12",
+                        stroke_linecap: "round",
+                    }
+                    // Value arc — pathLength=100 maps the value to dash length
+                    path {
+                        d: "M 30 140 A 110 110 0 0 1 250 140",
+                        fill: "none",
+                        stroke: "url(#gauge-fill)",
+                        stroke_width: "12",
+                        stroke_linecap: "round",
+                        path_length: "100",
+                        stroke_dasharray: "{value.get_value().max(0.5)} 100",
+                        style: "filter: drop-shadow(0 0 8px rgba(185,240,120,0.5))",
+                    }
+                    // Tick marks
+                    for i in 0..=10usize {
+                        line {
+                            key: "{i}",
+                            x1: "{140.0 + 128.0 * f32::cos((-90.0 + i as f32 * 18.0) * std::f32::consts::PI / 180.0)}",
+                            y1: "{140.0 + 128.0 * f32::sin((-90.0 + i as f32 * 18.0) * std::f32::consts::PI / 180.0)}",
+                            x2: "{140.0 + 120.0 * f32::cos((-90.0 + i as f32 * 18.0) * std::f32::consts::PI / 180.0)}",
+                            y2: "{140.0 + 120.0 * f32::sin((-90.0 + i as f32 * 18.0) * std::f32::consts::PI / 180.0)}",
+                            stroke: "#ffffff25",
+                            stroke_width: "1.5",
+                        }
+                    }
+                    // Needle
+                    line {
+                        x1: "140",
+                        y1: "140",
+                        x2: "{140.0 + 92.0 * f32::cos(angle * std::f32::consts::PI / 180.0)}",
+                        y2: "{140.0 + 92.0 * f32::sin(angle * std::f32::consts::PI / 180.0)}",
+                        stroke: "#eaffd0",
+                        stroke_width: "3",
+                        stroke_linecap: "round",
+                    }
+                    circle { cx: "140", cy: "140", r: "7", fill: "#b9f078" }
+                }
+                div { class: "absolute inset-x-0 bottom-0 text-center",
+                    span { class: "font-mono text-3xl font-bold text-white tabular-nums",
+                        "{value.get_value().round() as i32}"
+                    }
+                    span { class: "text-xs text-[#848e9b] ml-1", "%" }
+                }
+            }
+            div { class: "flex gap-2",
+                for preset in [0.0f32, 25.0, 60.0, 85.0, 100.0] {
                     button {
-                        class: "px-4 py-1.5 bg-white text-blue-600 rounded-full font-semibold
-                                hover:bg-opacity-90 transition-all text-sm flex items-center gap-2",
-                        onclick: reset_animation,
-                        "Reset"
+                        key: "{preset}",
+                        class: "px-4 py-2 rounded-lg text-sm font-medium text-[#a9b0bb] hover:text-[#e8ffb0] transition-colors",
+                        style: "background: #0d1216; border: 1px solid #ffffff12;",
+                        onclick: move |_| target(preset),
+                        "{preset as i32}"
                     }
                 }
             }

@@ -331,11 +331,11 @@ pub fn SwingingCube() -> Element {
                         y1: "0%",
                         x2: "100%",
                         y2: "100%",
-                        stop { offset: "0%", style: "stop-color:#60a5fa" }
-                        stop { offset: "25%", style: "stop-color:#7c3aed" }
-                        stop { offset: "50%", style: "stop-color:#db2777" }
-                        stop { offset: "75%", style: "stop-color:#9333ea" }
-                        stop { offset: "100%", style: "stop-color:#3b82f6" }
+                        stop { offset: "0%", style: "stop-color:#b9f078" }
+                        stop { offset: "25%", style: "stop-color:#6ee7b7" }
+                        stop { offset: "50%", style: "stop-color:#a5f3fc" }
+                        stop { offset: "75%", style: "stop-color:#c4b5fd" }
+                        stop { offset: "100%", style: "stop-color:#b9f078" }
                     }
                     // Enhanced glow filter
                     filter { id: "glow",

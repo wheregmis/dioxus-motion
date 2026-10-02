@@ -73,130 +73,111 @@ fn showcase_items() -> Vec<(
 )> {
     vec![
         (
-            "Cube Animation",
-            "A custom Transform3D value springing between poses, projected into SVG.",
-            rsx!(SwingingCube {}),
-            "cube_animation.rs",
-            dioxus_code::code!("/src/showcase/components/cube_animation.rs"),
-        ),
-        (
-            "Flower Animation",
-            "Coordinated springs grow the stem, petals, and center in stages.",
-            rsx!(AnimatedFlower {}),
-            "animated_flower.rs",
-            dioxus_code::code!("/src/showcase/components/animated_flower.rs"),
-        ),
-        (
-            "Morphing Shape",
-            "A Transform spring rotates and scales between clip-path silhouettes.",
-            rsx!(MorphingShape {
-                shapes: vec!["square", "triangle"],
-                duration: 3.0
-            }),
-            "morphing_shape.rs",
-            dioxus_code::code!("/src/showcase/components/morphing_shape.rs"),
-        ),
-        (
-            "Interactive Cube",
-            "Click to chain a spin and bounce with AnimationSequence steps.",
-            rsx!(InteractiveCube {}),
-            "interactive_cube.rs",
-            dioxus_code::code!("/src/showcase/components/interactive_cube.rs"),
-        ),
-        (
-            "Value Animation",
-            "A scalar tween with easing drives a readout and a progress bar.",
-            rsx!(ValueAnimationShowcase {}),
-            "value_animation.rs",
-            dioxus_code::code!("/src/showcase/components/value_animation.rs"),
-        ),
-        (
-            "Transform Animation",
-            "Hover springs a typed Transform: translate, scale, and rotate together.",
+            "Magnetic Card",
+            "Three springs retarget every frame — the card chases your cursor and settles without snapping.",
             rsx!(TransformAnimationShowcase {}),
             "transform_animation.rs",
             dioxus_code::code!("/src/showcase/components/transform_animation.rs"),
         ),
         (
-            "Animated Menu Bar",
-            "Each item springs its offset, scale, and glow on hover.",
-            rsx!(
-                section {
-                    p { class: "text-gray-600", "Shows smooth transitions on hover" }
-                    div { class: "space-y-2",
-                        AnimatedMenuItem { label: "Home" }
-                        AnimatedMenuItem { label: "About" }
-                        AnimatedMenuItem { label: "Contact" }
-                    }
-                }
-            ),
+            "Interactive Cube",
+            "Hover tilts a glass 3D cube; click chains a spin, squash, and wobble through sequence steps.",
+            rsx!(InteractiveCube {}),
+            "interactive_cube.rs",
+            dioxus_code::code!("/src/showcase/components/interactive_cube.rs"),
+        ),
+        (
+            "Spring Nav",
+            "A pill indicator springs between nav items — the shared-element feel with two scalar springs.",
+            rsx!(AnimatedMenuItem {}),
             "animated_menu_item.rs",
             dioxus_code::code!("/src/showcase/components/animated_menu_item.rs"),
         ),
         (
-            "Rotating Button",
-            "A press runs three keyframe animations at once: scale, rotation, and glow.",
-            rsx!(RotatingButton {}),
-            "rotating_button.rs",
-            dioxus_code::code!("/src/showcase/components/rotating_button.rs"),
-        ),
-        (
-            "Progress Animation",
-            "A tween fills the bar while the same value drives the label.",
-            rsx!(ProgressBar {
-                title: "Loading..."
-            }),
-            "progress_bar.rs",
-            dioxus_code::code!("/src/showcase/components/progress_bar.rs"),
-        ),
-        (
-            "Bouncing Text",
-            "Letters stagger their springs for a playful entrance.",
-            rsx!(BouncingText {
-                text: "Dioxus Motion"
-            }),
-            "bouncing_text.rs",
-            dioxus_code::code!("/src/showcase/components/bouncing_text.rs"),
-        ),
-        (
-            "Path Animation",
-            "A dot follows an SVG path while a tween draws the stroke.",
+            "Comet Path",
+            "A glowing comet rides an SVG path on offset-path while a tween draws its trailing wake.",
             rsx!(PathAnimation {
-                path: "M10 80 C 40 10, 65 10, 95 80 S 150 150, 180 80",
-                duration: 5.0
+                path: "M10 160 C 70 20, 140 30, 170 105 S 270 190, 310 55",
+                duration: 4.5
             }),
             "path_animation.rs",
             dioxus_code::code!("/src/showcase/components/path_animation.rs"),
         ),
         (
-            "Pulse Effect",
-            "An alternating spring breathes scale and opacity on a loop.",
-            rsx!(PulseEffect {
-                color: "bg-blue-500",
-                size: "w-16 h-16"
-            }),
+            "Sonar",
+            "A rotating conic sweep over three staggered rings, each expanding and fading on its own tween.",
+            rsx!(PulseEffect {}),
             "pulse_effect.rs",
             dioxus_code::code!("/src/showcase/components/pulse_effect.rs"),
         ),
         (
-            "3D Card Flip",
-            "Hover flips the card with a spring on a single rotation value.",
+            "Swinging Cube",
+            "A custom Transform3D value springs between poses and projects into SVG — define Animatable yourself.",
+            rsx!(SwingingCube {}),
+            "cube_animation.rs",
+            dioxus_code::code!("/src/showcase/components/cube_animation.rs"),
+        ),
+        (
+            "Liquid Morph",
+            "clip-path crossfades between silhouettes while a slow infinite spin keeps the blob drifting.",
+            rsx!(MorphingShape {}),
+            "morphing_shape.rs",
+            dioxus_code::code!("/src/showcase/components/morphing_shape.rs"),
+        ),
+        (
+            "Holo Card Flip",
+            "Click springs a 3D flip — the foil shine sweeps across at the same angle for depth.",
             rsx!(Card3DFlip {}),
             "card_3d_flip.rs",
             dioxus_code::code!("/src/showcase/components/card_3d_flip.rs"),
         ),
         (
-            "Typewriter Effect",
-            "A looping tween reveals characters one at a time while a second blinks the cursor.",
+            "Spring Gauge",
+            "Preset buttons spring the needle to each mark — retarget mid-swing and it still lands clean.",
+            rsx!(ValueAnimationShowcase {}),
+            "value_animation.rs",
+            dioxus_code::code!("/src/showcase/components/value_animation.rs"),
+        ),
+        (
+            "Flower",
+            "Staged springs grow the stem, leaves, and petals in sequence, then sway on an alternate loop.",
+            rsx!(AnimatedFlower {}),
+            "animated_flower.rs",
+            dioxus_code::code!("/src/showcase/components/animated_flower.rs"),
+        ),
+        (
+            "Wave Text",
+            "Each letter is its own component with a staggered sine loop — scale, rise, and shadow in sync.",
+            rsx!(BouncingText { text: "MOTION" }),
+            "bouncing_text.rs",
+            dioxus_code::code!("/src/showcase/components/bouncing_text.rs"),
+        ),
+        (
+            "Terminal",
+            "A linear tween types each character while a second alternating tween blinks the block cursor.",
             rsx!(TypewriterEffect {
-                text: "Hello, Dioxus Motion"
+                text: "cargo add dioxus-motion"
             }),
             "typewriter_effect.rs",
             dioxus_code::code!("/src/showcase/components/typewriter_effect.rs"),
         ),
         (
-            "Counter Animation",
-            "A spring eases the number toward each new count you choose.",
+            "Charge Bar",
+            "A looping tween fills the bar while the glowing tip and tick marks ride the same value.",
+            rsx!(ProgressBar {}),
+            "progress_bar.rs",
+            dioxus_code::code!("/src/showcase/components/progress_bar.rs"),
+        ),
+        (
+            "Launch Button",
+            "Three keyframe tracks play on one press: squash-and-stretch, a full spin, and a ripple ring.",
+            rsx!(RotatingButton {}),
+            "rotating_button.rs",
+            dioxus_code::code!("/src/showcase/components/rotating_button.rs"),
+        ),
+        (
+            "Momentum Counter",
+            "The number springs to each new total and pops on impact, with a meter filling to the next level.",
             rsx!(AnimatedCounter {}),
             "animated_counter.rs",
             dioxus_code::code!("/src/showcase/components/animated_counter.rs"),
