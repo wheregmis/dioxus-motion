@@ -129,9 +129,17 @@ impl Animatable for Color {
         let b = [target.r, target.g, target.b, target.a];
         let va = f32x4::new(a);
         let vb = f32x4::new(b);
-        let vt = f32x4::splat(t.clamp(0.0, 1.0));
-        let result = va + (vb - va) * vt;
-        let out = result.to_array();
+        let progress = t.clamp(0.0, 1.0);
+        let delta = vb - va;
+        let out = if progress == 0.0 {
+            a
+        } else if progress == 1.0 {
+            b
+        } else if delta.is_finite().all() {
+            (va + delta * f32x4::splat(progress)).to_array()
+        } else {
+            std::array::from_fn(|index| a[index].interpolate(&b[index], progress))
+        };
         Color::new(out[0], out[1], out[2], out[3])
     }
 
@@ -145,6 +153,70 @@ impl Animatable for Color {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn fuzz_color_interpolation_handles_finite_extremes_and_clamped_endpoints() {
+        let raw = |r, g, b, a| Color { r, g, b, a };
+        for (start, end) in [
+            (
+                raw(-f32::MAX, f32::MAX, -f32::MAX, f32::MAX),
+                raw(f32::MAX, -f32::MAX, f32::MAX, -f32::MAX),
+            ),
+            (
+                raw(f32::MAX, f32::MAX, f32::MAX, f32::MAX),
+                Color::new(1.0, 0.5, 0.25, 0.75),
+            ),
+            (
+                Color::new(1.0, 0.5, 0.25, 0.75),
+                raw(f32::MAX, f32::MAX, f32::MAX, f32::MAX),
+            ),
+        ] {
+            for progress in [-1.0f32, 0.0, 0.25, 0.5, 0.75, 1.0, 2.0] {
+                let lerp = |a: f32, b: f32| {
+                    (f64::from(a)
+                        + (f64::from(b) - f64::from(a)) * f64::from(progress.clamp(0.0, 1.0)))
+                        as f32
+                };
+                let expected = if progress <= 0.0 {
+                    Color::new(start.r, start.g, start.b, start.a)
+                } else if progress >= 1.0 {
+                    Color::new(end.r, end.g, end.b, end.a)
+                } else {
+                    Color::new(
+                        lerp(start.r, end.r),
+                        lerp(start.g, end.g),
+                        lerp(start.b, end.b),
+                        lerp(start.a, end.a),
+                    )
+                };
+                assert_eq!(
+                    start.interpolate(&end, progress),
+                    expected,
+                    "progress={progress}"
+                );
+            }
+        }
+        let mut bits = 1u32;
+        for _ in 0..4096 {
+            let mut sample = || {
+                bits = bits.wrapping_mul(1664525).wrapping_add(1013904223);
+                f32::from_bits(bits)
+            };
+            let start = raw(sample(), sample(), sample(), sample());
+            let end = raw(sample(), sample(), sample(), sample());
+            if start.is_finite() && end.is_finite() {
+                for progress in [0.0, 0.25, 0.5, 0.75, 1.0] {
+                    let actual = start.interpolate(&end, progress);
+                    assert!(actual.is_finite());
+                    assert!(
+                        [actual.r, actual.g, actual.b, actual.a]
+                            .into_iter()
+                            .all(|channel| (0.0..=1.0).contains(&channel))
+                    );
+                }
+            }
+        }
+    }
 
     #[test]
     fn arithmetic_preserves_signed_components_and_display_saturates() {
