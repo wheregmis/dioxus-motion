@@ -20,6 +20,22 @@ pub fn MotionLab() -> Element {
         if let Ok(reduced) = preference.recv::<bool>().await {
             instant.set(reduced);
         }
+        // Play once on load so the playground demonstrates itself; skipped when
+        // the visitor prefers reduced motion
+        if !instant()
+            && position
+                .animate_to(
+                    100.0,
+                    AnimationConfig::spring(Spring {
+                        stiffness: stiffness(),
+                        damping: damping(),
+                        mass: 1.0,
+                    }),
+                )
+                .is_ok()
+        {
+            forward.set(true);
+        }
     });
     let value = position.get_value();
 
@@ -88,7 +104,7 @@ position.animate_to(
 let x = position.get_value();"#, CodeOptions::builder().with_language(Language::Rust)) }
                 }
             }
-            p { class: "lab-footnote", "Real Rust springs. Retargetable. No animation running until you ask." }
+            p { class: "lab-footnote", "Real Rust springs. Retargetable — move the target again mid-flight." }
         }
     }
 }

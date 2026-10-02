@@ -15,7 +15,7 @@ pub fn Home() -> Element {
                     p { class: "lead", "Springs that respond. Types you can trust. Bring a little life to your Dioxus app, one value at a time." }
                     div { class: "hero-actions",
                         Link { class: "button primary", to: Route::DocsLanding {}, "Start building →" }
-                        Link { class: "button secondary", to: Route::ShowcaseGallery {}, "Explore examples" }
+                        Link { class: "button secondary", to: Route::ShowcaseGallery { demo: None }, "Explore examples" }
                     }
                     p { class: "hero-note", "Typed values · Interruptible springs · Web & desktop" }
                 }

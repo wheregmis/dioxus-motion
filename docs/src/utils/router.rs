@@ -63,10 +63,12 @@ pub enum Route {
         #[transition(SlideDown)]
         Blog {},
 
-        #[redirect("/old_showcase", || Route::ShowcaseGallery {})]
-        #[route("/examples")]
+        #[redirect("/old_showcase", || Route::ShowcaseGallery { demo: None })]
+        #[route("/examples?:demo")]
         #[transition(Fade)]
-        ShowcaseGallery {},
+        ShowcaseGallery {
+            demo: Option<String>,
+        },
 
     #[end_layout]
 

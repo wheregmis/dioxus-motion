@@ -13,7 +13,7 @@ pub fn NavBar() -> Element {
                 }
                 div { class: "header-links",
                     Link { to: Route::DocsLanding {}, "Docs" }
-                    Link { to: Route::ShowcaseGallery {}, "Examples" }
+                    Link { to: Route::ShowcaseGallery { demo: None }, "Examples" }
                     Link { to: Route::Blog {}, "Blog" }
                     a { href: "https://github.com/wheregmis/dioxus-motion", "GitHub ↗" }
                 }
