@@ -4,7 +4,9 @@ on:
   workflow_run:
     workflows: ["GitHub Pages"]
     types: [completed]
-  pull_request:
+  # pull_request_target runs the default-branch workflow with a write token, so
+  # closing a fork PR can still delete its preview. Cleanup never runs PR code.
+  pull_request_target:
     types: [closed]
 
 permissions:
@@ -12,8 +14,11 @@ permissions:
   contents: write
   pull-requests: write
 
+# Every publisher writes to the same gh-pages branch, so they share one group.
+# One pending run per group: a run queued behind an in-flight publish is
+# replaced by a newer event, which can drop a stale preview redeploy.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.workflow_run.id || github.event.pull_request.number }}
+  group: gh-pages-deploy-${{ github.repository }}
   cancel-in-progress: false
 
 jobs:

@@ -1,6 +1,7 @@
 use crate::utils::router::Route;
 use dioxus::prelude::*;
 
+/// Styled 404 page naming the unmatched route and linking back to real pages.
 #[component]
 pub fn PageNotFound(route: Vec<String>) -> Element {
     rsx! {

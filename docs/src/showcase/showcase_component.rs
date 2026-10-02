@@ -9,6 +9,7 @@ use dioxus::prelude::*;
 use crate::components::code_block::CodeBlock;
 use dioxus_primitives::tabs::{TabContent, TabList, TabTrigger, Tabs};
 
+/// Example gallery: picker, live preview, and highlighted source for each demo.
 #[component]
 pub fn ShowcaseGallery() -> Element {
     let mut selected = use_signal(|| 0usize);
@@ -61,6 +62,8 @@ pub fn ShowcaseGallery() -> Element {
     }
 }
 
+/// Every gallery entry: display title, one-line description, preview element,
+/// source filename, and its compile-time highlighted code.
 fn showcase_items() -> Vec<(
     &'static str,
     &'static str,
@@ -132,7 +135,7 @@ fn showcase_items() -> Vec<(
         ),
         (
             "Rotating Button",
-            "A press spins the button a full turn with a single spring.",
+            "A press runs three keyframe animations at once: scale, rotation, and glow.",
             rsx!(RotatingButton {}),
             "rotating_button.rs",
             dioxus_code::code!("/src/showcase/components/rotating_button.rs"),
@@ -184,7 +187,7 @@ fn showcase_items() -> Vec<(
         ),
         (
             "Typewriter Effect",
-            "Sequenced tweens type each character, then erase and repeat.",
+            "A looping tween reveals characters one at a time while a second blinks the cursor.",
             rsx!(TypewriterEffect {
                 text: "Hello, Dioxus Motion"
             }),

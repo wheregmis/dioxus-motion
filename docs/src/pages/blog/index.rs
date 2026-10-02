@@ -3,6 +3,7 @@ use crate::utils::router::Route;
 use dioxus::prelude::*;
 use dioxus_code::{CodeOptions, Language, code_str};
 
+/// Long-form article on why the library exists, with highlighted API samples.
 #[component]
 pub fn Blog() -> Element {
     rsx! {
@@ -140,7 +141,7 @@ impl Animatable for Point {
                     ul {
                         li {
                             strong { "Frame timing. " }
-                            "Browsers disagree about requestAnimationFrame details, so the library keeps a platform-agnostic clock and releases timer callbacks when playback completes or is cancelled."
+                            "Browsers disagree about requestAnimationFrame details, so the library keeps a platform-agnostic clock; between animations the frame loop drops to a slow 100 ms idle poll instead of holding frame-rate timers."
                         }
                         li {
                             strong { "Render-cycle isolation. " }
