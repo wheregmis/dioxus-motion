@@ -168,7 +168,7 @@ impl Animatable for Point {
                     }
                     div { class: "hero-actions",
                         Link { class: "button primary", to: Route::DocsLanding {}, "Start the guides →" }
-                        Link { class: "button secondary", to: Route::ShowcaseGallery {}, "Browse examples" }
+                        Link { class: "button secondary", to: Route::ShowcaseGallery { demo: None }, "Browse examples" }
                     }
                 }
             }

@@ -7,6 +7,16 @@ pub fn QuickStart() -> Element {
     let mut forward = use_signal(|| false);
     let mut error = use_signal(|| None::<String>);
 
+    // Play once on mount so the spring demonstrates itself; the button retriggers it
+    use_effect(move || {
+        if position
+            .animate_to(160.0, AnimationConfig::spring(Spring::default()))
+            .is_ok()
+        {
+            forward.set(true);
+        }
+    });
+
     rsx! {
         div { class: "quick-start",
             button {

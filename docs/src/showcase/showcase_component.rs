@@ -7,16 +7,42 @@ use crate::showcase::components::{
 use dioxus::prelude::*;
 
 use crate::components::code_block::CodeBlock;
+use crate::utils::router::Route;
 use dioxus_primitives::tabs::{TabContent, TabList, TabTrigger, Tabs};
 
+/// Picker labels and URL slugs, ordered to match `showcase_items` below.
+/// Static so picker button handlers can capture slugs.
+const PICKER: &[(&str, &str)] = &[
+    ("Magnetic Card", "magnetic-card"),
+    ("Interactive Cube", "interactive-cube"),
+    ("Spring Nav", "spring-nav"),
+    ("Comet Path", "comet-path"),
+    ("Sonar", "sonar"),
+    ("Swinging Cube", "swinging-cube"),
+    ("Liquid Morph", "liquid-morph"),
+    ("Holo Card Flip", "holo-card-flip"),
+    ("Spring Gauge", "spring-gauge"),
+    ("Flower", "flower"),
+    ("Wave Text", "wave-text"),
+    ("Terminal", "terminal"),
+    ("Charge Bar", "charge-bar"),
+    ("Launch Button", "launch-button"),
+    ("Momentum Counter", "momentum-counter"),
+];
+
 /// Example gallery: picker, live preview, and highlighted source for each demo.
+/// The selected demo lives in the URL (`?demo=slug`) so previews are deep-linkable
+/// and browser Back/Forward moves between demos.
 #[component]
-pub fn ShowcaseGallery() -> Element {
-    let mut selected = use_signal(|| 0usize);
-    let mut active = use_signal(|| false);
+pub fn ShowcaseGallery(demo: Option<String>) -> Element {
     let mut tab = use_signal(|| Some("preview".to_string()));
+    let nav = use_navigator();
+    let selected = demo
+        .as_deref()
+        .and_then(|slug| PICKER.iter().position(|(_, s)| *s == slug))
+        .unwrap_or(0);
     let examples = showcase_items();
-    let (title, blurb, preview, filename, source) = examples[selected()].clone();
+    let (title, blurb, preview, filename, source) = examples[selected].clone();
     let source_url = format!(
         "https://github.com/wheregmis/dioxus-motion/blob/main/docs/src/showcase/components/{filename}"
     );
@@ -28,10 +54,13 @@ pub fn ShowcaseGallery() -> Element {
             p { class: "lead", "Explore one animation at a time. Read the exact source, then make it your own." }
             div { class: "examples-layout",
                 nav { class: "example-picker", aria_label: "Choose an example",
-                    for (index, item) in examples.iter().enumerate() {
-                        button { class: if selected() == index { "selected" } else { "" }, aria_pressed: selected() == index,
-                            onclick: move |_| { selected.set(index); active.set(false); tab.set(Some("preview".to_string())); },
-                            {item.0}
+                    for (index, (title, slug)) in PICKER.iter().enumerate() {
+                        button { class: if selected == index { "selected" } else { "" }, aria_pressed: selected == index,
+                            onclick: move |_| {
+                                nav.push(Route::ShowcaseGallery { demo: Some(slug.to_string()) });
+                                tab.set(Some("preview".to_string()));
+                            },
+                            {*title}
                         }
                     }
                 }
@@ -40,17 +69,17 @@ pub fn ShowcaseGallery() -> Element {
                         div { h2 { {title} } p { class: "example-blurb", {blurb} } }
                         a { href: source_url, "Source ↗" }
                     }
-                    Tabs { value: tab, on_value_change: move |value: String| { tab.set(Some(value.clone())); if value == "code" { active.set(false); } }, horizontal: true,
+                    Tabs { value: tab, on_value_change: move |value: String| tab.set(Some(value)), horizontal: true,
                         TabList { class: "preview-tabs", aria_label: "Example view",
                             TabTrigger { value: "preview", index: 0usize, id: None, class: None, "Preview" }
                             TabTrigger { value: "code", index: 1usize, id: None, class: None, "Code" }
                         }
                         TabContent { value: "preview", index: 0usize, id: None, class: None,
+                            // Demos mount on selection and unmount on the Code tab,
+                            // so animations only run while the preview is visible
                             div { class: "example-stage",
-                                if active() { {preview} }
-                                else { div { class: "example-placeholder", p { "Ready when you are." } button { class: "button primary", onclick: move |_| active.set(true), "Start demo →" } } }
+                                if tab() == Some("preview".to_string()) { {preview} }
                             }
-                            if active() { div { class: "example-stop", button { class: "button secondary", onclick: move |_| active.set(false), "Stop demo" } span { "Starting again resets the example." } } }
                         }
                         TabContent { value: "code", index: 1usize, id: None, class: Some("example-source".to_string()),
                             CodeBlock { language: "Rust".to_string(), code: source }
@@ -63,7 +92,7 @@ pub fn ShowcaseGallery() -> Element {
 }
 
 /// Every gallery entry: display title, one-line description, preview element,
-/// source filename, and its compile-time highlighted code.
+/// source filename, and its compile-time highlighted code. Order must match PICKER.
 fn showcase_items() -> Vec<(
     &'static str,
     &'static str,

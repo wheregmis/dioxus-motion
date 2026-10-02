@@ -17,7 +17,7 @@ pub fn PageNotFound(route: Vec<String>) -> Element {
             div { class: "hero-actions",
                 Link { class: "button primary", to: Route::Home {}, "Back home →" }
                 Link { class: "button secondary", to: Route::DocsLanding {}, "Read the docs" }
-                Link { class: "button secondary", to: Route::ShowcaseGallery {}, "See examples" }
+                Link { class: "button secondary", to: Route::ShowcaseGallery { demo: None }, "See examples" }
             }
         }
     }
