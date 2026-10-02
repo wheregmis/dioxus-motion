@@ -40,6 +40,12 @@ pub trait Animatable:
     /// Check components directly; a magnitude can overflow for a finite vector.
     fn is_finite(&self) -> bool;
 
+    /// Whether shared components have compatible units and shapes for spring arithmetic.
+    /// Ordinary numerical vectors are compatible with every value of the same type.
+    fn is_spring_compatible(&self, _target: &Self) -> bool {
+        true
+    }
+
     /// Returns the epsilon threshold for this type
     /// Default implementation provides a reasonable value for most use cases
     fn epsilon() -> f32 {
@@ -411,6 +417,10 @@ pub type OnComplete = Arc<Mutex<dyn FnMut() + Send + 'static>>;
 /// Invalid animation setup or a frame result that cannot be represented.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum AnimationError {
+    #[error(
+        "spring values have incompatible units or component shapes; use a tween for discrete transitions"
+    )]
+    IncompatibleSpringValues,
     #[error("completion callback is already executing or locked")]
     CompletionBusy,
     #[error("completion callback mutex is poisoned")]
@@ -435,6 +445,18 @@ pub(crate) fn validate_value<T: Animatable>(
         Ok(())
     } else {
         Err(AnimationError::NonFiniteValue(role))
+    }
+}
+
+pub(crate) fn validate_spring_transition<T: Animatable>(
+    initial: &T,
+    target: &T,
+    mode: AnimationMode,
+) -> Result<(), AnimationError> {
+    if matches!(mode, AnimationMode::Spring(_)) && !initial.is_spring_compatible(target) {
+        Err(AnimationError::IncompatibleSpringValues)
+    } else {
+        Ok(())
     }
 }
 

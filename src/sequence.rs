@@ -1,6 +1,8 @@
 //! `AnimationSequence<T>` - Optimized animation step sequences
 
-use crate::animations::core::{Animatable, AnimationError, validate_value};
+use crate::animations::core::{
+    Animatable, AnimationError, validate_spring_transition, validate_value,
+};
 use crate::prelude::AnimationConfig;
 
 use std::sync::Mutex;
@@ -31,6 +33,9 @@ impl<T: Animatable> AnimationSequence<T> {
         for step in &self.steps {
             step.config.validate_for::<T>()?;
             validate_value(&step.target, "sequence target")?;
+        }
+        for pair in self.steps.windows(2) {
+            validate_spring_transition(&pair[0].target, &pair[1].target, pair[1].config.mode)?;
         }
         Ok(())
     }

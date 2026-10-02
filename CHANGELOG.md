@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Springs reject shared CSS properties with incompatible units or complex-string shapes before replacing active playback, including sequence steps and velocity changes. Use tweens for discrete transitions. Removing numeric properties now springs toward zero before dropping them at completion.
 - Style fields and typed/complex CSS numbers reuse overflow-safe scalar interpolation. Style tween frames avoid temporary vector arithmetic/property maps, and CSS number formatting widens rounding arithmetic so finite extremes remain finite strings.
 - `Animatable` now requires `PartialEq` for exact reactive change detection, including CSS keywords, units, and property keys. Derive or implement it for custom animated values. Store updates avoid cloning the new value and computing an arithmetic difference/magnitude.
 - Value subscribers receive every nonzero motion change, including frames smaller than spring completion epsilon. Running subscribers remain independent, and unchanged values do not trigger renders.

@@ -173,6 +173,32 @@ pub fn check_spring_numerics() -> Result<(), JsValue> {
             return Err(error("nonfinite target replaced the current animation"));
         }
     }
+    let initial = MotionStyle::default().property("width", CssValue::Px(100.0));
+    let mut removed = Motion::new(initial).map_err(|e| error(&e.to_string()))?;
+    removed
+        .animate_to(
+            MotionStyle::default(),
+            AnimationConfig::spring(Spring::default()),
+        )
+        .map_err(|e| error(&e.to_string()))?;
+    removed
+        .update(1.0 / 60.0)
+        .map_err(|e| error(&e.to_string()))?;
+    if !matches!(removed.get_value().properties.get("width"), Some(CssValue::Px(width)) if (0.0..100.0).contains(width))
+    {
+        return Err(error("removed CSS width sprang away from zero"));
+    }
+    let initial = MotionStyle::default().property("width", CssValue::Px(100.0));
+    let target = MotionStyle::default().property("width", CssValue::Percent(10.0));
+    let mut incompatible = Motion::new(initial.clone()).map_err(|e| error(&e.to_string()))?;
+    if incompatible.animate_to(target, AnimationConfig::spring(Spring::default()))
+        != Err(AnimationError::IncompatibleSpringValues)
+        || incompatible.get_value() != initial
+    {
+        return Err(error(
+            "incompatible CSS spring was accepted or changed its value",
+        ));
+    }
     let initial = MotionStyle {
         x: -f32::MAX,
         ..MotionStyle::default()

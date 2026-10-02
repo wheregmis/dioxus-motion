@@ -30,6 +30,7 @@ fn merge_style_properties(
     left: &BTreeMap<String, CssValue>,
     right: &BTreeMap<String, CssValue>,
     merge: impl Fn(CssValue, CssValue) -> CssValue,
+    right_only: impl Fn(&CssValue) -> CssValue,
 ) -> BTreeMap<String, CssValue> {
     let mut properties = BTreeMap::new();
 
@@ -47,7 +48,7 @@ fn merge_style_properties(
     for (property, right_value) in right {
         properties
             .entry(property.clone())
-            .or_insert_with(|| right_value.clone());
+            .or_insert_with(|| right_only(right_value));
     }
 
     properties
@@ -257,9 +258,12 @@ impl std::ops::Add for MotionStyle {
             skew_x: self.skew_x + other.skew_x,
             skew_y: self.skew_y + other.skew_y,
             perspective: self.perspective + other.perspective,
-            properties: merge_style_properties(&self.properties, &other.properties, |a, b| {
-                a.add(&b).unwrap_or(b)
-            }),
+            properties: merge_style_properties(
+                &self.properties,
+                &other.properties,
+                |a, b| a.add(&b).unwrap_or(b),
+                Clone::clone,
+            ),
         }
     }
 }
@@ -285,9 +289,12 @@ impl std::ops::Sub for MotionStyle {
             skew_x: self.skew_x - other.skew_x,
             skew_y: self.skew_y - other.skew_y,
             perspective: self.perspective - other.perspective,
-            properties: merge_style_properties(&self.properties, &other.properties, |a, b| {
-                a.sub(&b).unwrap_or(b)
-            }),
+            properties: merge_style_properties(
+                &self.properties,
+                &other.properties,
+                |a, b| a.sub(&b).unwrap_or(b),
+                |value| value.scale(-1.0),
+            ),
         }
     }
 }
@@ -323,6 +330,17 @@ impl std::ops::Mul<f32> for MotionStyle {
 }
 
 impl Animatable for MotionStyle {
+    fn is_spring_compatible(&self, target: &Self) -> bool {
+        self.properties.iter().all(|(property, initial)| {
+            target.properties.get(property).is_none_or(|target| {
+                matches!(
+                    (initial, target),
+                    (CssValue::Keyword(_), CssValue::Keyword(_))
+                ) || initial.sub(target).is_some()
+            })
+        })
+    }
+
     fn is_finite(&self) -> bool {
         [
             self.opacity,

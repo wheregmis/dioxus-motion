@@ -1,6 +1,7 @@
 use crate::Duration;
 use crate::animations::core::{
-    Animatable, AnimationError, AnimationMode, LoopMode, OnComplete, validate_value,
+    Animatable, AnimationError, AnimationMode, LoopMode, OnComplete, validate_spring_transition,
+    validate_value,
 };
 use crate::animations::spring::{Spring, SpringState, SpringStep};
 use crate::keyframes::{Keyframe, KeyframeAnimation};
@@ -102,6 +103,7 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         config.validate_for::<T>()?;
         validate_value(&self.current, "current value")?;
         validate_value(&target, "target")?;
+        validate_spring_transition(&self.current, &target, config.mode)?;
         self.sequence = None;
         self.keyframe_animation = None;
         self.start_animation(target, config);
@@ -125,6 +127,9 @@ impl<T: Animatable + Send + 'static> Motion<T> {
     ) -> Result<Option<Completion>, AnimationError> {
         sequence.validate()?;
         validate_value(&self.current, "current value")?;
+        if let Some(first) = sequence.steps().first() {
+            validate_spring_transition(&self.current, &first.target, first.config.mode)?;
+        }
         self.stop();
         sequence.reset();
         if let Some(first_step) = sequence.current_step_data() {
@@ -181,6 +186,8 @@ impl<T: Animatable + Send + 'static> Motion<T> {
         {
             return Err(AnimationError::VelocityRequiresSpring);
         }
+        validate_spring_transition(&self.current, &velocity, self.config.mode)?;
+        validate_spring_transition(&self.target, &velocity, self.config.mode)?;
         self.velocity = velocity;
         Ok(())
     }
@@ -1127,6 +1134,174 @@ mod tests {
             motion.velocity = epsilon;
             assert_eq!(motion.check_spring_completion(), SpringState::Active);
         }
+    }
+
+    #[test]
+    fn every_style_spring_component_follows_scalar_motion() {
+        use crate::prelude::MotionStyle;
+        fn components(style: &MotionStyle) -> [f32; 16] {
+            [
+                style.opacity,
+                style.x,
+                style.y,
+                style.z,
+                style.scale,
+                style.scale_x,
+                style.scale_y,
+                style.scale_z,
+                style.rotate,
+                style.rotate_x,
+                style.rotate_y,
+                style.rotate_z,
+                style.skew,
+                style.skew_x,
+                style.skew_y,
+                style.perspective,
+            ]
+        }
+        let make_style = |offset: f32| MotionStyle {
+            opacity: offset + 1.0,
+            x: offset + 2.0,
+            y: offset + 3.0,
+            z: offset + 4.0,
+            scale: offset + 5.0,
+            scale_x: offset + 6.0,
+            scale_y: offset + 7.0,
+            scale_z: offset + 8.0,
+            rotate: offset + 9.0,
+            rotate_x: offset + 10.0,
+            rotate_y: offset + 11.0,
+            rotate_z: offset + 12.0,
+            skew: offset + 13.0,
+            skew_x: offset + 14.0,
+            skew_y: offset + 15.0,
+            perspective: offset + 16.0,
+            ..MotionStyle::default()
+        };
+        let initial = make_style(-4.25);
+        let target = make_style(7.5);
+        let config = AnimationConfig::spring(Spring::default());
+        let mut scalars: Vec<_> = components(&initial)
+            .into_iter()
+            .zip(components(&target))
+            .map(|(initial, target)| {
+                let mut motion = Motion::new(initial).expect("finite scalar");
+                motion
+                    .animate_to(target, config.clone())
+                    .expect("valid spring");
+                motion
+            })
+            .collect();
+        let mut style = Motion::new(initial).expect("finite style");
+        style.animate_to(target, config).expect("valid spring");
+        for frame in 0..20 {
+            style.update(1.0 / 60.0).expect("finite style frame");
+            for (component, scalar) in components(&style.get_value()).into_iter().zip(&mut scalars)
+            {
+                scalar.update(1.0 / 60.0).expect("finite scalar frame");
+                assert!(
+                    (component - scalar.get_value()).abs() < 0.0001,
+                    "style component diverged at frame {frame}: {component} versus {}",
+                    scalar.get_value()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn removing_a_numeric_style_property_springs_toward_zero() {
+        use crate::prelude::{CssValue, MotionStyle};
+        let initial = MotionStyle::default().property("width", CssValue::Px(100.0));
+        let target = MotionStyle::default();
+        let mut motion = Motion::new(initial).expect("finite initial style");
+        motion
+            .animate_to(
+                target.clone(),
+                AnimationConfig::spring(Spring {
+                    stiffness: 100.0,
+                    damping: 20.0,
+                    mass: 1.0,
+                }),
+            )
+            .expect("valid spring");
+        motion.update(1.0 / 60.0).expect("finite frame");
+        let actual = motion.get_value();
+        assert!(
+            matches!(actual.properties.get("width"), Some(CssValue::Px(width)) if (0.0..100.0).contains(width)),
+            "removed width moved away from zero: {actual:?}"
+        );
+        for _ in 0..1000 {
+            if !motion.update(1.0 / 60.0).expect("finite frame") {
+                break;
+            }
+        }
+        assert!(!motion.is_running());
+        assert_eq!(motion.get_value(), target);
+    }
+
+    #[test]
+    fn incompatible_style_springs_preserve_playback_and_allow_tweens() {
+        use crate::animations::css::parse_css_string;
+        use crate::prelude::{CssValue, MotionStyle};
+        for (initial_value, target_value) in [
+            (CssValue::Px(100.0), CssValue::Percent(10.0)),
+            (CssValue::Number(10.0), CssValue::Px(10.0)),
+            (CssValue::Keyword("auto".into()), CssValue::Px(10.0)),
+            (
+                parse_css_string("translateX(10px)"),
+                parse_css_string("translateY(20px)"),
+            ),
+        ] {
+            let initial = MotionStyle::default().property("width", initial_value);
+            let target = MotionStyle::default().property("width", target_value);
+            let mut motion = Motion::new(initial.clone()).expect("finite style");
+            motion
+                .animate_to(initial.clone(), AnimationConfig::tween_ms(1000))
+                .expect("valid tween");
+            assert_eq!(
+                motion.animate_to(target.clone(), AnimationConfig::spring(Spring::default())),
+                Err(AnimationError::IncompatibleSpringValues)
+            );
+            assert_eq!(motion.get_value(), initial);
+            assert_eq!(motion.get_target(), initial);
+            assert!(motion.is_running());
+            let invalid_first = AnimationSequence::new()
+                .then(target.clone(), AnimationConfig::spring(Spring::default()));
+            assert_eq!(
+                motion.animate_sequence(invalid_first),
+                Err(AnimationError::IncompatibleSpringValues)
+            );
+            let invalid_later = AnimationSequence::new()
+                .then(initial.clone(), AnimationConfig::tween_ms(0))
+                .then(target.clone(), AnimationConfig::spring(Spring::default()));
+            assert_eq!(
+                invalid_later.validate(),
+                Err(AnimationError::IncompatibleSpringValues)
+            );
+            assert_eq!(
+                motion.animate_sequence(invalid_later),
+                Err(AnimationError::IncompatibleSpringValues)
+            );
+            assert_eq!(motion.get_value(), initial);
+            assert!(motion.is_running());
+            motion
+                .animate_to(target.clone(), AnimationConfig::tween_ms(0))
+                .expect("discrete tween");
+            assert_eq!(motion.update(0.01), Ok(false));
+            assert_eq!(motion.get_value(), target);
+        }
+        let initial = MotionStyle::default().property("width", CssValue::Px(100.0));
+        let mut motion = Motion::new(initial.clone()).expect("finite style");
+        motion
+            .animate_to(initial, AnimationConfig::spring(Spring::default()))
+            .expect("compatible spring");
+        let before = motion.get_velocity();
+        assert_eq!(
+            motion.set_velocity(MotionStyle::default().property("width", CssValue::Percent(10.0))),
+            Err(AnimationError::IncompatibleSpringValues)
+        );
+        assert_eq!(motion.get_velocity(), before);
+        assert!(motion.is_running());
     }
 
     #[test]
