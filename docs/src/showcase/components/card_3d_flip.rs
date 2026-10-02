@@ -24,7 +24,7 @@ pub fn Card3DFlip() -> Element {
 
     let onclick = move |_| flip();
     let onkeydown = move |e: Event<KeyboardData>| {
-        if e.code() == Code::Enter || e.code() == Code::Space {
+        if !e.is_auto_repeating() && (e.code() == Code::Enter || e.code() == Code::Space) {
             flip();
         }
     };

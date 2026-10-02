@@ -126,7 +126,7 @@ pub fn InteractiveCube() -> Element {
 
     let onclick = move |_| fire();
     let onkeydown = move |e: Event<KeyboardData>| {
-        if e.code() == Code::Enter || e.code() == Code::Space {
+        if !e.is_auto_repeating() && (e.code() == Code::Enter || e.code() == Code::Space) {
             fire();
         }
     };
