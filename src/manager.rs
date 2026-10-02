@@ -645,20 +645,26 @@ mod tests {
         let mut dom = VirtualDom::new(|| rsx! { div {} });
         dom.rebuild_in_place();
         dom.in_scope(ScopeId::APP, || {
-            for case in 0..5 {
+            for case in 0..7 {
                 let mut motion = MotionHandle::new(0.0f32).expect("finite initial value");
                 CALLBACK_MOTION.set(Some(motion));
                 let calls = Arc::new(AtomicUsize::new(0));
                 let callback_calls = calls.clone();
+                let abandoned_calls = Arc::new(AtomicUsize::new(0));
+                let abandoned_callback_calls = abandoned_calls.clone();
                 let expected = if case == 2 || case == 4 { 0.0 } else { 1.0 };
                 let callback = move || {
                     let mut callback_motion = CALLBACK_MOTION.get().expect("current test handle");
-                    assert!(!callback_motion.is_running());
+                    assert_eq!(callback_motion.is_running(), case >= 5);
                     assert_eq!(callback_motion.get_value(), expected);
                     callback_calls.fetch_add(1, Ordering::Relaxed);
-                    callback_motion
-                        .animate_to(2.0, AnimationConfig::tween_ms(1000))
-                        .expect("valid animation configuration");
+                    if case == 6 {
+                        callback_motion.stop();
+                    } else {
+                        callback_motion
+                            .animate_to(2.0, AnimationConfig::tween_ms(1000))
+                            .expect("valid animation configuration");
+                    }
                 };
                 let instant = AnimationConfig::tween(Duration::ZERO);
                 match case {
@@ -688,8 +694,18 @@ mod tests {
                                 .on_complete(callback),
                         )
                         .expect("valid animation configuration"),
-                    _ => motion
+                    4 => motion
                         .animate_sequence(AnimationSequence::new().on_complete(callback))
+                        .expect("valid animation configuration"),
+                    _ => motion
+                        .animate_sequence(
+                            AnimationSequence::new()
+                                .then(1.0, instant.clone().with_on_complete(callback))
+                                .then(9.0, instant)
+                                .on_complete(move || {
+                                    abandoned_callback_calls.fetch_add(1, Ordering::Relaxed);
+                                }),
+                        )
                         .expect("valid animation configuration"),
                 }
                 if case == 1 || case == 2 {
@@ -697,9 +713,17 @@ mod tests {
                     assert_eq!(calls.load(Ordering::Relaxed), 0);
                 }
                 if case != 4 {
-                    assert!(motion.update(0.01).expect("representable animation frame"));
+                    assert_eq!(motion.update(0.01), Ok(case != 6));
                 }
                 assert_eq!(calls.load(Ordering::Relaxed), 1);
+                if case == 6 {
+                    assert!(!motion.is_running());
+                    assert_eq!(motion.get_value(), expected);
+                    assert_eq!(motion.update(1.0), Ok(false));
+                    assert_eq!(calls.load(Ordering::Relaxed), 1);
+                    assert_eq!(abandoned_calls.load(Ordering::Relaxed), 0);
+                    continue;
+                }
                 assert!(motion.is_running());
                 assert!(motion.update(0.5).expect("representable animation frame"));
                 assert!(motion.get_value() > expected);
@@ -707,6 +731,7 @@ mod tests {
                 assert_eq!(motion.get_value(), 2.0);
                 assert!(!motion.is_running());
                 assert_eq!(calls.load(Ordering::Relaxed), 1);
+                assert_eq!(abandoned_calls.load(Ordering::Relaxed), 0);
             }
             CALLBACK_MOTION.set(None);
         });
