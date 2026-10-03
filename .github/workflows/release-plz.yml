@@ -49,14 +49,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # The App token lets release PRs trigger the required CI workflows.
+  # Prepare release PRs with the built-in repository token.
   release-plz-pr:
     if: github.event_name == 'push'
     name: Release-plz PR
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      contents: read
+      contents: write
+      pull-requests: write
     concurrency:
       group: release-plz-pr-${{ github.ref }}
       cancel-in-progress: false
@@ -67,18 +68,10 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - *install-rust
-      - name: Generate release PR token
-        id: app-token
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ vars.RELEASE_PLZ_APP_ID }}
-          private-key: ${{ secrets.RELEASE_PLZ_APP_PRIVATE_KEY }}
-          permission-contents: write
-          permission-pull-requests: write
       - name: Run release-plz
         uses: release-plz/action@v0.5
         with:
           command: release-pr
           version: ${{ env.RELEASE_PLZ_VERSION }}
         env:
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
