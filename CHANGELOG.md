@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0](https://github.com/wheregmis/dioxus-motion/compare/dioxus-motion-v0.3.5...dioxus-motion-v0.4.0) - 2026-10-03
+
+### <!-- 2 -->Fixes
+
+- *(ci)* restore built-in token for release PRs
+- *(ci)* allow required Pages Cleanup permissions
+- *(ci)* publish the commit checked by the release gate
+- *(ci)* run actionlint with its official container
+- *(ci)* harden releases and prepare 0.4.0
+- *(ci)* separate release-plz release from release-pr trigger
+
+### <!-- 3 -->Other
+
+- Split preview cleanup into its own protected workflow
+- Address CodeRabbit review
+- Add PR preview deployments via gh-pages branch
+- Polish docs site: real blog, styled 404, example descriptions
+- Cover retargeting and stopping from sequence step callbacks
+- Use a weighted SIMD blend for safe color interpolation
+- Keep finite color interpolation safe at extreme endpoints
+- Honor sequence step loops and completion callbacks
+- Align reported duration with delayed loop playback
+- Document the complete keyframe update mutation audit
+- Settle duplicate terminal keyframes at the final value
+- Capture keyframe playback target and reset value
+- Validate hex syntax before slicing UTF-8 CSS input
+- Scale owned CSS tokens in place and benchmark complex styles
+- Return presence configuration errors before registering animation work
+- Reuse owned style maps and separate frame benchmarks from reads
+- Require typed durations in presence tween macros
+- Own layout projection tasks and add an interactive reflow lesson
+- Stop failed animation timers and rebuild guide lessons
+- Rebuild documentation and repair GitHub Pages deployment
+- Reject incompatible style springs and verify every component
+- Interpolate CSS properties from the current style
+- Reuse overflow-safe scalar interpolation in style and CSS tweens
+- Require exact equality for animatable values
+- Strengthen tween endpoint and keyframe lookup coverage
+- Propagate nonblocking completion callback errors
+- Remove unused motion examples and simplify the project
+- Require active spring playback for velocity changes
+- Make motion state private and validate velocity updates
+- Harden presence completion and value validation
+- Return errors from animation frame updates
+- Validate keyframe setup errors consistently
+- Harden animation physics and validation
+- Update Dioxus lockfile entry
+- Fix CI lint and audit failures
+- Align docs tooling with generated CSS
+- Fix MotionStyle interpolation nits
+- Avoid skipping short exit tweens after idle
+- Add AnimatePresence
+- Add MotionStyle
+- Add css lib
+- *(dioxus-motion)* release v0.3.6
+
 - *(ci)* separate release-plz release from release-pr trigger
 
 - Remove the allocation and redundant spin-sleep from native frame delays. Use Tokio virtual time in delay tests so machine load cannot create false failures.
