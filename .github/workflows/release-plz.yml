@@ -15,13 +15,13 @@ jobs:
   release-plz-release:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     name: Release-plz release
+    environment: cargo
     runs-on: ubuntu-latest
     timeout-minutes: 35
     permissions:
       actions: read
       contents: write
       pull-requests: read
-      id-token: write
     concurrency:
       group: release-plz-publish
       cancel-in-progress: false
@@ -48,6 +48,7 @@ jobs:
           version: ${{ env.RELEASE_PLZ_VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
   # Prepare release PRs with the built-in repository token.
   release-plz-pr:

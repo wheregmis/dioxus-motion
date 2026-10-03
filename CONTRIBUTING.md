@@ -190,7 +190,8 @@ Release preparation uses `release-plz`; publication stays manual:
    `Check workspace members` requirement with the consolidated `Check` job.
 3. Wait for the merged commit's **push** CI run to succeed, then dispatch
    **Release-plz** on `main`. Publication checks that exact commit's latest push CI
-   run, verifies packaged code with all features, and uses crates.io Trusted Publishing.
+   run, verifies packaged code with all features, and uses `CARGO_REGISTRY_TOKEN`
+   from the `cargo` GitHub environment.
    The publication job uses a depth-one checkout of `GITHUB_SHA` and checks that
    checkout before querying CI. This prevents pinned release-plz from selecting an
    earlier PR commit after a merge commit; release PR generation still fetches full
@@ -213,14 +214,10 @@ macros that cargo-semver-checks cannot fully validate.
   and **Pull requests: write**. Enable **Allow GitHub Actions to create and approve
   pull requests** in repository Actions settings. Bot-created PR workflows may
   require approval; see [GitHub's workflow triggering rules](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow#triggering-a-workflow-from-a-workflow).
-- Configure trusted publishers for **both** `dioxus-motion` and
-  `dioxus-motion-transitions-macro` on crates.io: GitHub owner `wheregmis`, repository
-  `dioxus-motion`, workflow `release-plz.yml`, and no environment restriction
-  (the publication job does not use a GitHub environment). The workflow grants
-  `id-token: write` only to the manual publication job and does not pass a static
-  registry token. Remove the obsolete `CARGO_REGISTRY_TOKEN` repository secret
-  once both publishers are configured.
-  See [crates.io Trusted Publishing](https://crates.io/docs/trusted-publishing).
+- Store `CARGO_REGISTRY_TOKEN` in the `cargo` GitHub environment with permission
+  to publish both `dioxus-motion` and `dioxus-motion-transitions-macro`. The manual
+  publication job selects that environment and passes the token only to its
+  release-plz step.
 - Close the stale release PR #69 before merging, then let the next `main` push
   prepare a fresh release PR for `0.4.0` using the repaired changelogs.
 
