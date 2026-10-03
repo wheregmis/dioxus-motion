@@ -183,6 +183,8 @@ Release preparation uses `release-plz`; publication stays manual:
 
 1. Merge changes to `main`. Release-plz opens or updates a release PR.
 2. Review version bumps and both crate changelogs, and merge only after CI passes.
+   If GitHub shows **Approve workflows to run** on the release PR, approve the
+   pending workflows so the required CI checks run before merging.
    Require the CI jobs (including `Check MSRV (1.89)` and `Check release tooling`)
    in the repository's branch protection rules. Replace the retired
    `Check workspace members` requirement with the consolidated `Check` job.
@@ -207,11 +209,10 @@ macros that cargo-semver-checks cannot fully validate.
 
 ### Maintainer setup before merging these workflow changes
 
-- Install a GitHub App on this repository with **Contents: read/write** and
-  **Pull requests: read/write**. Set repository variable `RELEASE_PLZ_APP_ID` and
-  secret `RELEASE_PLZ_APP_PRIVATE_KEY`. The release PR job requires this App token
-  so its pushes trigger CI; it has no registry credential.
-  See [release-plz GitHub App setup](https://release-plz.dev/docs/github/token#use-a-github-app).
+- Release PR creation uses the built-in `GITHUB_TOKEN` with **Contents: write**
+  and **Pull requests: write**. Enable **Allow GitHub Actions to create and approve
+  pull requests** in repository Actions settings. Bot-created PR workflows may
+  require approval; see [GitHub's workflow triggering rules](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow#triggering-a-workflow-from-a-workflow).
 - Configure trusted publishers for **both** `dioxus-motion` and
   `dioxus-motion-transitions-macro` on crates.io: GitHub owner `wheregmis`, repository
   `dioxus-motion`, workflow `release-plz.yml`, and no environment restriction
