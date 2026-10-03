@@ -8,7 +8,9 @@ on:
     types: [closed]
 
 permissions:
+  actions: read
   contents: write
+  pull-requests: write
 
 # Per-PR group: a close event is one-shot, so a cleanup run must never be
 # displaced by a publish or another PR's cleanup. Two writers to gh-pages may

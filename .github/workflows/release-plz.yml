@@ -2,26 +2,42 @@ name: Release-plz
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
-jobs:
+permissions: {}
 
-  # Release unpublished packages.
+env:
+  RELEASE_PLZ_VERSION: 0.3.169
+
+jobs:
+  # Publish only the dispatched main commit after its CI run succeeds.
   release-plz-release:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     name: Release-plz release
+    environment: cargo
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     permissions:
+      actions: read
       contents: write
+      pull-requests: read
+    concurrency:
+      group: release-plz-publish
+      cancel-in-progress: false
     steps:
-      - &checkout
-        name: Checkout repository
-        uses: actions/checkout@v5
+      # A depth-one checkout prevents release-plz from rewinding to a PR ancestor.
+      - name: Checkout publication commit
+        uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          fetch-tags: true
           persist-credentials: false
+      - name: Require successful CI for this commit
+        run: python3 scripts/check_release_ci.py
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - &install-rust
         name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -29,28 +45,34 @@ jobs:
         uses: release-plz/action@v0.5
         with:
           command: release
+          version: ${{ env.RELEASE_PLZ_VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
-  # Create a PR with the new versions and changelog, preparing the next release.
+  # Prepare release PRs with the built-in repository token.
   release-plz-pr:
     if: github.event_name == 'push'
     name: Release-plz PR
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: write
       pull-requests: write
     concurrency:
-      group: release-plz-${{ github.ref }}
+      group: release-plz-pr-${{ github.ref }}
       cancel-in-progress: false
     steps:
-      - *checkout
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
       - *install-rust
       - name: Run release-plz
         uses: release-plz/action@v0.5
         with:
           command: release-pr
+          version: ${{ env.RELEASE_PLZ_VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

@@ -38,7 +38,8 @@ Thank you for your interest in contributing to Dioxus Motion! This document prov
 We use GitHub Actions for continuous integration. The CI pipeline runs on every pull request to the main branch and includes:
 
 ### Comprehensive CI Checks
-- **Compilation Check**: Ensures code compiles with all features
+- **Compilation Check**: Checks the workspace with all features and on WASM
+- **MSRV Check**: Checks published crates on Rust 1.89 for native and WASM
 - **Clippy Check**: Enforces Rust coding standards and catches common issues
 - **Test Suite**: Runs all unit and integration tests
 - **Formatting Check**: Ensures code follows rustfmt standards
@@ -178,10 +179,52 @@ The project uses feature flags to control functionality:
 
 ## Release Process
 
-Releases are automated using `release-plz`:
-1. Changes are merged to main
-2. `release-plz` creates a PR with version bumps
-3. After review and merge, `release-plz` publishes to crates.io
+Release preparation uses `release-plz`; publication stays manual:
+
+1. Merge changes to `main`. Release-plz opens or updates a release PR.
+2. Review version bumps and both crate changelogs, and merge only after CI passes.
+   If GitHub shows **Approve workflows to run** on the release PR, approve the
+   pending workflows so the required CI checks run before merging.
+   Require the CI jobs (including `Check MSRV (1.89)` and `Check release tooling`)
+   in the repository's branch protection rules. Replace the retired
+   `Check workspace members` requirement with the consolidated `Check` job.
+3. Wait for the merged commit's **push** CI run to succeed, then dispatch
+   **Release-plz** on `main`. Publication checks that exact commit's latest push CI
+   run, verifies packaged code with all features, and uses `CARGO_REGISTRY_TOKEN`
+   from the `cargo` GitHub environment.
+   The publication job uses a depth-one checkout of `GITHUB_SHA` and checks that
+   checkout before querying CI. This prevents pinned release-plz from selecting an
+   earlier PR commit after a merge commit; release PR generation still fetches full
+   history. Keep publication shallow when updating release-plz and verify its
+   [commit-selection behavior](https://release-plz.dev/docs/usage/release#what-commit-is-released).
+   A failed, pending, cancelled, missing, or unapproved run blocks publication.
+
+The next main crate release is `0.4.0` because it changes public APIs. The transition
+proc-macro source is unchanged from `0.1.2`; its version remains independent.
+Keep unpublished notes in `[Unreleased]` until release-plz prepares them. The old
+`0.3.6` heading described an unpublished release and has been folded back into
+`[Unreleased]`. Avoid merging unrelated changes between preparing and publishing
+an unpublished version: release-plz does not recalculate a version already ahead
+of crates.io. Check breaking changes manually, particularly declarative and proc
+macros that cargo-semver-checks cannot fully validate.
+
+### Maintainer setup before merging these workflow changes
+
+- Release PR creation uses the built-in `GITHUB_TOKEN` with **Contents: write**
+  and **Pull requests: write**. Enable **Allow GitHub Actions to create and approve
+  pull requests** in repository Actions settings. Bot-created PR workflows may
+  require approval; see [GitHub's workflow triggering rules](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow#triggering-a-workflow-from-a-workflow).
+- Store `CARGO_REGISTRY_TOKEN` in the `cargo` GitHub environment with permission
+  to publish both `dioxus-motion` and `dioxus-motion-transitions-macro`. The manual
+  publication job selects that environment and passes the token only to its
+  release-plz step.
+- Close the stale release PR #69 before merging, then let the next `main` push
+  prepare a fresh release PR for `0.4.0` using the repaired changelogs.
+
+Release-plz is pinned to `0.3.169` in the workflow's `RELEASE_PLZ_VERSION` variable.
+Update that pin deliberately after reviewing its release notes. Validate local
+release gate changes with `python3 scripts/test_release_ci.py` and workflow changes
+with `actionlint`.
 
 ## Getting Help
 
